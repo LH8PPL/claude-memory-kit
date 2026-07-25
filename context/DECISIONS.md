@@ -15306,3 +15306,216 @@ _(retracted 2026-07-22)_
 ## RESUME — v0.3.1 cut-gate near-complete; PR
 
 **When:** 2026-06-14 · **Fact:** `P-RES031CG`
+
+<!-- decision:P-RES031CG -->
+
+## RESUME — v0.3.1 cut-gate near-complete; PR
+
+**When:** 2026-06-14 · **Fact:** `P-RES031CG`
+
+<!-- decision:P-3RQPTZET -->
+
+## wants Octopoda-OS captured durably ("just so i dont forget")
+
+**When:** 2026-07-22 · **Fact:** `P-3RQPTZET`
+
+<!-- decision:P-XWP6XLLG -->
+
+## Approves adopting ideas from Octopoda on loop detection
+
+**When:** 2026-07-22 · **Fact:** `P-XWP6XLLG`
+
+<!-- decision:P-aUSPYZJR -->
+
+## Requests immediate execution of loop research ("why not do the research now?")
+
+**When:** 2026-07-22 · **Fact:** `P-aUSPYZJR`
+
+<!-- decision:P-E6TXLFHN -->
+
+## D-293: --with-semantic on large corpora caused 8.8GB memory freeze; now fixed; w
+
+**When:** 2026-07-22 · **Fact:** `P-E6TXLFHN`
+
+<!-- decision:P-5CR4P996 -->
+
+## on another subject i dont know why but i always file like we are missing on the
+
+**When:** 2026-07-22 · **Fact:** `P-5CR4P996`
+
+<!-- decision:P-RLUYAZD2 -->
+
+## Task 233 now dispatched to Opus implementer with complete work order; CI has cle
+
+**When:** 2026-07-22 · **Fact:** `P-RLUYAZD2`
+
+<!-- decision:P-TMC4EMRK -->
+
+## UI Viewer Design Awaits v0.4 Scope Decision
+
+**When:** 2026-07-23 · **Fact:** `P-TMC4EMRK`
+**Why:** Task 254 foreclosed option 2, which may not be the user's call. Clarifies that all three paths remain open and their tradeoffs.
+
+<!-- decision:P-FC2WQ9Ja -->
+
+## User views Obsidian vault integration as pragmatic/simple; questions whether ela
+
+**When:** 2026-07-23 · **Fact:** `P-FC2WQ9Ja`
+
+<!-- decision:P-2JBFX6GP -->
+
+## Fact-file write constraint: forward-only, no mass rewrites
+
+**When:** 2026-07-23 · **Fact:** `P-2JBFX6GP`
+**Why:** Preserve file history and avoid accidental confusion/data loss in existing user memory.
+
+<!-- decision:P-7W7HWKDR -->
+
+## Task 255 design grill questions queued
+
+**When:** 2026-07-23 · **Fact:** `P-7W7HWKDR`
+**Why:** Design-first approach (D-121); explicit scope decisions required before build.
+
+<!-- decision:P-FD2CJBY3 -->
+
+## Two-phase viewer rollout: Obsidian v0.6.3, kit viewer v0.6.4
+
+**When:** 2026-07-23 · **Fact:** `P-FD2CJBY3`
+**Why:** Cost-benefit sequencing; tests whether users actually engage with memory before custom UI investment.
+
+<!-- decision:P-FBU44TEX -->
+
+## Map Module Sort Determinism — localeCompare Banned, Explicit Ordering Required
+
+**When:** 2026-07-23 · **Fact:** `P-FBU44TEX`
+**Why:** The map module generates committed artifacts (`MAP.md`) that are included in version control and must be reproducible across all machines. Locale-dependent or implicit sorting causes non-deterministic output, breaking the determinism guarantee that the map depends on.
+
+<!-- decision:P-2CXY4aaE -->
+
+## Memory Kit Validates Itself as Dogfood Test Subject
+
+**When:** 2026-07-23 · **Fact:** `P-2CXY4aaE`
+**Why:** The kit's own memory is not just documentation—it's active validation that the system works.
+
+<!-- decision:P-VBU4JCFX -->
+
+## Memory System Now Obsidian-Browsable
+
+**When:** 2026-07-23 · **Fact:** `P-VBU4JCFX`
+**Why:** Enables memory discovery and navigation in future sessions without re-running builds; a durable configuration fact.
+
+<!-- decision:P-YTB4VSD5 -->
+
+## Task 254 Shipped — Obsidian Memory Integration (2026-07-23)
+
+**When:** 2026-07-23 · **Fact:** `P-YTB4VSD5`
+**Why:** Marks completion date and exact commits that established Obsidian browsability.
+
+<!-- decision:P-BWAGUDTB -->
+
+## .obsidian Folder Gitignore at Any Depth
+
+**When:** 2026-07-23 · **Fact:** `P-BWAGUDTB`
+**Why:** Obsidian creates .obsidian/ metadata folder automatically; without depth-inclusive pattern, different vault opens pollute the repo with uncommitted changes
+
+<!-- decision:P-CU5NS2T5 -->
+
+## Obsidian Vault Setup for Memory Kit
+
+**When:** 2026-07-23 · **Fact:** `P-CU5NS2T5`
+**Why:** User discovered repo-root approach clutters the view; separate vault isolates the memory system for clarity and intended experience
+
+<!-- decision:P-R3CDVGU9 -->
+
+## Graph Visualization Feedback: Edge Density is the Limiting Factor
+
+**When:** 2026-07-23 · **Fact:** `P-R3CDVGU9`
+**Why:** The user's dissatisfaction reveals a gap between expected (serendipitous connections) and actual (sparse corpus). This measurement and framework are essential for 255 grill design decisions and next-phase planning.
+
+<!-- decision:P-RACGHUXK -->
+
+## Graph Database Feature Purpose: Memory Lens, Not Storage
+
+**When:** 2026-07-23 · **Fact:** `P-RACGHUXK`
+**Why:** Clarifies scope: the graph is a UI/comprehension layer over memory, not an architectural storage choice. Shapes what "success" means for the feature.
+
+<!-- decision:P-BWZ3S7U7 -->
+
+## Project Philosophy: Niche Excellence Over Breadth
+
+**When:** 2026-07-23 · **Fact:** `P-BWZ3S7U7`
+**Why:** This is a deliberate philosophy that frames all scope and prioritization decisions. Niche depth is the strategy, not a limitation to overcome.
+
+<!-- decision:P-U5aGG67J -->
+
+## PII Screening Mechanism in the Kit
+
+**When:** 2026-07-23 · **Fact:** `P-U5aGG67J`
+**Why:** Personal info in committed facts travels with git clone, appears in PRs, and becomes permanently searchable; these mechanisms prevent accidental exposure
+
+<!-- decision:P-7XCZ64La -->
+
+## Task 255 — Viewer Design Grill
+
+**When:** 2026-07-23 · **Fact:** `P-7XCZ64La`
+**Why:** Interviewing the user before implementation prevents misalignment and costly rework.
+
+<!-- decision:P-D5TKE5WW -->
+
+## Task 256 Design Constraints and Incorporated Rules
+
+**When:** 2026-07-23 · **Fact:** `P-D5TKE5WW`
+**Why:** Constraints guide implementation decisions. Rules embody lessons learned this week and prevent regression to prior incidents.
+
+<!-- decision:P-RCKKU29L -->
+
+## Task Notification and Resumption System
+
+**When:** 2026-07-23 · **Fact:** `P-RCKKU29L`
+**Why:** Knowing how the notification system works prevents confusion when a task-id reappears; clarifies that resumption is expected and possible
+
+<!-- decision:P-QRXGWG44 -->
+
+## Plural Citation Extraction Gap in Corpus
+
+**When:** 2026-07-23 · **Fact:** `P-QRXGWG44`
+**Why:** Gap found by reviewer running against live corpus (not test fixtures), catching a pattern tests missed. Anchor extraction quality is the whole point of the feature.
+
+<!-- decision:P-C2YR6DGV -->
+
+## Post-fix Integration Workflow
+
+**When:** 2026-07-23 · **Fact:** `P-C2YR6DGV`
+**Why:** Established SOP for shipping fixes and planning the next feature cycle.
+
+<!-- decision:P-HRTBEEW2 -->
+
+## Validation by Independent Test Reproduction
+
+**When:** 2026-07-23 · **Fact:** `P-HRTBEEW2`
+**Why:** Reproduction catches real-world behavior that test fixtures or code review misses.
+
+<!-- decision:P-QDU2URNU -->
+
+## Graph Phase Complete; Two Items Remain
+
+**When:** 2026-07-23 · **Fact:** `P-QDU2URNU`
+**Why:** Marks project milestone; clarifies what remains to completion
+
+<!-- decision:P-RES031CG -->
+
+## RESUME — v0.3.1 cut-gate near-complete; PR
+
+**When:** 2026-06-14 · **Fact:** `P-RES031CG`
+
+<!-- decision:P-RES031CG -->
+
+## RESUME — v0.3.1 cut-gate near-complete; PR
+
+**When:** 2026-06-14 · **Fact:** `P-RES031CG`
+
+<!-- decision:P-RES031CG -->
+
+## RESUME — v0.3.1 cut-gate near-complete; PR
+
+**When:** 2026-06-14 · **Fact:** `P-RES031CG`
