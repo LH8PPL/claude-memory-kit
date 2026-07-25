@@ -118,21 +118,23 @@ describe('Task 37 — runDoctor (cmk doctor health checks)', () => {
     // Contract update Task 200: HC-11 (backend CLI present, D-272/D-277) joined —
     // count + order extended, intent preserved.
     // Contract update Task 210: HC-12 (deletion propagation, D-308) joined.
-    it('emits exactly 12 checks with id HC-1..HC-12 in order', async () => {
+    // Contract update Task 248: HC-13 (stray-tier backstop, D-389/D-394) joined.
+    it('emits exactly 13 checks with id HC-1..HC-13 in order', async () => {
       const r = await runDoctor({ projectRoot, userDir });
       expect(r.action).toBe('completed');
-      expect(r.checks.length).toBe(12);
+      expect(r.checks.length).toBe(13);
       const ids = r.checks.map((c) => c.id);
       expect(ids).toEqual([
-        'HC-1', 'HC-2', 'HC-3', 'HC-4', 'HC-5', 'HC-6', 'HC-7', 'HC-8', 'HC-9', 'HC-10', 'HC-11', 'HC-12',
+        'HC-1', 'HC-2', 'HC-3', 'HC-4', 'HC-5', 'HC-6', 'HC-7', 'HC-8', 'HC-9', 'HC-10', 'HC-11', 'HC-12', 'HC-13',
       ]);
-      // Every check has the canonical shape
+      // Every check has the canonical shape. `warn` joined the status enum in
+      // Task 245 (advisory: repair shown, exit code untouched) and HC-13 uses it.
       for (const c of r.checks) {
         expect(c).toHaveProperty('id');
         expect(c).toHaveProperty('name');
         expect(c).toHaveProperty('status');
         expect(c).toHaveProperty('message');
-        expect(['pass', 'fail', 'skip']).toContain(c.status);
+        expect(['pass', 'warn', 'fail', 'skip']).toContain(c.status);
       }
     });
   });

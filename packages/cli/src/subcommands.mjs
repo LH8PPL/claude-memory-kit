@@ -14,6 +14,7 @@
 // asserts exactly what's exported here, so coverage stays automatic.
 
 import { install as installAction, initUserTier as initUserTierAction } from './install.mjs';
+import { formatRecoveryReport } from './memory-recovery.mjs';
 import { installAgent, uninstallAgent } from './install-agent.mjs';
 import { installKiro, uninstallKiro } from './install-kiro.mjs';
 import { getAgentProfile, listAgentProfiles } from './agent-profiles.mjs';
@@ -471,6 +472,11 @@ export async function runInstall(options /* , command */) {
     );
   }
 
+  // Task 248: the auto-recovery report. Silent unless this run actually
+  // recovered/repaired something (formatRecoveryReport owns that rule), so a
+  // re-install over an already-recovered husk prints nothing.
+  for (const line of formatRecoveryReport(result.recovery)) log(line);
+
   if (result.claudeMd.action === 'downgrade-blocked') {
     logError(
       `  warning: CLAUDE.md already has a newer kit block (v${result.claudeMd.oldVersion}). ` +
@@ -541,6 +547,11 @@ async function runInstallForAgent({ ide, options, log, logError }) {
   });
 
   const projectName = basename(scaffold.projectRoot);
+
+  // Task 248: the auto-recovery report, for the --ide agents too (the recovery
+  // runs inside installAction, so every agent path gets it). Rendered here —
+  // once — rather than in each agent branch's several return paths.
+  for (const line of formatRecoveryReport(scaffold.recovery)) log(line);
 
   // 2) wire the agent's surfaces. Kiro has its OWN orchestrator (D-182): five
   //    surfaces (MCP + steering + skills + IDE hooks + the CLI agent-config),

@@ -2297,6 +2297,32 @@ The install paths above MUST inject the kit's CLAUDE.md content inside an idempo
 
 **Why this pattern**: matches `direnv`/`asdf`/`fzf`/`nvm` shell-init conventions. Lets users safely re-run `cmk install` to refresh the kit without losing their own CLAUDE.md edits. Per Kiro's spec convergence on installer idempotency.
 
+### 13.2 Install-time memory RECOVERY — stray tiers + malformed fact files (Task 248, v0.6.3)
+
+`cmk install` — including every re-install / upgrade run — carries a **recovery pass** that repairs pre-existing damage two earlier bugs left on disk. It is deliberately part of the INSTALL FLOW, not a `doctor` check: the fix has to happen without the user running anything (the D-169 automatic-path criterion), and `doctor` is a command users don't run (U-U5PPSG7Y). The user's framing when the original doctor-only entry was reframed (P-3PWCGWZH): *"doctor should only be part of the fix, not the actual fix."* HC-13 (§14; full row in [HEALTH-CHECKS.md](../HEALTH-CHECKS.md)) is that part — an **advisory WARN, never a FAIL** — the backstop for a stray arriving by some other route, and the standing reminder for the husk that remains.
+
+Implementation: [`packages/cli/src/memory-recovery.mjs`](../packages/cli/src/memory-recovery.mjs), one public boundary per concern (`scanStrayTiers` for the detection HC-13 shares, `recoverMemory` for the pass, `formatRecoveryReport` for the rendering).
+
+**Class 1 — orphaned tiers (D-389).** Before v0.6.2, the capture-hook bins passed a bare `process.cwd()` as `projectRoot`, so an agent whose cwd was a SUBDIRECTORY forked a fresh, unread `context/` tier there (this repo accrued two, holding 6 stranded facts). Task 246 fixed the source; those tiers are now frozen and safe, but invisible.
+
+- **Scan.** A pruned walk below the project root, bounded at **`MAX_SCAN_DEPTH = 4`** directory levels. A stray tier is created at the agent's cwd, and the realistic deep cwd is a monorepo package or one level inside it (`packages/cli/src` = 3); 4 gives a level of headroom. The walk skips `node_modules/`, every dot-directory, and the usual build/vendor/template trees, so a run is a handful of `readdir` calls — cheap enough for every install AND every `doctor`.
+- **Discriminator.** A candidate counts as a REAL stray only when it holds **live state** — a fact file, an INDEX.md that lists entries, a non-empty `sessions/now.md`, or another populated surface. A `template/`-shaped scaffold has none of these and is never touched.
+- **Relocation is FAITHFUL (P-9W7XDMCA).** Fact files are copied **byte-identically**: `id` and `created_at` survive exactly. Re-capturing the content instead would re-date history and re-key the content-addressed id — a different fact wearing the same words.
+- **Collision-safe.** A destination filename that already exists, or a fact id already present anywhere in the root tier — live, `archive/tombstones/`, or `archive/superseded/` — is SKIPPED and reported. Never overwrite, never dedupe-by-rewrite. The archive half is load-bearing: copying a stray twin of a tombstone back into `memory/` would silently **resurrect a forget**.
+- **Non-fact surfaces are NOT merged.** `MEMORY.md` bullets, session logs, transcripts and queue entries are COUNTED in the report and left in place for the user to review — a scratchpad merge is a content decision, not a relocation.
+- **The kit never deletes.** The husk is left exactly as found and a **platform-correct** delete hint (`platform-commands.mjs`) is printed. Deleting a memory path is the user's step, always (ADR-0018, D-192/D-193).
+- **Idempotent + quiet.** Because recovery COPIES, a second run finds every fact already at root and collision-skips it. The report prints only what the run ACTIONED, so a re-install over an already-recovered husk says nothing at all — the standing reminder is HC-13's job, not install's.
+
+**Class 2 — malformed / id-less fact files (D-394).** `index-rebuild` skips a fact file whose frontmatter has no valid `id` ("invalid or missing id") **without checkpointing it**, so the file is re-read and re-skipped on every boot — a quiet per-read cost and a fact invisible to recall. The same pass fixes it, over the root tiers and over each stray's files on their way out:
+
+- **Derivable → repaired.** The kit's ids are content-addressed (§3.1), so a missing id is recomputable from the body the file already holds: `generateId(tier, body)`, written back through the kit's own machinery. The edit is **textual, never a YAML round-trip** — an insertion after the opening `---` for a missing id, or a one-line swap that keeps the old value as `legacy_id` (so a citation of the old id still greps to the file) for an id outside the kit's alphabet. Every other byte, BOM and EOL style included, is preserved.
+- **Not derivable → QUARANTINED.** Unparseable frontmatter, or no body to hash, moves bytes-intact to **`<factDir>/archive/quarantine/`** and is reported. Never deleted, never silently dropped. It lives under `archive/` rather than a new top-level `memory/quarantine/` because `archive/tombstones/` + `archive/superseded/` are already the tier's "not a live fact, still kept" area, `template/project/memory/archive/` already scaffolds the parent, every fact walk skips subdirectories, and `redact.mjs` already walks the fact dir recursively — so a quarantined file stays inside a leak scrub's reach.
+- A stray's malformed file is repaired **on its way out** — the copy written to the root tier carries the repaired id while the husk file is left byte-untouched, because we never rewrite a tier the user is about to delete.
+
+**FAIL-OPEN is the governing constraint.** This runs on the install path, the highest-stakes code in the kit. `recoverMemory` never throws, its outcome never joins `install()`'s `errors` (so it can never set the exit code), and any failure degrades to one warning line with the install completing exactly as it would today. Zero LLM calls, zero new dependencies.
+
+**Observability (Door 5).** Every mutation appends an audit entry: `stray-tier-recovered` (with the husk path and the landing path), `fact-id-repaired` (with `extra.previousId`), `fact-quarantined`. All best-effort — the bytes are already where they belong before the log is touched.
+
 **Implements**: FR-22, FR-23, FR-24.
 
 ---
