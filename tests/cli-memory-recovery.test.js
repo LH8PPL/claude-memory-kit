@@ -43,12 +43,16 @@ import {
   scanStrayTiers,
   recoverMemory,
   formatRecoveryReport,
+  classifyFactId,
+  repairFactText,
   MAX_SCAN_DEPTH,
   QUARANTINE_DIRNAME,
 } from '../packages/cli/src/memory-recovery.mjs';
 import { install } from '../packages/cli/src/install.mjs';
 import { runDoctor } from '../packages/cli/src/doctor.mjs';
 import { removeDir } from '../packages/cli/src/platform-commands.mjs';
+import { parse } from '../packages/cli/src/frontmatter.mjs';
+import { reindex } from '../packages/cli/src/reindex.mjs';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CMK_BIN = join(REPO, 'packages', 'cli', 'bin', 'cmk.mjs');
@@ -189,7 +193,23 @@ describe('scanStrayTiers — the discriminator', () => {
     expect(r.strays).toEqual([]);
   });
 
-  it('is depth-bounded: a tier deeper than MAX_SCAN_DEPTH is not walked into', () => {
+  // BUDGET PAIR for MAX_SCAN_DEPTH (design §13.2, registered in
+  // validate-budget-pairs). The at-cap side is the one that was MISSING: the
+  // boundary was off by one, so the documented "4" really found only 3, and
+  // only the over-cap test existed to notice — which it structurally could not.
+  it('AT-CAP: a tier with exactly MAX_SCAN_DEPTH intermediate dirs IS found', () => {
+    seedRootTier();
+    const atCap = Array.from({ length: MAX_SCAN_DEPTH }, (_, i) => `d${i}`).join('/');
+    plantStray(atCap, {
+      'project_atcap.md': factText({ id: 'P-JJJJKKKK', createdAt: '2026-03-03T00:00:00Z', body: 'at cap' }),
+    });
+    const r = scanStrayTiers({ projectRoot });
+    expect(r.strays.map((s) => s.tierRoot)).toEqual([
+      join(projectRoot, ...Array.from({ length: MAX_SCAN_DEPTH }, (_, i) => `d${i}`), 'context'),
+    ]);
+  });
+
+  it('OVER-CAP: a tier one level deeper than MAX_SCAN_DEPTH is not walked into', () => {
     seedRootTier();
     const tooDeep = Array.from({ length: MAX_SCAN_DEPTH + 1 }, (_, i) => `d${i}`).join('/');
     plantStray(tooDeep, {
@@ -467,7 +487,10 @@ describe('recoverMemory — malformed fact repair (D-394)', () => {
     expect(r.repaired[0].previousId).toBe('P-RES031CG'); // validate-test-ids: ignore
     const after = readFileSync(join(rootFactDir(), 'project_resume.md'), 'utf8');
     expect(after).toContain(`id: ${expectedId}\n`);
-    expect(after).toContain('legacy_id: P-RES031CG\n'); // validate-test-ids: ignore
+    // QUOTED on write (M6) so the value round-trips as a string regardless of
+    // what the old id looked like — a numeric legacy id must not come back a number.
+    expect(after).toContain('legacy_id: "P-RES031CG"\n'); // validate-test-ids: ignore
+    expect(parse(after).frontmatter.legacy_id).toBe('P-RES031CG'); // validate-test-ids: ignore
     // every other line survives verbatim
     expect(after).toContain('created_at: 2026-06-14T23:35:00Z\n');
     expect(after.endsWith(`\n${body}\n`)).toBe(true);
@@ -539,6 +562,272 @@ describe('recoverMemory — malformed fact repair (D-394)', () => {
     const actions = auditLines().map((e) => e.action);
     expect(actions).toContain('fact-id-repaired');
     expect(actions).toContain('fact-quarantined');
+  });
+});
+
+/* ---------------------------------------------------------------- */
+/* 5b. B1 — the corrupt-then-evict class, and the universal guard    */
+/* ---------------------------------------------------------------- */
+
+describe('id repair — the universal guard (B1)', () => {
+  // The reviewer's reproduction: an `id:` line with an EMPTY value parses to
+  // null exactly like a MISSING id, so keying INSERT-vs-SWAP off the parsed
+  // value added a SECOND id line → duplicate YAML key → unparseable → written
+  // anyway → the NEXT run quarantined the mangled bytes. Corrupt, then evict.
+  it('an EMPTY id value is swapped, not duplicated — and run 2 is a clean no-op', () => {
+    seedRootTier();
+    const original =
+      '---\n' +
+      'id:\n' +
+      'type: decision\n' +
+      'title: We chose Node over Python for cron registration\n' +
+      'created_at: 2026-05-28T10:00:00Z\n' +
+      '---\n' +
+      '\nWe chose Node over Python for cron registration.\n';
+    const p = join(rootFactDir(), 'decision_node-over-python.md');
+    writeFileSync(p, original, 'utf8');
+
+    const r1 = recoverMemory({ projectRoot, userDir });
+    expect(r1.repaired).toHaveLength(1);
+    expect(r1.quarantined).toEqual([]);
+
+    const after = readFileSync(p, 'utf8');
+    // exactly ONE id line, and the file re-parses
+    expect(after.match(/^id:/gm)).toHaveLength(1);
+    const parsed = parse(after);
+    expect(parsed.parseError).toBeUndefined();
+    expect(parsed.frontmatter.id).toBe(r1.repaired[0].id);
+    expect(parsed.body).toBe(parse(original).body);
+
+    // run 2: the file is now valid, so nothing happens — no eviction
+    const r2 = recoverMemory({ projectRoot, userDir });
+    expect(r2.repaired).toEqual([]);
+    expect(r2.quarantined).toEqual([]);
+    expect(existsSync(p)).toBe(true);
+  });
+
+  it('an explicit `id: null` takes the same swap path', () => {
+    seedRootTier();
+    writeFileSync(
+      join(rootFactDir(), 'project_nullid.md'),
+      '---\nid: null\ntype: project\ntitle: T\n---\n\nthe body\n',
+      'utf8',
+    );
+    const r = recoverMemory({ projectRoot, userDir });
+    expect(r.repaired).toHaveLength(1);
+    const after = readFileSync(join(rootFactDir(), 'project_nullid.md'), 'utf8');
+    expect(after.match(/^id:/gm)).toHaveLength(1);
+    expect(parse(after).frontmatter.id).toBe(r.repaired[0].id);
+  });
+
+  // The guard's whole point: an UNANTICIPATED shape costs a quarantined
+  // ORIGINAL the user can recover, never a mangled file.
+  it('a shape the edit cannot handle safely quarantines the ORIGINAL BYTES, never a mangled intermediate', () => {
+    seedRootTier();
+    // a block-scalar id: splicing it orphans its continuation lines
+    const original = '---\nid: |\n  multi\n  line\ntype: project\ntitle: T\n---\n\nthe body text\n';
+    writeFileSync(join(rootFactDir(), 'project_blockscalar.md'), original, 'utf8');
+
+    const r = recoverMemory({ projectRoot, userDir });
+
+    expect(r.repaired).toEqual([]);
+    expect(r.quarantined).toHaveLength(1);
+    const dest = join(rootFactDir(), 'archive', QUARANTINE_DIRNAME, 'project_blockscalar.md');
+    // BYTE-IDENTICAL to what the user had — the recoverable outcome
+    expect(readFileSync(dest, 'utf8')).toBe(original);
+    expect(existsSync(join(rootFactDir(), 'project_blockscalar.md'))).toBe(false);
+  });
+
+  it('repairFactText rejects any repair that would not re-parse to the derived id', () => {
+    const text = '---\nid: |\n  multi\n  line\ntype: project\n---\n\nbody text\n';
+    const verdict = classifyFactId(text, 'P');
+    expect(verdict.kind).toBe('repairable');
+    const r = repairFactText(text, verdict);
+    expect(r.ok).toBe(false);
+    expect(r.reason).toContain('re-parse');
+  });
+
+  it('repairFactText accepts the ordinary shapes and returns text carrying the derived id', () => {
+    for (const text of [
+      '---\nid:\ntype: project\n---\n\nbody one\n',
+      '---\ntype: project\n---\n\nbody two\n',
+      '---\r\nid: not-valid\r\ntype: project\r\n---\r\n\r\nbody three\r\n',
+    ]) {
+      const verdict = classifyFactId(text, 'P');
+      const r = repairFactText(text, verdict);
+      expect(r.ok).toBe(true);
+      expect(parse(r.text).frontmatter.id).toBe(verdict.id);
+    }
+  });
+});
+
+describe('id repair — legacy_id serialization (I1 + M6)', () => {
+  it('an id containing a `$&` replacement pattern round-trips verbatim, not mangled', () => {
+    seedRootTier();
+    writeFileSync(
+      join(rootFactDir(), 'project_dollar.md'),
+      '---\nid: "$&BAD"\ntype: project\ntitle: T\n---\n\nthe body\n',
+      'utf8',
+    );
+    const r = recoverMemory({ projectRoot, userDir });
+    expect(r.repaired).toHaveLength(1);
+    const fm = parse(readFileSync(join(rootFactDir(), 'project_dollar.md'), 'utf8')).frontmatter;
+    expect(fm.id).toBe(r.repaired[0].id);
+    expect(fm.legacy_id).toBe('$&BAD');
+  });
+
+  it('a NUMERIC id round-trips as a STRING (quoted on write)', () => {
+    seedRootTier();
+    writeFileSync(
+      join(rootFactDir(), 'project_numeric.md'),
+      '---\nid: 12345\ntype: project\ntitle: T\n---\n\nthe body\n',
+      'utf8',
+    );
+    const r = recoverMemory({ projectRoot, userDir });
+    const text = readFileSync(join(rootFactDir(), 'project_numeric.md'), 'utf8');
+    expect(text).toContain('legacy_id: "12345"');
+    expect(parse(text).frontmatter.legacy_id).toBe('12345');
+    expect(typeof parse(text).frontmatter.legacy_id).toBe('string');
+    expect(r.repaired[0].previousId).toBe('12345');
+  });
+});
+
+describe('id repair — BOM (I2)', () => {
+  it('a BOM-prefixed id-less fact is repaired AND becomes visible to reindex', () => {
+    seedRootTier();
+    const body = 'A BOM-prefixed fact with no id at all.';
+    writeFileSync(
+      join(rootFactDir(), 'project_bom.md'),
+      `﻿---\ntype: project\ntitle: BOM idless\ncreated_at: 2026-06-01T00:00:00Z\n---\n\n${body}\n`,
+      'utf8',
+    );
+
+    const r = recoverMemory({ projectRoot, userDir });
+
+    expect(r.repaired).toHaveLength(1);
+    const after = readFileSync(join(rootFactDir(), 'project_bom.md'), 'utf8');
+    // the BOM is GONE — that is what makes "now indexed and recallable" true
+    expect(after.charCodeAt(0)).not.toBe(0xfeff);
+    expect(after.startsWith('---\n')).toBe(true);
+    // and the file is genuinely indexed now
+    expect(reindex({ tier: 'P', projectRoot, warn: () => {} }).factCount).toBe(1);
+    expect(readFileSync(join(rootFactDir(), 'INDEX.md'), 'utf8')).toContain(r.repaired[0].id);
+  });
+});
+
+/* ---------------------------------------------------------------- */
+/* 5c. B2 — a nested REAL project is a neighbour, not a stray        */
+/* ---------------------------------------------------------------- */
+
+describe('neighbour projects are never strays (B2)', () => {
+  function plantNeighbour(relDir, { git = false, managedBlock = false } = {}) {
+    const dir = join(projectRoot, relDir);
+    mkdirSync(join(dir, 'context', 'memory'), { recursive: true });
+    mkdirSync(join(dir, 'context', 'sessions'), { recursive: true });
+    writeFileSync(join(dir, 'context', 'sessions', 'now.md'), 'live turn\n', 'utf8');
+    writeFileSync(
+      join(dir, 'context', 'memory', 'decision_postgres.md'),
+      factText({ id: 'P-NBRNBRNB', createdAt: '2026-06-01T00:00:00Z', body: 'The other app chose Postgres.' }),
+      'utf8',
+    );
+    if (git) mkdirSync(join(dir, '.git'), { recursive: true });
+    if (managedBlock) {
+      writeFileSync(
+        join(dir, 'CLAUDE.md'),
+        '<!-- core-memory-kit:start v0.6.2 -->\n<!-- core-memory-kit:end -->\n',
+        'utf8',
+      );
+    }
+    return dir;
+  }
+
+  it('a nested project with its OWN .git is not scanned, not recovered, not reported', () => {
+    seedRootTier();
+    const nested = plantNeighbour('my-other-app', { git: true });
+
+    expect(scanStrayTiers({ projectRoot }).strays).toEqual([]);
+    const r = recoverMemory({ projectRoot, userDir });
+    expect(r.strays).toEqual([]);
+    expect(formatRecoveryReport(r)).toEqual([]);
+    // its memory stays where it belongs, and nothing was copied out
+    expect(existsSync(join(nested, 'context', 'memory', 'decision_postgres.md'))).toBe(true);
+    expect(existsSync(join(rootFactDir(), 'decision_postgres.md'))).toBe(false);
+  });
+
+  it('a nested project carrying the kit managed block (no .git) is also a neighbour', () => {
+    seedRootTier();
+    const nested = plantNeighbour('vendored-app', { managedBlock: true });
+    expect(scanStrayTiers({ projectRoot }).strays).toEqual([]);
+    const r = recoverMemory({ projectRoot, userDir });
+    expect(r.strays).toEqual([]);
+    expect(existsSync(join(nested, 'context', 'memory', 'decision_postgres.md'))).toBe(true);
+  });
+
+  it('the fat-finger case: install run from a folder of installed repos recovers NOTHING', () => {
+    seedRootTier();
+    plantNeighbour('repo-a', { git: true });
+    plantNeighbour('repo-b', { git: true, managedBlock: true });
+    plantNeighbour('repo-c', { managedBlock: true });
+
+    const r = recoverMemory({ projectRoot, userDir });
+    expect(r.strays).toEqual([]);
+    expect(formatRecoveryReport(r)).toEqual([]);
+    const facts = readdirSync(rootFactDir()).filter((n) => n.endsWith('.md') && n !== 'INDEX.md' && n !== 'MAP.md');
+    expect(facts).toEqual([]);
+  });
+
+  it('but a genuine stray in a plain subdirectory is STILL recovered', () => {
+    seedRootTier();
+    plantNeighbour('my-other-app', { git: true });
+    plantStray('packages/cli', {
+      'project_stranded.md': factText({ id: 'P-CCCCDDDD', createdAt: '2026-02-02T00:00:00Z', body: 'genuinely stray' }),
+    });
+
+    const r = recoverMemory({ projectRoot, userDir });
+    expect(r.strays).toHaveLength(1);
+    expect(r.strays[0].recovered.map((f) => f.filename)).toEqual(['project_stranded.md']);
+  });
+});
+
+/* ---------------------------------------------------------------- */
+/* 5d. M1 — the SECOND tombstone directory                           */
+/* ---------------------------------------------------------------- */
+
+describe('collision census covers the scratchpad-bullet tombstones (M1)', () => {
+  it('a bullet forgotten at root is not resurrected as a fact from a stray', () => {
+    seedRootTier();
+    // `forget` on a SCRATCHPAD BULLET writes here — one level up from the
+    // fact archive, a different directory entirely.
+    const bulletTombs = join(projectRoot, 'context', 'archive', 'tombstones');
+    mkdirSync(bulletTombs, { recursive: true });
+    writeFileSync(
+      join(bulletTombs, 'P-CCCCDDDD.md'),
+      factText({ id: 'P-CCCCDDDD', createdAt: '2026-01-01T00:00:00Z', body: 'a bullet the user forgot' }),
+      'utf8',
+    );
+    plantStray('packages/cli', {
+      'project_ghostbullet.md': factText({ id: 'P-CCCCDDDD', createdAt: '2026-02-02T00:00:00Z', body: 'the stray twin' }),
+    });
+
+    const r = recoverMemory({ projectRoot, userDir });
+    expect(r.strays[0].recovered).toEqual([]);
+    expect(r.strays[0].skipped[0].reason).toBe('id-exists');
+    expect(existsSync(join(rootFactDir(), 'project_ghostbullet.md'))).toBe(false);
+  });
+});
+
+/* ---------------------------------------------------------------- */
+/* 5e. M2 — the renderer is total                                    */
+/* ---------------------------------------------------------------- */
+
+describe('formatRecoveryReport never throws (M2)', () => {
+  it('a malformed report degrades to one note instead of throwing after a successful install', () => {
+    const broken = { action: 'completed', strays: [{ recovered: [{}], get tierRoot() { throw new Error('render boom'); } }] };
+    let lines;
+    expect(() => {
+      lines = formatRecoveryReport(broken);
+    }).not.toThrow();
+    expect(lines).toEqual([expect.stringContaining('could not be rendered')]);
   });
 });
 
