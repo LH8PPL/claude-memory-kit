@@ -1,5 +1,6 @@
 ---
-id: P-RES031CG
+id: P-QT3B3ZB7
+legacy_id: "P-RES031CG"
 type: project
 title: RESUME — v0.3.1 cut-gate near-complete; PR #184 in CI, then tag
 created_at: 2026-06-14T23:35:00Z

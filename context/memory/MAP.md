@@ -4,7 +4,7 @@
 <!-- Browse this folder as an Obsidian vault. Each [[link]] opens a fact file. -->
 <!-- How to open + the read-vs-write rule: docs/OBSIDIAN.md -->
 
-Facts: 2044
+Facts: 2051
 
 ## feedback
 
@@ -535,6 +535,7 @@ Facts: 2044
 - [[project_release-workflow-tag-timing-after-gates]] — Release Workflow: Tag Timing (After Gates)
 - [[project_connectionmanager-class-with-broadcast-p-anj3mxfk]] — ConnectionManager class with broadcast pattern for WebSocket message distributio
 - [[project_memclaw-s-oracle-free-failure-loop-reference-architecture]] — Memclaw's Oracle-Free Failure Loop (Reference Architecture)
+- [[project_p-res031cg-malformed-file-recovery-plan]] — P-RES031CG Malformed File Recovery Plan
 - [[project_md007-is-model-output-indent-not-provenance-format]] — md007-is-model-output-indent-not-provenance-format
   - related: [[project_scratchpad-provenance-format-resolved-keep-inline]], `real-markdownlint-output-on-memory-MD007-not-MD013`
 - [[project_design-assets-in-assets-directory]] — Design Assets in assets/ Directory
@@ -905,6 +906,7 @@ Facts: 2044
 - [[project_install-agent-mjs-non-global-regex-allows-duplicated-managed]] — install-agent.mjs Non-Global Regex Allows Duplicated Managed Blocks
 - [[project_cmk-disable-semantic-environment-variable]] — CMK_DISABLE_SEMANTIC Environment Variable
 - [[project_v0-3-2-scope-correction-dedup]] — v0.3.2 Scope Correction Dedup
+- [[project_d-390-multi-agent-architecture-active-configuration]] — D-390 Multi-Agent Architecture (Active Configuration)
 - [[project_advisory-acceptance-policy-dead-code-exception-class]] — Advisory Acceptance Policy — Dead-Code Exception Class
 - [[project_d-144-housekeeping-is-the-post-task-129-fams2ltw]] — D-144 (housekeeping) is the post-Task-129 step in the remaining v0.3.x queue
 - [[project_kg-guard-retest-failed-was-stale-artifact-not-fix]] — kg-guard-retest-failed-was-stale-artifact-not-fix
@@ -1004,6 +1006,7 @@ Facts: 2044
 - [[project_documentation-artifacts-and-structure]] — Documentation Artifacts and Structure
 - [[project_next-work-is-bullet-provenance-surface-a-h53642la]] — Next work is bullet-provenance surface and auto-extract classification for Plan
 - [[project_patent-tool-is-too-noisy-for-prior-art-sweeps]] — Patent Tool Is Too Noisy for Prior-Art Sweeps
+- [[project_install-path-review-checklist]] — Install-Path Review Checklist
 - [[project_notification-doctrine-non-actionable-repeating-failures]] — Notification Doctrine — Non-Actionable Repeating Failures
 - [[project_self-cleaning-marginal-contribution-shou-hadbx5hc]] — Self-cleaning/marginal-contribution should fold into learn-loop cluster (179/180
 - [[project_kit-produces-facts-not-views-the-decisions-md-gap]] — Kit Produces Facts, Not Views — The DECISIONS.md Gap
@@ -1377,6 +1380,7 @@ Facts: 2044
 - [[project_injection-passive-session-start-auto-loa-na6u7tpj]] — Injection (passive, session-start auto-load) and active recall (user-initiated s
 - [[project_consolidated-doc-validator-architecture]] — Consolidated Doc Validator Architecture
 - [[project_re-pack-verify-workflow-for-cut-gate-testing]] — Re-Pack + Verify Workflow for Cut-Gate Testing
+- [[project_preserve-legacy-id-when-creating-derived-ids]] — Preserve Legacy ID When Creating Derived IDs
 - [[project_task-165-a-root-cause-found-advanced-to-fix-lane]] — Task 165(a) Root Cause Found — Advanced to Fix Lane
 - [[project_vitest-workers-spawned-from-the-claude-code-bash-tool-inside]] — Vitest workers spawned from the Claude Code Bash tool inside VS Code can fail un
 - [[project_memory-kit-s-soft-spot-agent-choice-default-over-recall]] — Memory Kit's Soft Spot: Agent-Choice Default Over Recall
@@ -1447,6 +1451,7 @@ Facts: 2044
 - [[project_claude-memory-kit-cmk-doctor-baseline-pre-first-turn]] — Claude Memory Kit — cmk Doctor Baseline (Pre-First-Turn)
 - [[project_user-directive-do-everything-until-sessi-qc2t9yub]] — User directive — "do everything until session 2" — confirms execution of entire
 - [[project_session-1-staged-build-workflow]] — Session 1 Staged Build Workflow
+- [[project_graph-phase-complete-two-items-remain]] — Graph Phase Complete; Two Items Remain
 - [[project_research-scope-outcome-signals-in-memory-systems]] — Research Scope: Outcome Signals in Memory Systems
 - [[project_kiro-install-contains-two-independent-clients-with-separate]] — Kiro Install Contains Two Independent Clients with Separate Hook Systems
 - [[project_new-skills-system-auto-invocation-gap]] — New Skills System & Auto-Invocation Gap
@@ -1466,6 +1471,7 @@ Facts: 2044
 - [[project_github-actions-username-privacy-mask-collision]] — GitHub Actions Username Privacy-Mask Collision
 - [[project_skill-adoption-verification-standard]] — Skill Adoption Verification Standard
 - [[project_plural-citation-extraction-gap-in-corpus]] — Plural Citation Extraction Gap in Corpus
+- [[project_resume-v031-cutgate-near-complete]] — RESUME — v0.3.1 cut-gate near-complete; PR
 - [[project_confirmed-preference-for-2-button-design-qud4mmj7]] — Confirmed preference for 2-button design (richer return value) over 3-button app
 - [[project_conservative-uninstall-scope-managed-surfaces-only-never-con]] — Conservative uninstall scope — managed surfaces only, never `context/`
 - [[project_hc-10-compaction-liveness-diagnostic-dev-nice-to-have]] — HC-10 — Compaction Liveness Diagnostic (Dev Nice-to-Have)
@@ -1499,7 +1505,6 @@ Facts: 2044
 - [[project_task-notification-and-resumption-system]] — Task Notification and Resumption System
 - [[project_user-explicitly-prefers-concise-response-rdz6se7c]] — User explicitly prefers concise responses; doesn't want walls of text
 - [[project_data-loss-bug-pattern-echo-rm-laundering]] — Data-Loss Bug Pattern: echo && rm Laundering
-- [[project_resume-v031-cutgate-near-complete]] — RESUME — v0.3.1 cut-gate near-complete; PR
 - [[project_kit-skills-are-modular-thin-orchestrators-over-a-deep-cmk-su]] — kit skills are modular thin-orchestrators over a deep cmk substrate
   - related: [[project_autopilot-grant-v0-3-x-queue-2026-06-12]]
 - [[project_npm-deprecate-e422-bug-with-version-ranges]] — npm Deprecate E422 Bug with Version Ranges
@@ -1757,6 +1762,7 @@ Facts: 2044
 - [[project_kiro-cli-only-passes-env-overrides-to-re-vrj9jmx5]] — kiro-cli only passes env overrides to registry-type MCP servers, not stdio-type;
 - [[project_memory-trust-scoring-event-driven-instead-of-server-side]] — Memory Trust Scoring — Event-Driven Instead of Server-Side
 - [[project_decision-trail-preservation-rule]] — Decision-Trail Preservation Rule
+- [[project_bom-d-fact-files-are-invisible-to-scanning]] — BOM'd Fact Files Are Invisible to Scanning
 - [[project_v0-3-2-cut-gate-complete-e1-wedge-passed-ready-to-tag]] — v0.3.2 cut-gate complete E1 wedge passed ready to tag
 - [[project_mcp-server-staleness-workaround]] — MCP Server Staleness Workaround
 - [[project_v0-5-2-release-scope-and-workflow]] — v0.5.2 Release Scope and Workflow
@@ -2024,6 +2030,7 @@ Facts: 2044
 - [[project_ok-with-compact-context-summaries-during-zmutvs4a]] — OK with compact context summaries during mid-session resumptions on long task ru
 - [[project_sonarcloud-d-341-known-server-side-crash]] — SonarCloud D-341: Known Server-Side Crash
 - [[project_npm-package-contents-and-documentation-strategy]] — NPM Package Contents and Documentation Strategy
+- [[project_js-yaml-can-silently-rewrite-yaml-formatting]] — js-yaml Can Silently Rewrite YAML Formatting
 - [[project_embedder-ladder-policy]] — embedder ladder policy
 - [[project_concurrency-flake-root-cause-real-timeout-under-load]] — Concurrency Flake Root Cause: Real Timeout Under Load
 - [[project_pr-315-security-gate-defects-task-237]] — PR #315 Security Gate Defects (Task 237)
@@ -2341,7 +2348,7 @@ Facts: 2044
 - **Task-225** ← [[project_post-compact-session-entry-point]], [[project_session-state-2026-07-18-pre-compact-checkpoint-v0-5-5-publi]], [[project_v0-5-5-published-2026-07-18-lh8ppl-core-memory-kit-0-5-5-on]]
 - **Task-23** ← [[project_memory-learn-loop-as-converged-system]], [[project_u-mem-describes-one-unified-loop-not-nine-separate-features]]
 - **Task-230** ← [[project_d-343-disposition-cmk-install-scaffold-refresh-bug-task-230]], [[project_memory-kit-s-soft-spot-agent-choice-default-over-recall]], [[project_stress-tests-skipped-for-pure-file-mutation-in-process-ops]]
-- **Task-232** ← [[project_graph-database-rejected-empirical-basis-and-defer-gate]], [[project_task-232-rebuild-edge-table-from-markdown]], [[project_task-256-design-constraints-and-incorporated-rules]], [[project_two-pass-review-discipline-validated-on-critical-bugs]]
+- **Task-232** ← [[project_graph-database-rejected-empirical-basis-and-defer-gate]], [[project_p-res031cg-malformed-file-recovery-plan]], [[project_task-232-rebuild-edge-table-from-markdown]], [[project_task-256-design-constraints-and-incorporated-rules]], [[project_two-pass-review-discipline-validated-on-critical-bugs]]
 - **Task-233** ← [[project_fts5-parser-crash-history-and-current-injection-surface]], [[project_hot-path-hook-latency-anti-pattern]], [[project_kit-identity-a-harness-over-the-harness-the-user-s-framing]], [[project_mcp-tools-under-used-when-harness-defers-them-task-233-fire]], [[project_octopoda-loop-detection-code-verified-findings]], [[project_privacy-sanitization-pattern-for-all-prompt-handling]], [[project_relevance-floor-calibration-for-fts5-backends]], [[project_relevance-threshold-calibration-octopoda-s-0-80-0-45-lesson]], [[project_task-232-rebuild-edge-table-from-markdown]], [[project_task-233-now-dispatched-to-opus-implemen-rluyazd2]], [[project_task-255-design-grill-questions-queued]], [[project_three-tier-agent-split-trial-on-task-233]], [[project_three-tier-model-delegation-pattern]], [[project_two-pass-review-discipline-validated-on-critical-bugs]], [[project_vitest-workers-spawned-from-the-claude-code-bash-tool-inside]]
 - **Task-234** ← [[project_stale-replay-guard-partial-coverage-identified]], [[project_v0-6-0-release-contents]]
 - **Task-235** ← [[feedback_a-background-job-s-completion-notification-cannot-survive-th]], [[project_self-review-finding-now-md-unbounded-read]], [[project_session-state-at-pause-2026-07-20-pre-compact-v0-6-0-shipped]], [[project_task-236-counts-family-validation]], [[project_v0-6-0-installed-precompact-task-235-waiting-for-release]]
@@ -2352,7 +2359,7 @@ Facts: 2044
 - **Task-242** ← [[feedback_a-health-check-behind-a-command-does-not-surface-a-silent-fa]], [[feedback_when-an-automatic-path-fails-build-a-fallback-mechanic-that]], [[project_code-audit-baseline-memory-tiers-clean]], [[project_task-242-solution-self-heal-first-determ-5tpjf3rj]], [[project_v0-6-0-release-contents]]
 - **Task-243** ← [[project_task-243-2026-07-21-superseded-the-bench-storage-allowlist-c]], [[project_task-243-better-sqlite3-v12-v13-must-not-nlabq5kp]]
 - **Task-246** ← [[project_doc-archiving-task-recommendation-post-task-246]], [[project_misplaced-memory-files-recovered-to-root-context]], [[project_task-246-orphaned-tier-recovery-7-strand-day9b4qa]], [[project_task-246-phase-2-redirect-capture-hook-bins-to-root-resolver]], [[project_task-248-reframed-the-user-s-design-call-2026-07-22-the-pre]]
-- **Task-248** ← [[project_doctor-as-a-skill-design-2026-07-22-discussion-prior-art-ver]], [[project_doctor-health-nudge-corrected-design-2026-07-22-supersedes-t]], [[project_failure-driven-whisper-skill-architecture-with-required-amen]], [[project_orphaned-memory-tier-bug-246-and-recovery-strategy]], [[project_post-fix-integration-workflow]], [[project_rejects-doctor-based-detection-for-task-mubq32a9]], [[project_task-248-reframed-the-user-s-design-call-2026-07-22-the-pre]], [[project_v0-6-2-release-approved-before-auto-recovery]], [[project_v0-6-2-release-staging-task-248-timing-decision]]
+- **Task-248** ← [[project_bom-d-fact-files-are-invisible-to-scanning]], [[project_doctor-as-a-skill-design-2026-07-22-discussion-prior-art-ver]], [[project_doctor-health-nudge-corrected-design-2026-07-22-supersedes-t]], [[project_failure-driven-whisper-skill-architecture-with-required-amen]], [[project_orphaned-memory-tier-bug-246-and-recovery-strategy]], [[project_p-res031cg-malformed-file-recovery-plan]], [[project_post-fix-integration-workflow]], [[project_rejects-doctor-based-detection-for-task-mubq32a9]], [[project_task-248-reframed-the-user-s-design-call-2026-07-22-the-pre]], [[project_v0-6-2-release-approved-before-auto-recovery]], [[project_v0-6-2-release-staging-task-248-timing-decision]]
 - **Task-250** ← [[project_failure-driven-whisper-skill-architecture-with-required-amen]], [[project_kit-missing-tool-call-log-for-full-loop-detection-coverage]], [[project_loop-detection-research-feeds-task-250-and-task-212]], [[project_octopoda-loop-detection-code-verified-findings]], [[project_task-250-failure-driven-nudge-implementation]], [[reference_octopoda-os-loop-detection-and-observability-for-ai-agents]]
 - **Task-254** ← [[project_fact-file-write-constraint-forward-only-no-mass-rewrites]], [[project_task-256-design-constraints-and-incorporated-rules]], [[project_two-phase-viewer-rollout-obsidian-v0-6-3-kit-viewer-v0-6-4]], [[project_ui-viewer-design-awaits-v0-4-scope-decision]]
 - **Task-255** ← [[project_post-fix-integration-workflow]], [[project_task-255-design-grill-questions-queued]], [[project_task-255-viewer-design-grill]], [[project_two-phase-viewer-rollout-obsidian-v0-6-3-kit-viewer-v0-6-4]]
