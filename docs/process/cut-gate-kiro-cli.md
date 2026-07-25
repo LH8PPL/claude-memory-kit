@@ -112,7 +112,7 @@ cmk doctor
 
 - [ ] **★ KCG1 — install prints the Kiro success summary.** The `cmk install --ide kiro` output names the wired surfaces (mcp + steering + agents-md + skills + ide-hooks + trusted-commands + **cli-agent**). **PASS:** `cli-agent` is in the list. **FAIL:** the CLI agent leg didn't wire.
 
-- [ ] **★ KCG1b — `cmk doctor` clean (agent-aware HC-1).** `cmk doctor` → **0 fail** on a fresh install — **11 checks now** (HC-1..HC-12; HC-9 version-drift, HC-10 compaction-liveness, **HC-11 backend-CLI-present v0.4.5** — PASS when `kiro-cli` is on PATH, the effective backend for a kiro-cli install; see ★ KCG-BK1, §7b). HC-1 must PASS naming the CLI-agent surface (`~/.kiro/agents/cmk.json`) — not false-fail on a missing `.claude/settings.json`.
+- [ ] **★ KCG1b — `cmk doctor` clean (agent-aware HC-1).** `cmk doctor` → **0 fail** on a fresh install — **13 checks now** (HC-1..HC-13; HC-9 version-drift, HC-10 compaction-liveness, **HC-11 backend-CLI-present v0.4.5** — PASS when `kiro-cli` is on PATH, the effective backend for a kiro-cli install; see ★ KCG-BK1, §7b). HC-1 must PASS naming the CLI-agent surface (`~/.kiro/agents/cmk.json`) — not false-fail on a missing `.claude/settings.json`.
 
 - [ ] **★ KCG2 — the agent config landed in the RIGHT place (D-198).** This is THE check D-198 exists for.
       ```powershell
@@ -314,7 +314,7 @@ The `cmk` CLI is agent-agnostic — run **F-1 … F-19** (recall/index, persona,
 
 On a kiro-cli install, the automatic engine runs through **`kiro-cli chat`** — the SAME binary this gate already drives, now doing double duty as the LLM backend (off the Kiro/Google login, no API key — live-verified D-278). KCG-BK4 is directly runnable here.
 
-- [ ] **★ KCG-BK1 — `cmk doctor` HC-11 (kiro-cli present).** On a fresh install, `cmk doctor` reports **11** checks and HC-11 = PASS naming `kiro-cli`. FAIL path (scripted `backendCliProbe` returning `present:false`) → HC-11 FAIL with the honest "automatic features degraded, file-only still works" message. **PASS:** 11 checks; HC-11 PASS/FAIL on kiro-cli presence. **FAIL:** 10 checks or a silent SKIP (the D-270 bug).
+- [ ] **★ KCG-BK1 — `cmk doctor` HC-11 (kiro-cli present).** On a fresh install, `cmk doctor` reports **13** checks and HC-11 = PASS naming `kiro-cli`. FAIL path (scripted `backendCliProbe` returning `present:false`) → HC-11 FAIL with the honest "automatic features degraded, file-only still works" message. **PASS:** 13 checks; HC-11 PASS/FAIL on kiro-cli presence. **FAIL:** a wrong check count or a silent SKIP (the D-270 bug).
 - [ ] **★ KCG-BK2 — `cmk install --backend <agent>` (split-brain + fail-fast).** `cmk install --ide kiro --backend claude` → `context/settings.json` carries `backend.agent: claude`, install warns about the EFFECTIVE backend (`claude`), not kiro-cli. `cmk install --ide kiro --backend banana` → exit 2 + supported list, no `context/` scaffolded (fail-fast). **PASS/FAIL** as canonical §4f BK2.
 - [ ] **★ KCG-BK3 — `cmk config show`.** In the `--backend claude` project: names installed-for `kiro`, active backend `claude` (override), CLI presence, semantic mode; exits **0**.
 - [ ] **★ KCG-BK4 — live kiro-cli spawn (runnable HERE).** Default kiro-cli install (backend = kiro-cli), seed a session buffer, `cmk roll --scope now` → a real Markdown summary lands in `sessions/`, produced by `kiro-cli chat` (prompt on stdin, D-280). **Live-verified on the dev machine (D-278): 0.01 credits, ~1–7s, no refusal.** **FAIL:** refusal / empty / timeout.

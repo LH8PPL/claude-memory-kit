@@ -51,6 +51,7 @@ import { injectClaudeMdBlock, findManagedBlock, compareVersions } from './claude
 import { checkKitBinding, npmSupportsAllowScripts } from './native-binding.mjs';
 import { writeKitHooks, writeKitMcpServer } from './settings-hooks.mjs';
 import { appendAuditEntry, nowIso, REASON_CODES } from './audit-log.mjs';
+import { recoverMemory } from './memory-recovery.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const CLI_SRC_DIR = dirname(__filename);
@@ -682,7 +683,31 @@ export async function install(options = {}) {
   const bindingProbe = options.bindingProbe ?? checkKitBinding;
   const nativeBinding = bindingProbe();
 
-  return { projectRoot, userTier, created, skipped, refreshed, gitignore, gitattributes, claudeMd, hooks, mcpServer, semantic, nativeBinding, errors };
+  // Task 248 — AUTO-RECOVERY of pre-existing orphaned memory tiers + malformed
+  // fact files (D-389 / D-394). Runs AFTER the tiers are scaffolded (the root
+  // `context/memory/` must exist to relocate into) and is deliberately the LAST
+  // filesystem step, so a hiccup here can't leave a half-scaffolded project.
+  //
+  // FAIL-OPEN by contract: `recoverMemory` never throws, and its outcome NEVER
+  // joins `errors` — a failed recovery must not set the install's exit code.
+  // The result rides the return value so the CLI can print the report; the
+  // `_recoverFn` seam is test-only.
+  const runRecovery = options._recoverFn ?? recoverMemory;
+  let recovery;
+  try {
+    recovery = runRecovery({ projectRoot, userDir: userTier });
+  } catch (err) {
+    recovery = {
+      action: 'error',
+      strays: [],
+      repaired: [],
+      quarantined: [],
+      reindexed: [],
+      errors: [`memory recovery: ${err?.message ?? err}`],
+    };
+  }
+
+  return { projectRoot, userTier, created, skipped, refreshed, gitignore, gitattributes, claudeMd, hooks, mcpServer, semantic, nativeBinding, recovery, errors };
 }
 
 /**

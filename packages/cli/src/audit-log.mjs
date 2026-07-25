@@ -61,6 +61,9 @@ export const REASON_CODES = Object.freeze({
   PERSONA_SECTION_CREATED: 'persona-section-created', // auto-persona: a new `## ` section was created on a user-tier scratchpad to land a candidate (Task 64 / F2)
   PERSONA_IMPORTED: 'persona-imported', // persona-portability: a user-tier persona bundle was imported onto this machine (Task 72)
   POISON_GUARD_REJECTED: 'poison-guard-rejected', // Task 216 (D-320): a durable write was dropped by screenBeforeCommittedWrite at a site with no project-scoped poison-guard.log (e.g. the user-tier persona-review queue) — the redacted audit entry is the observability trail so the drop is never silent
+  STRAY_TIER_RECOVERED: 'stray-tier-recovered', // memory-recovery (Task 248): a fact file stranded in a pre-246 orphaned `context/` tier was copied BYTE-IDENTICALLY into the root tier. `paths.before` is the husk copy (never deleted — ADR-0018/D-193), `paths.after` the recovered file
+  FACT_ID_REPAIRED: 'fact-id-repaired', // memory-recovery (Task 248 / D-394): a fact file whose frontmatter had a missing or non-ID_PATTERN id got its content-addressed id written back, ending the per-boot re-scan that index-rebuild's un-checkpointed skip caused. `extra.previousId` carries the old value (also kept in-file as `legacy_id`)
+  FACT_QUARANTINED: 'fact-quarantined', // memory-recovery (Task 248 / D-394): a fact file whose id was NOT derivable (unparseable frontmatter / no body to hash) was MOVED bytes-intact to memory/archive/quarantine/. Never deleted, never silently dropped; the synthetic id is used because the file by definition has none
 });
 
 /**

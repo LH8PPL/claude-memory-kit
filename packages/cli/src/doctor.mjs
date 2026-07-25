@@ -1,4 +1,4 @@
-// `cmk doctor` — health checks HC-1..HC-9 (Task 37, T-031; memsearch HC-1/HC-7 removed in Task 120; HC-8 native bindings added in Task 141a; HC-9 version-drift/update-path added in Task 162 / D-176).
+// `cmk doctor` — health checks HC-1..HC-13 (Task 37, T-031; memsearch HC-1/HC-7 removed in Task 120; HC-8 native bindings added in Task 141a; HC-9 version-drift/update-path added in Task 162 / D-176; HC-13 stray-tier backstop added in Task 248).
 //
 // Public boundary:
 //   async runDoctor({projectRoot, userDir, now, promptUser?, ...overrides})
@@ -52,6 +52,7 @@ import { checkVersionDrift, checkPublishedLatest } from './version-drift.mjs';
 import { findManagedBlock, compareVersions } from './claude-md.mjs';
 import { getKitVersion, kitOwnedScaffoldDrift } from './install.mjs';
 import { checkDeletionPropagation } from './deletion-propagation.mjs';
+import { scanStrayTiers } from './memory-recovery.mjs';
 import { harnessSlugForPath } from './transcripts.mjs';
 import { hasOurCliAgent } from './kiro-cli-agent.mjs';
 import { stripBom } from './read-json.mjs';
@@ -936,6 +937,52 @@ function hc12DeletionPropagation({ projectRoot }) {
   };
 }
 
+// --- HC-13: no stray memory tiers below the project root (Task 248) ----
+// The SECONDARY backstop, never the fix. `cmk install` already auto-recovers a
+// stray tier's facts (memory-recovery.mjs) — that is the automatic path, and it
+// is where the problem is actually solved (the user's call, P-3PWCGWZH:
+// "doctor should only be part of the fix, not the actual fix"). This check
+// exists for a stray that appears by SOME OTHER route later, and for the husk
+// that remains after a recovery: install stays quiet on a re-run (it reports
+// only what it actioned), so the standing "this folder can be deleted" reminder
+// lives here.
+//
+// ADVISORY: `warn`, never `fail`. Nothing is broken — a stray tier is frozen,
+// safe, and its facts are already recovered; the user just has a folder to
+// delete. A `fail` would put a non-zero exit code on a healthy project.
+function hc13StrayTiers({ projectRoot }) {
+  const name = 'No stray memory tiers below the project root';
+  let r;
+  try {
+    r = scanStrayTiers({ projectRoot });
+  } catch (err) {
+    // A SKIP, not a pass: an unrun check must never read as "verified"
+    // (the AOEP negative-invariant HC-12 follows).
+    return { id: 'HC-13', name, status: 'skip', message: `stray scan unavailable: ${err?.message ?? err}` };
+  }
+  if (r.strays.length === 0) {
+    return {
+      id: 'HC-13',
+      name,
+      status: 'pass',
+      message: 'no orphaned context/ tiers found below the project root',
+    };
+  }
+  const detail = r.strays.slice(0, 5).map((s) => s.tierRoot).join('; ');
+  const more = r.strays.length > 5 ? ` (+${r.strays.length - 5} more)` : '';
+  return {
+    id: 'HC-13',
+    name,
+    status: 'warn',
+    message:
+      `${r.strays.length} stray memory tier(s) below the project root: ${detail}${more} — ` +
+      `a pre-v0.6.2 capture bug (D-389) could fork an unread context/ tier at a subdirectory cwd. ` +
+      `Run \`cmk install\` to relocate any facts still stranded there into this project's tier ` +
+      `(ids + dates preserved); the folder itself is yours to delete — the kit never deletes a memory path.`,
+    recoveryCommand: 'cmk install',
+  };
+}
+
 export async function runDoctor({
   projectRoot,
   userDir,
@@ -1014,10 +1061,11 @@ export async function runDoctor({
   const c10 = hc10CompactionLiveness({ projectRoot, now: ts });
   const c11 = hc11BackendCli({ projectRoot, userDir: resolvedUserDir, backendCliProbe });
   const c12 = hc12DeletionPropagation({ projectRoot });
+  const c13 = hc13StrayTiers({ projectRoot });
 
   return {
     action: 'completed',
-    checks: [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12],
+    checks: [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13],
     duration_ms: Date.now() - t0,
   };
 }

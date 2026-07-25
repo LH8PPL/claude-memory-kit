@@ -117,6 +117,16 @@ export const BUDGET_REGISTRY = [
       'both lines are RESERVED out of the caller cap (snapshot ≤ capBytes pinned by the tightened cap-composition tests incl. the three-reserve joint test in cli-inject-context.test.js); the template-sizing edge (Σ legal caps + reserves > the snapshot cap → graceful section-drop with a truncation.log event) is the DOCUMENTED accepted trade-off in §7.1.3 with a named re-open trigger',
   },
   {
+    name: 'stray-tier scan depth (MAX_SCAN_DEPTH=4 — the maximum INTERMEDIATE directories between the project root and a recoverable stray tier; Task 248)',
+    sourceRef: 'design §13.2 / Task 248 (D-389/D-394)',
+    testFile: 'tests/cli-memory-recovery.test.js',
+    // at-cap: a tier with exactly MAX_SCAN_DEPTH intermediate dirs IS found —
+    // the side that was missing, and the side an off-by-one silently ate;
+    // over-cap: one level deeper is not walked into.
+    atCapPattern: 'AT-CAP: a tier with exactly MAX_SCAN_DEPTH',
+    overCapPattern: 'OVER-CAP: a tier one level deeper',
+  },
+  {
     name: 'recall-hint bm25 score floor (HINT_BM25_SCORE_FLOOR — the top hit must clear the floor to inject index lines; below → static hint; Task 233)',
     sourceRef: 'design §20.8 / ADR-0024 (the octopoda-OS conservative-floor calibration)',
     testFile: 'tests/cli-capture-prompt.test.js',

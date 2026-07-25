@@ -56,6 +56,15 @@ Legend: ✓ intent matches code · ✗ gap (design says X, code does Y) · ~ par
 
 The capture edge has a second, degraded path. When automatic extraction fails for **any** reason, a deterministic no-LLM pass over the user's turn produces candidates instead of the turn being dropped. It joins the same lifecycle at the **routing** step rather than bypassing it: medium-trust candidates go to `queues/review.md` exactly as medium-trust LLM candidates do, and every write still passes Poison_Guard. The only lifecycle difference is provenance — these carry `write: auto-extract-fallback`, so a later curation pass (and the learn-loop) can tell a heuristic capture from a real extraction. Content is constrained to mission context; kit-operational noise is filtered before any write. See design §6.4b.
 
+## Repair path: memory that already left the flow (Task 248)
+
+Two edges of this map could, before v0.6.3, drop a fact **outside** the lifecycle entirely — not lost, but unreachable by every downstream stage:
+
+- **Write → wrong tier.** Pre-v0.6.2 the capture hooks resolved the project root as the agent's raw cwd, so a subdirectory cwd forked a [[Stray tier]] and the fact entered a `context/` nobody reads. The write succeeded; every later edge (index → recall) ran against a different tier. Task 246 closed the fork; **Task 248 pulls the stranded facts back onto the flow** — `cmk install` copies them into the root tier byte-identically (ids + `created_at` preserved), collision-skipping anything already here (including tombstones, so a `forget` is never undone), then reindexes. The husk stays; the user deletes it.
+- **Fact file → index.** A fact whose frontmatter has no valid id is skipped by `index-rebuild` **without a checkpoint**, so it is re-read and re-skipped on every boot — invisible to recall forever, at a recurring cost (D-394). Task 248 repairs it in the same pass: the id is recomputed from the body (ids are content-addressed, so this is deterministic), or the file is quarantined bytes-intact if it can't be.
+
+Both are ✓ **repair**, not new lifecycle stages: they re-enter the fact at the `reindex` edge, and neither ever deletes. See design §13.2.
+
 ## Edge-by-edge: intent vs. code
 
 | # | Edge | Trust gate | Cap | Dedup | On evict/overflow | Intent vs code |
