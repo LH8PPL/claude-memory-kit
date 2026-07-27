@@ -15597,3 +15597,72 @@ _(retracted 2026-07-22)_
 
 **When:** 2026-07-27 · **Fact:** `P-5G3JD4V2`
 **Why:** This prevents silent divergence and makes the parity harness a tool for correctness, not just documentation.
+
+<!-- decision:P-XXGTVH6K -->
+
+## Opened entire repo root as Obsidian vault to visually explore memory system
+
+**When:** 2026-07-23 · **Fact:** `P-XXGTVH6K`
+
+<!-- decision:P-RXDC53YR -->
+
+## Git Fixture Byte Normalization Verification
+
+**When:** 2026-07-27 · **Fact:** `P-RXDC53YR`
+**Why:** Fixture integrity is critical for reproducible tests; git handling can corrupt carefully-formatted or binary fixture data
+
+<!-- decision:P-BUABTDRA -->
+
+## Invisible Character Hazard in Documentation
+
+**When:** 2026-07-27 · **Fact:** `P-BUABTDRA`
+**Why:** Invisible characters cause subtle issues and are invisible to visual review. Byte-scanning catches them reliably.
+
+<!-- decision:P-DUQRU7SK -->
+
+## One-Strip-Everywhere Implementation Pattern
+
+**When:** 2026-07-27 · **Fact:** `P-DUQRU7SK`
+**Why:** Visibility of problems is better than silent failure; single-strip avoids losing problem files and enables proper error reporting
+
+<!-- decision:P-TEMFAAJR -->
+
+## Task 257 Data-Durability Commitments
+
+**When:** 2026-07-27 · **Fact:** `P-TEMFAAJR`
+**Why:** Captures specific contractual commitments and durability guarantees this fix establishes.
+
+<!-- decision:P-2LSaPQNE -->
+
+## v0.6.3 Release Plan & Task Queue
+
+**When:** 2026-07-27 · **Fact:** `P-2LSaPQNE`
+**Why:** Provides release structure and task sequencing for the current development cycle.
+
+<!-- decision:P-2DEH535R -->
+
+## Verification Protocol
+
+**When:** 2026-07-27 · **Fact:** `P-2DEH535R`
+**Why:** Documents QA expectations and why independent reviews often catch different issues.
+
+<!-- decision:P-BKXE3ECQ -->
+
+## Memory Flush Consistency Unit
+
+**When:** 2026-07-27 · **Fact:** `P-BKXE3ECQ`
+**Why:** Prior `-am` incident and today's INDEX.md half-state both show that surgical staging within `context/` breaks consistency invariants. validate-docs catches these as errors.
+
+<!-- decision:P-2K29UJKN -->
+
+## Durable-State-First Principle
+
+**When:** 2026-07-27 · **Fact:** `P-2K29UJKN`
+**Why:** Enables smooth pause/resume cycles without re-deriving state between sessions
+
+<!-- decision:P-TFZDPX6J -->
+
+## D-388 Project Discipline: Document Unreachable Code
+
+**When:** 2026-07-27 · **Fact:** `P-TFZDPX6J`
+**Why:** Applied during Task 257 coverage gate work; existing project discipline referenced as the decision principle.

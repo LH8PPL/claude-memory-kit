@@ -8,8 +8,6 @@
 
 <!-- Current work in progress. Drop bullets as work resolves. -->
 
-- (P-XXGTVH6K) Opened entire repo root as Obsidian vault to visually explore memory system
-  <!-- source: auto-extract-session, source_line: 1, sha1: 0de957bf8b076063d3aa6aed8d492eac5453d1d91e5eee97469d1c52241cc62e, write: auto-extract, trust: high, at: 2026-07-23T10:27:12Z -->
 - (P-A7AWBVRJ) Documentation pattern — features need README note + link to fuller explanation file
   <!-- source: auto-extract-session, source_line: 1, sha1: f433b66230072894af438b9ef7927029bd77552fcbb1c9352065843c0543d8aa, write: auto-extract, trust: high, at: 2026-07-23T14:07:09Z -->
 - (P-P4aEK7EX) Graph feature purpose is memory **visualization and understanding** to improve AI experience, not DB replacement
@@ -20,6 +18,8 @@
   <!-- source: auto-extract-session, source_line: 1, sha1: d154fb78a2c7fdfac18cbfc3173b29b0e6830dee7615ec88e5f9365073536c8f, write: auto-extract, trust: high, at: 2026-07-23T14:09:07Z -->
 - (P-4JEDA2EX) Kit's differentiator from Skills: manages entire context lifecycle (creation, trust levels, screening, aging), not just on-demand recall like Skills does
   <!-- source: review-promote, source_line: 1, sha1: 9c842dd45d4859ea9dee514b3a6593e408ea3ee96ae128fca39f5f6dc2fd520e, write: user-explicit, trust: high, at: 2026-07-23T20:00:03Z -->
+- (P-LWRPVYQF) Prefers to pause work at safe checkpoints ("pause when you can"), not mid-flight
+  <!-- source: auto-extract-session, source_line: 1, sha1: 113b31f7f41e77961da37bdc7523fb399587298cbac8357a6e8089c550e1c792, write: auto-extract, trust: high, at: 2026-07-27T09:06:42Z -->
 
 ## Environment Notes
 
