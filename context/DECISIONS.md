@@ -12704,6 +12704,7 @@ _(retracted 2026-07-13)_
 <!-- decision:P-6EVUE55F -->
 
 ## Task 208 — Interactive Live-Gates Pending Token Refresh
+_(retracted 2026-07-27)_
 
 **When:** 2026-07-13 · **Fact:** `P-6EVUE55F`
 **Why:** Blocks final release sign-off but not code freeze.
@@ -14062,6 +14063,7 @@ _(retracted 2026-07-18)_
 <!-- decision:P-ZHL6MRCS -->
 
 ## Task 235 Live Validation
+_(retracted 2026-07-27)_
 
 **When:** 2026-07-20 · **Fact:** `P-ZHL6MRCS`
 **Why:** Proves design meets performance constraints in production
@@ -15519,3 +15521,79 @@ _(retracted 2026-07-22)_
 ## RESUME — v0.3.1 cut-gate near-complete; PR
 
 **When:** 2026-06-14 · **Fact:** `P-RES031CG`
+
+<!-- decision:P-QT3B3ZB7 -->
+
+## RESUME — v0.3.1 cut-gate near-complete; PR
+
+**When:** 2026-06-14 · **Fact:** `P-QT3B3ZB7`
+
+<!-- decision:P-H7DV3JR9 -->
+
+## Install-Path Review Checklist
+
+**When:** 2026-07-25 · **Fact:** `P-H7DV3JR9`
+**Why:** Install-path code is fail-open (safety-critical); a latent bug breaks recovery at the user's site. The recovery scan can warn but never destroy, must preserve byte-identity and dates/ids, and must skip collisions rather than overwrite.
+
+<!-- decision:P-ZPEJQHPC -->
+
+## js-yaml Can Silently Rewrite YAML Formatting
+
+**When:** 2026-07-25 · **Fact:** `P-ZPEJQHPC`
+**Why:** Caught during reviewer scrutiny of id-repair implementation; reviewer must validate with hostile YAML test cases and byte-by-byte diffs to ensure the claim holds.
+
+<!-- decision:P-P2X5HVVK -->
+
+## Preserve Legacy ID When Creating Derived IDs
+
+**When:** 2026-07-25 · **Fact:** `P-P2X5HVVK`
+**Why:** Enables traceability between old and new ids; user recognizes which facts were repaired. Important for audit trails and diagnosing why a fact was re-indexed.
+
+<!-- decision:P-FZSXVBYF -->
+
+## D-390 Multi-Agent Architecture (Active Configuration)
+
+**When:** 2026-07-25 · **Fact:** `P-FZSXVBYF`
+**Why:** Independent reviewer catches bugs invisible to implementer's own test suite. Across 5 tasks (232, 233, 254, 256, 248): found runaway rebuild, privacy leak, extraction gap, install-path data corruption. Two-pass discipline prevents issues shipping.
+
+<!-- decision:P-VSaR2F3U -->
+
+## BOM'd Fact Files Are Invisible to Scanning
+
+**When:** 2026-07-25 · **Fact:** `P-VSaR2F3U`
+**Why:** Architectural blindspot that affects data recovery completeness; tracked separately to avoid scope creep on install-path fixes
+
+<!-- decision:P-APWN7UPA -->
+
+## P-RES031CG Malformed File Recovery Plan
+
+**When:** 2026-07-25 · **Fact:** `P-APWN7UPA`
+**Why:** This file has been a recurring scan burden; real install is the corrective action that Task 248 validated
+
+<!-- decision:P-RPWDP9MK -->
+
+## Recurring npm-registry Timeouts in CI Workflows
+
+**When:** 2026-07-25 · **Fact:** `P-RPWDP9MK`
+**Why:** Recurring environmental issue affecting CI reliability; impacts deployment cadence
+
+<!-- decision:P-aBK6XaJ4 -->
+
+## brainapi2 Code-Dive Assessment and Findings
+
+**When:** 2026-07-27 · **Fact:** `P-aBK6XaJ4`
+**Why:** Most credible knowledge-graph implementation in the corpus (first with real Neo4j and typed edges). Their failures show where the field is genuinely stuck. Temporal bug is a regression-test gift for Task 66. Positioning insight: high infrastructure complexity for feature parity with simpler approach.
+
+<!-- decision:P-BV4KNXE3 -->
+
+## BOM-Prefixed Files and ID Generation
+
+**When:** 2026-07-27 · **Fact:** `P-BV4KNXE3`
+**Why:** BOM handling was silently destroying data; understanding the alignment strategy and heal-on-rewrite pattern prevents regression and clarifies the reference implementation relationship.
+
+<!-- decision:P-5G3JD4V2 -->
+
+## Reference Implementation Alignment Strategy
+
+**When:** 2026-07-27 · **Fact:** `P-5G3JD4V2`
+**Why:** This prevents silent divergence and makes the parity harness a tool for correctness, not just documentation.
