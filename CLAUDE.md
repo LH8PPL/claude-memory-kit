@@ -91,9 +91,9 @@ The user is direct and tight on time. Match the energy.
 
   | Concern | Authoritative file |
   | --- | --- |
-  | Every task + sub-task + checkbox state + dependencies + paused-conditions | [`specs/tasks.md`](specs/tasks.md) |
-  | Campaign-PR queue + per-PR status + scopes + deferrals (as sub-tasks) | [`specs/tasks.md`](specs/tasks.md) (Task 23 tracker section) |
-  | Per-PR narrative + meta-lessons + retrospectives | [`docs/journey/build-log.md`](docs/journey/build-log.md) |
+  | Every task + sub-task + checkbox state + dependencies + paused-conditions | [`specs/tasks.md`](specs/tasks.md) — OPEN tasks in full + a one-line pointer per shipped task; the completed entries themselves are the frozen [`specs/tasks-archive.md`](specs/tasks-archive.md) (Task 249) |
+  | Campaign-PR queue + per-PR status + scopes + deferrals (as sub-tasks) | [`specs/tasks-archive.md`](specs/tasks-archive.md) (the Task 23 tracker section, relocated with Task 23's entry — the campaign closed 2026-05-27) |
+  | Per-PR narrative + meta-lessons + retrospectives | [`docs/journey/build-log.md`](docs/journey/build-log.md) — §10 onward; chapters §0–§9 are the frozen [`build-log-archive-pre-v0.5.md`](docs/journey/build-log-archive-pre-v0.5.md) |
   | HOW things work (architecture, schemas, validators, v0.1.x candidates §16) | [`specs/design.md`](specs/design.md) — canonical mechanism + schema as a `§N` section. **Never spin up a standalone `docs/design/` file** (violates the design.md-is-Spine kernel, D-228); link OUT to a `docs/research/` note for heavy evidence + an ADR for the choice, don't inline. |
   | WHAT must ship (FRs, NFRs, acceptance criteria) | [`specs/requirements.md`](specs/requirements.md) and [`specs/requirements-revisions-proposed.md`](specs/requirements-revisions-proposed.md) (FR-28+) |
   | Architectural decisions | [`docs/adr/`](docs/adr/) |
@@ -101,7 +101,7 @@ The user is direct and tight on time. Match the energy.
   | Domain terms (glossary wins when docs disagree) | [`specs/glossary.md`](specs/glossary.md) |
   | Diagnostic table | [`HEALTH-CHECKS.md`](HEALTH-CHECKS.md) |
   | Research notes (one per finding) | [`docs/research/`](docs/research/) |
-  | Chronological decision/issue/bug/fix paper trail (the spine that ties the others together) | [`docs/journey/DECISION-LOG.md`](docs/journey/DECISION-LOG.md) |
+  | Chronological decision/issue/bug/fix paper trail (the spine that ties the others together) | [`docs/journey/DECISION-LOG.md`](docs/journey/DECISION-LOG.md) — D-307 onward; D-1…D-306 are the frozen [`DECISION-LOG-archive-pre-v0.5.md`](docs/journey/DECISION-LOG-archive-pre-v0.5.md) |
   | **User-facing capability surface (what the kit can do, for a new user)** | [`README.md`](README.md) "What it does" + "CLI" sections AND [`packages/cli/README.md`](packages/cli/README.md) (the npm landing page) |
   | **Per-release "what shipped" record** | [`CHANGELOG.md`](CHANGELOG.md) |
   | **Which version each task ships in (release lanes + the one-differentiator-per-minor rule)** | [`docs/RELEASE-PLAN.md`](docs/RELEASE-PLAN.md) |
@@ -118,7 +118,7 @@ The user is direct and tight on time. Match the energy.
   | Stable project rules + verification disciplines + working style + anti-patterns | this file (`CLAUDE.md`) |
   | Test count / suite state | **Not tracked.** Derived from `npm test`. Snapshot, not state. |
 
-  **Point-in-time RECORDS — frozen by design, NEVER "update to match the code"** (the drift-walk EXEMPTS these; editing one to reflect new behavior is a bug): [`docs/research/`](docs/research/) (dated findings), [`docs/adr/`](docs/adr/) (a decision at its moment — superseded by a NEW ADR, never edited), [`docs/journey/`](docs/journey/) except the live `build-log.md`/`DECISION-LOG.md`, [`docs/conversation-log/`](docs/conversation-log/), [`archive/`](archive/), the dated `docs/process/v0.*.*-self-test-*` guides. A living doc drifts; a record is history.
+  **Point-in-time RECORDS — frozen by design, NEVER "update to match the code"** (the drift-walk EXEMPTS these; editing one to reflect new behavior is a bug): [`docs/research/`](docs/research/) (dated findings), [`docs/adr/`](docs/adr/) (a decision at its moment — superseded by a NEW ADR, never edited), [`docs/journey/`](docs/journey/) except the live `build-log.md`/`DECISION-LOG.md`, [`docs/conversation-log/`](docs/conversation-log/), [`archive/`](archive/), the dated `docs/process/v0.*.*-self-test-*` guides, and the three Task-249 relocation archives — [`specs/tasks-archive.md`](specs/tasks-archive.md) (completed task entries), [`docs/journey/DECISION-LOG-archive-pre-v0.5.md`](docs/journey/DECISION-LOG-archive-pre-v0.5.md) (D-1…D-306), [`docs/journey/build-log-archive-pre-v0.5.md`](docs/journey/build-log-archive-pre-v0.5.md) (chapters §0–§9). A living doc drifts; a record is history.
 
   **Things that are NOT state** (do not track in any file): test pass/fail counts, "we're at this PR right now" mid-session breadcrumbs, intermediate-todo lists. State has a half-life — if it's true forever it's a rule (`CLAUDE.md`), if it's true until-it-changes it's a tracked artifact (`tasks.md` / `design.md` / etc.), if it's only true this session it's not state at all.
 

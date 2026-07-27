@@ -47,8 +47,11 @@ A session that has lost all memory must be able to read **only the three spine f
 
 | Location | Job |
 | --- | --- |
-| [`docs/journey/DECISION-LOG.md`](journey/DECISION-LOG.md) | Chronological decisions / pivots / issues / bugs / fixes (why & when). Append-only. |
-| [`docs/journey/build-log.md`](journey/build-log.md) | Full narrative + per-PR retrospectives + meta-lessons. |
+| [`docs/journey/DECISION-LOG.md`](journey/DECISION-LOG.md) | Chronological decisions / pivots / issues / bugs / fixes (why & when). Append-only. Holds **D-307 onward**. |
+| [`docs/journey/DECISION-LOG-archive-pre-v0.5.md`](journey/DECISION-LOG-archive-pre-v0.5.md) | **D-1 … D-306** — every decision before the v0.5.0 cut, relocated 2026-07-28 (Task 249), byte-identical. Frozen; still a `D-nnn` anchor source (`validate-docs` globs `DECISION-LOG*.md`). |
+| [`docs/journey/build-log.md`](journey/build-log.md) | Full narrative + per-PR retrospectives + meta-lessons. Holds **§10 onward** (the version arcs) + §11 "How to extend". |
+| [`docs/journey/build-log-archive-pre-v0.5.md`](journey/build-log-archive-pre-v0.5.md) | **Chapters §0–§9** — research → spec → every per-task retrospective through Task 108, relocated 2026-07-28 (Task 249), byte-identical. Frozen. |
+| [`specs/tasks-archive.md`](../specs/tasks-archive.md) | The **full entry text of every completed task**, relocated out of `tasks.md` 2026-07-28 (Task 249), byte-identical + in order. Frozen; `tasks.md` keeps a one-line pointer per shipped task, so the Task-id sequence and `Task N` citations still resolve from the live file. |
 | [`docs/journey/v0.2.0-live-test-findings.md`](journey/v0.2.0-live-test-findings.md) | v0.2.0 self-test findings (F1 capture-richness regression, F2 section-promotion) + Task 63/64 fix specs. Was the v0.2.0 release gate — **closed** (v0.2.0 shipped); now history. |
 | `docs/journey/` dated findings & test docs | Session artifacts (history). See Registry. |
 | [`docs/adr/`](adr/) | Architectural Decision Records — deep "why," append-only, superseded-never-deleted. Index: [`adr/README.md`](adr/README.md). |
@@ -106,13 +109,13 @@ When you add a doc, add its path to the Registry in the same commit, or the buil
 `README.md` · `QUICKSTART.md` · `ARCHITECTURE.md` · `CHANGELOG.md` · `SECURITY.md` · `HEALTH-CHECKS.md` · `CLAUDE.md`
 
 **Spine (`specs/`):**
-`specs/requirements.md` · `specs/design.md` · `specs/tasks.md` · `specs/glossary.md`
+`specs/requirements.md` · `specs/design.md` · `specs/tasks.md` · `specs/glossary.md` · `specs/tasks-archive.md` (**frozen record**, not Spine — the completed-task entries relocated out of `specs/tasks.md` by Task 249)
 
 **`docs/` top level:**
 `docs/DOCUMENTATION-MAP.md` · `docs/README.md` · `docs/SOURCES.md` · `docs/BOOTSTRAP.md` · `docs/CLI.md` · `docs/MCP.md` · `docs/KIRO.md` · `docs/CURSOR.md` · `docs/CODEX.md` · `docs/CLAUDE-CODE.md` · `docs/OBSIDIAN.md`
 
 **`docs/journey/`:**
-`docs/journey/DECISION-LOG.md` · `docs/journey/build-log.md` · `docs/journey/RESUME-HERE-2026-05-28.md` · `docs/journey/v0.1.0-live-test.md` · `docs/journey/v0.1.0-requirements-coverage.md` · `docs/journey/v0.1.1-self-test-findings.md` · `docs/journey/v0.2.0-live-test-findings.md` · `docs/journey/v0.3.3-live-test-findings.md` · `docs/journey/2026-05-26-live-test-findings.md` · `docs/journey/2026-05-26-live-test-findings-scenarios-3-7.md` · `docs/journey/2026-05-26-snapshot-cap-coordination.md` · `docs/journey/2026-05-26-user-tier-cap-fix.md` (the phase-3 plan is archived → `archive/docs/journey/PHASE-3-PLAN.md`)
+`docs/journey/DECISION-LOG.md` · `docs/journey/DECISION-LOG-archive-pre-v0.5.md` · `docs/journey/build-log.md` · `docs/journey/build-log-archive-pre-v0.5.md` · `docs/journey/RESUME-HERE-2026-05-28.md` · `docs/journey/v0.1.0-live-test.md` · `docs/journey/v0.1.0-requirements-coverage.md` · `docs/journey/v0.1.1-self-test-findings.md` · `docs/journey/v0.2.0-live-test-findings.md` · `docs/journey/v0.3.3-live-test-findings.md` · `docs/journey/2026-05-26-live-test-findings.md` · `docs/journey/2026-05-26-live-test-findings-scenarios-3-7.md` · `docs/journey/2026-05-26-snapshot-cap-coordination.md` · `docs/journey/2026-05-26-user-tier-cap-fix.md` (the phase-3 plan is archived → `archive/docs/journey/PHASE-3-PLAN.md`)
 
 **`docs/journey/live-test-runs/`** — per-run `npm run live-test` findings, one TIMESTAMPED file per run (a run-to-run trail to spot drift/regressions). A SUBDIR, so the registry validator (which scans `docs/journey/` non-recursively) does not police it file-by-file — no per-run registration needed.
 

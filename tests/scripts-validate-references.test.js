@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -368,13 +368,46 @@ describe('parseDecisionIds — the heading/lead shapes the real log uses', () =>
     );
   });
 
-  it('the REAL log indexes the corpus (and the two Task-247 backfills resolve)', () => {
-    const ids = parseDecisionIds(
-      readFileSync(join(REPO_ROOT, 'docs', 'journey', 'DECISION-LOG.md'), 'utf8'),
-    );
+  it('the REAL log GLOB indexes the corpus (and the two Task-247 backfills resolve)', () => {
+    // INPUT CHANGED by Task 249, contract UNCHANGED and now stronger.
+    // 247 deliberately made the validator's anchor source a GLOB
+    // (`docs/journey/DECISION-LOG*.md`, parsed per-file and unioned) so that
+    // 249's archive split would not dangle every pre-split citation. 249 then
+    // split the log at D-306. This test read ONE file, so after the split it
+    // was measuring half the corpus and asserting on ids (D-1, D-132, D-168,
+    // D-213) that had legitimately moved to the archive — the fixture went
+    // stale, not the contract. It now feeds the same glob the validator does.
+    const logDir = join(REPO_ROOT, 'docs', 'journey');
+    const sources = readdirSync(logDir)
+      .filter((f) => f.startsWith('DECISION-LOG') && f.endsWith('.md'))
+      .sort();
+    expect(sources.length, 'the log is a glob, not a file (Task 247/249)').toBeGreaterThanOrEqual(2);
+
+    const ids = new Set();
+    for (const f of sources) {
+      for (const id of parseDecisionIds(readFileSync(join(logDir, f), 'utf8'))) ids.add(id);
+    }
     expect(ids.size).toBeGreaterThan(300);
     for (const id of ['1', '132', '168', '213', '405', '253a', '258a', '203c']) {
-      expect(ids.has(id), `D-${id} must be indexed from the real log`).toBe(true);
+      expect(ids.has(id), `D-${id} must be indexed from the real log glob`).toBe(true);
     }
+  });
+
+  it('Task 249: the split is a UNION — each half supplies its own ids, neither alone is enough', () => {
+    // The load-bearing half of the archive split: an old citation resolves from
+    // the ARCHIVE and a recent one from the LIVE log, so neither file may be
+    // dropped from the glob without breaking real citations.
+    const logDir = join(REPO_ROOT, 'docs', 'journey');
+    const live = parseDecisionIds(readFileSync(join(logDir, 'DECISION-LOG.md'), 'utf8'));
+    const archived = parseDecisionIds(
+      readFileSync(join(logDir, 'DECISION-LOG-archive-pre-v0.5.md'), 'utf8'),
+    );
+    // D-307 is the v0.5.0 tag decision — the stated boundary.
+    expect(live.has('307'), 'D-307 (the v0.5.0 cut) stays LIVE').toBe(true);
+    expect(live.has('406'), 'the newest entry stays LIVE').toBe(true);
+    expect(live.has('1'), 'D-1 moved to the archive').toBe(false);
+    expect(archived.has('306'), 'D-306 is the newest ARCHIVED entry').toBe(true);
+    expect(archived.has('1'), 'D-1 is in the archive').toBe(true);
+    expect(archived.has('307'), 'D-307 did not get archived').toBe(false);
   });
 });

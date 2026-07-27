@@ -199,3 +199,77 @@ describe('validate-docs — the consolidation contract (Task 186)', () => {
     expect(r.stdout).toMatch(/CLI verbs documented/);
   });
 });
+
+// ── Task 249 — the archive split's reference contract.
+//
+// The split moves every completed task's entry OUT of specs/tasks.md into
+// specs/tasks-archive.md and leaves a one-line pointer behind. Two things must
+// hold for that to be a pure relocation rather than a corpus-wide break:
+//   1. a `Task N` citation whose entry now lives ONLY in the archive still
+//      resolves (Task 247's `specs/tasks*.md` GLOB is what makes that true —
+//      this pins the composition, which is the half a single-file reader broke)
+//   2. the pointer's own relative link resolves, and FAILS when the archive is
+//      not there (a pointer to nothing is worse than no pointer)
+describe('validate-docs — the Task 249 archive split (references)', () => {
+  let sandbox;
+  beforeEach(() => {
+    sandbox = makeSandbox();
+  });
+  afterEach(() => {
+    rmSync(sandbox, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  });
+
+  /** The post-split shape: live file = open tasks + pointers; archive = entries. */
+  function writeSplitTasks(withArchive) {
+    writeFileSync(
+      join(sandbox, 'specs', 'tasks.md'),
+      [
+        '# Tasks',
+        '',
+        '- [x] 7. _shipped 2026-05-24, PR #6_ — **Per-fact file format + writer** → [archive](tasks-archive.md)',
+        '- [ ] 8. Something still open. v0.9 lane.',
+        '',
+      ].join('\n'),
+    );
+    if (withArchive) {
+      writeFileSync(
+        join(sandbox, 'specs', 'tasks-archive.md'),
+        '# Tasks — ARCHIVE\n\n- [x] 7. Per-fact file format + writer — _shipped 2026-05-24, PR #6_\n  - the full entry text\n',
+      );
+    }
+  }
+
+  it('a `Task N` citation resolves when the entry lives ONLY in tasks-archive.md', () => {
+    writeSplitTasks(true);
+    writeFileSync(join(sandbox, 'specs', 'cites.md'), 'Per Task 7 the writer landed first.\n');
+    const r = run(sandbox, ['--only', 'references']);
+    expect(r.exitCode, `the archive must keep supplying Task ids:\n${r.stderr}`).toBe(0);
+  });
+
+  it('the pointer link from tasks.md to tasks-archive.md resolves', () => {
+    writeSplitTasks(true);
+    const r = run(sandbox, ['--only', 'references']);
+    expect(r.exitCode, r.stderr).toBe(0);
+  });
+
+  it('the pointer FAILS loudly when the archive is missing (a pointer to nothing)', () => {
+    writeSplitTasks(false);
+    const r = run(sandbox, ['--only', 'references']);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toMatch(/broken link target: tasks-archive\.md/);
+  });
+
+  it('the pointer line is still a Task DEFINITION — the sequence stays complete', () => {
+    // The live file keeps every shipped id as a pointer precisely so
+    // validate-numbering-gaps sees no hole. Pinned here at the reference layer:
+    // the pointer alone (no archive entry) is enough to define Task 7.
+    writeFileSync(
+      join(sandbox, 'specs', 'tasks.md'),
+      '# Tasks\n\n- [x] 7. _shipped 2026-05-24, PR #6_ — **Per-fact file format** → [archive](tasks-archive.md)\n',
+    );
+    writeFileSync(join(sandbox, 'specs', 'tasks-archive.md'), '# ARCHIVE\n');
+    writeFileSync(join(sandbox, 'specs', 'cites.md'), 'See Task 7.\n');
+    const r = run(sandbox, ['--only', 'references']);
+    expect(r.exitCode, r.stderr).toBe(0);
+  });
+});
