@@ -65,6 +65,8 @@ Two edges of this map could, before v0.6.3, drop a fact **outside** the lifecycl
 
 Both are ✓ **repair**, not new lifecycle stages: they re-enter the fact at the `reindex` edge, and neither ever deletes. See design §13.2.
 
+**A third drop-out on the same edge, closed by PREVENTION rather than repair (Task 257, D-403).** `Fact file → index` had a second way to fail: a leading UTF-8 BOM (a Windows editor / PowerShell 5.1 `Set-Content -Encoding utf8` hand-edit) made `frontmatter.parse` read the file as "no frontmatter", so the fact dropped out of **every** downstream stage — index, recall, snapshot, `INDEX.md`/`MAP.md`, edges — while sitting untouched in the tier. Unlike the two above this one needed no repair pass: the parser now tolerates the BOM (design §4, "The input boundary"), which puts the fact back on the flow the moment the fix lands, and `format` never re-emits it, so the file heals on its next legitimate rewrite. It also closes a **write-edge** hazard the same blindness created — `writeFact`'s "refusing overwrite" collision guard could not see a BOM'd file, so a later capture landing on the same `<type>_<slug>.md` overwrote it.
+
 ## Edge-by-edge: intent vs. code
 
 | # | Edge | Trust gate | Cap | Dedup | On evict/overflow | Intent vs code |

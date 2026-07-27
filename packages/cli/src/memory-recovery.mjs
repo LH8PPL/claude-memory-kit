@@ -79,6 +79,7 @@ import { canonicalize, generateId } from '@lh8ppl/cmk-canonicalize';
 import { ID_PATTERN, resolveTierRoot, resolveFactDir } from './tier-paths.mjs';
 import { listFactFiles, eachFactIn } from './fact-store.mjs';
 import { parse } from './frontmatter.mjs';
+import { stripBom } from './read-json.mjs';
 import { appendAuditEntry, nowIso, REASON_CODES } from './audit-log.mjs';
 import { removeDir } from './platform-commands.mjs';
 import { reindex } from './reindex.mjs';
@@ -354,19 +355,38 @@ export function scanStrayTiers({ projectRoot, maxDepth = MAX_SCAN_DEPTH } = {}) 
 /* malformed / id-less fact files (D-394)                              */
 /* ------------------------------------------------------------------ */
 
-function stripBom(text) {
-  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
-}
+// Task 257 — ONE STRIP EVERYWHERE (the contract, not an optimization).
+//
+// This module used to carry its OWN copy of stripBom (a byte-for-byte re-roll of
+// read-json.mjs's canonical helper — exactly the drift the shared-modules rule
+// exists to stop) AND to call `parse(stripBom(text))`, which after Task 257 made
+// classification a DOUBLE strip while every other reader in the kit gets ONE.
+// That asymmetry was the worst of both worlds: a 2-BOM file classified `valid`,
+// so recovery walked past it as healthy, while reindex/recall/INDEX/MAP still
+// could not see it — invisible forever AND never flagged.
+//
+// So classification now uses the SAME parse contract as the rest of the kit: one
+// leading BOM tolerated, no more. A file with >=2 BOMs is `not-derivable` →
+// quarantined with its ORIGINAL bytes intact → named in the report. Visible and
+// flagged beats invisible and silent, and the user keeps every byte either way.
+//
+// The strip in front of the TEXTUAL id splice below STAYS and is load-bearing:
+// that path never goes through `parse`, and it is what drops the BOM from a file
+// being rewritten anyway.
 
 /**
  * Classify a fact file's id: already valid, repairable (content-addressed), or
  * not derivable. Pure — takes the file text, returns a verdict.
  *
+ * Uses `parse` DIRECTLY — no extra stripBom. That is the one-strip-everywhere
+ * contract (see the note above): classification must see exactly what the rest
+ * of the kit sees, or it certifies as healthy a file nothing else can read.
+ *
  * @param {string} text raw file contents
  * @param {'P'|'L'|'U'} tier
  */
 export function classifyFactId(text, tier) {
-  const { frontmatter, body, parseError } = parse(stripBom(text));
+  const { frontmatter, body, parseError } = parse(text);
   if (!frontmatter || parseError) {
     return { kind: 'not-derivable', reason: parseError ?? 'no parseable frontmatter' };
   }
@@ -486,8 +506,11 @@ export function repairFactText(text, verdict) {
     };
   }
   // The body is the FACT. A frontmatter-only edit that moved it is a bug in the
-  // edit, and one this pass must never persist.
-  if (after.body !== parse(stripBom(text)).body) {
+  // edit, and one this pass must never persist. `parse(text)` — not
+  // `parse(stripBom(text))` — for the same one-strip-everywhere reason as
+  // classifyFactId: the guard must compare against what the KIT reads. (A file
+  // needing two strips never reaches here anyway; classification stops it.)
+  if (after.body !== parse(text).body) {
     return { ok: false, reason: 'repair would have altered the fact body' };
   }
   return { ok: true, text: next };

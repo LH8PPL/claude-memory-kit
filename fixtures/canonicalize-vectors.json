@@ -7,6 +7,7 @@
     "3. Strip leading bullet marker (^[-*+]\\s+)",
     "4. Trim leading/trailing whitespace",
     "5. Collapse internal whitespace runs (\\s+) to single space",
+    "NOTE (Task 257): \"whitespace\" in rules 3-5 is JavaScript's \\s, which INCLUDES U+FEFF (ECMA-262 folds <ZWNBSP> into WhiteSpace). Python's \\s does not, so the Python twin folds U+FEFF explicitly to stay byte-identical. A byte-order mark therefore collapses to a space wherever it appears, and a BOM-prefixed fact derives the SAME id as its clean twin.",
     "6. ASCII lowercase (A-Z only; non-ASCII passthrough)",
     "7. Strip trailing punctuation ([.,;]+ at end)"
   ],
@@ -241,6 +242,48 @@
       "input": "User runs macOS 14 Sonoma",
       "expected_canonical": "user runs macos 14 sonoma",
       "expected_id_P": "P-XLFPMCK4"
+    },
+    {
+      "name": "bom-leading-folds-as-whitespace",
+      "input": "\uFEFFhello  world",
+      "expected_canonical": "hello world",
+      "expected_id_P": "P-S79MJHFN"
+    },
+    {
+      "name": "bom-leading-with-bullet-marker",
+      "input": "\uFEFF- hello  world",
+      "expected_canonical": "hello world",
+      "expected_id_P": "P-S79MJHFN"
+    },
+    {
+      "name": "bom-mid-string-folds-as-whitespace",
+      "input": "foo\uFEFFbar",
+      "expected_canonical": "foo bar",
+      "expected_id_P": "P-aJ2VNZ4T"
+    },
+    {
+      "name": "bom-trailing-folds-as-whitespace",
+      "input": "hello  world\uFEFF",
+      "expected_canonical": "hello world",
+      "expected_id_P": "P-S79MJHFN"
+    },
+    {
+      "name": "bom-between-bullet-marker-and-text",
+      "input": "-\uFEFFhello  world",
+      "expected_canonical": "hello world",
+      "expected_id_P": "P-S79MJHFN"
+    },
+    {
+      "name": "bom-only-canonicalizes-to-empty",
+      "input": "\uFEFF",
+      "expected_canonical": "",
+      "expected_id_P": "P-XHTFBKPT"
+    },
+    {
+      "name": "bom-both-ends-with-trailing-punct",
+      "input": "\uFEFFhello  world.\uFEFF",
+      "expected_canonical": "hello world",
+      "expected_id_P": "P-S79MJHFN"
     }
   ]
 }
