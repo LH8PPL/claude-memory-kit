@@ -79,6 +79,7 @@ import { canonicalize, generateId } from '@lh8ppl/cmk-canonicalize';
 import { ID_PATTERN, resolveTierRoot, resolveFactDir } from './tier-paths.mjs';
 import { listFactFiles, eachFactIn } from './fact-store.mjs';
 import { parse } from './frontmatter.mjs';
+import { stripBom } from './read-json.mjs';
 import { appendAuditEntry, nowIso, REASON_CODES } from './audit-log.mjs';
 import { removeDir } from './platform-commands.mjs';
 import { reindex } from './reindex.mjs';
@@ -354,9 +355,13 @@ export function scanStrayTiers({ projectRoot, maxDepth = MAX_SCAN_DEPTH } = {}) 
 /* malformed / id-less fact files (D-394)                              */
 /* ------------------------------------------------------------------ */
 
-function stripBom(text) {
-  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
-}
+// Task 257: this module used to carry its OWN copy of stripBom — a byte-for-byte
+// re-roll of read-json.mjs's canonical helper, exactly the drift the shared-
+// modules rule exists to stop. Now imported (see the top of the file). The call
+// sites stay: `parse` strips a leading BOM itself as of Task 257, so the strip
+// in front of `parse` is redundant-but-harmless, while the strip in front of the
+// TEXTUAL id splice below is still load-bearing (that path never goes through
+// `parse`, and it is what drops the BOM from a file being repaired anyway).
 
 /**
  * Classify a fact file's id: already valid, repairable (content-addressed), or

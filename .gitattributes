@@ -24,6 +24,16 @@
 *.yaml text eol=lf
 *.sh text eol=lf
 
+# Task 257 — the BOM+CRLF fact fixture is a CAPTURED REAL PAYLOAD (Windows
+# PowerShell 5.1 `Set-Content -Encoding utf8`, the real-world BOM producer).
+# Its exact bytes ARE the test input: the `*.md text eol=lf` rule above would
+# rewrite its CRLFs at commit/checkout and silently weaken the regression net
+# down to a BOM-only case. `-text` disables ALL text conversion so git stores
+# and checks the file out verbatim. tests/cli-frontmatter-bom.test.js asserts
+# the on-disk bytes still carry BOM + CRLF, so losing this rule fails the suite
+# rather than quietly degrading the fixture.
+fixtures/bom/** -text
+
 # core-memory-kit:gitattributes:start v0.6.2
 # core-memory-kit — added by `cmk install`. Do not edit by hand;
 # `cmk install` refreshes these lines idempotently. Remove via

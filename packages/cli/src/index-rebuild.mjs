@@ -50,6 +50,7 @@ import { hashContent } from './content-hash.mjs';
 import { syncTranscriptChunks } from './transcript-index.mjs';
 import { readBullet, parseBulletProvenance, isSeedProvenance } from './provenance.mjs';
 import { parse as parseFrontmatter } from './frontmatter.mjs';
+import { stripBom } from './read-json.mjs';
 import { listFactFiles } from './fact-store.mjs';
 import { initTrustScore } from './trust-score.mjs';
 import { rebuildEdges, edgesBuilt } from './graph-index.mjs';
@@ -163,7 +164,16 @@ export function parseObservationsFromScratchpad({
   // Task 139 (D-126): CRLF-tolerant read — autocrlf clones rewrite the
   // committed memory files; a strict-\n split left \r on every line and
   // the bullet/provenance regexes went blind.
-  const lines = content.split(/\r?\n/);
+  //
+  // Task 257 (D-403): BOM-tolerant too. The scratchpad walk does NOT go through
+  // frontmatter.parse (bullets carry HTML-comment provenance, not YAML), so the
+  // shared-parser fix does not reach it: a BOM'd MEMORY.md blinded the `^##`
+  // heading regex and the bullet regex on LINE 1 only — a bounded but real hole
+  // (the first line's heading_path silently degraded to the bare filename). Strip
+  // for PARSING only; the sha1 below stays over the RAW content, because adding
+  // or removing a BOM IS a file change and must invalidate the `files`
+  // change-detection key rather than read as "unchanged".
+  const lines = stripBom(content).split(/\r?\n/);
   const sha1 = sha1OfContent(content);
   const source_file = relativeSource(path, { projectRoot, userDir });
   const baseName = basename(path);
