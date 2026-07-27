@@ -62,7 +62,12 @@ import {
 import { search } from '../packages/cli/src/search.mjs';
 import { overrideTrust } from '../packages/cli/src/trust.mjs';
 import { eachFactIn } from '../packages/cli/src/fact-store.mjs';
-import { classifyFactId } from '../packages/cli/src/memory-recovery.mjs';
+import {
+  classifyFactId,
+  recoverMemory,
+  QUARANTINE_DIRNAME,
+} from '../packages/cli/src/memory-recovery.mjs';
+import { injectContext } from '../packages/cli/src/inject-context.mjs';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CMK_BIN = join(REPO, 'packages', 'cli', 'bin', 'cmk.mjs');
@@ -472,6 +477,45 @@ describe('writeFact\'s collision guard sees a BOM\'d file (Doors 1, 2)', () => {
     expect(readFileSync(path, 'utf8')).toContain('the ORIGINAL body');
   });
 
+  // The THIRD collision path: same id, DIFFERENT slug. This one does not go
+  // through readExistingFactId at all — it rides findExistingFactById →
+  // eachFactIn → parse, which was blind to the BOM in exactly the same way, so a
+  // re-surfaced fact would have been written as a SECOND file under a new slug
+  // instead of bumping the original. Pinned as a contract.
+  it('finds a BOM\'d fact by id under a DIFFERENT slug and bumps it (duplicate-elsewhere)', () => {
+    const original = seedFact({ id: BOMMED, slug: 'bommed', body: 'the ORIGINAL body' });
+    bomify(original);
+
+    const r = writeFact({
+      projectRoot,
+      tier: 'P',
+      type: 'project',
+      slug: 'bommed-restated', // DIFFERENT filename
+      title: 'same fact, different slug',
+      body: 'restated',
+      writeSource: 'user-explicit',
+      trust: 'high',
+      sourceFile: 'MEMORY.md',
+      sourceLine: 1,
+      sourceSha1: 'c'.repeat(40),
+      id: BOMMED, // SAME id
+    });
+
+    expect(r).toMatchObject({
+      action: 'skipped',
+      skipReason: 'duplicate-elsewhere',
+      id: BOMMED,
+      duplicateAt: original,
+    });
+    expect(r.recurrenceCount).toBe(2);
+    // No second file was created under the new slug.
+    expect(existsSync(join(factDir(), 'project_bommed-restated.md'))).toBe(false);
+    // The original survived, kept its body, and the bump healed the BOM.
+    const after = readFileSync(original, 'utf8');
+    expect(after).toContain('the ORIGINAL body');
+    expect(after.charCodeAt(0)).not.toBe(0xfeff);
+  });
+
   it('bumps recurrence instead of duplicating when the BOM\'d file holds the SAME id', () => {
     const path = seedFact({ id: BOMMED, slug: 'bommed', body: 'the ORIGINAL body' });
     bomify(path);
@@ -557,6 +601,75 @@ describe('a BOM\'d scratchpad still parses (Door 2)', () => {
 });
 
 // ====================================================================
+// Door 1/2 — the SESSION SNAPSHOT (inject-context)
+// ====================================================================
+
+describe('a BOM\'d scratchpad does not leak into the session snapshot (Doors 1, 2)', () => {
+  // readTierBlock reads scratchpads with a bare readFileSync, so a hand-edited
+  // BOM travelled VERBATIM into the injected snapshot — a raw U+FEFF in the
+  // model's context, and (worse) an inverted truncation: `truncateTierToBudget`
+  // splits sections on /^##\s/, which a BOM'd heading line fails, so the section
+  // fell into the always-kept PREAMBLE and became un-droppable. That inverts the
+  // §20.3 value-ordered eviction — a low-trust section survives while a
+  // high-trust one is evicted to make room for it.
+  const FIXED_NOW = '2026-07-27T12:00:00Z';
+
+  function memoryBody() {
+    return '# MEMORY\n\n## Active Threads\n\nproject-bullet-marker\n';
+  }
+
+  it('the snapshot is byte-identical with and without the BOM', () => {
+    const p = join(projectRoot, 'context', 'MEMORY.md');
+    writeFileSync(p, memoryBody(), 'utf8');
+    const clean = injectContext({ cwd: projectRoot, userDir, now: FIXED_NOW }).snapshot;
+
+    writeFileSync(p, BOM + memoryBody(), 'utf8');
+    const bommed = injectContext({ cwd: projectRoot, userDir, now: FIXED_NOW }).snapshot;
+
+    expect(bommed).toBe(clean);
+  });
+
+  it('no raw U+FEFF ever reaches the model context', () => {
+    writeFileSync(join(projectRoot, 'context', 'MEMORY.md'), BOM + memoryBody(), 'utf8');
+    const r = injectContext({ cwd: projectRoot, userDir, now: FIXED_NOW });
+    expect(r.snapshot.includes(BOM)).toBe(false);
+    expect(r.hookOutput.hookSpecificOutput.additionalContext.includes(BOM)).toBe(false);
+  });
+
+  it('a BOM\'d first `## ` heading is still a SECTION BOUNDARY, so value-ordered eviction holds', () => {
+    // The §20.3 shape, with the low-trust section's heading carrying the BOM.
+    // Pre-fix that heading was not a boundary, so the low-trust section joined
+    // the un-droppable preamble and the HIGH-trust section was evicted instead.
+    // Same `at` on both bullets so the decision rides purely on trust.
+    const bulk = 'x'.repeat(2600);
+    const lowFirst =
+      '## Tooling Lessons\n\n' +
+      '- (U-LWAAAAAA) a low-value tooling note that can go first\n' +
+      '  <!-- source: s/1.md, source_line: 1, sha1: ' + 'a'.repeat(40) + ', write: auto-extract, trust: low, at: 2026-05-20T00:00:00Z -->\n' +
+      `${bulk}\nlow-trust-tail-marker\n`;
+    const highSecond =
+      '## Process Lessons\n\n' +
+      '- (U-HGHAAAAA) a durable high-trust cross-project rule that must survive\n' +
+      '  <!-- source: s/2.md, source_line: 1, sha1: ' + 'b'.repeat(40) + ', write: user-explicit, trust: high, at: 2026-05-20T00:00:00Z -->\n' +
+      `${bulk}\nhigh-trust-tail-marker\n`;
+    // No `# Lessons` preamble line — the BOM'd `## ` IS the first line.
+    writeFileSync(join(userDir, 'LESSONS.md'), `${BOM}${lowFirst}\n${highSecond}`, 'utf8');
+
+    const r = injectContext({ cwd: projectRoot, userDir, capBytes: 13000, now: FIXED_NOW });
+
+    expect(r.snapshot).toContain('high-trust-tail-marker');
+    expect(r.snapshot).not.toContain('low-trust-tail-marker');
+    const evt = r.truncationEvents.find(
+      (e) => e.event === 'tier_truncated_to_budget' && e.tier === 'U',
+    );
+    expect(evt).toBeDefined();
+    const dropped = evt.dropped_sections ?? [];
+    expect(dropped.some((s) => s.max_trust === 'low')).toBe(true);
+    expect(dropped.some((s) => s.max_trust === 'high')).toBe(false);
+  });
+});
+
+// ====================================================================
 // Door 1 — id derivation is BOM-insensitive (the hash-stability ruling)
 // ====================================================================
 
@@ -587,6 +700,52 @@ describe('Task 248 memory-recovery interaction', () => {
   it('classification is unchanged for the clean twin (no double-strip drift)', () => {
     const clean = factText({ id: BOMMED, title: 'Bommed', body: 'body' });
     expect(classifyFactId(BOM + clean, 'P')).toEqual(classifyFactId(clean, 'P'));
+  });
+
+  // ONE-STRIP-EVERYWHERE (the lead's ruling). classifyFactId used to call
+  // `parse(stripBom(text))` — a DOUBLE strip, so a 2-BOM file classified as
+  // `valid` and recovery walked past it, while the rest of the kit (which gets
+  // ONE strip, inside parse) still could not see it. That asymmetry is the worst
+  // of both: invisible forever AND never flagged. Now classification uses the
+  // same parse contract as every other reader, so a >=2-BOM file is
+  // not-derivable → quarantined with its ORIGINAL bytes → reported.
+  // Visible-and-flagged beats invisible-forever.
+  it('a 2x-BOM file classifies not-derivable (same parse contract as the kit)', () => {
+    const clean = factText({ id: BOMMED, title: 'Bommed', body: 'body' });
+    expect(classifyFactId(BOM + BOM + clean, 'P').kind).toBe('not-derivable');
+    expect(classifyFactId(BOM + clean, 'P').kind).toBe('valid'); // 1x is the normal path
+  });
+
+  it('a 2x-BOM fact is QUARANTINED with its bytes preserved, and reported', () => {
+    const original = BOM + BOM + factText({ id: BOMMED, title: 'Bommed', body: 'a durable body' });
+    const path = join(factDir(), 'project_double-bom.md');
+    writeFileSync(path, original, 'utf8');
+    // A healthy neighbour, to pin that the pass touches only the broken file.
+    const neighbour = seedFact({ id: NEIGHBOUR_A, slug: 'alpha' });
+    const neighbourBytes = readFileSync(neighbour);
+
+    const r = recoverMemory({ projectRoot, userDir });
+    expect(r.action).not.toBe('error');
+
+    const quarantined = join(factDir(), 'archive', QUARANTINE_DIRNAME, 'project_double-bom.md');
+    expect(existsSync(quarantined)).toBe(true);
+    expect(readFileSync(quarantined, 'utf8')).toBe(original); // ORIGINAL bytes, both BOMs
+    expect(existsSync(path)).toBe(false);
+    // Reported, not silent.
+    expect(JSON.stringify(r)).toContain('project_double-bom.md');
+    // Over-mutation: the healthy neighbour is byte-identical.
+    expect(readFileSync(neighbour).equals(neighbourBytes)).toBe(true);
+  });
+
+  it('a 1x-BOM fact with a valid id is left alone by recovery (not quarantined)', () => {
+    const path = seedFact({ id: BOMMED, slug: 'bommed', body: 'a durable body' });
+    bomify(path);
+    const r = recoverMemory({ projectRoot, userDir });
+    expect(r.action).not.toBe('error');
+    expect(existsSync(path)).toBe(true);
+    expect(
+      existsSync(join(factDir(), 'archive', QUARANTINE_DIRNAME, 'project_bommed.md')),
+    ).toBe(false);
   });
 });
 

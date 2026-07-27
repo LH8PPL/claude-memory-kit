@@ -46,6 +46,7 @@ import { STATE_LABELS, STATE_INSTRUCTION, hasSupersededLabel } from './state-lab
 import { listConflictQueue } from './conflict-queue.mjs';
 import { listReviewQueue } from './review-queue.mjs';
 import { parse as parseFactFrontmatter } from './frontmatter.mjs';
+import { stripBom } from './read-json.mjs';
 
 // Task 66.4 (D-259): the contradiction-catch demo surface — ONE bounded line
 // after the preamble when the weekly temporal sweep closed validity windows
@@ -703,7 +704,19 @@ function readTierBlock(tier, tierRoot) {
     if (!existsSync(path)) continue;
     let body;
     try {
-      body = readFileSync(path, 'utf8');
+      // Task 257 (D-403/D-404): strip at the READ boundary, once. A scratchpad
+      // is a hand-editable file, and a Windows editor's BOM used to travel
+      // VERBATIM from here into the injected snapshot — a raw U+FEFF in the
+      // model's context. Worse than cosmetic: `truncateTierToBudget` splits
+      // sections on /^##\s/ and `hasRealContent` tests /^#{1,6}\s/, both of
+      // which a BOM'd heading LINE fails — so a BOM'd first `## ` section was
+      // not a section boundary, fell into the always-kept PREAMBLE, and became
+      // UN-DROPPABLE. That inverts the §20.3 value-ordered eviction: the
+      // un-droppable low-trust section survives while a high-trust one is
+      // evicted to make room for it. Stripping HERE fixes all three downstream
+      // readers at once (collectBulletValues, hasRealContent, the truncator),
+      // which is why the strip belongs at the read and not in three regexes.
+      body = stripBom(readFileSync(path, 'utf8'));
     } catch {
       continue;
     }
