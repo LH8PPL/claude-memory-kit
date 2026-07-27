@@ -192,6 +192,9 @@ describe('validate-docs — the consolidation contract (Task 186)', () => {
     expect(r.stdout).toMatch(/validate-docs: OK/);
     expect(r.stdout).toMatch(/registered/);
     expect(r.stdout).toMatch(/markdown files scanned/);
+    // Task 247: the references family's `dnnn` sub-check runs through the same
+    // entry — every D-nnn in a living doc resolves to a DECISION-LOG entry.
+    expect(r.stdout).toMatch(/D-entr(y|ies) indexed/);
     expect(r.stdout).toMatch(/catalog index/);
     expect(r.stdout).toMatch(/CLI verbs documented/);
   });

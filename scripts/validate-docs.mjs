@@ -41,7 +41,7 @@
 //                 on disk (direction 2 — NEW in the consolidation; the old
 //                 registry validator was one-directional).
 //   references  — internal-reference rot: [label](path), [label](path#anchor),
-//                 ADR-NNNN, §N.N (design.md), FR-N, NFR-N, Task N.
+//                 ADR-NNNN, §N.N (design.md), FR-N, NFR-N, Task N, D-nnn.
 //   catalogs    — the hand-maintained catalog indexes (adr/README,
 //                 research/INDEX, sources/README, process/README) list every
 //                 sibling .md, both directions.
@@ -224,6 +224,131 @@ function familyRegistry() {
 // Family: references
 // ====================================================================
 
+// The DECISION-LOG is a GLOB, not a file (Task 249 composition). Task 249
+// splits the append-only histories at a version boundary
+// (`DECISION-LOG-archive-pre-v0.5.md` beside the live log), and the archive is
+// where the PRE-SPLIT anchors live. Reading one file would make every citation
+// to a pre-split entry dangle the day 249 lands — the check would punish the
+// repo for doing the archiving 249 exists to do. Same treatment for
+// `specs/tasks*.md`, which 249 splits the same way.
+const DECISION_LOG_DIR = 'docs/journey';
+const DECISION_LOG_PREFIX = 'DECISION-LOG';
+const TASKS_DIR = 'specs';
+const TASKS_PREFIX = 'tasks';
+
+/**
+ * Repo-relative posix paths of `<dirRel>/<prefix>*.md`, sorted for a stable
+ * scan order. Top-level only — an archive sits beside its live file.
+ */
+function globMd(dirRel, prefix) {
+  const abs = join(REPO, ...dirRel.split('/'));
+  if (!existsSync(abs)) return [];
+  return readdirSync(abs, { withFileTypes: true })
+    .filter((e) => e.isFile() && e.name.startsWith(prefix) && e.name.endsWith('.md'))
+    .map((e) => `${dirRel}/${e.name}`)
+    .sort();
+}
+
+/** Is this line a CommonMark fence toggle? Returns the match (for its length). */
+function fenceToggle(line) {
+  return line.match(/^\s*(`{3,})\s*\S*\s*$/);
+}
+
+/**
+ * The `D-nnn` citation token — MIRRORED from the kit's own D-anchor parser,
+ * `packages/cli/src/graph-index.mjs` (`ANCHOR_MATCHERS`, the `slashNodes`
+ * expansion), shipped in the same release. Mirrored rather than imported:
+ * that module pulls in fact-store / frontmatter / tier-paths to build a graph
+ * table, and this validator is a zero-dependency lint step.
+ *
+ * ONE deliberate divergence from the source: the optional `[a-z]?` sub-letter
+ * (`D-253a`, `D-203c`), which the log really uses as entry ids and CLAUDE.md
+ * really cites. The slash-continuation half is exact: `D-270/271/277` is
+ * THREE citations, and validating only the head silently exempted every tail
+ * in the corpus (~60 of them).
+ */
+const D_TOKEN = String.raw`\bD-(\d+[a-z]?)((?:\/\d+[a-z]?)*)\b`;
+
+/** Every id a `D_TOKEN` match names: the head plus each slash-continuation. */
+function expandDToken(m) {
+  const out = [m[1]];
+  if (m[2]) for (const tail of m[2].split('/')) if (tail) out.push(tail);
+  return out;
+}
+
+/**
+ * Index the DECISION-LOG's D-entry ids (Task 247).
+ *
+ * `D-nnn` is the most-cited internal reference in the corpus and was the ONE
+ * member of the class on the honour system — every other id the `references`
+ * family knows (ADR-NNNN / FR-N / NFR-N / Task N / §N.N) resolves to a real
+ * anchor. The target failure is the FORWARD reference: `D-406` cited in
+ * tasks.md while the log stops at D-405 (it happened with D-382 during Task
+ * 245, and again across the D-380..D-384 authoring hour).
+ *
+ * WHAT COUNTS AS AN ANCHOR — an id in an ENTRY LEAD, not anywhere in the body.
+ * The log grew three lead shapes over 400 entries and all three are live:
+ *   `## 2026-07-27 — D-405 · DECISION — …`   (current headings)
+ *   `## 2026-07-20 — D-375: DECISION — …`    (older headings, colon separator)
+ *   `- **⚙️ DECISION (2026-06-14) — D-150: …**`  (the bold list-item era)
+ * so a lead is "a heading line, or the leading bold span of a list item".
+ * Restricting to leads is what keeps the check's teeth: the log's bodies are
+ * dense with citations (`_Relates D-285, D-198._`), and indexing those would
+ * make every typo self-anchoring.
+ *
+ * ALL ids in a lead are indexed, not just the first — because both are real:
+ * `- **✅ FIX + RESOLUTION of D-212 (2026-06-27) — D-213: …**` opens with a
+ * CITATION and carries its own id second. Taking the first would lose D-213
+ * (a genuine anchor).
+ *
+ * THE COST, stated with both numbers (they are different questions):
+ *   - MECHANISM — how many leads can mint a false anchor: **110** structural
+ *     vectors in the log today (84 leads carrying more than one id, plus 30
+ *     INDENTED sub-bullets that are formatting rather than entry leads; 4
+ *     are both). Every one is a place where a quoted number becomes an
+ *     anchor. (A review of this change measured 92 — 77 + 15 — against the
+ *     narrower `\bD-\d+\b` token; widening it for sub-letters + slash
+ *     continuations in the same round moved the count. Re-measure after any
+ *     token change; do not trust either figure as a constant.)
+ *   - OUTCOME — how many false anchors that mechanism actually produces
+ *     today: **ONE** (`D-552`, a typo inside D-270's lead), and it is cited
+ *     by nothing, so it masks nothing.
+ * The mechanism is broad; the realised cost is one. That trade is deliberate
+ * and matches this script's standing conservatism rule: an extra anchor can
+ * only MASK a citation, while a missing anchor FAILS THE BUILD on correct
+ * prose. Recorded honestly so a future reader weighs the mechanism, not just
+ * today's tally.
+ *
+ * Fenced blocks + inline-code spans are stripped, exactly as on the scan side
+ * — a lead-shaped EXAMPLE inside a ``` block in the log must not mint an
+ * anchor (the asymmetry would let a doc's illustration authorise a citation).
+ *
+ * @param {string} logText a DECISION-LOG source (one file; callers union)
+ * @returns {Set<string>} the D-ids, as strings ('405', '1', '253a', …)
+ */
+export function parseDecisionIds(logText) {
+  const ids = new Set();
+  const re = new RegExp(D_TOKEN, 'g');
+  let fenceLen = 0;
+  for (const line of String(logText).split(/\r?\n/)) {
+    const fence = fenceToggle(line);
+    if (fence) {
+      if (fenceLen === 0) fenceLen = fence[1].length;
+      else if (fence[1].length >= fenceLen) fenceLen = 0;
+      continue;
+    }
+    if (fenceLen > 0) continue;
+    let lead = null;
+    if (/^#{1,6}\s/.test(line)) lead = line;
+    else lead = line.match(/^\s*[-*]\s+\*\*(.*?)\*\*/)?.[1] ?? null;
+    if (lead === null) continue;
+    for (const m of lead.replace(/`[^`]*`/g, '').matchAll(re)) {
+      for (const id of expandDToken(m)) ids.add(id);
+    }
+  }
+  return ids;
+}
+
 function slugify(headingText) {
   return headingText
     .toLowerCase()
@@ -293,10 +418,32 @@ function familyReferences() {
   const frIds = indexIds(requirementsText, 'FR');
   const nfrIds = indexIds(requirementsText, 'NFR');
 
+  // Task ids come from the tasks GLOB (`specs/tasks*.md`) so Task 249's
+  // completed-task split into `specs/tasks-archive.md` keeps pre-split
+  // `Task N` citations resolving.
+  const taskSources = globMd(TASKS_DIR, TASKS_PREFIX);
   const taskIds = new Set();
-  for (const line of readMdIfExists('specs/tasks.md').split(/\r?\n/)) {
-    const m = line.match(/^\s*(?:#{1,6}\s+|[-*]\s+\[.\]\s+|[-*]\s+)?(\d{1,3})[.) ]/);
-    if (m) taskIds.add(m[1]);
+  for (const rel of taskSources) {
+    for (const line of readMdIfExists(rel).split(/\r?\n/)) {
+      const m = line.match(/^\s*(?:#{1,6}\s+|[-*]\s+\[.\]\s+|[-*]\s+)?(\d{1,3})[.) ]/);
+      if (m) taskIds.add(m[1]);
+    }
+  }
+
+  // D-nnn anchors (Task 247). ONE parse per log source, reused for every file.
+  // Parsed per-FILE and unioned rather than concatenated: fence state must not
+  // bleed across an archive boundary.
+  // No source (or all empty) => the sub-check is SKIPPED rather than turning
+  // one missing FILE into N citation errors (fixture/sandbox roots have no
+  // log). Deleting the real log is caught by the registry family's direction
+  // 2 — DECISION-LOG.md is a backticked manifest entry in DOCUMENTATION-MAP.md.
+  const decisionSources = globMd(DECISION_LOG_DIR, DECISION_LOG_PREFIX);
+  let decisionIds = null;
+  for (const rel of decisionSources) {
+    const text = readMdIfExists(rel);
+    if (text === '') continue;
+    if (decisionIds === null) decisionIds = new Set();
+    for (const id of parseDecisionIds(text)) decisionIds.add(id);
   }
 
   // Design-section anchors (§N.N).
@@ -330,6 +477,7 @@ function familyReferences() {
   const FR_RE = /\bFR-(\d+)\b/g;
   const NFR_RE = /\bNFR-(\d+)\b/g;
   const TASK_RE = /\bTask\s+(\d+)(?:[.)\s]|$)/g;
+  const DNNN_RE = new RegExp(D_TOKEN, 'g');
 
   for (const file of mdFiles) {
     let text;
@@ -339,6 +487,17 @@ function familyReferences() {
       continue;
     }
     const fileDir = dirname(file);
+    // Frozen RECORDS are exempt from the D-nnn check (they are not exempt from
+    // link/ADR rot — a broken path is broken whenever it was written). A
+    // research note or an old build-log entry citing a since-superseded or
+    // never-numbered D-entry is HISTORY, and "fixing" it is the bug the
+    // frozen-record rule exists to prevent. This reuses the counts family's
+    // path-prefix list verbatim, which also settles the DECISION-LOG itself:
+    // it is the ANCHOR AUTHORITY, never a citation source policed against its
+    // own anchors. Trade-off, stated rather than left silent (the same one
+    // `counts` already accepts for docs/journey/): a typo in a BRAND-NEW log
+    // or build-log entry goes unchecked.
+    const checkDnnn = decisionIds !== null && !isFrozenRecord(relPosix(REPO, file));
     const lines = text.split(/\r?\n/);
 
     // Fence tracking with fence-length semantics (CommonMark: an opening
@@ -347,7 +506,7 @@ function familyReferences() {
     let fenceLen = 0;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      const fenceMatch = line.match(/^\s*(`{3,})\s*\S*\s*$/);
+      const fenceMatch = fenceToggle(line);
       if (fenceMatch) {
         const len = fenceMatch[1].length;
         if (fenceLen === 0) fenceLen = len;
@@ -434,12 +593,40 @@ function familyReferences() {
           record(file, lineNumber, `Task ${m[1]} not defined in tasks.md`);
         }
       }
+
+      if (checkDnnn) {
+        DNNN_RE.lastIndex = 0;
+        while ((m = DNNN_RE.exec(scanLine)) !== null) {
+          // A slash continuation (`D-270/271/277`) is THREE citations, not one
+          // — validate every id the token names, not just its head.
+          for (const id of expandDToken(m)) {
+            if (decisionIds.has(id)) continue;
+            record(
+              file,
+              lineNumber,
+              `D-${id} has no entry in ${DECISION_LOG_DIR}/${DECISION_LOG_PREFIX}*.md — a dangling ` +
+                `decision citation (a forward reference to an unwritten entry, a typo'd number, or ` +
+                `the entry's lead shape isn't recognised — design §17.13). Write/backfill the entry, ` +
+                `fix the number, or mark the line <!-- validate-docs: ignore --> with a reason.`,
+            );
+          }
+        }
+      }
     }
   }
 
+  // Report the skip explicitly rather than as "0 indexed" — a validator that
+  // did not run a check must not read like a check that found nothing.
+  const dPart =
+    decisionIds === null
+      ? `D-nnn SKIPPED (no ${DECISION_LOG_DIR}/${DECISION_LOG_PREFIX}*.md)`
+      : `${decisionIds.size} D-entr${decisionIds.size === 1 ? 'y' : 'ies'} indexed ` +
+        `from ${decisionSources.length} source${decisionSources.length === 1 ? '' : 's'}`;
   return {
     errors,
-    summary: `references: ${mdFiles.length} markdown files scanned (${adrFiles.size} ADR / ${frIds.size} FR / ${nfrIds.size} NFR / ${taskIds.size} Task IDs indexed)`,
+    summary:
+      `references: ${mdFiles.length} markdown files scanned (${adrFiles.size} ADR / ${frIds.size} FR / ` +
+      `${nfrIds.size} NFR / ${taskIds.size} Task IDs indexed; ${dPart})`,
   };
 }
 
