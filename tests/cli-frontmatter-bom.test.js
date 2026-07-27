@@ -221,6 +221,30 @@ describe('frontmatter.parse — BOM tolerance (Door 1)', () => {
     expect(body.includes(BOM)).toBe(false);
   });
 
+  // An EMPTY frontmatter block (`---\n\n---\n`) — or one holding only YAML
+  // comments — parses to null/undefined rather than a mapping. It is a real
+  // hand-edit shape (delete the frontmatter's contents, leave the fences), and
+  // the contract that matters is that the BODY is what follows the closing
+  // fence, NOT the whole file: get that wrong and the fences leak into the fact
+  // text. Included here because Task 257 widened this exact function and the
+  // branch had no test; the BOM'd variant pins that the strip composes with it.
+  it('an empty frontmatter block yields null frontmatter and the body AFTER the fence', () => {
+    expect(parse('---\n\n---\nbody here\n')).toEqual({
+      frontmatter: null,
+      body: 'body here\n',
+    });
+    expect(parse('---\n# just a comment\n---\nbody here\n')).toEqual({
+      frontmatter: null,
+      body: 'body here\n',
+    });
+  });
+
+  it('an empty frontmatter block behaves identically when BOM-prefixed', () => {
+    expect(parse(`${BOM}---\n\n---\nbody here\n`)).toEqual(
+      parse('---\n\n---\nbody here\n'),
+    );
+  });
+
   it('preserves a NON-leading BOM in the body verbatim (only the leading one is a byte-order mark)', () => {
     const text = BOM + factText({ id: BOMMED, title: 'Bommed', body: `mid${BOM}body` });
     const { body } = parse(text);
@@ -257,6 +281,41 @@ describe('frontmatter.format — never emits a BOM (Door 1)', () => {
   it('the no-frontmatter round-trip also drops the BOM', () => {
     const out = format(parse(`${BOM}# plain\n\ntext\n`));
     expect(out).toBe('# plain\n\ntext\n');
+  });
+
+  // The `typeof body === 'string'` guard Task 257 added to `format` has a
+  // non-string arm, and these pin it. Not coverage theatre: the guard exists
+  // because `stripBom(undefined)` would have to be safe otherwise, and the
+  // cheapest "simplification" a future reader could make is to drop the typeof
+  // and call `stripBom(body)` directly — which crashes every caller that omits
+  // a body. Each assertion below is the PRE-257 behavior, unchanged: the point
+  // is that widening `format` for BOMs moved none of it.
+  describe('format with a non-string body (the typeof arm)', () => {
+    it('a missing body emits the frontmatter block alone — never the text "undefined"', () => {
+      const out = format({ frontmatter: { id: BOMMED } });
+      expect(out).toBe(`---\nid: ${BOMMED}\n---\n`);
+      expect(out).not.toContain('undefined');
+    });
+
+    it('a null body behaves the same as a missing one', () => {
+      expect(format({ frontmatter: { id: BOMMED }, body: null })).toBe(
+        `---\nid: ${BOMMED}\n---\n`,
+      );
+    });
+
+    it('no frontmatter AND no body yields the empty string', () => {
+      expect(format({ frontmatter: null, body: undefined })).toBe('');
+      expect(format({ frontmatter: null })).toBe('');
+    });
+
+    it('a non-string, non-nullish body is still interpolated (pre-257 behavior held)', () => {
+      // The `??` arm's FALSY-but-present side. Nobody should pass a number, but
+      // the pre-257 code interpolated it and the BOM widening must not change
+      // that — this is the regression guard on the `(body ?? '')` half.
+      expect(format({ frontmatter: { id: BOMMED }, body: 42 })).toBe(
+        `---\nid: ${BOMMED}\n---\n42`,
+      );
+    });
   });
 
   it('drops a leading BOM a CALLER put in the body (the invariant is total)', () => {
