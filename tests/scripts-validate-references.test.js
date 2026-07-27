@@ -7,10 +7,11 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseDecisionIds } from '../scripts/validate-docs.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = resolve(dirname(__filename), '..');
@@ -98,5 +99,195 @@ describe('validate-references', () => {
     );
     const r = runValidator(sandbox);
     expect(r.exitCode).toBe(0);
+  });
+});
+
+// ====================================================================
+// The `dnnn` sub-check (Task 247) — D-nnn decision-log citations
+// ====================================================================
+//
+// The gap it closes: every OTHER internal-reference class the family owns
+// (ADR-NNNN / FR-N / NFR-N / Task N / §N.N / file links) resolves against a
+// real anchor; `D-nnn` — the most-cited reference in the corpus — was on the
+// honour system. The target failure is the FORWARD reference: a `D-406` cited
+// in tasks.md while the log stops at D-405.
+//
+// These locks live in THIS file (not scripts-validate-docs.test.js) because
+// this is the `references` family's behavior-lock suite — the consolidation
+// file's own header scopes it to the one-entry/`--only`/manifest contract and
+// points family behavior here. The consolidation file's real-repo Door-3 test
+// asserts the dnnn summary token, so the entry-level coverage is pinned too.
+
+describe('validate-references — D-nnn decision-log citations (Task 247)', () => {
+  let sandbox;
+  beforeEach(() => {
+    sandbox = makeSandbox();
+    mkdirSync(join(sandbox, 'docs', 'journey'), { recursive: true });
+  });
+  afterEach(() => {
+    rmSync(sandbox, { recursive: true, force: true });
+  });
+
+  const writeLog = (body) =>
+    writeFileSync(join(sandbox, 'docs', 'journey', 'DECISION-LOG.md'), body);
+
+  // Every heading/lead shape the REAL log uses, one line each.
+  const SAMPLE_LOG = [
+    '# Decision log — running paper trail',
+    '',
+    '## 2026-07-27 — D-405 · DECISION — the current heading shape',
+    '',
+    '## 2026-07-20 — D-375: DECISION — the older colon heading shape',
+    '',
+    '- **⚙️ DECISION (2026-06-14) — D-150: the bold list-item lead shape**',
+    '',
+    '- **✅ FIX + RESOLUTION of D-149 (2026-06-27) — D-213: an id that is NOT first in its lead**',
+    '',
+    '- **D-1 DECISION — the earliest shape, id at the very start of the lead**',
+    '',
+  ].join('\n');
+
+  it('FAILS on a dangling D-nnn in a living doc, naming the file and line', () => {
+    writeLog(SAMPLE_LOG);
+    writeFileSync(
+      join(sandbox, 'specs', 'planted.md'),
+      '# Planted\n\nA line of prose.\n\nSee D-9999 for the rationale.\n',
+    );
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(1);
+    expect(r.stderr).toMatch(/specs\/planted\.md:5/);
+    expect(r.stderr).toMatch(/D-9999 has no entry/);
+  });
+
+  it('the FORWARD-reference case: one past the log head FAILS', () => {
+    writeLog(SAMPLE_LOG);
+    writeFileSync(join(sandbox, 'specs', 'ahead.md'), '# Ahead\n\nLaned per D-406.\n');
+    const r = runValidator(sandbox);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toMatch(/D-406 has no entry/);
+  });
+
+  it('passes when every D-nnn resolves — including an id that is not first in its lead', () => {
+    writeLog(SAMPLE_LOG);
+    writeFileSync(
+      join(sandbox, 'specs', 'ok.md'),
+      '# OK\n\nPer D-405, D-375, D-150, D-213 and D-1.\n',
+    );
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(0);
+  });
+
+  it('reports EVERY dangling id on a line and leaves the resolving ones alone', () => {
+    // The over-mutation analogue for a scanner: seed a line with 5 citations,
+    // 2 of them bad, and assert exactly those 2 are named — no swallowed
+    // second match (regex `lastIndex` correctness) and no collateral report
+    // against the 3 that resolve.
+    writeLog(SAMPLE_LOG);
+    writeFileSync(
+      join(sandbox, 'specs', 'mixed.md'),
+      '# Mixed\n\nPer D-405, D-9999, D-150, D-9998 and D-1.\n',
+    );
+    const r = runValidator(sandbox);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toMatch(/D-9999 has no entry/);
+    expect(r.stderr).toMatch(/D-9998 has no entry/);
+    expect(r.stderr).not.toMatch(/D-405 has no entry/);
+    expect(r.stderr).not.toMatch(/D-150 has no entry/);
+    expect(r.stderr).not.toMatch(/D-1 has no entry/);
+    expect(r.stderr).toMatch(/FAIL — 2 issue\(s\)/);
+  });
+
+  it('the dnnn check does not mask the family\'s other id classes', () => {
+    // A dangling D-nnn and a dangling ADR on the same corpus must BOTH be
+    // reported — the new sub-check is additive, not a short-circuit.
+    writeLog(SAMPLE_LOG);
+    writeFileSync(join(sandbox, 'specs', 'both.md'), '# Both\n\nSee ADR-0099 and D-9999.\n');
+    const r = runValidator(sandbox);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toMatch(/ADR-0099 has no file/);
+    expect(r.stderr).toMatch(/D-9999 has no entry/);
+  });
+
+  it('a FROZEN RECORD may cite a D-nnn that does not resolve (history, not drift)', () => {
+    writeLog(SAMPLE_LOG);
+    // docs/journey/ is a frozen record for citation purposes: build-log.md and
+    // the DECISION-LOG itself are append-only chronological records, so an old
+    // entry's citation is history. The log is the ANCHOR AUTHORITY, never a
+    // citation source policed against itself.
+    writeFileSync(join(sandbox, 'docs', 'journey', 'build-log.md'), '# Build log\n\nSee D-9999.\n');
+    writeFileSync(join(sandbox, 'CHANGELOG.md'), '# Changelog\n\nShipped per D-9999.\n');
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(0);
+  });
+
+  it('the DECISION-LOG itself is not policed against its own anchors', () => {
+    writeLog(`${SAMPLE_LOG}\n\nA prose citation to D-9999 inside the record.\n`);
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(0);
+  });
+
+  it('honors the same-line suppression marker on a D-nnn', () => {
+    writeLog(SAMPLE_LOG);
+    writeFileSync(
+      join(sandbox, 'specs', 'reserved.md'),
+      '# Reserved\n\nReserved for D-9999. <!-- validate-docs: ignore -->\n',
+    );
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(0);
+  });
+
+  it('skips D-nnn inside fenced code blocks and inline-code spans', () => {
+    writeLog(SAMPLE_LOG);
+    writeFileSync(
+      join(sandbox, 'specs', 'fenced.md'),
+      '# Fenced\n\n```\nD-9999\n```\n\nAnd inline `D-9998` too.\n',
+    );
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(0);
+  });
+
+  it('is SKIPPED (not fail-open-silently) when the DECISION-LOG is absent', () => {
+    // A sandbox/fixture root has no log; reporting one missing FILE as N
+    // citation errors would be noise. Deletion of the real log is caught by
+    // the registry family's direction 2 (it is a backticked manifest entry).
+    writeFileSync(join(sandbox, 'specs', 'nolog.md'), '# No log\n\nSee D-9999.\n');
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(0);
+  });
+
+  it('reports the indexed D-entry count in the family summary', () => {
+    writeLog(SAMPLE_LOG);
+    const r = runValidator(sandbox);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toMatch(/D-entr(y|ies) indexed/);
+  });
+});
+
+describe('parseDecisionIds — the heading/lead shapes the real log uses', () => {
+  it('indexes every shape, and does not index a bare prose citation', () => {
+    const ids = parseDecisionIds(
+      [
+        '# Decision log',
+        '## 2026-07-27 — D-405 · DECISION — separator is a middot',
+        '## 2026-07-20 — D-375: DECISION — separator is a colon',
+        '- **⚙️ DECISION (2026-06-14) — D-150: bold list-item lead**',
+        '- **✅ FIX + RESOLUTION of D-149 (2026-06-27) — D-213: id not first in lead**',
+        '- **D-1 DECISION — id at the very start**',
+        '',
+        'Prose body citing D-9999, which must NOT become an anchor.',
+        '_Relates D-9998._',
+      ].join('\n'),
+    );
+    expect([...ids].sort()).toEqual(['1', '149', '150', '213', '375', '405'].sort());
+  });
+
+  it('the REAL log indexes the corpus (and the two Task-247 backfills resolve)', () => {
+    const ids = parseDecisionIds(
+      readFileSync(join(REPO_ROOT, 'docs', 'journey', 'DECISION-LOG.md'), 'utf8'),
+    );
+    expect(ids.size).toBeGreaterThan(300);
+    for (const id of ['1', '132', '168', '213', '405']) {
+      expect(ids.has(id), `D-${id} must be indexed from the real log`).toBe(true);
+    }
   });
 });

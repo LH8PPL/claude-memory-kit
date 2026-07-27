@@ -41,7 +41,7 @@
 //                 on disk (direction 2 — NEW in the consolidation; the old
 //                 registry validator was one-directional).
 //   references  — internal-reference rot: [label](path), [label](path#anchor),
-//                 ADR-NNNN, §N.N (design.md), FR-N, NFR-N, Task N.
+//                 ADR-NNNN, §N.N (design.md), FR-N, NFR-N, Task N, D-nnn.
 //   catalogs    — the hand-maintained catalog indexes (adr/README,
 //                 research/INDEX, sources/README, process/README) list every
 //                 sibling .md, both directions.
@@ -224,6 +224,53 @@ function familyRegistry() {
 // Family: references
 // ====================================================================
 
+const DECISION_LOG_REL = 'docs/journey/DECISION-LOG.md';
+
+/**
+ * Index the DECISION-LOG's D-entry ids (Task 247).
+ *
+ * `D-nnn` is the most-cited internal reference in the corpus and was the ONE
+ * member of the class on the honour system — every other id the `references`
+ * family knows (ADR-NNNN / FR-N / NFR-N / Task N / §N.N) resolves to a real
+ * anchor. The target failure is the FORWARD reference: `D-406` cited in
+ * tasks.md while the log stops at D-405 (it happened with D-382 during Task
+ * 245, and again across the D-380..D-384 authoring hour).
+ *
+ * WHAT COUNTS AS AN ANCHOR — an id in an ENTRY LEAD, not anywhere in the body.
+ * The log grew three lead shapes over 400 entries and all three are live:
+ *   `## 2026-07-27 — D-405 · DECISION — …`   (current headings)
+ *   `## 2026-07-20 — D-375: DECISION — …`    (older headings, colon separator)
+ *   `- **⚙️ DECISION (2026-06-14) — D-150: …**`  (the bold list-item era)
+ * so a lead is "a heading line, or the leading bold span of a list item".
+ * Restricting to leads is what keeps the check's teeth: the log's bodies are
+ * dense with citations (`_Relates D-285, D-198._`), and indexing those would
+ * make every typo self-anchoring.
+ *
+ * ALL ids in a lead are indexed, not just the first — because both are real:
+ * `- **✅ FIX + RESOLUTION of D-212 (2026-06-27) — D-213: …**` opens with a
+ * CITATION and carries its own id second. Taking the first would lose D-213
+ * (a genuine anchor); taking all costs an occasional false anchor when a lead
+ * quotes a number that was never an entry (there is exactly one in the real
+ * log today — a `D-552`-shaped typo inside D-270's lead). That trade is
+ * deliberate and matches this script's standing conservatism rule: an extra
+ * anchor can only MASK a citation, while a missing anchor FAILS THE BUILD on
+ * correct prose.
+ *
+ * @param {string} logText full DECISION-LOG.md source
+ * @returns {Set<string>} the D-numbers, as strings ('405', '1', …)
+ */
+export function parseDecisionIds(logText) {
+  const ids = new Set();
+  for (const line of String(logText).split(/\r?\n/)) {
+    let lead = null;
+    if (/^#{1,6}\s/.test(line)) lead = line;
+    else lead = line.match(/^\s*[-*]\s+\*\*(.*?)\*\*/)?.[1] ?? null;
+    if (lead === null) continue;
+    for (const m of lead.matchAll(/\bD-(\d+)\b/g)) ids.add(m[1]);
+  }
+  return ids;
+}
+
 function slugify(headingText) {
   return headingText
     .toLowerCase()
@@ -299,6 +346,14 @@ function familyReferences() {
     if (m) taskIds.add(m[1]);
   }
 
+  // D-nnn anchors (Task 247). ONE parse of the log, reused for every file.
+  // An absent (or empty) log => the sub-check is SKIPPED rather than turning
+  // one missing FILE into N citation errors (fixture/sandbox roots have no
+  // log). Deleting the real log is caught by the registry family's direction
+  // 2 — DECISION-LOG.md is a backticked manifest entry in DOCUMENTATION-MAP.md.
+  const decisionLogText = readMdIfExists(DECISION_LOG_REL);
+  const decisionIds = decisionLogText === '' ? null : parseDecisionIds(decisionLogText);
+
   // Design-section anchors (§N.N).
   const designText = readMdIfExists('specs/design.md');
   const designSections = new Set();
@@ -330,6 +385,7 @@ function familyReferences() {
   const FR_RE = /\bFR-(\d+)\b/g;
   const NFR_RE = /\bNFR-(\d+)\b/g;
   const TASK_RE = /\bTask\s+(\d+)(?:[.)\s]|$)/g;
+  const DNNN_RE = /\bD-(\d+)\b/g;
 
   for (const file of mdFiles) {
     let text;
@@ -339,6 +395,17 @@ function familyReferences() {
       continue;
     }
     const fileDir = dirname(file);
+    // Frozen RECORDS are exempt from the D-nnn check (they are not exempt from
+    // link/ADR rot — a broken path is broken whenever it was written). A
+    // research note or an old build-log entry citing a since-superseded or
+    // never-numbered D-entry is HISTORY, and "fixing" it is the bug the
+    // frozen-record rule exists to prevent. This reuses the counts family's
+    // path-prefix list verbatim, which also settles the DECISION-LOG itself:
+    // it is the ANCHOR AUTHORITY, never a citation source policed against its
+    // own anchors. Trade-off, stated rather than left silent (the same one
+    // `counts` already accepts for docs/journey/): a typo in a BRAND-NEW log
+    // or build-log entry goes unchecked.
+    const checkDnnn = decisionIds !== null && !isFrozenRecord(relPosix(REPO, file));
     const lines = text.split(/\r?\n/);
 
     // Fence tracking with fence-length semantics (CommonMark: an opening
@@ -434,12 +501,35 @@ function familyReferences() {
           record(file, lineNumber, `Task ${m[1]} not defined in tasks.md`);
         }
       }
+
+      if (checkDnnn) {
+        DNNN_RE.lastIndex = 0;
+        while ((m = DNNN_RE.exec(scanLine)) !== null) {
+          if (!decisionIds.has(m[1])) {
+            record(
+              file,
+              lineNumber,
+              `D-${m[1]} has no entry in ${DECISION_LOG_REL} — a dangling decision citation ` +
+                `(a forward reference to an unwritten entry, or a typo'd number). Write/backfill the ` +
+                `entry, fix the number, or mark the line <!-- validate-docs: ignore --> with a reason.`,
+            );
+          }
+        }
+      }
     }
   }
 
+  // Report the skip explicitly rather than as "0 indexed" — a validator that
+  // did not run a check must not read like a check that found nothing.
+  const dPart =
+    decisionIds === null
+      ? `D-nnn SKIPPED (no ${DECISION_LOG_REL})`
+      : `${decisionIds.size} D-entr${decisionIds.size === 1 ? 'y' : 'ies'} indexed`;
   return {
     errors,
-    summary: `references: ${mdFiles.length} markdown files scanned (${adrFiles.size} ADR / ${frIds.size} FR / ${nfrIds.size} NFR / ${taskIds.size} Task IDs indexed)`,
+    summary:
+      `references: ${mdFiles.length} markdown files scanned (${adrFiles.size} ADR / ${frIds.size} FR / ` +
+      `${nfrIds.size} NFR / ${taskIds.size} Task IDs indexed; ${dPart})`,
   };
 }
 
