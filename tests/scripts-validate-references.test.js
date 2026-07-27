@@ -145,6 +145,8 @@ describe('validate-references — D-nnn decision-log citations (Task 247)', () =
     '',
     '- **D-1 DECISION — the earliest shape, id at the very start of the lead**',
     '',
+    '- **📝 NOTE (2026-07-02) — D-253a: the SUB-LETTERED shape (D-203b..n / D-258a are real ids)**',
+    '',
   ].join('\n');
 
   it('FAILS on a dangling D-nnn in a living doc, naming the file and line', () => {
@@ -206,6 +208,81 @@ describe('validate-references — D-nnn decision-log citations (Task 247)', () =
     expect(r.exitCode).toBe(1);
     expect(r.stderr).toMatch(/ADR-0099 has no file/);
     expect(r.stderr).toMatch(/D-9999 has no entry/);
+  });
+
+  // ── Slash continuations. `D-270/271/277` is THREE citations; validating only
+  // the head silently exempted every tail in the corpus (~60 of them).
+
+  it('a SLASH-CONTINUATION tail is validated, not just the head', () => {
+    writeLog(SAMPLE_LOG);
+    writeFileSync(join(sandbox, 'specs', 'tail.md'), '# Tail\n\nPer D-405/9999.\n');
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(1);
+    expect(r.stderr).toMatch(/D-9999 has no entry/);
+    expect(r.stderr).not.toMatch(/D-405 has no entry/);
+  });
+
+  it('an all-resolving slash continuation passes', () => {
+    writeLog(SAMPLE_LOG);
+    writeFileSync(join(sandbox, 'specs', 'tails-ok.md'), '# OK\n\nPer D-405/375/150 and D-1.\n');
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(0);
+  });
+
+  // ── Sub-lettered ids. The log really anchors them (D-203b..n, D-253a,
+  // D-258a) and CLAUDE.md really cites D-253a, so BOTH sides carry `[a-z]?`.
+
+  it('a SUB-LETTERED id resolves when the log anchors it, and fails when it does not', () => {
+    writeLog(SAMPLE_LOG);
+    writeFileSync(join(sandbox, 'specs', 'sub.md'), '# Sub\n\nPer D-253a.\n');
+    expect(runValidator(sandbox).exitCode).toBe(0);
+    writeFileSync(join(sandbox, 'specs', 'sub-bad.md'), '# Sub bad\n\nPer D-405z.\n');
+    const r = runValidator(sandbox);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toMatch(/D-405z has no entry/);
+  });
+
+  // ── The Task-249 composition: the anchor source is a GLOB, so an archive
+  // split keeps pre-split anchors resolvable.
+
+  it('an ARCHIVED log (DECISION-LOG-archive-*.md) still supplies anchors', () => {
+    writeLog(SAMPLE_LOG);
+    writeFileSync(
+      join(sandbox, 'docs', 'journey', 'DECISION-LOG-archive-pre-v0.5.md'),
+      '# Decision log — archive\n\n## 2026-01-02 — D-77 · DECISION — a pre-split entry\n',
+    );
+    writeFileSync(join(sandbox, 'specs', 'cites-old.md'), '# Old\n\nPer D-77 and D-405.\n');
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(0);
+    expect(r.stdout).toMatch(/from 2 sources/);
+  });
+
+  it('WITHOUT the archive present, the same pre-split citation FAILS (the glob is load-bearing)', () => {
+    writeLog(SAMPLE_LOG);
+    writeFileSync(join(sandbox, 'specs', 'cites-old.md'), '# Old\n\nPer D-77.\n');
+    const r = runValidator(sandbox);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toMatch(/D-77 has no entry/);
+  });
+
+  it('an ARCHIVED tasks file (specs/tasks-archive.md) still supplies Task ids', () => {
+    // Task 249 splits tasks.md the same way; `Task N` gets the same glob.
+    writeLog(SAMPLE_LOG);
+    writeFileSync(join(sandbox, 'specs', 'tasks-archive.md'), '# Archive\n\n- [x] 999. a shipped task\n');
+    writeFileSync(join(sandbox, 'specs', 'cites-task.md'), '# Cites\n\nPer Task 999.\n');
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(0);
+  });
+
+  it('a lead shape INSIDE A FENCE mints no anchor (parse side matches scan side)', () => {
+    writeLog(
+      `${SAMPLE_LOG}\n\nAn illustration of the heading shape:\n\n\`\`\`\n## 2026-01-01 — D-8888 · DECISION — an EXAMPLE, not an entry\n\`\`\`\n`,
+    );
+    writeFileSync(join(sandbox, 'specs', 'cites-fenced.md'), '# Cites\n\nPer D-8888 and D-405.\n');
+    const r = runValidator(sandbox);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toMatch(/D-8888 has no entry/);
+    expect(r.stderr).not.toMatch(/D-405 has no entry/);
   });
 
   it('a FROZEN RECORD may cite a D-nnn that does not resolve (history, not drift)', () => {
@@ -273,12 +350,22 @@ describe('parseDecisionIds — the heading/lead shapes the real log uses', () =>
         '- **⚙️ DECISION (2026-06-14) — D-150: bold list-item lead**',
         '- **✅ FIX + RESOLUTION of D-149 (2026-06-27) — D-213: id not first in lead**',
         '- **D-1 DECISION — id at the very start**',
+        '- **📝 NOTE — D-253a: the sub-lettered shape**',
+        '- **⚙️ DECISION — D-185/186/187: a slash continuation in a lead**',
         '',
         'Prose body citing D-9999, which must NOT become an anchor.',
         '_Relates D-9998._',
+        '',
+        '```',
+        '## 2026-01-01 — D-8888 · DECISION — a fenced EXAMPLE, not an entry',
+        '```',
+        '',
+        '- **⚙️ DECISION — `D-7777` inside an inline-code span is illustrative**',
       ].join('\n'),
     );
-    expect([...ids].sort()).toEqual(['1', '149', '150', '213', '375', '405'].sort());
+    expect([...ids].sort()).toEqual(
+      ['1', '149', '150', '185', '186', '187', '213', '253a', '375', '405'].sort(),
+    );
   });
 
   it('the REAL log indexes the corpus (and the two Task-247 backfills resolve)', () => {
@@ -286,7 +373,7 @@ describe('parseDecisionIds — the heading/lead shapes the real log uses', () =>
       readFileSync(join(REPO_ROOT, 'docs', 'journey', 'DECISION-LOG.md'), 'utf8'),
     );
     expect(ids.size).toBeGreaterThan(300);
-    for (const id of ['1', '132', '168', '213', '405']) {
+    for (const id of ['1', '132', '168', '213', '405', '253a', '258a', '203c']) {
       expect(ids.has(id), `D-${id} must be indexed from the real log`).toBe(true);
     }
   });

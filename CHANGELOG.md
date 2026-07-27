@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Changed
 
-- **Internal: decision-log citations are validator-backed.** The `references` family of `scripts/validate-docs.mjs` gained a `dnnn` sub-check — every `D-nnn` in a living doc must resolve to an entry in `docs/journey/DECISION-LOG.md`, so a citation to a decision nobody wrote (the forward reference) fails the suite instead of dangling. Frozen records are exempt, and the log itself is the anchor authority rather than a policed source. Its first run found 4 dangling citations across `specs/tasks.md`, `specs/design.md` and `docs/RELEASE-PLAN.md`, tracing to two reserved-but-never-written ids (`D-132`, `D-168`) — both backfilled. (Task 247)
+- **Internal: decision-log citations are validator-backed.** The `references` family of `scripts/validate-docs.mjs` gained a `dnnn` sub-check — every `D-nnn` in a living doc must resolve to an entry in `docs/journey/DECISION-LOG*.md`, so a citation to a decision nobody wrote (the forward reference) fails the suite instead of dangling. Slash continuations (`D-270/271/277` = three citations) and sub-lettered ids (`D-253a`) are checked too, using the same token as the kit's own D-anchor parser; frozen records are exempt, and the log itself is the anchor authority rather than a policed source. Anchor sources are globs (`DECISION-LOG*.md`, `specs/tasks*.md`) so Task 249's archive split keeps pre-split ids resolving. Its first run found 4 dangling citations across `specs/tasks.md`, `specs/design.md` and `docs/RELEASE-PLAN.md`, tracing to two ids that were cited but never became numbered entries (`D-132`, `D-168`) — both backfilled. (Task 247)
 
 ### Fixed
 
