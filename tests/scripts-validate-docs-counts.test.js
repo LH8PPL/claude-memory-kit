@@ -218,6 +218,30 @@ describe('Task 236 — skill-review regressions', () => {
     expect(isFrozenRecord('docs/process/v0.1.1-scenario-test.md')).toBe(true);
   });
 
+  it('Task 249: specs/tasks-archive.md is FROZEN, its live source tasks.md is NOT', () => {
+    // `specs/` is the Spine, so it is deliberately NOT a record prefix — which
+    // left the completed-task archive (Task 249) policed as live prose the day
+    // it appeared. Its entries are shipped-task retrospectives verbatim, thick
+    // with counts that were true on their ship date ("HC-1..HC-9", "6 tools"),
+    // so it needs its own entry. The debt Task 247 flagged; paid here.
+    expect(isFrozenRecord('specs/tasks-archive.md')).toBe(true);
+    expect(isFrozenRecord('specs/tasks.md'), 'the LIVE plan stays checked').toBe(false);
+    expect(isFrozenRecord('specs/design.md')).toBe(false);
+    // Named individually, NOT by a `specs/*-archive.md` glob — a future specs/
+    // archive must be a deliberate addition, never an accidental exemption.
+    expect(isFrozenRecord('specs/requirements-archive.md')).toBe(false);
+  });
+
+  it('Task 249: a historical count inside the task archive does not fail the build', () => {
+    const live = { mcpTools: 12, cliVerbs: 41, healthChecks: 12, agentProfiles: 5 };
+    const docs = [
+      { path: 'specs/tasks-archive.md', text: 'Task 37 shipped `cmk doctor` with 9 health checks.' },
+      { path: 'docs/journey/build-log-archive-pre-v0.5.md', text: 'back then there were 8 CLI verbs' },
+      { path: 'docs/journey/DECISION-LOG-archive-pre-v0.5.md', text: 'v0.4.0 shipped 9 MCP tools' },
+    ];
+    expect(checkCounts({ docs, live })).toEqual([]);
+  });
+
   it('backticked and hyphenated-adjective claims are still caught', () => {
     expect(extractCountClaims('the kit ships `9 MCP tools`')[0]).toMatchObject({ n: 9 });
     expect(extractCountClaims('there are 9 kit-owned MCP tools')[0]).toMatchObject({ n: 9 });

@@ -996,6 +996,15 @@ const FROZEN_RECORD_PREFIXES = [
   // stakes. (This is also where 50 of the family's first 62 hits came from.)
   'context/',
   'context.local/',
+  // The completed-task ARCHIVE (Task 249). `specs/` is NOT a record prefix —
+  // requirements/design/tasks are the live Spine — so the archive needs its own
+  // entry, and it is a real one: its entries are the shipped-task retrospectives
+  // verbatim, dense with counts that were true on their ship date ("HC-1..HC-9",
+  // "6 tools"). Its SOURCE, `specs/tasks.md`, stays checked; only the frozen
+  // half is exempt. Named individually rather than by a `specs/*-archive.md`
+  // glob so a future `specs/` archive is a deliberate addition, not an
+  // accidental exemption.
+  'specs/tasks-archive.md',
   // The EXTERNAL-projects catalog. Also found by running this for real: every
   // count in SOURCES.md is about somebody ELSE's collection ("14 MCP tools" =
   // that project's tools, not ours). The collection nouns are not kit-exclusive,
