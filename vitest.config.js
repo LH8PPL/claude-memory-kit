@@ -9,6 +9,23 @@ export default defineConfig({
     // under --coverage). A genuine hang still blows 30s. Pathologically-heavy
     // individual tests carry their own larger per-test timeout.
     testTimeout: 30_000,
+    // …and the SAME ceiling for setup/teardown hooks, which vitest otherwise
+    // leaves at its 10s default (Task 252 detour — the D-406 named trigger:
+    // "if this setup-phase class hits a PR where the gate DOES bind,
+    // root-causing it becomes a blocking detour"). It bound, so it was
+    // root-caused: the recurring "beforeEach failed in one test of an otherwise
+    // green file, with an unhelpful `STACK_TRACE_ERROR` in the json" class is a
+    // HOOK TIMEOUT. Evidence: the failing `cli-backfill` test measured 11 283 ms
+    // — just past the 10s hook default — while every sibling sharing that hook
+    // ran in 1.7-4.9 s; forcing `--hookTimeout=1` reproduces the identical
+    // serialized error and stack frames. The hooks in question do real work
+    // (mkdtemp + `git init` + 2x `git config` = three subprocess spawns), so
+    // under full-suite load they legitimately cross 10s — which is exactly the
+    // reasoning that raised testTimeout above, never applied to hooks. That is
+    // also why the class hit a DIFFERENT file each time it was observed
+    // (index-rebuild / capture-turn / lazy-compress / MCP-server): all
+    // subprocess-heavy setups. A genuine hung hook still fails, at 30s.
+    hookTimeout: 30_000,
     // Always-on logging (maintainer directive 2026-06-05, D-68): every vitest
     // run keeps the console `default` reporter AND writes a structured json
     // result file, so a failing run is never undiagnosable. The json reporter

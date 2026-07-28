@@ -23,6 +23,7 @@ import {
   scanPii,
   maskPii,
   PII_PLACEHOLDERS,
+  PII_PATTERN_SAMPLES,
   MAX_SCAN_CHARS,
 } from '../packages/cli/src/pii-patterns.mjs';
 
@@ -193,6 +194,19 @@ describe('Task 252 — maskPii pattern hardening (shape audit)', () => {
       expect(masked('mail a@münchen.de now')).toBe(`mail ${PII_PLACEHOLDERS.EMAIL} now`);
     });
 
+    it('masks DECOMPOSED (NFD) unicode identically to composed (NFC) — the macOS form', () => {
+      // macOS hands out NFD filenames, so `ls` / `git` output pasted into a
+      // transcript carries `n`+U+0303 rather than `ñ`. `\p{L}` alone does not
+      // match a combining mark, which reproduced the EXACT half-mask this task
+      // closes: NFD `añez@x.com` → `añ«EMAIL»`, NFD `münchen` unmatched whole.
+      // Asserted on the NFD-normalized needle inside NFC-safe surrounding prose.
+      for (const nfc of ['mail añez@x.com now', 'mail josé.lópez@correo.es now', 'mail a@münchen.de now']) {
+        const nfd = nfc.normalize('NFD');
+        expect(nfd).not.toBe(nfc.normalize('NFC')); // the fixture really is decomposed
+        expect(masked(nfd)).toBe(`mail ${PII_PLACEHOLDERS.EMAIL} now`);
+      }
+    });
+
     it('survives surrounding punctuation: sentence period, angle brackets, mailto:', () => {
       expect(masked('contact: a.b@x.com.')).toBe(`contact: ${PII_PLACEHOLDERS.EMAIL}.`);
       expect(masked('<mailto:a.b@x.com>')).toBe(`<mailto:${PII_PLACEHOLDERS.EMAIL}>`);
@@ -239,6 +253,20 @@ describe('Task 252 — maskPii pattern hardening (shape audit)', () => {
       expect(masked('ssh alice.dev@myserver.example.com')).toBe(`ssh ${PII_PLACEHOLDERS.EMAIL}`);
     });
 
+    it('a REAL address wearing a file extension still masks (the exemption is not `$`-anchored)', () => {
+      // `exports/john.doe@corp.com.csv` is an ordinary export path. A bare
+      // "ends with a listed extension → exempt" test masked it before this task
+      // and leaked it after — the exemption must ask whether what remains after
+      // stripping the extension is STILL a whole address.
+      expect(masked('see exports/john.doe@corp.com.csv today')).toBe(
+        `see exports/${PII_PLACEHOLDERS.EMAIL} today`,
+      );
+      expect(masked('attach a.b@x.com.png here')).toBe(`attach ${PII_PLACEHOLDERS.EMAIL} here`);
+      // …and the other direction still holds, including a chained extension.
+      expect(masked('import logo@2x.png from assets')).toBe('import logo@2x.png from assets');
+      expect(masked('build logo@2x.png.css out')).toBe('build logo@2x.png.css out');
+    });
+
     it('the existing bot/example allowlist is unchanged by the hardening', () => {
       const input = [
         'Co-Authored-By: Claude <noreply@anthropic.com>',
@@ -273,6 +301,14 @@ describe('Task 252 — maskPii pattern hardening (shape audit)', () => {
       expect(Date.now() - t).toBeLessThan(1000);
       expect(findings.filter((f) => f.category === 'EMAIL')).toHaveLength(0);
     });
+
+    it('the same holds for DECOMPOSED text (adding \\p{M} did not reintroduce the cost)', () => {
+      const adversarial = ('a@' + 'añ'.repeat(MAX_SCAN_CHARS / 2) + '.1').normalize('NFD');
+      const t = Date.now();
+      const { findings } = maskPii(adversarial);
+      expect(Date.now() - t).toBeLessThan(1000);
+      expect(findings.filter((f) => f.category === 'EMAIL')).toHaveLength(0);
+    });
   });
 
   describe('PHONE — sibling-gap audit (separator variants)', () => {
@@ -283,10 +319,8 @@ describe('Task 252 — maskPii pattern hardening (shape audit)', () => {
       // a GATE — a pattern whose trigger is absent there never runs at all.
       expect(masked('call 555.123.4567 today')).toBe(`call ${PII_PLACEHOLDERS.PHONE} today`);
       // A sentence-ending period must not defeat the match (the sibling
-      // patterns' trailing-guard contract), and a longer digit run must not
-      // half-match from the middle.
+      // patterns' trailing-guard contract).
       expect(masked('desk 555.123.4567.')).toBe(`desk ${PII_PLACEHOLDERS.PHONE}.`);
-      expect(masked('build 1.555.123.45678 id')).toBe('build 1.555.123.45678 id');
     });
 
     it('masks +CC-NN-NNNNNNN (an unsplit national block after the country code)', () => {
@@ -300,6 +334,21 @@ describe('Task 252 — maskPii pattern hardening (shape audit)', () => {
       expect(masked(input)).toBe(input);
     });
 
+    it('does not half-match the head of a LONGER dotted run', () => {
+      expect(masked('build 1.555.123.45678 id')).toBe('build 1.555.123.45678 id');
+      expect(masked('seq 100.200.3000.4000 end')).toBe('seq 100.200.3000.4000 end');
+      expect(masked('intl +972-54-1234567.8 ext')).toBe('intl +972-54-1234567.8 ext');
+    });
+
+    it('ACCEPTED RESIDUAL: a standalone 3-3-4 dotted triple masks even when it is not a phone', () => {
+      // `100.200.3000` is shape-identical to `555.123.4567` — there is no
+      // discriminating signal, so the trade is taken in the masking (safe)
+      // direction and pinned here so it is visible rather than assumed. Same for
+      // a `+NNN NNN NNNNNNN` triple in diff-shaped text.
+      expect(masked('seq 100.200.3000 end')).toBe(`seq ${PII_PLACEHOLDERS.PHONE} end`);
+      expect(masked('+100 200 3000000')).toBe(PII_PLACEHOLDERS.PHONE);
+    });
+
     it('DOCUMENTED NON-COVERAGE: bare E.164 with no separators is not matched', () => {
       // `+972541234567` — a `+` followed by a long digit run also describes an
       // added line in a unified diff (tool output the transcript tier carries
@@ -307,6 +356,33 @@ describe('Task 252 — maskPii pattern hardening (shape audit)', () => {
       // requirement rather than trade a leak class for a corruption class.
       const input = 'call +972541234567 today';
       expect(masked(input)).toBe(input);
+    });
+  });
+
+  describe('the pattern registry — every pattern proves it is reachable', () => {
+    // The structural half of the pre-filter finding. Each registry entry carries
+    // the BARE text it must match (no surrounding prose), so this loop fails if
+    // a pattern is added without a sample, if a pattern stops matching its own
+    // sample, OR — the landmine that actually bit during this task — if the
+    // cheap keyword pre-filter lacks the pattern's trigger character and gates
+    // the whole pass off. Gate-dead patterns become a red suite, not a silent
+    // no-op that looks green because the class was never exercised bare.
+    it('every registered pattern masks its own bare sample', () => {
+      expect(PII_PATTERN_SAMPLES.length).toBeGreaterThan(0);
+      for (const { category, sample } of PII_PATTERN_SAMPLES) {
+        const { text, findings } = maskPii(sample);
+        expect(text, `${category} sample "${sample}" did not mask`).not.toBe(sample);
+        expect(text).toBe(PII_PLACEHOLDERS[category === 'EMAIL' ? 'EMAIL' : 'PHONE']);
+        expect(findings.some((f) => f.category === category)).toBe(true);
+      }
+    });
+
+    it('every registered sample is a non-empty string with a declared category', () => {
+      for (const entry of PII_PATTERN_SAMPLES) {
+        expect(typeof entry.sample).toBe('string');
+        expect(entry.sample.length).toBeGreaterThan(0);
+        expect(Object.keys(PII_PLACEHOLDERS)).toContain(entry.category);
+      }
     });
   });
 

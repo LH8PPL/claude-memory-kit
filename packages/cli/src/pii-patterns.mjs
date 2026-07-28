@@ -62,12 +62,19 @@ const INVISIBLE_RE = new RegExp([...INVISIBLE_CHARS].join('|'), 'g');
 // every prompt, so an under-match is a privacy leak and an over-match destroys
 // real log/code text.
 //
-//   local part — `\p{L}`/`\p{N}`, NOT `[A-Za-z0-9]`. The old ASCII class plus a
-//     `\b` anchor (which is ASCII-only) matched a non-ASCII address from its
-//     first ASCII byte: `añez@x.com` masked to `añ«EMAIL»` and `a@münchen.de`
-//     did not match at all. A PARTIAL mask is still a leak.
+//   local part — `\p{L}`/`\p{M}`/`\p{N}`, NOT `[A-Za-z0-9]`. The old ASCII class
+//     plus a `\b` anchor (which is ASCII-only) matched a non-ASCII address from
+//     its first ASCII byte: `añez@x.com` masked to `añ«EMAIL»` and
+//     `a@münchen.de` did not match at all. A PARTIAL mask is still a leak.
+//   `\p{M}` (combining marks) is REQUIRED, not decorative: `\p{L}` matches the
+//     PRECOMPOSED `ñ` (NFC) but a DECOMPOSED one (NFD — `n` + U+0303) is a
+//     letter followed by a mark, and macOS hands out NFD filenames, so `ls` /
+//     `git` output pasted into a transcript carries it. Without `\p{M}` the NFD
+//     form reproduced the exact half-mask this task exists to close.
 //   boundaries — explicit lookarounds instead of `\b`, so the local part can't
-//     start mid-token and a trailing sentence period still ends the match.
+//     start mid-token and a trailing sentence period still ends the match. They
+//     carry `\p{M}` too, or a decomposed character straddling the boundary
+//     re-opens the same partial match.
 //   domain labels — each pre-TLD label must contain at least one LETTER: a real
 //     domain label is never all-digits, which is what `build@2.0.beta` is. The
 //     label is written UNAMBIGUOUSLY — a letter-free prefix, the mandatory
@@ -75,14 +82,20 @@ const INVISIBLE_RE = new RegExp([...INVISIBLE_CHARS].join('|'), 'g');
 //     natural spelling (`[\p{L}\p{N}-]*\p{L}[\p{L}\p{N}-]*`) is ambiguous and
 //     measured QUADRATIC on a long almost-matching run (3.5 ms at 2.4 KB, ~16×
 //     per 4× length → ~seconds at MAX_SCAN_CHARS) on a per-turn hook path; this
-//     form is flat, at the pre-252 regex's cost.
-//   TLD — letters only, 2+.
-const EMAIL_LOCAL = '[\\p{L}\\p{N}._%+-]+';
-const EMAIL_DOMAIN = '(?:[\\p{N}-]*\\p{L}[\\p{L}\\p{N}-]*\\.)+\\p{L}{2,}';
+//     form is flat, at the pre-252 regex's cost. (Marks are excluded from the
+//     letter-free PREFIX class, which is what keeps the split unambiguous.)
+//   TLD — a letter followed by letters/marks, so a decomposed TLD still ends the
+//     address.
+const EMAIL_LOCAL = '[\\p{L}\\p{M}\\p{N}._%+-]+';
+const EMAIL_DOMAIN = '(?:[\\p{N}-]*\\p{L}[\\p{L}\\p{M}\\p{N}-]*\\.)+\\p{L}[\\p{L}\\p{M}]+';
 const EMAIL_RE = new RegExp(
-  `(?<![\\p{L}\\p{N}._%+-])${EMAIL_LOCAL}@${EMAIL_DOMAIN}(?![\\p{L}\\p{N}])`,
+  `(?<![\\p{L}\\p{M}\\p{N}._%+-])${EMAIL_LOCAL}@${EMAIL_DOMAIN}(?![\\p{L}\\p{M}\\p{N}])`,
   'gu',
 );
+// The same shape, FULLY anchored — used to ask "is this whole token an address?"
+// when deciding whether a file-extension-suffixed match is a filename or a real
+// address wearing one (see isAssetFilename).
+const EMAIL_WHOLE_RE = new RegExp(`^${EMAIL_LOCAL}@${EMAIL_DOMAIN}$`, 'u');
 // The allowlist skips addresses that are content, not PII: masking
 // `noreply@anthropic.com` in a commit trailer would damage the record for zero
 // privacy gain. `git@`/`hg@` join it (Task 252): an SSH remote's service handle
@@ -99,7 +112,24 @@ const EMAIL_ALLOWLIST_RE =
 // absent and keep masking.
 const EMAIL_FILE_EXT_RE =
   /\.(?:png|jpe?g|gif|svg|webp|ico|bmp|css|scss|sass|less|js|mjs|cjs|jsx|tsx|json|jsonc|yaml|yml|toml|lock|log|txt|csv|pdf|html?|xml|exe|dll|mp4|webm|wav|woff|ttf|eot|map)$/i;
-const emailIsNotPii = (m) => EMAIL_ALLOWLIST_RE.test(m) || EMAIL_FILE_EXT_RE.test(m);
+/**
+ * Is this match an asset FILENAME rather than an address?
+ *
+ * Ending in a listed extension is NOT sufficient — that test alone exempted a
+ * REAL address wearing a file extension (`exports/john.doe@corp.com.csv`, an
+ * ordinary export path), which masked before this task and would have leaked
+ * after it. Strip the trailing extension(s) and ask whether what remains is
+ * still a whole address: `logo@2x.png` → `logo@2x` (no dotted domain) is a
+ * filename; `john.doe@corp.com.csv` → `john.doe@corp.com` is an address and
+ * must mask. Only extensions that are NOT delegated TLDs are ever stripped, so
+ * a real address's own TLD can never be eaten by this loop.
+ */
+function isAssetFilename(m) {
+  let stem = m;
+  while (EMAIL_FILE_EXT_RE.test(stem)) stem = stem.replace(EMAIL_FILE_EXT_RE, '');
+  return stem !== m && !EMAIL_WHOLE_RE.test(stem);
+}
+const emailIsNotPii = (m) => EMAIL_ALLOWLIST_RE.test(m) || isAssetFilename(m);
 
 // PHONE — deliberately conservative (the kit's Poison_Guard philosophy):
 // require an international prefix OR separator-formatted groups, so versions
@@ -109,21 +139,67 @@ const emailIsNotPii = (m) => EMAIL_ALLOWLIST_RE.test(m) || EMAIL_FILE_EXT_RE.tes
 // sentence-ending period after the number must not defeat the match.
 // Task 252 added the two separator variants the audit found missing — both keep
 // the conservative posture (a separator or a `+` prefix is still required).
-// Bare E.164 (`+972541234567`) stays deliberately UNMATCHED: a `+` followed by a
-// long digit run also describes an added line in a unified diff, which the
-// transcript tier carries verbatim — trading a leak class for a corruption class
-// is not an improvement. Documented, tested, not silent.
+//
+// NAMED RESIDUALS (both directions, stated rather than assumed):
+//   - Bare E.164 (`+972541234567`) stays deliberately UNMATCHED: a `+` before a
+//     long digit run also describes an added line in a unified diff, which the
+//     transcript tier carries verbatim. A leak class traded for a corruption
+//     class is not an improvement.
+//   - A STANDALONE 3-3-4 dotted triple (`100.200.3000`) and a `+NNN NNN NNNNNNN`
+//     triple in diff-shaped text DO mask. These are shape-identical to the real
+//     phone forms — there is no discriminating signal, so the trade is accepted
+//     in the masking (safe) direction and pinned by tests so it stays visible.
+//     What IS fixable — and fixed — is half-matching the head of a LONGER dotted
+//     run; the trailing guards below reject a dotted-digit continuation.
 const PHONE_RES = [
   /(?<![\w.])\+\d{1,3}[ -]\d{1,3}[ -]?\d{2,4}[ -]\d{3,4}(?![\d-])/g, // +972 54-123-4567
   /(?<![\w.])\(\d{3}\) ?\d{3}-\d{4}(?![\d-])/g, // (555) 123-4567
   /(?<![\w.])\d{3}-\d{3}-\d{4}(?![\d-])/g, // 555-123-4567 (NOT a date: dates are nnnn-nn-nn)
-  /(?<![\w.])\+\d{1,3}[ -]\d{1,3}[ -]\d{6,9}(?![\d-])/g, // +972-54-1234567 (unsplit national block)
-  // 555.123.4567 (NOT an IPv4 — no 4-digit octet). Like its siblings the trailing
-  // guard rejects only a DIGIT continuation: a sentence-ending period after the
-  // number must not defeat the match, and the lookbehind already prevents
-  // starting mid-run inside a longer dotted sequence.
-  /(?<![\w.])\d{3}\.\d{3}\.\d{4}(?!\d)/g,
+  // +972-54-1234567 (unsplit national block). `(?!\.\d)` joins the sibling
+  // `(?![\d-])` guard so the head of a longer dotted run is not half-matched.
+  /(?<![\w.])\+\d{1,3}[ -]\d{1,3}[ -]\d{6,9}(?![\d-])(?!\.\d)/g,
+  // 555.123.4567 (NOT an IPv4 — no 4-digit octet). The trailing guard matches
+  // its siblings' `(?![\d-])` — a sentence-ending period must not defeat the
+  // match — plus `(?!\.\d)` so `100.200.3000.4000` is not half-matched from its
+  // head; the lookbehind already prevents starting mid-run.
+  /(?<![\w.])\d{3}\.\d{3}\.\d{4}(?![\d-])(?!\.\d)/g,
 ];
+
+// The pattern REGISTRY — the single list `run()` walks, each entry carrying the
+// BARE text it must match. `tests/cli-pii-patterns.test.js` loops the exported
+// samples and asserts every one of them masks on its own, which makes two
+// otherwise-silent failure modes self-detecting:
+//   - a pattern added without a sample fails the loop (no entry to assert), and
+//   - a pattern whose trigger character is missing from mightContainPii's cheap
+//     pre-filter fails too — the sample is BARE, so the pre-filter is the only
+//     thing between it and the pattern. That gate silently disabled the dotted
+//     phone form during this task's build; the loop test is the guard that turns
+//     the next such landmine into a red suite instead of a shipped no-op.
+const PII_PATTERNS = [
+  {
+    category: 'EMAIL',
+    placeholder: PII_PLACEHOLDERS.EMAIL,
+    re: EMAIL_RE,
+    allow: emailIsNotPii,
+    sample: 'someuser@gmail.com',
+  },
+  ...PHONE_RES.map((re, i) => ({
+    category: 'PHONE',
+    placeholder: PII_PLACEHOLDERS.PHONE,
+    re,
+    sample: ['+972 54-123-4567', '(555) 123-4567', '555-123-4567', '+972-54-1234567', '555.123.4567'][i],
+  })),
+];
+
+/**
+ * `[{category, sample}]` derived from the live registry — the test loop's input.
+ * Derived, not hand-listed, so it cannot drift from what `run()` actually walks.
+ * (Only `{category, sample}` escapes: a `/g` RegExp carries `lastIndex` state
+ * and must not be shared outside the module.)
+ */
+export const PII_PATTERN_SAMPLES = Object.freeze(
+  PII_PATTERNS.map(({ category, sample }) => Object.freeze({ category, sample })),
+);
 
 // Cheap keyword pre-filter (the gitleaks two-stage discipline): only run the
 // expensive per-pattern pass when the text can possibly contain a match.
@@ -184,11 +260,9 @@ function run(text, { usernames = [], mutate }) {
     });
   };
 
-  // 2. EMAIL (allowlisted bot/service/example addresses + asset filenames stay).
-  applyPattern(EMAIL_RE, 'EMAIL', PII_PLACEHOLDERS.EMAIL, emailIsNotPii);
-
-  // 3. PHONE (conservative forms only).
-  for (const re of PHONE_RES) applyPattern(re, 'PHONE', PII_PLACEHOLDERS.PHONE);
+  // 2-3. EMAIL then PHONE, from the ONE registry (each entry has a sample the
+  //      test loop asserts against — see PII_PATTERNS).
+  for (const p of PII_PATTERNS) applyPattern(p.re, p.category, p.placeholder, p.allow);
 
   // 4. HOME_PATH — delegate to the existing shared abstraction (sanitize.mjs);
   //    detect-by-diff so the finding is recorded without re-implementing it.

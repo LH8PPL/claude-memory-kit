@@ -1014,20 +1014,34 @@ scratchpad bullets, `cmk remember`):
   output). Secrets stay §6.7's (REJECT posture); the PII class **MASKS** — incidental, not
   adversarial.
 - **Covered shapes, and the named residuals (Task 252 audit).** `EMAIL` matches unicode local
-  parts and domains (an ASCII-only class left `añez@x.com` masked as `añ«EMAIL»` — a partial
-  mask is still a leak), dotted/plus/percent local parts, and multi-label subdomains; it does
-  NOT match a quoted local part (`"john doe"@x.com` — legal, essentially nonexistent, and
-  quote-span matching over-matches prose). `PHONE` requires a `+` prefix or separators —
-  `nnn.nnn.nnnn` and `+CC-NN-NNNNNNN` included; bare E.164 (`+972541234567`) stays out
-  deliberately, because a `+` before a long digit run also describes a unified-diff added
-  line the transcript tier carries verbatim. `USERNAME` and `HOME_PATH` are both
-  case-insensitive (the same login shows up as `some.user` in `ls` output and `Some.User` in
-  a path). **Over-match is a correctness bug in the other direction** on a module that runs
-  over every transcript entry: non-address `@` text (decorators, npm scopes, `pkg@1.2.3`,
-  `logo@2x.png`, the `git@`/`hg@` SSH service handle) is byte-identical — while a PERSONAL
-  login in a remote (`alice.dev@myserver.example.com`) still masks. The cheap keyword
+  parts and domains in **both normalization forms** — composed (NFC `ñ`) and **decomposed
+  (NFD, `n` + U+0303, the form macOS hands out in `ls`/`git` output that lands in a
+  transcript)**; the pattern classes carry `\p{M}` for exactly that, because an ASCII-only
+  class left `añez@x.com` masked as `añ«EMAIL»` and `\p{L}` alone repeated the half-mask on
+  the decomposed form. Also covered: dotted/plus/percent local parts and multi-label
+  subdomains. NOT covered: a quoted local part (`"john doe"@x.com` — legal, essentially
+  nonexistent, and quote-span matching over-matches prose). `PHONE` requires a `+` prefix or
+  separators — `nnn.nnn.nnnn` and `+CC-NN-NNNNNNN` included; bare E.164 (`+972541234567`)
+  stays out deliberately, because a `+` before a long digit run also describes a unified-diff
+  added line the transcript tier carries verbatim. Two `PHONE` false positives are **accepted
+  in the masking direction and pinned by tests** rather than assumed away: a standalone 3-3-4
+  dotted triple (`100.200.3000`) and a `+NNN NNN NNNNNNN` triple are shape-identical to the
+  real forms, so no signal distinguishes them; what IS fixed is half-matching the head of a
+  longer dotted run. `USERNAME` and `HOME_PATH` are both case-insensitive (the same login
+  shows up as `some.user` in `ls` output and `Some.User` in a path). **Over-match is a
+  correctness bug in the other direction** on a module that runs over every transcript entry:
+  non-address `@` text (decorators, npm scopes, `pkg@1.2.3`, `logo@2x.png`, the `git@`/`hg@`
+  SSH service handle) is byte-identical — while a PERSONAL login in a remote
+  (`alice.dev@myserver.example.com`) still masks, and so does a real address merely *wearing*
+  a file extension (`exports/john.doe@corp.com.csv`: the asset-filename exemption asks whether
+  the extension-stripped stem is still a whole address, rather than trusting the suffix). The
+  mask is **content-blind by design**: an address inside a code span or fenced block masks
+  like any other — the screen has no parser, and the safe direction for a privacy layer is to
+  redact a code example rather than reason about context and be wrong. The cheap keyword
   pre-filter is a **gate, not a hint**: a pattern whose trigger character is missing there
-  never runs at all, so any added pattern adds its trigger too.
+  never runs at all, so patterns live in ONE registry where each entry carries a bare sample
+  the suite loops over — a gate-dead pattern fails the suite instead of shipping as a silent
+  no-op.
 - **Masks in place BEFORE content-hash/dedup/disk** (memclaw's ordering — hash and dedup see
   redacted text, so mask-then-store is race-free). Stable placeholders: `«EMAIL»`, `«PHONE»`,
   `~`-substitution for paths/usernames.
