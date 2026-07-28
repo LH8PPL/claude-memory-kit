@@ -57,11 +57,49 @@ const INVISIBLE_CHARS = new Set(INVISIBLE_UNICODE_CODEPOINTS.map((cp) => String.
 // string; stripped before any pattern runs.
 const INVISIBLE_RE = new RegExp([...INVISIBLE_CHARS].join('|'), 'g');
 
-// EMAIL — the standard conservative form. The allowlist skips bot/example
-// addresses that are content, not PII: masking `noreply@anthropic.com` in a
-// commit trailer would damage the record for zero privacy gain.
-const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
-const EMAIL_ALLOWLIST_RE = /^(?:no-?reply@|.*@(?:users\.noreply\.github\.com|example\.(?:com|org|net))$)/i;
+// EMAIL — the standard conservative form, hardened by the Task 252 shape audit.
+// Both directions matter on this module: it runs over every transcript entry and
+// every prompt, so an under-match is a privacy leak and an over-match destroys
+// real log/code text.
+//
+//   local part — `\p{L}`/`\p{N}`, NOT `[A-Za-z0-9]`. The old ASCII class plus a
+//     `\b` anchor (which is ASCII-only) matched a non-ASCII address from its
+//     first ASCII byte: `añez@x.com` masked to `añ«EMAIL»` and `a@münchen.de`
+//     did not match at all. A PARTIAL mask is still a leak.
+//   boundaries — explicit lookarounds instead of `\b`, so the local part can't
+//     start mid-token and a trailing sentence period still ends the match.
+//   domain labels — each pre-TLD label must contain at least one LETTER: a real
+//     domain label is never all-digits, which is what `build@2.0.beta` is. The
+//     label is written UNAMBIGUOUSLY — a letter-free prefix, the mandatory
+//     letter, then anything — so exactly one split matches a given label. The
+//     natural spelling (`[\p{L}\p{N}-]*\p{L}[\p{L}\p{N}-]*`) is ambiguous and
+//     measured QUADRATIC on a long almost-matching run (3.5 ms at 2.4 KB, ~16×
+//     per 4× length → ~seconds at MAX_SCAN_CHARS) on a per-turn hook path; this
+//     form is flat, at the pre-252 regex's cost.
+//   TLD — letters only, 2+.
+const EMAIL_LOCAL = '[\\p{L}\\p{N}._%+-]+';
+const EMAIL_DOMAIN = '(?:[\\p{N}-]*\\p{L}[\\p{L}\\p{N}-]*\\.)+\\p{L}{2,}';
+const EMAIL_RE = new RegExp(
+  `(?<![\\p{L}\\p{N}._%+-])${EMAIL_LOCAL}@${EMAIL_DOMAIN}(?![\\p{L}\\p{N}])`,
+  'gu',
+);
+// The allowlist skips addresses that are content, not PII: masking
+// `noreply@anthropic.com` in a commit trailer would damage the record for zero
+// privacy gain. `git@`/`hg@` join it (Task 252): an SSH remote's service handle
+// (`git@github.com:owner/repo.git`) is the SAME string for every user on earth,
+// so masking it corrupts a very common log/doctor line and protects nobody —
+// while a PERSONAL login in a remote (`alice.dev@myserver.example.com`) is a
+// real username on a real host and still masks.
+const EMAIL_ALLOWLIST_RE =
+  /^(?:no-?reply@|(?:git|hg)@|.*@(?:users\.noreply\.github\.com|example\.(?:com|org|net))$)/i;
+// …and an address-shaped FILENAME is not an address: `logo@2x.png`, `main@3x.svg`
+// (retina/bundler asset refs) are ordinary tool output. Only extensions that are
+// NOT delegated TLDs are listed — `.zip`, `.mov`, `.sh`, `.md`, `.ai`, `.io`,
+// `.py` are real TLDs where a real address can live, so they are deliberately
+// absent and keep masking.
+const EMAIL_FILE_EXT_RE =
+  /\.(?:png|jpe?g|gif|svg|webp|ico|bmp|css|scss|sass|less|js|mjs|cjs|jsx|tsx|json|jsonc|yaml|yml|toml|lock|log|txt|csv|pdf|html?|xml|exe|dll|mp4|webm|wav|woff|ttf|eot|map)$/i;
+const emailIsNotPii = (m) => EMAIL_ALLOWLIST_RE.test(m) || EMAIL_FILE_EXT_RE.test(m);
 
 // PHONE — deliberately conservative (the kit's Poison_Guard philosophy):
 // require an international prefix OR separator-formatted groups, so versions
@@ -69,10 +107,22 @@ const EMAIL_ALLOWLIST_RE = /^(?:no-?reply@|.*@(?:users\.noreply\.github\.com|exa
 //   +CC nnn nnn nnnn   |   (nnn) nnn-nnnn   |   nnn-nnn-nnnn
 // Trailing lookahead rejects only a CONTINUATION (digit/hyphen) — a
 // sentence-ending period after the number must not defeat the match.
+// Task 252 added the two separator variants the audit found missing — both keep
+// the conservative posture (a separator or a `+` prefix is still required).
+// Bare E.164 (`+972541234567`) stays deliberately UNMATCHED: a `+` followed by a
+// long digit run also describes an added line in a unified diff, which the
+// transcript tier carries verbatim — trading a leak class for a corruption class
+// is not an improvement. Documented, tested, not silent.
 const PHONE_RES = [
   /(?<![\w.])\+\d{1,3}[ -]\d{1,3}[ -]?\d{2,4}[ -]\d{3,4}(?![\d-])/g, // +972 54-123-4567
   /(?<![\w.])\(\d{3}\) ?\d{3}-\d{4}(?![\d-])/g, // (555) 123-4567
   /(?<![\w.])\d{3}-\d{3}-\d{4}(?![\d-])/g, // 555-123-4567 (NOT a date: dates are nnnn-nn-nn)
+  /(?<![\w.])\+\d{1,3}[ -]\d{1,3}[ -]\d{6,9}(?![\d-])/g, // +972-54-1234567 (unsplit national block)
+  // 555.123.4567 (NOT an IPv4 — no 4-digit octet). Like its siblings the trailing
+  // guard rejects only a DIGIT continuation: a sentence-ending period after the
+  // number must not defeat the match, and the lookbehind already prevents
+  // starting mid-run inside a longer dotted sequence.
+  /(?<![\w.])\d{3}\.\d{3}\.\d{4}(?!\d)/g,
 ];
 
 // Cheap keyword pre-filter (the gitleaks two-stage discipline): only run the
@@ -80,10 +130,18 @@ const PHONE_RES = [
 function mightContainPii(text, usernames) {
   if (text.includes('@')) return true;
   if (text.includes('+') || text.includes('(') || text.includes('-')) return true;
+  // Dot-separated phone groups (555.123.4567). The pre-filter is a GATE, not a
+  // hint: a pattern whose trigger character is missing here never runs at all,
+  // which is how the dotted-phone form stayed unmasked in text carrying none of
+  // the other signals. Any pattern added below must add its trigger here.
+  if (/\d\.\d/.test(text)) return true;
   // home-path indicators (sanitizeHomePaths is case-insensitive — match that)
   const lower = text.toLowerCase();
   if (lower.includes('users') || lower.includes('/home/')) return true;
-  for (const u of usernames) if (u && text.includes(u)) return true;
+  // Case-INSENSITIVE, matching the USERNAME pattern below: a case-sensitive
+  // pre-filter gated the case-insensitive mask off for exactly the text the
+  // mask was widened to catch (`SOME.USER logged in` skipped the whole pass).
+  for (const u of usernames) if (u && lower.includes(u.toLowerCase())) return true;
   return false;
 }
 
@@ -126,8 +184,8 @@ function run(text, { usernames = [], mutate }) {
     });
   };
 
-  // 2. EMAIL (allowlisted bot/example addresses stay).
-  applyPattern(EMAIL_RE, 'EMAIL', PII_PLACEHOLDERS.EMAIL, (m) => EMAIL_ALLOWLIST_RE.test(m));
+  // 2. EMAIL (allowlisted bot/service/example addresses + asset filenames stay).
+  applyPattern(EMAIL_RE, 'EMAIL', PII_PLACEHOLDERS.EMAIL, emailIsNotPii);
 
   // 3. PHONE (conservative forms only).
   for (const re of PHONE_RES) applyPattern(re, 'PHONE', PII_PLACEHOLDERS.PHONE);
@@ -144,9 +202,14 @@ function run(text, { usernames = [], mutate }) {
   //    os.userInfo at the call site; injected here for determinism). Exact
   //    token matches only (boundaries), min length 3 — a short or embedded
   //    match is far likelier to be a real word than the login name.
+  //    Case-INSENSITIVE (Task 252), matching sanitizeHomePaths: Windows/macOS
+  //    filesystems are case-insensitive, so the SAME login shows up as
+  //    `some.user` in `ls` output and `Some.User` in a path — a case-sensitive
+  //    pattern masked one and shipped the other. The token boundaries are
+  //    unchanged, so widening the case does not widen the match.
   for (const u of usernames) {
     if (!u || u.length < 3) continue;
-    const re = new RegExp(`(?<![\\w.-])${escapeRegExp(u)}(?![\\w.-])`, 'g');
+    const re = new RegExp(`(?<![\\w.-])${escapeRegExp(u)}(?![\\w.-])`, 'gi');
     applyPattern(re, 'USERNAME', PII_PLACEHOLDERS.USERNAME);
   }
 

@@ -1013,6 +1013,21 @@ scratchpad bullets, `cmk remember`):
   to every write site), `USERNAME` (the home-dir username appearing bare, e.g. in `ls -la`
   output). Secrets stay §6.7's (REJECT posture); the PII class **MASKS** — incidental, not
   adversarial.
+- **Covered shapes, and the named residuals (Task 252 audit).** `EMAIL` matches unicode local
+  parts and domains (an ASCII-only class left `añez@x.com` masked as `añ«EMAIL»` — a partial
+  mask is still a leak), dotted/plus/percent local parts, and multi-label subdomains; it does
+  NOT match a quoted local part (`"john doe"@x.com` — legal, essentially nonexistent, and
+  quote-span matching over-matches prose). `PHONE` requires a `+` prefix or separators —
+  `nnn.nnn.nnnn` and `+CC-NN-NNNNNNN` included; bare E.164 (`+972541234567`) stays out
+  deliberately, because a `+` before a long digit run also describes a unified-diff added
+  line the transcript tier carries verbatim. `USERNAME` and `HOME_PATH` are both
+  case-insensitive (the same login shows up as `some.user` in `ls` output and `Some.User` in
+  a path). **Over-match is a correctness bug in the other direction** on a module that runs
+  over every transcript entry: non-address `@` text (decorators, npm scopes, `pkg@1.2.3`,
+  `logo@2x.png`, the `git@`/`hg@` SSH service handle) is byte-identical — while a PERSONAL
+  login in a remote (`alice.dev@myserver.example.com`) still masks. The cheap keyword
+  pre-filter is a **gate, not a hint**: a pattern whose trigger character is missing there
+  never runs at all, so any added pattern adds its trigger too.
 - **Masks in place BEFORE content-hash/dedup/disk** (memclaw's ordering — hash and dedup see
   redacted text, so mask-then-store is race-free). Stable placeholders: `«EMAIL»`, `«PHONE»`,
   `~`-substitution for paths/usernames.
