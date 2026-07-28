@@ -61,6 +61,7 @@ import {
   unlinkSync,
 } from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { sanitizePrivacyTags } from './privacy.mjs';
 import { maskPii, localUsernames, resolvePrivacyScreen } from './pii-patterns.mjs';
@@ -261,28 +262,58 @@ function defaultAutoExtractPath() {
   return null;
 }
 
+/**
+ * Pure spawn descriptor for the detached auto-extract child (Task 253(c),
+ * mirroring inject-context's lazyCompressSpawnDescriptor). Separated so the
+ * Door-3 contract — node-direct, detached, windowsHide, tmpdir cwd, root by env
+ * — is unit-assertable without a real spawn.
+ *
+ * @param {string} autoExtractPath - absolute path to the auto-extract bin.
+ * @param {string} turnFile - absolute path to the both-turns temp file.
+ * @param {string} projectRoot
+ */
+export function autoExtractSpawnDescriptor(autoExtractPath, turnFile, projectRoot) {
+  return {
+    command: 'node',
+    args: [autoExtractPath, turnFile],
+    options: {
+      detached: true,
+      stdio: 'ignore',
+      // Task 253(c): the OS temp dir, NEVER the project tree. This child
+      // outlives the Stop hook by design, and a live process holds a handle on
+      // its cwd — on Windows that blocks a later delete/move of the working
+      // tree (the stale-handle race; the kit's own suites meet it as EPERM at
+      // teardown). Nothing is lost: cmk-auto-extract reads its root from
+      // CMK_PROJECT_DIR (below), and both argv paths are absolute.
+      //
+      // The guard is load-bearing, not ceremony: the child falls back to
+      // `process.cwd()` when CMK_PROJECT_DIR is absent, so re-pointing cwd at
+      // tmpdir WITHOUT a root to hand over would make it scaffold a memory
+      // tree in the temp dir. No root → inherit, exactly as before.
+      cwd: typeof projectRoot === 'string' && projectRoot !== '' ? tmpdir() : undefined,
+      // Task 81: suppress the Windows console window the detached child
+      // would otherwise flash. (This site spawns `node` directly already,
+      // so windowsHide is effective here — unlike the legacy shell:true
+      // lazy-compress spawn, which also needed the node-direct fix.)
+      windowsHide: true,
+      env: { ...process.env, CMK_PROJECT_DIR: projectRoot },
+    },
+  };
+}
+
 function spawnAutoExtract(autoExtractPath, turnFile, projectRoot) {
   if (!autoExtractPath) return { spawned: false, reason: 'no-auto-extract-path' };
   if (!existsSync(autoExtractPath)) {
     return { spawned: false, reason: 'auto-extract-missing' };
   }
   try {
-    // spawn-discipline: ignore detached-fire-and-forget (the auto-extract child intentionally outlives this hook process — parent-side timeout is incorrect by design; the child carries its own internal timeout via auto-extract.mjs's runAutoExtract → HaikuViaAnthropicApi.compress({timeoutMs: 25_000}) chain. PR-A class-1 audit confirmed this is the correct posture; the structural gap is the spawn-failed observability surface deferred to PR-D2b / Task 23.14.3.)
-    const child = spawn(
-      'node',
-      [autoExtractPath, turnFile],
-      {
-        detached: true,
-        stdio: 'ignore',
-        cwd: projectRoot,
-        // Task 81: suppress the Windows console window the detached child
-        // would otherwise flash. (This site spawns `node` directly already,
-        // so windowsHide is effective here — unlike the legacy shell:true
-        // lazy-compress spawn, which also needed the node-direct fix.)
-        windowsHide: true,
-        env: { ...process.env, CMK_PROJECT_DIR: projectRoot },
-      },
+    const { command, args, options } = autoExtractSpawnDescriptor(
+      autoExtractPath,
+      turnFile,
+      projectRoot,
     );
+    // spawn-discipline: ignore detached-fire-and-forget (the auto-extract child intentionally outlives this hook process — parent-side timeout is incorrect by design; the child carries its own internal timeout via auto-extract.mjs's runAutoExtract → HaikuViaAnthropicApi.compress({timeoutMs: 25_000}) chain. PR-A class-1 audit confirmed this is the correct posture; the structural gap is the spawn-failed observability surface deferred to PR-D2b / Task 23.14.3.)
+    const child = spawn(command, args, options);
     child.unref();
     return { spawned: true, pid: child.pid };
   } catch (err) {

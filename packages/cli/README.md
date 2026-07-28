@@ -54,7 +54,7 @@ Claude forgets everything when a session ends — so every new chat you re-expla
 You open Claude Code on a project you haven't touched in weeks. Before you say anything, Claude already knows your stack, your conventions, and what you decided last time:
 
 ```
-core-memory-kit: 23 fact(s) in context, 2 captured in the last 24h, 1 conflict pending
+core-memory-kit: 23 fact(s) in context, 2 captured in the last 24h, 1 conflict pending · snapshot 4812 B
 ```
 
 You work. It learns — automatically, no buttons. Next session, it remembers this one too.

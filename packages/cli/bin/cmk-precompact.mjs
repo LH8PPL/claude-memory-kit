@@ -36,10 +36,11 @@ const workerPath = join(__dirname, 'cmk-precompact-worker.mjs');
 let readHookStdin;
 let shouldPreCompact;
 let appendPreCompactLog;
+let precompactWorkerSpawnDescriptor;
 let resolveHookProjectRoot;
 try {
   ({ readHookStdin } = await import(pathToFileURL(readHookStdinPath).href));
-  ({ shouldPreCompact, appendPreCompactLog } = await import(pathToFileURL(precompactModulePath).href));
+  ({ shouldPreCompact, appendPreCompactLog, precompactWorkerSpawnDescriptor } = await import(pathToFileURL(precompactModulePath).href));
   ({ resolveHookProjectRoot } = await import(pathToFileURL(tierPathsPath).href));
 } catch (err) {
   process.stderr.write(`cmk-precompact: failed to load modules: ${err?.message ?? err}\n`);
@@ -86,14 +87,17 @@ try {
       try {
         // Detached fire-and-forget: the roll outlives this hook by design, so
         // the user waits on nothing. Same posture as capture-turn →
-        // auto-extract. windowsHide suppresses the console flash (Task 81).
-        // spawn-discipline: ignore detached-fire-and-forget (the worker intentionally outlives this hook; it carries its own bounded timeout via runPreCompact → compressSession's CEILING_FREE_TIMEOUT_MS)
-        const child = spawn(process.execPath, [workerPath, projectRoot], {
-          detached: true,
-          stdio: 'ignore',
-          windowsHide: true,
-          env: { ...process.env, CMK_PROJECT_DIR: projectRoot, CMK_PRECOMPACT_TRIGGER: trigger },
+        // auto-extract. windowsHide suppresses the console flash (Task 81); the
+        // cwd is pinned to tmpdir (Task 253c) so the outliving child never
+        // holds a handle on the working tree. Shape lives in precompact.mjs —
+        // ONE descriptor, shared with the plugin twin.
+        const { command, args, options } = precompactWorkerSpawnDescriptor({
+          workerPath,
+          projectRoot,
+          trigger,
         });
+        // spawn-discipline: ignore detached-fire-and-forget (the worker intentionally outlives this hook; it carries its own bounded timeout via runPreCompact → compressSession's CEILING_FREE_TIMEOUT_MS)
+        const child = spawn(command, args, options);
         child.unref();
         spawned = true;
       } catch (err) {

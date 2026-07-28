@@ -55,6 +55,7 @@ import { fileURLToPath } from 'node:url';
 import {
   shouldPreCompact,
   runPreCompact,
+  precompactWorkerSpawnDescriptor,
   PRECOMPACT_LOG_REL,
 } from '../packages/cli/src/precompact.mjs';
 import { MockHaikuBackend } from '../packages/cli/src/compressor.mjs';
@@ -345,6 +346,50 @@ describe('Task 235 — the REAL hook bin (Door 3)', () => {
     runHookBin(payload());
     const hookLine = logLines().find((l) => l.scope === 'precompact-hook');
     expect(hookLine).toMatchObject({ spawned: false, reason: 'empty-buffer' });
+  });
+
+  // Task 253(c) — the detached worker's cwd is the OS temp dir, never the
+  // working tree. The worker outlives the hook, so its cwd handle would
+  // otherwise pin the project directory (Windows stale-handle race). It reads
+  // its root from argv[2] + CMK_PROJECT_DIR, so it never needed the cwd.
+  it('Door 3 — the detached worker descriptor pins cwd to tmpdir(), root carried by argv + env', () => {
+    const d = precompactWorkerSpawnDescriptor({
+      workerPath: '/w/cmk-precompact-worker.mjs',
+      projectRoot: '/proj',
+      trigger: 'manual',
+    });
+    expect(d.command).toBe(process.execPath);
+    expect(d.args).toEqual(['/w/cmk-precompact-worker.mjs', '/proj']);
+    expect(d.options.cwd).toBe(tmpdir());
+    expect(d.options.detached).toBe(true);
+    expect(d.options.stdio).toBe('ignore');
+    expect(d.options.windowsHide).toBe(true);
+    expect(d.options.env.CMK_PROJECT_DIR).toBe('/proj');
+    expect(d.options.env.CMK_PRECOMPACT_TRIGGER).toBe('manual');
+  });
+
+  it('Door 3 — with NO project root the worker INHERITS cwd (never tmpdir): the child would otherwise scaffold memory in the temp dir', () => {
+    // The guard is load-bearing, not ceremony: the worker's last-resort root is
+    // `process.cwd()`, so pinning tmpdir without a root to hand over would make
+    // it write a memory tree into the temp directory.
+    for (const projectRoot of [undefined, '', null]) {
+      const d = precompactWorkerSpawnDescriptor({
+        workerPath: '/w/cmk-precompact-worker.mjs',
+        projectRoot,
+        trigger: 'auto',
+      });
+      expect(d.options.cwd, `projectRoot=${JSON.stringify(projectRoot)}`).toBeUndefined();
+    }
+  });
+
+  it('Door 3 — BOTH hook bins (npm + plugin) spawn through the shared descriptor (no twin drift)', () => {
+    for (const rel of ['packages/cli/bin/cmk-precompact.mjs', 'plugin/bin/cmk-precompact.mjs']) {
+      const src = readFileSync(join(REPO_ROOT, rel), 'utf8');
+      expect(src, rel).toContain('precompactWorkerSpawnDescriptor');
+      // The old inline options object must be gone — a second copy is exactly
+      // how the two bins drift apart.
+      expect(src, rel).not.toMatch(/detached:\s*true,\s*\n\s*stdio:/);
+    }
   });
 
   it('RETURNS FAST — the user is never made to wait on memory work', () => {

@@ -9,7 +9,8 @@
 // audit.log). One line per surfacing event:
 //
 //   { session, ts, source: 'inject'|'search'|'hint', ids: [...], query?,
-//     form?('static'|'evidence'), origin?('skill'), toolPolicy? }
+//     form?('static'|'evidence'), origin?('skill'), toolPolicy?,
+//     bytes?, mode?('full'|'pointer') }
 //
 // The optional form/origin/toolPolicy fields (Task 233) are the skill-fire
 // telemetry: `form` on a 'hint' entry says which hint fired per prompt;
@@ -56,11 +57,13 @@ export function recallLogPath(projectRoot) {
  * @param {string} [entry.origin] - recall origin tag ('skill' | …), source:'search' only (Task 233 skill-fire telemetry).
  * @param {boolean} [entry.error] - source:'hint' only: the evidence query errored (≠ a genuine no-match) (Task 233).
  * @param {string} [entry.toolPolicy] - harness tool-loading policy; defaults to $CMK_HARNESS_TOOL_POLICY when set (P-DXPCKAUU).
+ * @param {number} [entry.bytes] - source:'inject' only: injected snapshot bytes (Task 253 meter).
+ * @param {string} [entry.mode] - source:'inject' only: 'full' | 'pointer' (Task 253 source-aware split).
  * @returns {{ ok: boolean }}
  */
 export function appendRecallEntry(
   projectRoot,
-  { session = null, source, ids = [], query, form, origin, error, toolPolicy } = {},
+  { session = null, source, ids = [], query, form, origin, error, toolPolicy, bytes, mode } = {},
 ) {
   try {
     const line = {
@@ -85,6 +88,11 @@ export function appendRecallEntry(
     // — the caller passes it, or the cut-gate exports CMK_HARNESS_TOOL_POLICY.
     const resolvedPolicy = toolPolicy ?? process.env.CMK_HARNESS_TOOL_POLICY;
     if (resolvedPolicy) line.toolPolicy = resolvedPolicy;
+    // Task 253 — the injection meter's durable half: byte cost + injection mode
+    // per SessionStart. Added ONLY when the caller sets them, so a 'search' /
+    // 'hint' entry stays byte-shape identical to the pre-253 record.
+    if (bytes !== undefined) line.bytes = bytes;
+    if (mode !== undefined) line.mode = mode;
     const path = recallLogPath(projectRoot);
     mkdirSync(join(projectRoot, 'context', '.locks'), { recursive: true });
     appendFileSync(path, `${JSON.stringify(line)}\n`, 'utf8');

@@ -36,11 +36,16 @@ import {
   readdirSync,
   statSync,
   utimesSync,
+  realpathSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { captureTurn, sweepStaleTurnFiles } from '../packages/cli/src/capture-turn.mjs';
+import {
+  captureTurn,
+  sweepStaleTurnFiles,
+  autoExtractSpawnDescriptor,
+} from '../packages/cli/src/capture-turn.mjs';
 import { redactionsLogPath } from '../packages/cli/src/redactions-log.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -288,6 +293,55 @@ describe('Task 21 — captureTurn() boundary', () => {
       // Wide poll window: child cold-start (~0.5-1.5s on Windows) + sleepMs.
       await pollForFileWithContent(stub.lockFile, { timeoutMs: 20000 });
       expect(readFileSync(stub.lockFile, 'utf8')).toContain('LOCK');
+    });
+
+    // Task 253(c) — the fire-and-forget child's cwd is the OS temp dir, never
+    // the project tree. A detached child that outlives its parent keeps a
+    // handle on its cwd; on Windows that handle blocks a later delete/move of
+    // the directory (the stale-handle race the kit's own teardown EPERMs are
+    // an instance of). The child does not READ cwd — it resolves its root from
+    // CMK_PROJECT_DIR (asserted below), so nothing depends on inheriting it.
+    it('Door 3 — the detached auto-extract descriptor pins cwd to tmpdir() and passes the root by env', () => {
+      const d = autoExtractSpawnDescriptor('/auto.mjs', '/turn.tmp', projectRoot);
+      expect(d.command).toBe('node');
+      expect(d.args).toEqual(['/auto.mjs', '/turn.tmp']);
+      expect(d.options.cwd).toBe(tmpdir());
+      expect(d.options.detached).toBe(true);
+      expect(d.options.stdio).toBe('ignore');
+      expect(d.options.windowsHide).toBe(true);
+      expect(d.options.env.CMK_PROJECT_DIR).toBe(projectRoot);
+    });
+
+    it('Door 3 — with NO project root the child INHERITS cwd (never tmpdir): it would otherwise extract into the temp dir', () => {
+      // cmk-auto-extract falls back to `process.cwd()` when CMK_PROJECT_DIR is
+      // absent, so tmpdir-without-a-root would point capture at the temp dir.
+      for (const root of [undefined, '', null]) {
+        const d = autoExtractSpawnDescriptor('/auto.mjs', '/turn.tmp', root);
+        expect(d.options.cwd, `projectRoot=${JSON.stringify(root)}`).toBeUndefined();
+      }
+    });
+
+    it('Door 3 — the REAL detached child runs with cwd = tmpdir(), not the project root', async () => {
+      // The end-to-end half: the stub reports its own process.cwd().
+      const cwdProbe = join(sandbox, 'child-cwd.txt');
+      const stubPath = join(sandbox, 'stub-cwd-probe.mjs');
+      writeFileSync(
+        stubPath,
+        `import { writeFileSync } from 'node:fs';\n` +
+          `writeFileSync(${JSON.stringify(cwdProbe)}, process.cwd(), 'utf8');\n`,
+        'utf8',
+      );
+      const r = captureTurn({
+        payload: { assistant_message: 'cwd probe' },
+        projectRoot,
+        autoExtractPath: stubPath,
+        now: '2026-05-25T10:00:00Z',
+      });
+      expect(r.spawned).toBe(true);
+      await pollForFileWithContent(cwdProbe, { timeoutMs: 20000 });
+      const childCwd = realpathSync(readFileSync(cwdProbe, 'utf8').trim());
+      expect(childCwd).toBe(realpathSync(tmpdir()));
+      expect(childCwd).not.toBe(realpathSync(projectRoot));
     });
 
     it('autoExtractPath missing: spawned:false, but transcript still appended', () => {
