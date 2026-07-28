@@ -86,10 +86,19 @@ const INVISIBLE_RE = new RegExp([...INVISIBLE_CHARS].join('|'), 'g');
 //     letter-free PREFIX class, which is what keeps the split unambiguous.)
 //   TLD — a letter followed by letters/marks, so a decomposed TLD still ends the
 //     address.
-const EMAIL_LOCAL = '[\\p{L}\\p{M}\\p{N}._%+-]+';
-const EMAIL_DOMAIN = '(?:[\\p{N}-]*\\p{L}[\\p{L}\\p{M}\\p{N}-]*\\.)+\\p{L}[\\p{L}\\p{M}]+';
+// Fragments are written with String.raw so the pattern reads as the pattern —
+// `\p{L}`, not `\\p{L}`. Double-escaping a regex built as a string is a known
+// legibility trap (it is why the ambiguous-label spelling below took a second
+// read to spot); the compiled `.source` is unchanged either way.
+const EMAIL_LOCAL = String.raw`[\p{L}\p{M}\p{N}._%+-]+`;
+const EMAIL_DOMAIN = String.raw`(?:[\p{N}-]*\p{L}[\p{L}\p{M}\p{N}-]*\.)+\p{L}[\p{L}\p{M}]+`;
+// The boundaries: no `\b` (ASCII-only) — an explicit character-class lookaround
+// on each side, marks included, so a decomposed character straddling the edge
+// cannot re-open the partial match this task closed.
+const EMAIL_LEFT_EDGE = String.raw`(?<![\p{L}\p{M}\p{N}._%+-])`;
+const EMAIL_RIGHT_EDGE = String.raw`(?![\p{L}\p{M}\p{N}])`;
 const EMAIL_RE = new RegExp(
-  `(?<![\\p{L}\\p{M}\\p{N}._%+-])${EMAIL_LOCAL}@${EMAIL_DOMAIN}(?![\\p{L}\\p{M}\\p{N}])`,
+  `${EMAIL_LEFT_EDGE}${EMAIL_LOCAL}@${EMAIL_DOMAIN}${EMAIL_RIGHT_EDGE}`,
   'gu',
 );
 // The same shape, FULLY anchored — used to ask "is this whole token an address?"
@@ -110,8 +119,19 @@ const EMAIL_ALLOWLIST_RE =
 // NOT delegated TLDs are listed — `.zip`, `.mov`, `.sh`, `.md`, `.ai`, `.io`,
 // `.py` are real TLDs where a real address can live, so they are deliberately
 // absent and keep masking.
-const EMAIL_FILE_EXT_RE =
-  /\.(?:png|jpe?g|gif|svg|webp|ico|bmp|css|scss|sass|less|js|mjs|cjs|jsx|tsx|json|jsonc|yaml|yml|toml|lock|log|txt|csv|pdf|html?|xml|exe|dll|mp4|webm|wav|woff|ttf|eot|map)$/i;
+// Kept as a LIST rather than one long alternation literal: the literal form was
+// a single 37-branch expression (unreadable, and flagged for regex complexity),
+// while the list groups the extensions by kind and makes an addition a one-word
+// diff. The compiled pattern is byte-identical — the order is the join order.
+const EMAIL_FILE_EXTS = [
+  'png', 'jpe?g', 'gif', 'svg', 'webp', 'ico', 'bmp', // images
+  'css', 'scss', 'sass', 'less', // styles
+  'js', 'mjs', 'cjs', 'jsx', 'tsx', // scripts
+  'json', 'jsonc', 'yaml', 'yml', 'toml', 'lock', // data + config
+  'log', 'txt', 'csv', 'pdf', 'html?', 'xml', // text + docs
+  'exe', 'dll', 'mp4', 'webm', 'wav', 'woff', 'ttf', 'eot', 'map', // binaries, media, fonts
+];
+const EMAIL_FILE_EXT_RE = new RegExp(String.raw`\.(?:${EMAIL_FILE_EXTS.join('|')})$`, 'i');
 /**
  * Is this match an asset FILENAME rather than an address?
  *
@@ -283,7 +303,7 @@ function run(text, { usernames = [], mutate }) {
   //    unchanged, so widening the case does not widen the match.
   for (const u of usernames) {
     if (!u || u.length < 3) continue;
-    const re = new RegExp(`(?<![\\w.-])${escapeRegExp(u)}(?![\\w.-])`, 'gi');
+    const re = new RegExp(String.raw`(?<![\w.-])${escapeRegExp(u)}(?![\w.-])`, 'gi');
     applyPattern(re, 'USERNAME', PII_PLACEHOLDERS.USERNAME);
   }
 
