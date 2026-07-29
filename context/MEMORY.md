@@ -8,8 +8,6 @@
 
 <!-- Current work in progress. Drop bullets as work resolves. -->
 
-- (P-ENAHCWY5) Cross-implementation divergence found: Node and Python generated different IDs for BOM-prefixed content; Python aligned to Node (reference) and pinned with parity vector
-  <!-- source: review-promote, source_line: 1, sha1: 1578e603ba31ae9605a3eac21d56b4fbd64871a824e3ce3a4fb0074616203517, write: user-explicit, trust: high, at: 2026-07-27T20:00:08Z -->
 - (P-U2T3Ma6S) User authorizes autopilot through remaining v0.6.3 riders and cut prep; activates immediately rather than "whenever ready"
   <!-- source: auto-extract-session, source_line: 1, sha1: 1260dece6aa790e93dfe4522bec4a509e26220fd361c8778a07f80c998ba5e46, write: auto-extract, trust: high, at: 2026-07-27T20:16:59Z -->
 - (P-PNX2K5US) Prefers work to continue incrementally with natural pause/checkpoint points rather than streaming continuously to completion
@@ -20,6 +18,8 @@
   <!-- source: review-promote, source_line: 1, sha1: 36f82220d3129e47fe0077124240b3e8dccc9cfecc3256b427ed6df99ccd8851, write: user-explicit, trust: high, at: 2026-07-29T06:55:00Z -->
 - (P-D7X2FL6F) awrshift/claude-memory-kit is the predecessor project that prompted renaming of the current project
   <!-- source: auto-extract-session, source_line: 1, sha1: 517806448c30af39d985a19825ba653c0efd4786a8be56f124acf9d7833aa635, write: auto-extract, trust: high, at: 2026-07-29T06:57:22Z -->
+- (P-A7VLXSWR) User challenges deferring finished work to next version when it could be done now; prefers executing promptly over artificial delays
+  <!-- source: auto-extract-session, source_line: 1, sha1: f9cb2e1f4b85fa7efefb5079a06d1b645d1e4aef45dabf606e1d5f2e3adfa50f, write: auto-extract, trust: high, at: 2026-07-29T07:47:41Z -->
 
 ## Environment Notes
 

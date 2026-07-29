@@ -13,7 +13,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "python"))
 
-from cmk_canonicalize import canonicalize, generate_id  # noqa: E402
+from cmk_canonicalize import canonicalize, generate_id
 
 FIXTURE_PATH = REPO_ROOT / "fixtures" / "canonicalize-vectors.json"
 
