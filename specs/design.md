@@ -527,7 +527,9 @@ Command pattern: `node "${CLAUDE_PLUGIN_ROOT}/bin/cmk-<verb>.mjs"` (kit-unique p
 | Stop | 30s | no | Append turn to transcripts; spawn detached auto-extract | Our v0.0.1 carried forward |
 | SessionEnd | 60s | no | Haiku-compress `now.md` → `today-{date}.md`, truncate `now.md` | claude-remember NDC pattern |
 
-### 5.2.1 `stop_hook_active` recursion guard (verified Anthropic hook payload)
+### 5.2.1 `stop_hook_active` recursion guard (observed payload field — NOT in the documented Stop input schema)
+
+> **Documentation-status correction (2026-07-29, D-410):** this field is OBSERVED in live Stop-hook payloads and our guard relies on it — but it is absent from (or unconfirmed in) Anthropic's documented Stop input schema (checked at code.claude.com/docs/en/hooks; the awrshift name-twin relies on the same undocumented field). The guard FAILS OPEN: if the field vanishes, `payload?.stop_hook_active === true` is simply never true and capture proceeds normally — no crash, no block. Watch trigger: if hook-recursion symptoms ever appear, re-verify this field against the then-current docs first.
 
 The Stop hook MUST short-circuit when invoked via a previous hook's auto-continuation (the `stop_hook_active` flag in the hook input JSON). Pattern:
 
