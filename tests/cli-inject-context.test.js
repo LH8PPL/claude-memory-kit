@@ -1786,6 +1786,90 @@ describe('Task 253(a) — source-aware injection split', () => {
     expect(files.map((p) => readFileSync(p, 'utf8'))).toEqual(before);
   });
 
+  // Review finding #1 (RATIFIED). Pointer mode is a TOKEN SAVER; on a small
+  // corpus it is not. Measured on the real bin: a one-bullet project emits
+  // 673 B on startup but 778 B on resume — the pointer line + its preserved
+  // preamble/ad cost MORE than the bulk they replace, inverting the feature's
+  // premise for exactly the new-user shape. So the pointer is taken only when
+  // it is genuinely SMALLER (and within cap); otherwise the full snapshot is
+  // emitted AND labelled 'full' everywhere.
+  function seedTinyCorpus() {
+    // ONLY the project scratchpad, one short bullet — no local/user tiers, no
+    // granular archive. This is the fresh-install shape.
+    writeFile(join(f.projectRoot, 'context', 'MEMORY.md'), '## Threads\n\n- (P-9LXBA3ZK) uv\n');
+    for (const p of [
+      join(f.projectRoot, 'context', 'SOUL.md'),
+      join(f.projectRoot, 'context', 'memory', 'INDEX.md'),
+      join(f.projectRoot, 'context.local', 'machine-paths.md'),
+      join(f.projectRoot, 'context.local', 'overrides.md'),
+      join(f.userDir, 'USER.md'),
+      join(f.userDir, 'HABITS.md'),
+      join(f.userDir, 'LESSONS.md'),
+    ]) {
+      writeFile(p, '<!-- empty -->\n');
+    }
+  }
+
+  it('a TINY corpus on resume emits the FULL snapshot — the pointer is never bigger than the bulk it replaces', () => {
+    seedTinyCorpus();
+    const full = inject('startup');
+    const resumed = inject('resume');
+    // The pointer variant would have cost more, so it is rejected.
+    expect(resumed.snapshot).not.toContain(SNAPSHOT_POINTER);
+    expect(resumed.snapshot).toBe(full.snapshot);
+    expect(resumed.bytes).toBeLessThanOrEqual(full.bytes);
+    // …and the label follows the EMISSION, not the request.
+    expect(resumed.injectionMode).toBe('full');
+    expect(resumed.hookOutput.systemMessage).not.toContain('(pointer)');
+  });
+
+  it('the mode LABEL always agrees with the EMISSION — status line, return value and recall log (log aggregation must not lie)', () => {
+    // Walk the shapes that reach different branches: rich (pointer wins), tiny
+    // (guard rejects), empty (nothing to point at), and a squeezed cap.
+    const shapes = {
+      rich: () => seedThreeTierFixture(f),
+      tiny: () => seedTinyCorpus(),
+      empty: () => {
+        for (const p of [
+          join(f.projectRoot, 'context', 'MEMORY.md'),
+          join(f.projectRoot, 'context', 'SOUL.md'),
+          join(f.projectRoot, 'context', 'memory', 'INDEX.md'),
+          join(f.projectRoot, 'context.local', 'machine-paths.md'),
+          join(f.projectRoot, 'context.local', 'overrides.md'),
+          join(f.userDir, 'USER.md'),
+          join(f.userDir, 'HABITS.md'),
+          join(f.userDir, 'LESSONS.md'),
+        ]) {
+          writeFile(p, '<!-- empty -->\n');
+        }
+      },
+    };
+    for (const [shapeName, seed] of Object.entries(shapes)) {
+      seed();
+      for (const source of ['startup', 'resume', 'compact']) {
+        for (const capBytes of [14_500, 900]) {
+          const session = `label-${shapeName}-${source}-${capBytes}`;
+          const r = injectContext({
+            cwd: f.projectRoot,
+            userDir: f.userDir,
+            now: '2026-07-29T10:00:00Z',
+            source,
+            capBytes,
+            sessionId: session,
+            testSpawnLazy: () => ({ spawned: false }),
+          });
+          const emittedPointer = r.snapshot.includes(SNAPSHOT_POINTER);
+          const where = `${shapeName}/${source}/cap${capBytes}`;
+          expect(r.injectionMode, where).toBe(emittedPointer ? 'pointer' : 'full');
+          expect(r.hookOutput.systemMessage.includes('(pointer)'), where).toBe(emittedPointer);
+          const [entry] = readRecallLog(f.projectRoot, { session });
+          expect(entry.mode, where).toBe(emittedPointer ? 'pointer' : 'full');
+          expect(entry.bytes, where).toBe(Buffer.byteLength(r.snapshot, 'utf8'));
+        }
+      }
+    }
+  });
+
   it('an empty-memory project in pointer mode does NOT claim memory it has not got', () => {
     for (const p of [
       join(f.projectRoot, 'context', 'MEMORY.md'),
@@ -1802,8 +1886,72 @@ describe('Task 253(a) — source-aware injection split', () => {
     const r = inject('resume');
     expect(r.snapshot).not.toContain(SNAPSHOT_POINTER);
     expect(r.snapshot).not.toContain(AUTHORITATIVE_MEMORY_PREAMBLE);
-    expect(r.injectionMode).toBe('pointer');
+    // Review finding #1: the label follows the EMISSION. Nothing was pointed
+    // at, so this is a 'full' (empty) injection — reporting 'pointer' here
+    // would corrupt the pointer-vs-full aggregation the design claims.
+    expect(r.injectionMode).toBe('full');
   });
+});
+
+// Review finding #2 — the bin-level plumb-through (the D-269 wired-but-dead
+// class: a field parsed in the bin but never reaching the module passes every
+// module-level test while doing nothing in production). One case per TWIN,
+// through the REAL bin, over real stdin.
+describe('Task 253(a) — `source` reaches the module through BOTH real bins', () => {
+  const BINS = {
+    plugin: BIN_PATH,
+    npm: join(REPO_ROOT, 'packages', 'cli', 'bin', 'cmk-inject-context' + '.mjs'),
+  };
+  let f;
+
+  beforeEach(() => {
+    f = makeFixture();
+    seedThreeTierFixture(f);
+  });
+  afterEach(() => {
+    try {
+      rmSync(f.sandbox, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch {
+      /* orphaned tempdir */
+    }
+  });
+
+  function runBin(bin, payload) {
+    const r = spawnSync(process.execPath, [bin], {
+      input: JSON.stringify(payload),
+      encoding: 'utf8',
+      cwd: f.projectRoot,
+      env: { ...process.env, MEMORY_KIT_USER_DIR: f.userDir },
+    });
+    expect(r.status, `stderr: ${r.stderr}`).toBe(0);
+    return JSON.parse(r.stdout);
+  }
+
+  for (const [twin, bin] of Object.entries(BINS)) {
+    it(`${twin} bin: source:"resume" on stdin → additionalContext carries the pointer, systemMessage carries (pointer)`, () => {
+      const out = runBin(bin, {
+        hook_event_name: 'SessionStart',
+        session_id: `bin-${twin}`,
+        source: 'resume',
+      });
+      const ctx = out.hookSpecificOutput.additionalContext;
+      expect(ctx).toContain(SNAPSHOT_POINTER);
+      expect(ctx).not.toContain('project-memory-marker');
+      expect(out.systemMessage).toContain('(pointer)');
+    });
+
+    it(`${twin} bin: source:"startup" on stdin → the FULL snapshot, no pointer tag`, () => {
+      const out = runBin(bin, {
+        hook_event_name: 'SessionStart',
+        session_id: `bin-${twin}`,
+        source: 'startup',
+      });
+      const ctx = out.hookSpecificOutput.additionalContext;
+      expect(ctx).toContain('project-memory-marker');
+      expect(ctx).not.toContain(SNAPSHOT_POINTER);
+      expect(out.systemMessage).not.toContain('(pointer)');
+    });
+  }
 });
 
 // Task 253(b) — the INJECTION-SIZE METER (obsidian-mind's `formatInjectionSize`).

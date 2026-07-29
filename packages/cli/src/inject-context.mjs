@@ -1335,19 +1335,41 @@ export function injectContext({
   // FULL text; only the byte meter reads the emission. Deriving both from the
   // emission is exactly the bug the live test caught: a resumed session
   // reported "memory is empty" and logged zero recalled ids.
-  const injectionMode = injectionModeForSource(source);
+  //
+  // `injectionMode` describes what was EMITTED, never what was requested. The
+  // pointer is an optimization that can decline itself (see the size + cap
+  // guards below), and a label that reported the request would make the
+  // recall-log's pointer-vs-full aggregation — the thing that proves the saving
+  // — count emissions that never happened.
+  const requestedMode = injectionModeForSource(source);
+  let injectionMode = 'full';
   let snapshot;
   let fullSnapshot;
   if (body !== '') {
     snapshot = `${AUTHORITATIVE_MEMORY_PREAMBLE}\n\n${stateLine}${adLine}${volatile}${body}`;
     fullSnapshot = snapshot;
-    if (injectionMode === 'pointer') {
+    if (requestedMode === 'pointer') {
       const pointerSnapshot = `${AUTHORITATIVE_MEMORY_PREAMBLE}\n\n${adLine}${volatile}${SNAPSHOT_POINTER}`;
-      // Cap guard (the §7.1.2 contract is absolute): the full snapshot is
-      // cap-honoring by construction, the pointer variant is not derived from
-      // enforceCap. Under a pathological tiny cap, keep the full one rather
-      // than break `snapshot ≤ capBytes`.
-      if (Buffer.byteLength(pointerSnapshot, 'utf8') <= cap) snapshot = pointerSnapshot;
+      const pointerBytes = Buffer.byteLength(pointerSnapshot, 'utf8');
+      // TWO guards, both mandatory:
+      //
+      // 1. SIZE — the pointer must actually be SMALLER than the bulk it
+      //    replaces. On a small corpus it is not: measured on the real bin, a
+      //    one-bullet project emits 673 B on startup but 778 B on resume,
+      //    because the preamble + advertisement + pointer line outweigh a
+      //    two-line body. That inverts the whole premise for exactly the
+      //    fresh-install shape, so the optimization declines itself.
+      // 2. CAP — the §7.1.2 contract is absolute. The full snapshot is
+      //    cap-honoring by construction; the pointer variant is not derived
+      //    from enforceCap, so under a pathological tiny cap it could exceed
+      //    it. Keep the full one rather than break `snapshot ≤ capBytes`.
+      //
+      // Either guard rejecting means a FULL emission — and the label below
+      // says so.
+      if (pointerBytes <= cap && pointerBytes < Buffer.byteLength(fullSnapshot, 'utf8')) {
+        snapshot = pointerSnapshot;
+        injectionMode = 'pointer';
+      }
     }
   } else if (volatile !== '') {
     // Empty memory, but a temporal mention / commit proposal is pending — emit
