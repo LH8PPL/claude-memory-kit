@@ -62,6 +62,18 @@ Synonym for the [[Frozen snapshot]] when emphasizing its structural shape (which
 
 Cross-refs: [[Frozen snapshot]], [[additionalContext]]. Spec: design §1.4, §7.1.
 
+### Injection mode
+
+Which SHAPE of the [[Frozen snapshot]] a session start emits, selected from the hook payload's `source` field: **full** (the whole snapshot — `startup`, `clear`, `compact`, `fork`, and any unknown/absent value) or **pointer** (`resume` only — the static tier bulk is replaced by one line saying the snapshot is unchanged and already in context, because a resumed session's transcript replay already carries it). Volatile content (the existence advertisement, the temporal mention, the commit proposal) and the authority preamble inject in BOTH modes. `compact` is deliberately full: compaction summarizes prior history rather than preserving it.
+
+Cross-refs: [[Frozen snapshot]], [[SessionStart hook]], [[Injection-size meter]]. Spec: design §20.9.
+
+### Injection-size meter
+
+The trailing `· snapshot <N> B` on the session-start status line (tagged `(pointer)` in pointer [[Injection mode]]) reporting the byte cost of what was just injected. Rides `systemMessage` — the user-display channel — so it costs the model no tokens and leaves the snapshot byte-identical. The same number is recorded per session on the [[Recall-log]]'s `inject` entry as `bytes` + `mode`.
+
+Cross-refs: [[Frozen snapshot]], [[Injection mode]], [[Recall-log]]. Spec: design §20.9.
+
 ---
 
 ## Files & schemas

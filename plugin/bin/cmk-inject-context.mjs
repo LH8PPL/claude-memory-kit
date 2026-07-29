@@ -78,16 +78,23 @@ try {
 // readHookStdin returns '' for a TTY so a manual run finishes. Task 190: the
 // drained payload is now PARSED (best-effort) for session_id — the recall-log's
 // session attribution. A malformed/absent payload degrades to null, never fails.
+// Task 253(a): the same parse also reads `source` (startup|resume|clear|
+// compact|fork per Anthropic's hook reference) — the injection-mode selector.
+// Unreadable payload → source stays null → the FULL snapshot (pre-253
+// behavior). Fail-open: never a smaller injection by accident.
 const hookPayloadRaw = readHookStdin({ isTTY: process.stdin.isTTY });
 let sessionId = null;
+let source = null;
 try {
-  sessionId = parseHookPayload(hookPayloadRaw)?.session_id ?? null; // Task 207: BOM-tolerant
+  const payload = parseHookPayload(hookPayloadRaw); // Task 207: BOM-tolerant
+  sessionId = payload?.session_id ?? null;
+  source = typeof payload?.source === 'string' ? payload.source : null;
 } catch {
-  /* not JSON (TTY run / odd caller) — no session attribution */
+  /* not JSON (TTY run / odd caller) — no session attribution, no mode split */
 }
 
 try {
-  const r = injectContext({ cwd: process.cwd(), compressLazyPath, sessionId });
+  const r = injectContext({ cwd: process.cwd(), compressLazyPath, sessionId, source });
   process.stdout.write(JSON.stringify(r.hookOutput));
   process.exit(0);
 } catch (err) {

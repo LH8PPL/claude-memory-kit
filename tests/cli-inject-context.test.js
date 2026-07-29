@@ -1,8 +1,15 @@
-// @doors: 1, 2, 3, 4
+// @doors: 1, 2, 3, 5
 // Door 3: post-Task-150 the module spawns `git status` (the commit-proposal
 //   detection) — the Task 150 tests exercise the REAL git binary in sandboxes;
-//   the bash bin wrapper spawn is tested in cli-hooks-scaffold.
-// Door 5 N/A: no message-queue interaction.
+//   the bash bin wrapper spawn is tested in cli-hooks-scaffold. Task 253(c)
+//   adds the detached lazy-compress descriptor's tmpdir-cwd contract.
+// Door 5 (Observability): shadowed_by.log / truncation.log NDJSON, and the
+//   recall.log `inject` entry — which ids surfaced, plus the Task-253 byte
+//   meter (`bytes`) and injection `mode`.
+// Door 4 N/A: no message-queue surface.
+// (Numbering per design §17.1 — door 4 = message queues, door 5 =
+//  observability. This header previously carried the pre-2026-07-07 swapped
+//  form; corrected here alongside the Task-253 Door-5 assertions.)
 
 // Tests for Task 18 — cmk-inject-context SessionStart hook (T-015).
 // Per tasks.md 18.7:
@@ -45,8 +52,11 @@ import {
   injectContext,
   lazyCompressSpawnDescriptor,
   resolveCompressLazyPath,
+  buildStatusLine,
   AUTHORITATIVE_MEMORY_PREAMBLE,
+  SNAPSHOT_POINTER,
 } from '../packages/cli/src/inject-context.mjs';
+import { readRecallLog } from '../packages/cli/src/recall-log.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = join(dirname(__filename), '..');
@@ -1330,6 +1340,33 @@ describe('Task 81 — lazy-compress spawn descriptor (Windows console-popup fix)
     rmSync(tmp, { recursive: true, force: true });
   });
 
+  // Task 253(c) — the detached child's cwd is pinned to the OS temp dir, never
+  // the working tree. A fire-and-forget child that outlives the hook holds a
+  // directory handle on whatever it was started in; on Windows that handle
+  // blocks a later delete/move of the project (the kit's own suites hit exactly
+  // this class as EPERM-at-teardown). The child never needed the cwd: it reads
+  // its root from CMK_PROJECT_DIR (env, below) and argv.
+  it('Door 3 — both descriptor branches pin cwd to tmpdir(), and still carry the root via env', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'cmk-lz-'));
+    const mjs = join(tmp, 'cmk-compress-lazy.mjs');
+    writeFileSync(mjs, '// stub\n');
+    const direct = lazyCompressSpawnDescriptor('/proj', mjs);
+    expect(direct.options.cwd).toBe(tmpdir());
+    expect(direct.options.env.CMK_PROJECT_DIR).toBe('/proj');
+    const fallback = lazyCompressSpawnDescriptor('/proj', null);
+    expect(fallback.options.cwd).toBe(tmpdir());
+    expect(fallback.options.env.CMK_PROJECT_DIR).toBe('/proj');
+    // With NO root to hand over, INHERIT — cmk-compress-lazy's last-resort root
+    // is `process.cwd()`, so tmpdir here would point compression at the temp dir.
+    for (const root of [undefined, '', null]) {
+      expect(
+        lazyCompressSpawnDescriptor(root, mjs).options.cwd,
+        `projectRoot=${JSON.stringify(root)}`,
+      ).toBeUndefined();
+    }
+    rmSync(tmp, { recursive: true, force: true });
+  });
+
   it('with no/absent path → graceful shell:true bin fallback (corrupt install)', () => {
     const dNull = lazyCompressSpawnDescriptor('/proj', null);
     expect(dNull.command).toBe('cmk-compress-lazy');
@@ -1533,5 +1570,469 @@ describe('Task 233 — existence advertisement', () => {
     expect(src).not.toMatch(/from '\.\/index-db\.mjs'/);
     expect(src).not.toMatch(/from '\.\/search\.mjs'/);
     expect(src).not.toMatch(/from '\.\/trust-score\.mjs'/);
+  });
+});
+
+// Task 253(a) — the SOURCE-AWARE INJECTION SPLIT (the obsidian-mind borrow,
+// research note 2026-07-21 §Borrow candidates 3).
+//
+// The SessionStart payload carries `source` (primary source: Anthropic's hook
+// reference, code.claude.com/docs/en/hooks — `startup` | `resume` | `clear` |
+// `compact` | `fork`). On a RESUME the whole prior transcript — including the
+// snapshot injected at session start — is replayed into context, so
+// re-injecting the static tier bulk pays for bytes the model already has.
+// Pointer-mode replaces that bulk with ONE line.
+//
+// DELIBERATE NARROWING vs the borrow (lead to ratify): `compact` keeps the FULL
+// snapshot. Anthropic's own docs describe compaction as "Claude Code summarizes
+// older history to free space" (docs/en/costs) — the pre-compaction snapshot is
+// SUMMARIZED, not preserved verbatim, so a pointer there could silently cost the
+// session its memory. Fail-open is the kit's posture in the memory business.
+describe('Task 253(a) — source-aware injection split', () => {
+  let f;
+  beforeEach(() => {
+    f = makeFixture();
+    seedThreeTierFixture(f);
+  });
+  afterEach(() => {
+    try {
+      rmSync(f.sandbox, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch {
+      /* orphaned tempdir — never fail a test on cleanup */
+    }
+  });
+
+  const inject = (source) =>
+    injectContext({
+      cwd: f.projectRoot,
+      userDir: f.userDir,
+      now: '2026-07-27T10:00:00Z',
+      testSpawnLazy: () => ({ spawned: false, reason: 'test' }),
+      ...(source === undefined ? {} : { source }),
+    });
+
+  it('source:"resume" → the static tier bulk is replaced by ONE pointer line', () => {
+    const r = inject('resume');
+    // Door 1 (response): the bulk is gone…
+    expect(r.snapshot).not.toContain('project-memory-marker');
+    expect(r.snapshot).not.toContain('user-about-marker');
+    expect(r.snapshot).not.toContain('local-paths-marker');
+    // …replaced by exactly one pointer line.
+    expect(r.snapshot).toContain(SNAPSHOT_POINTER);
+    expect(r.snapshot.split('\n').filter((l) => l.includes(SNAPSHOT_POINTER))).toHaveLength(1);
+    // The authority preamble still leads (the model must still be told memory
+    // is authoritative — the D-40 under-fire class).
+    expect(r.snapshot.startsWith(AUTHORITATIVE_MEMORY_PREAMBLE)).toBe(true);
+    // Reported mode + a real byte saving.
+    expect(r.injectionMode).toBe('pointer');
+    expect(r.bytes).toBeLessThan(inject('startup').bytes);
+    // The hook contract holds: additionalContext IS the snapshot.
+    expect(r.hookOutput.hookSpecificOutput.additionalContext).toBe(r.snapshot);
+  });
+
+  it('source:"startup" → the FULL snapshot (no pointer)', () => {
+    const r = inject('startup');
+    expect(r.snapshot).toContain('project-memory-marker');
+    expect(r.snapshot).not.toContain(SNAPSHOT_POINTER);
+    expect(r.injectionMode).toBe('full');
+  });
+
+  it('source:"clear" → the FULL snapshot (a cleared context has nothing to point at)', () => {
+    const r = inject('clear');
+    expect(r.snapshot).toContain('project-memory-marker');
+    expect(r.injectionMode).toBe('full');
+  });
+
+  it('source:"compact" → the FULL snapshot (compaction SUMMARIZES prior context; a pointer would lose it)', () => {
+    const r = inject('compact');
+    expect(r.snapshot).toContain('project-memory-marker');
+    expect(r.snapshot).not.toContain(SNAPSHOT_POINTER);
+    expect(r.injectionMode).toBe('full');
+  });
+
+  it('absent / unknown / non-string source → FULL snapshot (fail-open to today’s behavior)', () => {
+    for (const source of [undefined, null, '', 'fork', 'nonsense', 42, {}, []]) {
+      const r = inject(source);
+      expect(r.snapshot, `source=${JSON.stringify(source)}`).toContain('project-memory-marker');
+      expect(r.injectionMode, `source=${JSON.stringify(source)}`).toBe('full');
+    }
+  });
+
+  it('the pointer line is byte-stable (prefix-cache discipline: no counts, no clock, no paths)', () => {
+    const a = inject('resume');
+    const b = inject('resume');
+    expect(a.snapshot).toBe(b.snapshot);
+    // The line itself carries no volatile token (a digit or an ISO stamp would
+    // change the injected prefix on every resume).
+    expect(SNAPSHOT_POINTER).not.toMatch(/\d/);
+  });
+
+  it('pointer mode keeps the VOLATILE lines — the commit proposal still injects', () => {
+    // The split is static-vs-volatile, not "inject less": a proposal reflecting
+    // live git dirtiness is exactly what a resumed session has NOT seen.
+    const run = (args) => {
+      const r = spawnSync('git', args, { cwd: f.projectRoot, windowsHide: true, timeout: 60000 });
+      expect(r.status).toBe(0);
+      return r;
+    };
+    run(['init', '-q']);
+    run(['config', 'user.email', 'test@example.com']);
+    run(['config', 'user.name', 'Test']);
+    const r = injectContext({
+      cwd: f.projectRoot,
+      userDir: f.userDir,
+      now: '2026-07-27T10:00:00Z',
+      source: 'resume',
+      testGitTimeoutMs: 30000,
+      testSpawnLazy: () => ({ spawned: false, reason: 'test' }),
+    });
+    expect(r.snapshot).toMatch(/uncommitted/i);
+    expect(r.snapshot).toContain(SNAPSHOT_POINTER);
+  });
+
+  it('pointer mode still honors capBytes (§7.1.2) and leaves the lazy-compress decision untouched (Door 3)', () => {
+    const run = (source, calls) =>
+      injectContext({
+        cwd: f.projectRoot,
+        userDir: f.userDir,
+        now: '2026-07-27T10:00:00Z',
+        source,
+        capBytes: 14_500,
+        testSpawnLazy: (root) => {
+          calls.push(root);
+          return { spawned: true, pid: 1234 };
+        },
+      });
+    const fullCalls = [];
+    const pointerCalls = [];
+    const full = run('startup', fullCalls);
+    const pointer = run('resume', pointerCalls);
+    expect(Buffer.byteLength(pointer.snapshot, 'utf8')).toBeLessThanOrEqual(14_500);
+    // The staleness spawn is orthogonal to the injection mode: whatever the
+    // rollup verdict is on this state, a resumed session must reach the SAME
+    // one — pointer mode must never suppress the work cron would have done.
+    expect(pointerCalls).toEqual(fullCalls);
+    expect(pointer.lazyTrigger).toEqual(full.lazyTrigger);
+  });
+
+  // Both of these were LIVE finds (the real bin, a real sandbox project) that
+  // the first cut of this feature got wrong in the same way: pointer mode
+  // derives "what the model can see" from the EMITTED text, but in pointer mode
+  // the model's memory lives in its replayed context, not in this emission.
+  // Deriving from the emission made the kit report the session as memory-less.
+  // The status line + the recall log both key on CITATION IDS, which the plain
+  // 3-tier fixture's marker bodies don't carry — seed a real id-bearing bullet.
+  function seedCitedBullet() {
+    writeFile(
+      join(f.projectRoot, 'context', 'MEMORY.md'),
+      '# MEMORY\n\n## Active Threads\n- (P-9LXBA3ZK) project-memory-marker — deploy target is hetzner\n',
+    );
+  }
+
+  it('pointer mode does NOT report the session as memory-less (the status line counts what the model HAS, not what we just sent)', () => {
+    seedCitedBullet();
+    const full = inject('startup');
+    const pointer = inject('resume');
+    // The live symptom: "memory is empty — capture starts this session" on a
+    // resumed session that has a fact loaded. Alarming, and false.
+    expect(pointer.hookOutput.systemMessage).not.toMatch(/memory is empty/);
+    expect(pointer.hookOutput.systemMessage).toMatch(/fact\(s\) in context/);
+    // …while the METER still reports the smaller, truthful emitted size.
+    expect(pointer.hookOutput.systemMessage).toContain(
+      `snapshot ${Buffer.byteLength(pointer.snapshot, 'utf8')} B (pointer)`,
+    );
+    expect(pointer.bytes).toBeLessThan(full.bytes);
+  });
+
+  it('pointer mode keeps recall ATTRIBUTION intact — the same ids are logged as a full inject (Task 190/192 consumers)', () => {
+    seedCitedBullet();
+    injectContext({
+      cwd: f.projectRoot,
+      userDir: f.userDir,
+      sessionId: 'attr-full',
+      source: 'startup',
+      testSpawnLazy: () => ({ spawned: false }),
+    });
+    injectContext({
+      cwd: f.projectRoot,
+      userDir: f.userDir,
+      sessionId: 'attr-pointer',
+      source: 'resume',
+      testSpawnLazy: () => ({ spawned: false }),
+    });
+    const [fullEntry] = readRecallLog(f.projectRoot, { session: 'attr-full' });
+    const [pointerEntry] = readRecallLog(f.projectRoot, { session: 'attr-pointer' });
+    // The ids ARE in the model's context on a resume — they were injected at
+    // session start and replayed. Logging [] would tell the learn-loop the
+    // session recalled nothing and silently under-attribute every signal.
+    expect(fullEntry.ids.length).toBeGreaterThan(0);
+    expect(pointerEntry.ids).toEqual(fullEntry.ids);
+    // Bytes stay honest to what was actually emitted.
+    expect(pointerEntry.bytes).toBeLessThan(fullEntry.bytes);
+    expect(pointerEntry.mode).toBe('pointer');
+  });
+
+  it('over-mutation guard: pointer mode changes ONLY the snapshot — every tier file on disk is untouched', () => {
+    const files = [
+      join(f.projectRoot, 'context', 'MEMORY.md'),
+      join(f.projectRoot, 'context', 'SOUL.md'),
+      join(f.projectRoot, 'context', 'memory', 'INDEX.md'),
+      join(f.projectRoot, 'context.local', 'machine-paths.md'),
+      join(f.projectRoot, 'context.local', 'overrides.md'),
+      join(f.userDir, 'USER.md'),
+    ];
+    const before = files.map((p) => readFileSync(p, 'utf8'));
+    inject('resume');
+    expect(files.map((p) => readFileSync(p, 'utf8'))).toEqual(before);
+  });
+
+  // Review finding #1 (RATIFIED). Pointer mode is a TOKEN SAVER; on a small
+  // corpus it is not. Measured on the real bin: a one-bullet project emits
+  // 673 B on startup but 778 B on resume — the pointer line + its preserved
+  // preamble/ad cost MORE than the bulk they replace, inverting the feature's
+  // premise for exactly the new-user shape. So the pointer is taken only when
+  // it is genuinely SMALLER (and within cap); otherwise the full snapshot is
+  // emitted AND labelled 'full' everywhere.
+  function seedTinyCorpus() {
+    // ONLY the project scratchpad, one short bullet — no local/user tiers, no
+    // granular archive. This is the fresh-install shape.
+    writeFile(join(f.projectRoot, 'context', 'MEMORY.md'), '## Threads\n\n- (P-9LXBA3ZK) uv\n');
+    for (const p of [
+      join(f.projectRoot, 'context', 'SOUL.md'),
+      join(f.projectRoot, 'context', 'memory', 'INDEX.md'),
+      join(f.projectRoot, 'context.local', 'machine-paths.md'),
+      join(f.projectRoot, 'context.local', 'overrides.md'),
+      join(f.userDir, 'USER.md'),
+      join(f.userDir, 'HABITS.md'),
+      join(f.userDir, 'LESSONS.md'),
+    ]) {
+      writeFile(p, '<!-- empty -->\n');
+    }
+  }
+
+  it('a TINY corpus on resume emits the FULL snapshot — the pointer is never bigger than the bulk it replaces', () => {
+    seedTinyCorpus();
+    const full = inject('startup');
+    const resumed = inject('resume');
+    // The pointer variant would have cost more, so it is rejected.
+    expect(resumed.snapshot).not.toContain(SNAPSHOT_POINTER);
+    expect(resumed.snapshot).toBe(full.snapshot);
+    expect(resumed.bytes).toBeLessThanOrEqual(full.bytes);
+    // …and the label follows the EMISSION, not the request.
+    expect(resumed.injectionMode).toBe('full');
+    expect(resumed.hookOutput.systemMessage).not.toContain('(pointer)');
+  });
+
+  it('the mode LABEL always agrees with the EMISSION — status line, return value and recall log (log aggregation must not lie)', () => {
+    // Walk the shapes that reach different branches: rich (pointer wins), tiny
+    // (guard rejects), empty (nothing to point at), and a squeezed cap.
+    const shapes = {
+      rich: () => seedThreeTierFixture(f),
+      tiny: () => seedTinyCorpus(),
+      empty: () => {
+        for (const p of [
+          join(f.projectRoot, 'context', 'MEMORY.md'),
+          join(f.projectRoot, 'context', 'SOUL.md'),
+          join(f.projectRoot, 'context', 'memory', 'INDEX.md'),
+          join(f.projectRoot, 'context.local', 'machine-paths.md'),
+          join(f.projectRoot, 'context.local', 'overrides.md'),
+          join(f.userDir, 'USER.md'),
+          join(f.userDir, 'HABITS.md'),
+          join(f.userDir, 'LESSONS.md'),
+        ]) {
+          writeFile(p, '<!-- empty -->\n');
+        }
+      },
+    };
+    for (const [shapeName, seed] of Object.entries(shapes)) {
+      seed();
+      for (const source of ['startup', 'resume', 'compact']) {
+        for (const capBytes of [14_500, 900]) {
+          const session = `label-${shapeName}-${source}-${capBytes}`;
+          const r = injectContext({
+            cwd: f.projectRoot,
+            userDir: f.userDir,
+            now: '2026-07-29T10:00:00Z',
+            source,
+            capBytes,
+            sessionId: session,
+            testSpawnLazy: () => ({ spawned: false }),
+          });
+          const emittedPointer = r.snapshot.includes(SNAPSHOT_POINTER);
+          const where = `${shapeName}/${source}/cap${capBytes}`;
+          expect(r.injectionMode, where).toBe(emittedPointer ? 'pointer' : 'full');
+          expect(r.hookOutput.systemMessage.includes('(pointer)'), where).toBe(emittedPointer);
+          const [entry] = readRecallLog(f.projectRoot, { session });
+          expect(entry.mode, where).toBe(emittedPointer ? 'pointer' : 'full');
+          expect(entry.bytes, where).toBe(Buffer.byteLength(r.snapshot, 'utf8'));
+        }
+      }
+    }
+  });
+
+  it('an empty-memory project in pointer mode does NOT claim memory it has not got', () => {
+    for (const p of [
+      join(f.projectRoot, 'context', 'MEMORY.md'),
+      join(f.projectRoot, 'context', 'SOUL.md'),
+      join(f.projectRoot, 'context', 'memory', 'INDEX.md'),
+      join(f.projectRoot, 'context.local', 'machine-paths.md'),
+      join(f.projectRoot, 'context.local', 'overrides.md'),
+      join(f.userDir, 'USER.md'),
+      join(f.userDir, 'HABITS.md'),
+      join(f.userDir, 'LESSONS.md'),
+    ]) {
+      writeFile(p, '<!-- empty -->\n');
+    }
+    const r = inject('resume');
+    expect(r.snapshot).not.toContain(SNAPSHOT_POINTER);
+    expect(r.snapshot).not.toContain(AUTHORITATIVE_MEMORY_PREAMBLE);
+    // Review finding #1: the label follows the EMISSION. Nothing was pointed
+    // at, so this is a 'full' (empty) injection — reporting 'pointer' here
+    // would corrupt the pointer-vs-full aggregation the design claims.
+    expect(r.injectionMode).toBe('full');
+  });
+});
+
+// Review finding #2 — the bin-level plumb-through (the D-269 wired-but-dead
+// class: a field parsed in the bin but never reaching the module passes every
+// module-level test while doing nothing in production). One case per TWIN,
+// through the REAL bin, over real stdin.
+describe('Task 253(a) — `source` reaches the module through BOTH real bins', () => {
+  const BINS = {
+    plugin: BIN_PATH,
+    npm: join(REPO_ROOT, 'packages', 'cli', 'bin', 'cmk-inject-context' + '.mjs'),
+  };
+  let f;
+
+  beforeEach(() => {
+    f = makeFixture();
+    seedThreeTierFixture(f);
+  });
+  afterEach(() => {
+    try {
+      rmSync(f.sandbox, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch {
+      /* orphaned tempdir */
+    }
+  });
+
+  function runBin(bin, payload) {
+    const r = spawnSync(process.execPath, [bin], {
+      input: JSON.stringify(payload),
+      encoding: 'utf8',
+      cwd: f.projectRoot,
+      env: { ...process.env, MEMORY_KIT_USER_DIR: f.userDir },
+    });
+    expect(r.status, `stderr: ${r.stderr}`).toBe(0);
+    return JSON.parse(r.stdout);
+  }
+
+  for (const [twin, bin] of Object.entries(BINS)) {
+    it(`${twin} bin: source:"resume" on stdin → additionalContext carries the pointer, systemMessage carries (pointer)`, () => {
+      const out = runBin(bin, {
+        hook_event_name: 'SessionStart',
+        session_id: `bin-${twin}`,
+        source: 'resume',
+      });
+      const ctx = out.hookSpecificOutput.additionalContext;
+      expect(ctx).toContain(SNAPSHOT_POINTER);
+      expect(ctx).not.toContain('project-memory-marker');
+      expect(out.systemMessage).toContain('(pointer)');
+    });
+
+    it(`${twin} bin: source:"startup" on stdin → the FULL snapshot, no pointer tag`, () => {
+      const out = runBin(bin, {
+        hook_event_name: 'SessionStart',
+        session_id: `bin-${twin}`,
+        source: 'startup',
+      });
+      const ctx = out.hookSpecificOutput.additionalContext;
+      expect(ctx).toContain('project-memory-marker');
+      expect(ctx).not.toContain(SNAPSHOT_POINTER);
+      expect(out.systemMessage).not.toContain('(pointer)');
+    });
+  }
+});
+
+// Task 253(b) — the INJECTION-SIZE METER (obsidian-mind's `formatInjectionSize`).
+// Placement resolution: the meter rides `systemMessage` (the USER-display
+// channel, D-130), NOT `additionalContext`. That (i) costs the model zero
+// tokens, (ii) leaves the snapshot byte-identical so the prefix cache and every
+// byte-stability contract are untouched, and (iii) removes the self-reference
+// entirely — it reports `Buffer.byteLength(snapshot)`, the bytes actually
+// injected, with no line of its own inside the thing it measures.
+describe('Task 253(b) — injection-size meter', () => {
+  let f;
+  beforeEach(() => {
+    f = makeFixture();
+    seedThreeTierFixture(f);
+  });
+  afterEach(() => {
+    try {
+      rmSync(f.sandbox, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch {
+      /* orphaned tempdir */
+    }
+  });
+
+  it('the status line reports the exact injected byte count', () => {
+    const r = injectContext({
+      cwd: f.projectRoot,
+      userDir: f.userDir,
+      testSpawnLazy: () => ({ spawned: false }),
+    });
+    const bytes = Buffer.byteLength(r.snapshot, 'utf8');
+    expect(bytes).toBeGreaterThan(0);
+    expect(r.hookOutput.systemMessage).toContain(`snapshot ${bytes} B`);
+  });
+
+  it('the meter does NOT enter the model-facing snapshot (byte-stability preserved)', () => {
+    const r = injectContext({
+      cwd: f.projectRoot,
+      userDir: f.userDir,
+      now: '2026-07-27T10:00:00Z',
+      testSpawnLazy: () => ({ spawned: false }),
+    });
+    expect(r.snapshot).not.toMatch(/snapshot \d+ B/);
+    const again = injectContext({
+      cwd: f.projectRoot,
+      userDir: f.userDir,
+      now: '2026-07-27T10:00:00Z',
+      testSpawnLazy: () => ({ spawned: false }),
+    });
+    expect(again.snapshot).toBe(r.snapshot);
+  });
+
+  it('an empty snapshot still meters (0 B) — the silent-system failure mode is the one to avoid', () => {
+    const empty = makeFixture();
+    mkdirSync(join(empty.projectRoot, 'context'), { recursive: true });
+    const r = injectContext({
+      cwd: empty.projectRoot,
+      userDir: empty.userDir,
+      testSpawnLazy: () => ({ spawned: false }),
+    });
+    expect(r.snapshot).toBe('');
+    expect(r.hookOutput.systemMessage).toContain('snapshot 0 B');
+    rmSync(empty.sandbox, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  });
+
+  it('Door 5: the recall-log inject entry records the byte count + the injection mode', () => {
+    injectContext({
+      cwd: f.projectRoot,
+      userDir: f.userDir,
+      sessionId: 'sess-253',
+      source: 'resume',
+      testSpawnLazy: () => ({ spawned: false }),
+    });
+    const entries = readRecallLog(f.projectRoot, { session: 'sess-253' });
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({ source: 'inject', mode: 'pointer' });
+    expect(typeof entries[0].bytes).toBe('number');
+    expect(entries[0].bytes).toBeGreaterThan(0);
+  });
+
+  it('the meter never breaks the line: a garbage snapshot still yields a string', () => {
+    expect(typeof buildStatusLine({ snapshot: undefined, projectRoot: f.projectRoot })).toBe('string');
+    expect(buildStatusLine({ snapshot: undefined, projectRoot: f.projectRoot })).toContain('0 B');
   });
 });

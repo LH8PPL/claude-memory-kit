@@ -33,7 +33,7 @@ import {
 import { spawn, spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { SCRATCHPADS_BY_TIER, resolveTierRoot, ID_PATTERN, discoverRootUpward } from './tier-paths.mjs';
 import { nowIso } from './audit-log.mjs';
 import { appendRecallEntry } from './recall-log.mjs';
@@ -333,6 +333,65 @@ export const AUTHORITATIVE_MEMORY_PREAMBLE = [
   'never treat a question as novel when the answer is already in your prompt.',
   'This snapshot is a bounded hot index; `cmk search "<topic>"` reaches the facts not shown here.',
 ].join('\n');
+
+// --- Task 253(a): the SOURCE-AWARE INJECTION SPLIT --------------------------
+//
+// Borrowed as an IDEA from obsidian-mind's `session-start.ts` mode split (the
+// 2026-07-21 repo note, borrow candidate 3), reimplemented in kit terms.
+//
+// Claude Code's SessionStart payload carries `source` — PRIMARY-SOURCE verified
+// 2026-07-27 against code.claude.com/docs/en/hooks: "How the session started:
+// `startup` for new sessions, `resume` for resumed sessions, `clear` after
+// /clear, `compact` after compaction, or `fork` for a new session forked from
+// an existing one."
+//
+// On a RESUME the prior transcript is replayed into the model's context, so the
+// snapshot injected at session start is ALREADY there. Re-injecting the static
+// tier bulk buys nothing and costs its full byte weight every time. Pointer mode
+// replaces that bulk with ONE line and keeps everything volatile.
+//
+// WHAT STAYS INJECTED in pointer mode (the conservative half — when in doubt,
+// keep injecting):
+//   - the authority preamble  — the instruction that memory outranks assumption
+//     (the D-40 under-fire class); cheap, and re-anchoring it costs ~700 B
+//   - the existence advertisement (Task 233) — "what there is to search" is
+//     MORE valuable, not less, when the bulk is not in front of the model
+//   - the temporal mention + commit proposal — genuinely volatile action lines
+//     the resumed session has NOT seen (git dirtiness changes as work happens)
+// WHAT IS REPLACED: the tier blocks (`body`) — and with them the state-label
+// instruction, which only describes labels living inside that body.
+//
+// `compact` DELIBERATELY KEEPS THE FULL SNAPSHOT — a narrowing of the borrow.
+// Anthropic's docs describe compaction as summarizing older history to free
+// space ("Claude Code summarizes older history", docs/en/costs), so the
+// pre-compaction snapshot is a SUMMARY, not the verbatim text. Pointing at
+// content that may have been summarized away would silently cost the session
+// its memory — the one failure this kit exists to prevent. Compaction is
+// precisely when re-anchoring is worth its bytes.
+//
+// Everything else — `startup`, `clear`, `fork`, an unknown value, a missing or
+// unparseable payload — gets the full snapshot. Fail-open to today's behavior.
+export const POINTER_MODE_SOURCES = Object.freeze(['resume']);
+
+// Byte-stable by construction: no count, no clock, no path. The injected prefix
+// of a resumed session must be identical to the last one or the prefix cache
+// pays for the difference.
+export const SNAPSHOT_POINTER =
+  '_Memory snapshot unchanged since session start — already in your context, not re-injected. ' +
+  'If you cannot see it, `cmk search "<topic>"` reaches every recorded fact._';
+
+/**
+ * Which injection mode a SessionStart `source` selects.
+ * Anything not explicitly a pointer source is 'full' (fail-open).
+ *
+ * @param {unknown} source - the hook payload's `source` field, if any.
+ * @returns {'full'|'pointer'}
+ */
+export function injectionModeForSource(source) {
+  return typeof source === 'string' && POINTER_MODE_SOURCES.includes(source)
+    ? 'pointer'
+    : 'full';
+}
 
 // The STALE-REPLAY GUARD (Task 234, D-364). Borrowed from ECC's
 // `session-start.js:651-671`, which wraps injected prior-session context in
@@ -1014,17 +1073,30 @@ export function resolveCompressLazyPath() {
  */
 export function lazyCompressSpawnDescriptor(projectRoot, compressLazyPath) {
   const baseEnv = { ...process.env, CMK_PROJECT_DIR: projectRoot };
+  // Task 253(c): cwd is the OS temp dir, NEVER the project tree. A detached
+  // fire-and-forget child outlives this hook and keeps a handle on its working
+  // directory; on Windows that handle blocks a later delete/move/rename of the
+  // project (the stale-handle class behind the kit's own EPERM-at-teardown
+  // races). The child never READ the cwd — cmk-compress-lazy resolves its root
+  // from argv[2] ?? CMK_PROJECT_DIR (set right above) — so nothing depends on
+  // inheriting it. Named technique borrowed from obsidian-mind's detached
+  // re-index spawn (2026-07-21 note, borrow candidate 6).
+  //
+  // The guard matters: the child falls back to `process.cwd()` when
+  // CMK_PROJECT_DIR is absent, so moving cwd to tmpdir without a root to hand
+  // over would point it at the temp dir. No root → inherit, as before.
+  const cwd = typeof projectRoot === 'string' && projectRoot !== '' ? tmpdir() : undefined;
   if (compressLazyPath && existsSync(compressLazyPath)) {
     return {
       command: process.execPath,
       args: [compressLazyPath],
-      options: { detached: true, stdio: 'ignore', cwd: projectRoot, windowsHide: true, env: baseEnv },
+      options: { detached: true, stdio: 'ignore', cwd, windowsHide: true, env: baseEnv },
     };
   }
   return {
     command: 'cmk-compress-lazy',
     args: [],
-    options: { detached: true, stdio: 'ignore', shell: true, cwd: projectRoot, windowsHide: true, env: baseEnv },
+    options: { detached: true, stdio: 'ignore', shell: true, cwd, windowsHide: true, env: baseEnv },
   };
 }
 
@@ -1091,6 +1163,10 @@ export function injectContext({
   // it — attributes the recall-log entry to a session. Optional; null when
   // unknown (a manual run, an older bin).
   sessionId,
+  // Task 253(a): the hook payload's `source` (startup|resume|clear|compact|
+  // fork). Selects the injection mode — see POINTER_MODE_SOURCES above. Absent
+  // / unknown / non-string → 'full', i.e. exactly the pre-253 behavior.
+  source,
   // Test-only injection point per spawn-discipline (the production path
   // uses spawnLazyCompress directly). Tests pass a fake to assert
   // "lazy-compress was/was-not triggered" without touching the host.
@@ -1248,9 +1324,53 @@ export function injectContext({
   // body only), right after the preamble/state line — a persistent knowledge
   // line, ahead of the volatile action prompts.
   const adLine = existenceAd ? `${existenceAd}\n\n` : '';
+  // Task 253(a): pointer mode swaps the STATIC bulk (the tier blocks, and with
+  // them the state-label instruction that describes labels inside them) for one
+  // pointer line. Everything reserved-and-volatile rides unchanged.
+  //
+  // `fullSnapshot` is kept alongside the emitted one on purpose: in pointer
+  // mode the emission is NOT what the model can see — its memory is in the
+  // replayed transcript. Anything answering "what does the model have?" (the
+  // status line's fact count, the recall log's attribution ids) must read the
+  // FULL text; only the byte meter reads the emission. Deriving both from the
+  // emission is exactly the bug the live test caught: a resumed session
+  // reported "memory is empty" and logged zero recalled ids.
+  //
+  // `injectionMode` describes what was EMITTED, never what was requested. The
+  // pointer is an optimization that can decline itself (see the size + cap
+  // guards below), and a label that reported the request would make the
+  // recall-log's pointer-vs-full aggregation — the thing that proves the saving
+  // — count emissions that never happened.
+  const requestedMode = injectionModeForSource(source);
+  let injectionMode = 'full';
   let snapshot;
+  let fullSnapshot;
   if (body !== '') {
     snapshot = `${AUTHORITATIVE_MEMORY_PREAMBLE}\n\n${stateLine}${adLine}${volatile}${body}`;
+    fullSnapshot = snapshot;
+    if (requestedMode === 'pointer') {
+      const pointerSnapshot = `${AUTHORITATIVE_MEMORY_PREAMBLE}\n\n${adLine}${volatile}${SNAPSHOT_POINTER}`;
+      const pointerBytes = Buffer.byteLength(pointerSnapshot, 'utf8');
+      // TWO guards, both mandatory:
+      //
+      // 1. SIZE — the pointer must actually be SMALLER than the bulk it
+      //    replaces. On a small corpus it is not: measured on the real bin, a
+      //    one-bullet project emits 673 B on startup but 778 B on resume,
+      //    because the preamble + advertisement + pointer line outweigh a
+      //    two-line body. That inverts the whole premise for exactly the
+      //    fresh-install shape, so the optimization declines itself.
+      // 2. CAP — the §7.1.2 contract is absolute. The full snapshot is
+      //    cap-honoring by construction; the pointer variant is not derived
+      //    from enforceCap, so under a pathological tiny cap it could exceed
+      //    it. Keep the full one rather than break `snapshot ≤ capBytes`.
+      //
+      // Either guard rejecting means a FULL emission — and the label below
+      // says so.
+      if (pointerBytes <= cap && pointerBytes < Buffer.byteLength(fullSnapshot, 'utf8')) {
+        snapshot = pointerSnapshot;
+        injectionMode = 'pointer';
+      }
+    }
   } else if (volatile !== '') {
     // Empty memory, but a temporal mention / commit proposal is pending — emit
     // the action line(s) alone (trailing blank lines trimmed), no preamble.
@@ -1259,8 +1379,10 @@ export function injectContext({
     // §7.1.2 "snapshot ≤ capBytes exactly" contract — degrade to empty instead.
     const v = volatile.trimEnd();
     snapshot = Buffer.byteLength(v, 'utf8') <= cap ? v : '';
+    fullSnapshot = snapshot;
   } else {
     snapshot = '';
+    fullSnapshot = '';
   }
 
   // 5. Persist side-effect logs under <projectRoot>/context/.locks/. We
@@ -1319,8 +1441,23 @@ export function injectContext({
   // systemMessage is shown to the user) — one status line per session
   // start, zero model-token cost. The trust loop every silent system
   // lacks: when the kit works, the user finally SEES it working.
+  //
+  // Task 253(b): the status line now ends with the INJECTION-SIZE METER — the
+  // byte cost of what was just injected. It rides systemMessage on purpose:
+  // the snapshot stays byte-identical (prefix-cache + every byte-stability
+  // contract untouched), the model pays zero tokens for it, and there is no
+  // self-reference to resolve — it measures `snapshot`, a string it is not part
+  // of.
   const hookOutput = {
-    systemMessage: buildStatusLine({ snapshot, projectRoot, now: ts }),
+    systemMessage: buildStatusLine({
+      // What the model HAS (fact count) vs what we just SENT (the meter) — see
+      // the fullSnapshot note above.
+      snapshot: fullSnapshot,
+      bytes: Buffer.byteLength(snapshot, 'utf8'),
+      projectRoot,
+      now: ts,
+      mode: injectionMode,
+    }),
     hookSpecificOutput: {
       hookEventName: HOOK_EVENT_NAME,
       additionalContext: snapshot,
@@ -1343,11 +1480,20 @@ export function injectContext({
       `(?<![A-Za-z0-9])${ID_PATTERN.source.replace(/^\^|\$$/g, '')}(?![A-Za-z0-9])`,
       'g',
     );
-    const injectedIds = [...new Set(snapshot.match(idScan) ?? [])];
+    // Scanned from the FULL text, not the emission: on a resume those ids ARE
+    // in the model's context (replayed transcript), so logging the emission's
+    // empty set would tell the learn-loop the session recalled nothing and
+    // under-attribute every downstream signal (Task 190/192 consumers).
+    const injectedIds = [...new Set(fullSnapshot.match(idScan) ?? [])];
     appendRecallEntry(projectRoot, {
       session: sessionId ?? null,
       source: 'inject',
       ids: injectedIds,
+      // Task 253(b) — the meter's Door-5 half: the byte cost of every
+      // injection, and (253a) which mode produced it, so the token saving is
+      // measurable from the log rather than asserted in prose.
+      bytes: Buffer.byteLength(snapshot, 'utf8'),
+      mode: injectionMode,
     });
   }
 
@@ -1358,6 +1504,7 @@ export function injectContext({
     truncationEvents,
     lazyTrigger,
     bytes: Buffer.byteLength(snapshot, 'utf8'),
+    injectionMode,
   };
 }
 
@@ -1382,6 +1529,11 @@ const SNAPSHOT_ID_RE = new RegExp(`\\((${ID_PATTERN.source.slice(1, -1)})\\)`, '
  * @param {string} [opts.now]
  * @param {Function} [opts.listConflictsImpl] - test seam (default: the real queue lister).
  * @param {Function} [opts.listReviewImpl] - test seam.
+ * @param {'full'|'pointer'} [opts.mode] - Task 253(a) injection mode; tagged on
+ *   the meter only when it is not the default 'full'.
+ * @param {number} [opts.bytes] - Task 253(b): the bytes actually EMITTED, when
+ *   that differs from `snapshot` (pointer mode passes the full text for the
+ *   fact count and the emitted size here). Defaults to `snapshot`'s length.
  * @returns {string} the status line (always a string, never throws).
  */
 export function buildStatusLine({
@@ -1390,15 +1542,31 @@ export function buildStatusLine({
   now,
   listConflictsImpl,
   listReviewImpl,
+  mode,
+  bytes,
 } = {}) {
   const prefix = 'core-memory-kit:';
+  // Task 253(b) — the injection-size meter (obsidian-mind's formatInjectionSize
+  // idea, kit-shaped). Appended to EVERY return path below, including the
+  // catch: a status line that silently drops the cost is the transparency gap
+  // this exists to close. Computed defensively — a meter must never be the
+  // reason a hook fails.
+  const meter = (() => {
+    try {
+      const emitted =
+        typeof bytes === 'number' ? bytes : Buffer.byteLength(String(snapshot ?? ''), 'utf8');
+      return ` · snapshot ${emitted} B${mode === 'pointer' ? ' (pointer)' : ''}`;
+    } catch {
+      return '';
+    }
+  })();
   try {
     // 1. Unique injected fact ids — what the model can actually see.
     const ids = new Set();
     for (const m of String(snapshot ?? '').matchAll(SNAPSHOT_ID_RE)) ids.add(m[1]);
 
     if (ids.size === 0) {
-      return `${prefix} memory is empty — capture starts this session`;
+      return `${prefix} memory is empty — capture starts this session${meter}`;
     }
     const parts = [`${ids.size} fact(s) in context`];
 
@@ -1461,9 +1629,9 @@ export function buildStatusLine({
       parts.push(`${q.join(' + ')} pending — cmk queue`);
     }
 
-    return `${prefix} ${parts.join(', ')}`;
+    return `${prefix} ${parts.join(', ')}${meter}`;
   } catch {
     // The line is decoration; the snapshot is the cargo. Never crash.
-    return `${prefix} memory loaded`;
+    return `${prefix} memory loaded${meter}`;
   }
 }

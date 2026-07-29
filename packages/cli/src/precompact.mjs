@@ -53,6 +53,7 @@
 
 import { existsSync, readFileSync, statSync, appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { nowIso } from './audit-log.mjs';
 import { ERROR_CATEGORIES, errorResult } from './result-shapes.mjs';
 import { DEFAULT_COOLDOWN_MS, isCooldownActive } from './cooldown.mjs';
@@ -84,6 +85,44 @@ export function appendPreCompactLog({ projectRoot, entry }) {
   } catch {
     // best-effort
   }
+}
+
+/**
+ * Pure spawn descriptor for the detached PreCompact worker (Task 253(c)).
+ *
+ * Lives in src/ — not inline in the bin — for two reasons: it makes the Door-3
+ * contract unit-assertable without a real spawn (the lazyCompressSpawnDescriptor
+ * precedent), and the npm bin and the plugin bin are TWINS that were each
+ * carrying their own copy of the options object, which is how twins drift.
+ *
+ * cwd is the OS temp dir, never the working tree: this child outlives the hook
+ * by design, and a live process holds a handle on its cwd — on Windows that
+ * blocks a later delete/move of the project (the stale-handle race; borrowed as
+ * a named technique from obsidian-mind's detached re-index spawn, 2026-07-21
+ * note, borrow candidate 6). The worker never read the cwd — it takes its root
+ * from argv[2] and CMK_PROJECT_DIR, both set here. Without a root to hand over
+ * it INHERITS instead, because the worker's own last-resort fallback is
+ * `process.cwd()` and pointing that at tmpdir would be worse than inheriting.
+ *
+ * @param {object} a
+ * @param {string} a.workerPath - absolute path to cmk-precompact-worker.mjs.
+ * @param {string} a.projectRoot
+ * @param {'auto'|'manual'} a.trigger
+ * @returns {{command: string, args: string[], options: object}}
+ */
+export function precompactWorkerSpawnDescriptor({ workerPath, projectRoot, trigger } = {}) {
+  const hasRoot = typeof projectRoot === 'string' && projectRoot !== '';
+  return {
+    command: process.execPath,
+    args: [workerPath, projectRoot],
+    options: {
+      detached: true,
+      stdio: 'ignore',
+      cwd: hasRoot ? tmpdir() : undefined,
+      windowsHide: true,
+      env: { ...process.env, CMK_PROJECT_DIR: projectRoot, CMK_PRECOMPACT_TRIGGER: trigger },
+    },
+  };
 }
 
 /**
