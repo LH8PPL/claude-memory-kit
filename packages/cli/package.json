@@ -1,6 +1,6 @@
 {
   "name": "@lh8ppl/core-memory-kit",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "cmk — the CLI for core-memory-kit. Per-project, in-repo memory system for Claude Code.",
   "type": "module",
   "bin": {
