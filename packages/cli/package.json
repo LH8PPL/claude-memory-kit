@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "@lh8ppl/cmk-canonicalize": "0.1.0",
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "better-sqlite3": "^13.0.1",
     "chokidar": "^5.0.0",
     "commander": "^15.0.0",
