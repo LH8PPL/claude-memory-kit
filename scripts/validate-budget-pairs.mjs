@@ -157,6 +157,37 @@ export const BUDGET_REGISTRY = [
     overCapPattern: 'over-cap: 21 citers',
   },
   {
+    name: 'health-warning freshness window (HEALTH_FRESHNESS_MS=7d — evidence older than this never whispers, keyed on the NEWEST fail; Task 250)',
+    sourceRef: 'design §23.2 / D-412 point 2',
+    testFile: 'tests/cli-health-log.test.js',
+    // at-cap: a fail exactly AT the window is still active; over-cap: one
+    // millisecond past it is stale. The off-by-one here decides whether a
+    // fortnight-old failure greets the user on a project they just came back to.
+    atCapPattern: 'AT-CAP: evidence exactly HEALTH_FRESHNESS_MS old',
+    overCapPattern: 'OVER-CAP: evidence one millisecond past the window',
+  },
+  {
+    name: 'health-log tail-read budget (HEALTH_TAIL_BYTES=16384 — the per-prompt hot path reads a bounded tail, never the whole log; Task 250)',
+    sourceRef: 'design §23.2 / D-412 point 4',
+    testFile: 'tests/cli-health-log.test.js',
+    // at-cap: a log at exactly the budget is read whole; over-cap: entries
+    // pushed past it are NOT read (and the partial head line is dropped rather
+    // than mis-parsed — the failure mode a naive slice ships).
+    atCapPattern: 'AT-CAP tail budget',
+    overCapPattern: 'OVER-CAP tail budget',
+  },
+  {
+    name: 'health-warning strike threshold (deterministic=1 / stochastic=2 consecutive same-class fails, no success between — the noise gate; Task 250)',
+    sourceRef: 'design §23.2 / D-412 point 2',
+    testFile: 'tests/cli-health-log.test.js',
+    // NOTE the direction: this budget fires ABOVE its boundary, so the pair is
+    // at-threshold (fires) + below-threshold (silent). The silent side is the
+    // one that matters — it is the whole noise threshold, and a happy-path test
+    // never visits it.
+    atCapPattern: 'AT-CAP stochastic: exactly 2 consecutive same-class fails DO fire',
+    overCapPattern: 'UNDER-CAP stochastic: a single blip does NOT fire',
+  },
+  {
     name: 'index-db busy_timeout (5000ms bounded wait before SQLITE_BUSY; Task 219)',
     sourceRef: 'design §16.34 / §16.35 (D-321)',
     suppressed:
