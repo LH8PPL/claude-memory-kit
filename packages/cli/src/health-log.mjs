@@ -115,7 +115,7 @@ export const HEALTH_CODES = Object.freeze({
 export const HEALTH_REGISTRY = Object.freeze({
   [HEALTH_CODES.AGENT_CLI_MISSING]: Object.freeze({
     code: HEALTH_CODES.AGENT_CLI_MISSING,
-    title: "the agent's backend CLI could not be launched — automatic memory capture is off",
+    title: "the agent's backend CLI could not be launched (automatic capture is off)",
     severity: 'memory-off',
     dependsOn: Object.freeze([]),
     primaryAction: 'cmk doctor',
@@ -125,7 +125,7 @@ export const HEALTH_REGISTRY = Object.freeze({
   }),
   [HEALTH_CODES.EXTRACT_FAILING]: Object.freeze({
     code: HEALTH_CODES.EXTRACT_FAILING,
-    title: 'auto-extract keeps failing — turns are not being captured to memory',
+    title: 'auto-extract keeps failing; turns are not being captured',
     severity: 'memory-off',
     dependsOn: Object.freeze([HEALTH_CODES.AGENT_CLI_MISSING]),
     primaryAction: 'cmk doctor',
@@ -135,7 +135,7 @@ export const HEALTH_REGISTRY = Object.freeze({
   }),
   [HEALTH_CODES.INJECT_FAILING]: Object.freeze({
     code: HEALTH_CODES.INJECT_FAILING,
-    title: 'the session-start memory snapshot failed to build — recall may be missing',
+    title: 'the session-start memory snapshot is failing; recall may be incomplete',
     severity: 'degraded',
     dependsOn: Object.freeze([]),
     primaryAction: 'cmk doctor',
@@ -145,7 +145,7 @@ export const HEALTH_REGISTRY = Object.freeze({
   }),
   [HEALTH_CODES.PRECOMPACT_FAILING]: Object.freeze({
     code: HEALTH_CODES.PRECOMPACT_FAILING,
-    title: 'the pre-compaction capture keeps failing — work may be lost at the compaction boundary',
+    title: 'the pre-compaction capture keeps failing; long sessions may lose work',
     severity: 'degraded',
     dependsOn: Object.freeze([HEALTH_CODES.AGENT_CLI_MISSING]),
     primaryAction: 'cmk doctor',
@@ -155,7 +155,7 @@ export const HEALTH_REGISTRY = Object.freeze({
   }),
   [HEALTH_CODES.INDEX_DRIFT]: Object.freeze({
     code: HEALTH_CODES.INDEX_DRIFT,
-    title: 'the memory INDEX is behind the fact archive — recall may miss recent facts',
+    title: 'the memory INDEX is behind the fact archive; recall may miss recent facts',
     severity: 'advisory',
     dependsOn: Object.freeze([]),
     primaryAction: 'cmk reindex',
@@ -165,7 +165,7 @@ export const HEALTH_REGISTRY = Object.freeze({
   }),
   [HEALTH_CODES.MCP_TOOL_FAILING]: Object.freeze({
     code: HEALTH_CODES.MCP_TOOL_FAILING,
-    title: 'the cmk MCP memory tools keep erroring — recall/capture through the tools is unreliable',
+    title: 'the cmk MCP memory tools keep erroring; use the cmk CLI meanwhile',
     severity: 'degraded',
     dependsOn: Object.freeze([]),
     primaryAction: 'cmk doctor',
