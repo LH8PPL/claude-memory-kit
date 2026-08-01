@@ -79,12 +79,36 @@ describe('HC-14 — active kit health warnings', () => {
     expect((await hc14()).status).toBe('pass');
   });
 
-  it('WARNs on an active warning, naming the code and carrying its primaryAction', async () => {
+  it('WARNs on an active warning, naming the code', async () => {
     seedHealth(fails(HEALTH_CODES.EXTRACT_FAILING, 2));
     const c = await hc14();
     expect(c.status).toBe('warn');
     expect(c.message).toContain(HEALTH_CODES.EXTRACT_FAILING);
-    expect(c.recoveryCommand).toBe('cmk doctor');
+  });
+
+  it('offers NO repair command when the only action is `cmk doctor` — the command just run', async () => {
+    // The line is printed BY doctor, so "→ repair: cmk doctor" is a loop. Most
+    // codes' primaryAction is exactly that (correct in the WHISPER, where the
+    // model has not run doctor; circular here). The message's pointer to the
+    // troubleshooting skill is the real next step.
+    seedHealth(fails(HEALTH_CODES.EXTRACT_FAILING, 2));
+    const c = await hc14();
+    expect(c).not.toHaveProperty('recoveryCommand');
+    expect(c.message).toMatch(/troubleshooting/);
+  });
+
+  it('DOES offer a repair command when it is a real next step (`cmk reindex`)', async () => {
+    seedHealth(fails(HEALTH_CODES.INDEX_DRIFT, 1));
+    expect((await hc14()).recoveryCommand).toBe('cmk reindex');
+  });
+
+  it('surfaces the actionable command even when a doctor-only code outranks it', async () => {
+    // extract-failing is more severe and sorts first, but its action is the
+    // circular one — the repair line should still carry index-drift's.
+    seedHealth([...fails(HEALTH_CODES.EXTRACT_FAILING, 2), ...fails(HEALTH_CODES.INDEX_DRIFT, 1)]);
+    const c = await hc14();
+    expect(c.message).toContain(HEALTH_CODES.EXTRACT_FAILING);
+    expect(c.recoveryCommand).toBe('cmk reindex');
   });
 
   it('is ADVISORY — a warning never makes doctor exit non-zero', async () => {

@@ -1028,6 +1028,14 @@ function hc14HealthWarnings({ projectRoot, now }) {
   // Codes, not prose: the code is the key the troubleshooting skill's repair
   // book is sectioned by, so naming it is what makes the report actionable.
   const codes = warnings.map((w) => `${w.code} (${w.severity}, ${w.strikes}x)`).join('; ');
+  // A repair command is offered only when it is not the command the user just
+  // ran. Most codes' primaryAction is `cmk doctor` — correct in the WHISPER,
+  // where the model has not run doctor yet, and circular HERE, where this line
+  // is printed BY doctor ("→ repair: cmk doctor"). When the action is a real
+  // next step (`cmk reindex`) it is surfaced; otherwise the message's pointer to
+  // the troubleshooting skill IS the next step. Emitting nothing beats emitting
+  // a loop.
+  const action = warnings.find((w) => w.primaryAction !== 'cmk doctor')?.primaryAction;
   return {
     id: 'HC-14',
     name,
@@ -1035,7 +1043,7 @@ function hc14HealthWarnings({ projectRoot, now }) {
     message:
       `${warnings.length} active kit failure${warnings.length === 1 ? '' : 's'}: ${codes} — ` +
       'load the troubleshooting skill for the per-code repair steps',
-    recoveryCommand: warnings[0].primaryAction,
+    ...(action ? { recoveryCommand: action } : {}),
   };
 }
 
