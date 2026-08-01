@@ -682,14 +682,6 @@ function makeMkQueueResolve({ projectRoot, userDir }) {
 // --- Server build + run ----------------------------------------------
 
 /**
- * Build the kit's MCP server. Caller passes context (projectRoot, userDir,
- * db handle, optional semanticBackend). Returns the McpServer instance
- * ready for `.connect(transport)`.
- *
- * Tests can build the server + invoke tool callbacks directly without
- * spinning up the stdio transport.
- */
-/**
  * Task 250 (D-412) — wrap one tool handler so a THROWN handler leaves evidence.
  *
  * THE LINE THIS DRAWS, and why it is the whole design: an `isError:true`
@@ -725,6 +717,14 @@ export function withToolHealth(projectRoot, name, handler) {
   };
 }
 
+/**
+ * Build the kit's MCP server. Caller passes context (projectRoot, userDir,
+ * db handle, optional semanticBackend). Returns the McpServer instance
+ * ready for `.connect(transport)`.
+ *
+ * Tests can build the server + invoke tool callbacks directly without
+ * spinning up the stdio transport.
+ */
 export function buildMcpServer({ projectRoot, userDir, db, semanticBackend }) {
   const server = new McpServer({
     name: 'cmk',
