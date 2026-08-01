@@ -649,6 +649,77 @@ describe('Task 21 — captureTurn() boundary', () => {
     });
   });
 
+  // Task 250 (D-412) — the health log's capture-chain half. A spawn that never
+  // happened means the turn was written to the transcript but NOTHING will
+  // extract it, which is the silent-failure class the whisper exists for.
+  //
+  // Deliberately ONE-SIDED: a successful spawn appends NOTHING. Spawning is not
+  // extracting — the detached child may still fail — so an `ok` here would
+  // clear a genuine extraction failure streak on every subsequent turn and make
+  // the warning structurally unreachable. The child owns its own `ok`.
+  describe('Task 250 — spawn failures append extract-failing (Door 5)', () => {
+    function readHealth() {
+      const p = join(projectRoot, 'context', '.locks', 'health.log');
+      if (!existsSync(p)) return [];
+      return readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+    }
+
+    it('a missing auto-extract script appends extract-failing:fail with the reason as detail', () => {
+      captureTurn({
+        payload: { assistant_message: 'turn body' },
+        projectRoot,
+        now: '2026-05-27T09:00:00Z',
+        autoExtractPath: join(sandbox, 'does-not-exist.mjs'),
+      });
+      const health = readHealth();
+      expect(health).toHaveLength(1);
+      expect(health[0]).toMatchObject({
+        class: 'extract-failing',
+        outcome: 'fail',
+        detail: 'auto-extract-missing',
+        schema: 1,
+      });
+    });
+
+    it('a null auto-extract path appends extract-failing:fail', () => {
+      captureTurn({
+        payload: { assistant_message: 'turn body' },
+        projectRoot,
+        now: '2026-05-27T09:01:00Z',
+        autoExtractPath: null,
+      });
+      expect(readHealth().map((e) => [e.class, e.outcome, e.detail])).toEqual([
+        ['extract-failing', 'fail', 'no-auto-extract-path'],
+      ]);
+    });
+
+    it('a SUCCESSFUL spawn appends NOTHING — spawning is not extracting', () => {
+      const stubScript = join(sandbox, 'noop-health.mjs');
+      writeFileSync(stubScript, 'process.exit(0);\n');
+      const r = captureTurn({
+        payload: { assistant_message: 'turn body' },
+        projectRoot,
+        now: '2026-05-27T09:02:00Z',
+        autoExtractPath: stubScript,
+      });
+      expect(r.spawned).toBe(true);
+      expect(readHealth()).toEqual([]);
+    });
+
+    it('OVER-MUTATION GUARD: the health append leaves extract.log untouched', () => {
+      captureTurn({
+        payload: { assistant_message: 'turn body' },
+        projectRoot,
+        now: '2026-05-27T09:03:00Z',
+        autoExtractPath: null,
+      });
+      // the pre-existing Door-5 surface still gets its own, separate entry
+      const logPath = join(projectRoot, 'context', 'sessions', '2026-05-27.extract.log');
+      const entries = readFileSync(logPath, 'utf8').trim().split('\n').map(JSON.parse);
+      expect(entries.filter((e) => e.phase === 'spawn')).toHaveLength(1);
+    });
+  });
+
   describe('spawn-failed observability (Task 23.14.3)', () => {
     it('writes a phase:spawn extract.log entry when autoExtractPath is null', () => {
       const r = captureTurn({

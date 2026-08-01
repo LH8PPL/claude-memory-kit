@@ -2036,3 +2036,77 @@ describe('Task 253(b) — injection-size meter', () => {
     expect(buildStatusLine({ snapshot: undefined, projectRoot: f.projectRoot })).toContain('0 B');
   });
 });
+
+// --- Task 250: the health log's session-start half (Door 5) -------------------
+// ONE outcome per inject RUN, deliberately. The alternative — an `ok` for the
+// snapshot plus a separate `fail` for the lazy-compress spawn — produces the
+// sequence [ok, fail] on every single session start, so the streak read from
+// the tail is permanently 1 and a stochastic class (threshold 2) can NEVER
+// fire. A per-run verdict is what makes the signal reachable at all.
+describe('Task 250 — inject appends ONE health outcome per run (Door 5)', () => {
+  let sandbox;
+  let projectRoot;
+  let userDir;
+
+  beforeEach(() => {
+    const f = makeFixture();
+    sandbox = f.sandbox;
+    projectRoot = f.projectRoot;
+    userDir = f.userDir;
+    seedThreeTierFixture({ projectRoot, userDir });
+  });
+  afterEach(() => {
+    rmSync(sandbox, { recursive: true, force: true });
+  });
+
+  function readHealth() {
+    const p = join(projectRoot, 'context', '.locks', 'health.log');
+    if (!existsSync(p)) return [];
+    return readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  }
+
+  it('a clean injection appends exactly one inject-failing:ok', () => {
+    injectContext({ cwd: projectRoot, userDir, testSpawnLazy: () => ({ spawned: true, pid: 1 }) });
+    const health = readHealth();
+    expect(health).toHaveLength(1);
+    expect(health[0]).toMatchObject({ class: 'inject-failing', outcome: 'ok', schema: 1 });
+  });
+
+  it('a lazy-compress SPAWN FAILURE makes the whole run fail — never ok plus fail', () => {
+    // Force the staleness path to spawn, then fail the spawn.
+    writeFile(join(projectRoot, 'context', 'sessions', 'now.md'), '# now\n\nsome unrolled session content\n');
+    injectContext({
+      cwd: projectRoot,
+      userDir,
+      testSpawnLazy: () => ({ spawned: false, reason: 'spawn-failed', error: 'boom' }),
+    });
+    const health = readHealth();
+    expect(health).toHaveLength(1);
+    expect(health[0].class).toBe('inject-failing');
+    expect(health[0].outcome).toBe('fail');
+    expect(health[0].detail).toBe('lazy-compress-spawn-failed');
+  });
+
+  it('a staleness-detection throw is recorded as a failure, not swallowed as healthy', () => {
+    writeFile(join(projectRoot, 'context', 'sessions', 'now.md'), '# now\n\nsome unrolled session content\n');
+    injectContext({
+      cwd: projectRoot,
+      userDir,
+      testSpawnLazy: () => {
+        throw new Error('detector exploded');
+      },
+    });
+    const health = readHealth();
+    expect(health).toHaveLength(1);
+    expect(health[0]).toMatchObject({ class: 'inject-failing', outcome: 'fail', detail: 'lazy-trigger-error' });
+  });
+
+  it('the health append never changes the returned snapshot or the recall-log entry', () => {
+    // Over-mutation guard on the OTHER Door-5 surfaces this run touches.
+    const r = injectContext({ cwd: projectRoot, userDir, testSpawnLazy: () => ({ spawned: true }) });
+    expect(r.snapshot).toContain('project-memory-marker');
+    const recall = readRecallLog(projectRoot).filter((e) => e.source === 'inject');
+    expect(recall).toHaveLength(1);
+    expect(recall[0]).not.toHaveProperty('class');
+  });
+});

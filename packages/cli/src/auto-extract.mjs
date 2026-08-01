@@ -62,6 +62,11 @@ import { pidIsAlive } from './lock-discipline.mjs';
 import { nowIso } from './audit-log.mjs';
 import { ERROR_CATEGORIES } from './result-shapes.mjs';
 import { touchCooldownMarker } from './cooldown.mjs';
+// Task 250 (D-412) — the failure-driven health nudge's capture-chain evidence.
+// This is the ONE site that knows whether the agent's backend CLI actually ran,
+// so it owns both the deterministic `agent-cli-missing` and the stochastic
+// `extract-failing` classes. Best-effort by module contract (never throws).
+import { appendHealthEntry, isBinaryMissingError, HEALTH_CODES } from './health-log.mjs';
 // Task 61 — inline cross-project promotion. Reuse auto-persona's classifier
 // directive, parser, and promote-to-user-tier path so the SAME per-turn Haiku
 // call that extracts project facts ALSO promotes cross-project doctrine to the
@@ -1027,6 +1032,13 @@ export async function runAutoExtract({
       // dead cron, failed-call cooldowns kept the roll skipped). Correctness >
       // cost — a transient failure must be free to retry.
       touchCooldownMarker({ projectRoot, now: ts });
+      // Task 250 (Door 5): the backend call RETURNED — the strongest evidence
+      // the kit has that its automatic engine works end-to-end. It clears both
+      // the extraction class and the upstream CLI class, and it is the ONLY
+      // thing in wave 1 that can clear `agent-cli-missing` (nothing probes for
+      // the binary; the design is event-driven, D-412 point 4).
+      appendHealthEntry(projectRoot, { class: HEALTH_CODES.AGENT_CLI_MISSING, outcome: 'ok' });
+      appendHealthEntry(projectRoot, { class: HEALTH_CODES.EXTRACT_FAILING, outcome: 'ok' });
     } catch (err) {
       // Task 167.F: do NOT touch the cooldown on failure (see the success-path
       // comment above) — a failed call must not block the next compress's retry.
@@ -1041,6 +1053,20 @@ export async function runAutoExtract({
       const category = err instanceof HaikuTimeoutError
         ? ERROR_CATEGORIES.HAIKU_TIMEOUT
         : ERROR_CATEGORIES.HAIKU_FAILED;
+      // Task 250 (Door 5) — split the failure by whether it CAN recover on its
+      // own, because that is exactly what the whisper's noise gate keys on
+      // (D-412 point 2). A spawn ENOENT means the agent's CLI is not there: it
+      // will not be there next turn either, so it whispers on the FIRST strike.
+      // Everything else (a timeout, a 5xx, a rate limit) genuinely recovers and
+      // must not nag on a single blip — 2 consecutive, no success between.
+      // NOTE the error CATEGORY is the detail, never the message: the message
+      // can carry stderr, and this log is a diagnostic, not a transcript.
+      appendHealthEntry(
+        projectRoot,
+        isBinaryMissingError(err)
+          ? { class: HEALTH_CODES.AGENT_CLI_MISSING, outcome: 'fail', detail: 'spawn-enoent' }
+          : { class: HEALTH_CODES.EXTRACT_FAILING, outcome: 'fail', detail: category },
+      );
       // Task 242 (D-369) — SELF-HEAL: never let a failed extraction drop the
       // turn whole. Run the deterministic LLM-free fallback so capture degrades
       // to PARTIAL, never to zero. Runs on ANY failure category (timeout,

@@ -24,6 +24,10 @@ import { sanitizePrivacyTags } from './privacy.mjs';
 import { maskPii, localUsernames, resolvePrivacyScreen } from './pii-patterns.mjs';
 import { appendRedactions } from './redactions-log.mjs';
 import { checkPoisonGuard, logPoisonGuardRejection } from './poison-guard.mjs';
+// Task 250 (D-412) — the INDEX-drift half of the health log. writeFact is the
+// ONE boundary every fact create flows through, so it is where "is the INDEX
+// still in step with the archive?" is actually knowable as an EVENT.
+import { appendHealthEntry, HEALTH_CODES } from './health-log.mjs';
 
 // Task 191 (ADR-0017 Phase 1b): 'judgment' is a LOOP-BORN type — written by
 // judgment.mjs (earned method-preferences with an evidence log), never by the
@@ -472,7 +476,17 @@ export function writeFact(opts = {}) {
   const doReindex = opts._reindexFn ?? reindex;
   try {
     doReindex({ tier: opts.tier, projectRoot: opts.projectRoot, userDir: opts.userDir, warn: () => {} });
+    // Task 250 (D-412, Door 5): the INDEX is in step with the archive again.
+    appendHealthEntry(opts.projectRoot, { class: HEALTH_CODES.INDEX_DRIFT, outcome: 'ok' });
   } catch (reindexErr) {
+    // Task 250: DETERMINISTIC — a stale INDEX does not un-stale itself; it
+    // stays behind until something rebuilds it. So one strike is enough, and
+    // the only thing that clears it is a rebuild that actually succeeded.
+    appendHealthEntry(opts.projectRoot, {
+      class: HEALTH_CODES.INDEX_DRIFT,
+      outcome: 'fail',
+      detail: 'index-rebuild-failed',
+    });
     // index rebuild is best-effort; capture already succeeded — but leave a
     // trace so a lagging committed INDEX is diagnosable, never silent.
     try {

@@ -72,6 +72,9 @@ import { readLastEntryFromNowMd } from './auto-extract.mjs';
 import { capturePredictions } from './expectations.mjs';
 import { judgeTurn } from './judge-signals.mjs';
 import { dateFromIso } from './audit-log.mjs';
+// Task 250 (D-412) — the failure-driven health nudge. A spawn that never
+// happened means the turn is on disk but nothing will ever extract it.
+import { appendHealthEntry, HEALTH_CODES } from './health-log.mjs';
 
 // A `.extract-<ts>.tmp` turn-file lives only for the duration of one
 // auto-extract run (bounded by the Stop-hook ceiling, design §8.5). The owning
@@ -314,6 +317,21 @@ function spawnAutoExtract(autoExtractPath, turnFile, projectRoot) {
     );
     // spawn-discipline: ignore detached-fire-and-forget (the auto-extract child intentionally outlives this hook process — parent-side timeout is incorrect by design; the child carries its own internal timeout via auto-extract.mjs's runAutoExtract → HaikuViaAnthropicApi.compress({timeoutMs: 25_000}) chain. PR-A class-1 audit confirmed this is the correct posture; the structural gap is the spawn-failed observability surface deferred to PR-D2b / Task 23.14.3.)
     const child = spawn(command, args, options);
+    // Task 250: an 'error' event (ENOENT — `node` itself unresolvable) arrives
+    // ASYNCHRONOUSLY, so the try/catch below can never see it. Without a
+    // listener, an EventEmitter 'error' becomes an UNCAUGHT EXCEPTION in the
+    // Stop-hook process — a crashed hook, which is exactly what the kit's
+    // fail-open posture exists to prevent. HONEST BOUND: this is a safety net,
+    // not a reliable detector. The child is detached + unref'd and the hook bin
+    // exits almost immediately, so the event usually never arrives before the
+    // parent is gone; when it does, we get a health record instead of a crash.
+    child.on('error', (err) => {
+      appendHealthEntry(projectRoot, {
+        class: HEALTH_CODES.EXTRACT_FAILING,
+        outcome: 'fail',
+        detail: err?.code === 'ENOENT' ? 'spawn-enoent' : 'spawn-error',
+      });
+    });
     child.unref();
     return { spawned: true, pid: child.pid };
   } catch (err) {
@@ -557,6 +575,16 @@ export function captureTurn({
       ts,
       reason: spawnResult.reason,
       error: spawnResult.error,
+    });
+    // Task 250 (Door 5) — the same event, recorded for the WHISPER rather than
+    // for a post-hoc log read. Deliberately ONE-SIDED: a successful spawn
+    // appends nothing, because spawning is not extracting (the detached child
+    // may still fail). An `ok` here would clear a real extraction-failure
+    // streak on every subsequent turn and make the warning unreachable.
+    appendHealthEntry(projectRoot, {
+      class: HEALTH_CODES.EXTRACT_FAILING,
+      outcome: 'fail',
+      detail: spawnResult.reason,
     });
     // NB: we do NOT unlink the turn-file here. Ownership is clean — auto-extract
     // owns deletion (its `finally`); when the spawn fails (or a child is killed

@@ -175,6 +175,28 @@ export const HEALTH_REGISTRY = Object.freeze({
   }),
 });
 
+/**
+ * Is this error "the binary isn't there" rather than "the call went wrong"?
+ *
+ * THE one discriminator the whole noise gate rests on: a missing executable
+ * cannot transiently recover, so it whispers on the first strike, while a
+ * timeout or an API error must not nag on a single blip. Shared here rather
+ * than re-sniffed at each instrumented site (the shared-module discipline) —
+ * three call sites need exactly this judgement and a drifted copy would put
+ * two failure classes on different thresholds for the same root cause.
+ *
+ * Node surfaces a failed exec as `code: 'ENOENT'` on the async `error` event
+ * (which is how the compressor's `child.on('error')` rejects it). The message
+ * fallback covers an error that crossed a boundary which dropped the property
+ * — a wrapped/serialized rejection.
+ */
+export function isBinaryMissingError(err) {
+  if (!err) return false;
+  if (err.code === 'ENOENT') return true;
+  const msg = typeof err.message === 'string' ? err.message : String(err);
+  return /\bENOENT\b/.test(msg);
+}
+
 /** `<projectRoot>/context/.locks/health.log` — the gitignored run-state tier. */
 export function healthLogPath(projectRoot) {
   return join(projectRoot, 'context', '.locks', 'health.log');

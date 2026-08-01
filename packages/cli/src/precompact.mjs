@@ -59,6 +59,8 @@ import { ERROR_CATEGORIES, errorResult } from './result-shapes.mjs';
 import { DEFAULT_COOLDOWN_MS, isCooldownActive } from './cooldown.mjs';
 import { compressSession } from './compress-session.mjs';
 import { CEILING_FREE_TIMEOUT_MS, CEILING_FREE_BACKOFF_MS } from './compress-retry.mjs';
+// Task 250 (D-412) — the detached worker's only durable failure signal.
+import { appendHealthEntry, HEALTH_CODES } from './health-log.mjs';
 
 const SESSIONS_REL = ['context', 'sessions'];
 const NOW_MD_REL = ['context', 'sessions', 'now.md'];
@@ -236,6 +238,20 @@ export async function runPreCompact({
         ...extra,
       },
     });
+    // Task 250 (D-412, Door 5) — the whisper's evidence, on the SAME funnel as
+    // the precompact log so the two surfaces can never disagree about what
+    // happened. A `skipped` run (cooldown, empty buffer) records NOTHING: it
+    // proves nothing about the worker's health, and an `ok` there would clear a
+    // real failure streak every time the gate declined.
+    if (result?.action === 'error') {
+      appendHealthEntry(projectRoot, {
+        class: HEALTH_CODES.PRECOMPACT_FAILING,
+        outcome: 'fail',
+        detail: result?.errorCategory ?? result?.error_category ?? result?.reason ?? 'error',
+      });
+    } else if (result?.action && result.action !== 'skipped') {
+      appendHealthEntry(projectRoot, { class: HEALTH_CODES.PRECOMPACT_FAILING, outcome: 'ok' });
+    }
     return { ...result, duration_ms: Date.now() - t0 };
   };
 
