@@ -16,6 +16,7 @@
     "stress": "node scripts/stress-test.mjs",
     "live-verify": "node scripts/live-verify.mjs",
     "live-verify:now-roll": "node scripts/live-verify-now-roll.mjs",
+    "live-verify:health-whisper": "node scripts/live-verify-health-whisper.mjs",
     "live-test": "node scripts/live-test.mjs",
     "live-test:backend": "node scripts/live-test-backend.mjs",
     "release": "node scripts/release.mjs",

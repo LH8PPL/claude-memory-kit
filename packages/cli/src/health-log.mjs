@@ -222,6 +222,13 @@ export function appendHealthEntry(projectRoot, { class: cls, outcome, detail } =
     if (typeof projectRoot !== 'string' || projectRoot === '') return { ok: false };
     if (!HEALTH_REGISTRY[cls]) return { ok: false };
     if (!HEALTH_OUTCOMES.includes(outcome)) return { ok: false };
+    // NEVER SCAFFOLD A MEMORY TIER. The instrumented sites run on ordinary hook
+    // paths in arbitrary directories, so a recursive mkdir on the way to the log
+    // would silently create `context/` in a repo that never installed the kit —
+    // the Task-190 non-kit-project gate, and precisely the shape of a diagnostic
+    // changing state it has no business touching. The health log describes a kit
+    // INSTALLATION; where there is none there is nothing to describe.
+    if (!existsSync(join(projectRoot, 'context'))) return { ok: false };
     const line = {
       ts: new Date().toISOString(),
       schema: HEALTH_LOG_SCHEMA_VERSION,

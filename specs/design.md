@@ -4089,6 +4089,88 @@ to curate — it is all-or-nothing today). **Ship trigger:** when a real bulk im
 weeks of history) demonstrably degrades archive quality, or at the next curate-surface
 task, whichever first.
 
+## 23. Failure-driven health nudge — the kit tells the agent when it is broken (Task 250, v0.6.4)
+
+_Canonical HOW for the ratified 8-point design ([D-412](../docs/journey/DECISION-LOG.md), the 2026-07-29 grill). Evidence: the [self-healing-CLI-repair-UX survey](../docs/research/2026-07-29-self-healing-cli-repair-ux.md) (brew · flutter · git-maintenance · npm/pnpm · rustup · Tailscale · Claude Code `/doctor` · Nx · Sentry, primary sources) plus the [Octopoda-OS code dive](../docs/research/2026-07-22-octopoda-os-code-dive.md) for the detection half. The survey's honest finding: **no shipped tool whispers its own broken state into a coding agent's per-prompt context** — the ingredients all have precedent, the composition is the kit's._
+
+### 23.1 The problem this closes
+
+Every hook path in the kit fails **open** by design — a broken capture must never break the user's prompt — and `cmk doctor` is **reactive only**: nothing runs it, and users do not (`U-U5PPSG7Y`, high trust). Compose those two correct decisions and you get the kit's worst failure mode: a wedged agent CLI, a repeatedly-timing-out extraction, or a crashed precompact worker all present as *nothing happened*, for as long as it takes a human to become suspicious. Durability is the product; silent non-capture is the one failure that costs what the kit exists to protect.
+
+**Two shapes were considered and REJECTED at the grill, recorded so nobody re-proposes them:** auto-running doctor at SessionStart (ceremony on every session, and the HC-10 cut already said no), and a SessionStart status-line nudge (fires every session and has **no self-clean lifecycle** — after one fire it can only learn the fix landed by re-checking every session, which *is* the auto-run we cut).
+
+The shape that survives is **failure-driven and anchored to the EVENT, not a schedule**: fix the thing → the next run succeeds → there is no fresh failure → there is no nudge. Self-clean is structural rather than a cleanup job.
+
+### 23.2 The evidence store — `health.log` + the Warnable-shaped registry (`health-log.mjs`)
+
+ONE append-only NDJSON log at `context/.locks/health.log` (the gitignored run-time-state tier, same class as `audit.log` / `recall.log` / `poison-guard.log`). One line per event: `{ts, schema, class, outcome: 'ok'|'fail', detail?}`.
+
+- **Instrumented ops append BOTH outcomes.** The `ok` is what CLEARS a warning, so it is not optional — a fail-only log can never self-clean.
+- **Event-driven only. Nothing probes the environment.** A deterministic condition enters the log when a real op *hits* it (a spawn `ENOENT` → `agent-cli-missing`), never by the hot path going looking. This is what keeps the per-prompt read to one bounded file tail.
+- **No sidecar state.** The active-warning set is DERIVED from the log tail on every read ([ADR-0002](../docs/adr/0002-markdown-source-of-truth-over-opaque-db.md)). A Warnables-style read-modify-write state map was explicitly rejected as the two-writer hazard — and Tailscale's own stuck-warning bug (#19241) is what statefulness invites.
+- **`detail` is a machine-ish token** (an error category, a spawn reason, a tool name) — never a message and never user content. The log is a diagnostic, not a transcript.
+
+**The registry** is Tailscale's `Warnable` struct, kit-shaped: `code` (the stable id the troubleshooting skill's repair book is sectioned by), `title`, `severity`, `dependsOn`, `primaryAction`, `fixClass`, plus the kit's two additions — `deterministic` and `strikeThreshold`.
+
+| Code | Severity | Deterministic | dependsOn | primaryAction | Fix class |
+| --- | --- | --- | --- | --- | --- |
+| `agent-cli-missing` | memory-off | yes (1 strike) | — | `cmk doctor` | advise |
+| `extract-failing` | memory-off | no (2 strikes) | `agent-cli-missing` | `cmk doctor` | advise |
+| `inject-failing` | degraded | no (2) | — | `cmk doctor` | advise |
+| `precompact-failing` | degraded | no (2) | `agent-cli-missing` | `cmk doctor` | advise |
+| `index-drift` | advisory | yes (1) | — | `cmk reindex` | **silent** |
+| `mcp-tool-failing` | degraded | no (2) | — | `cmk doctor` | advise |
+
+`deterministic` means exactly one thing: **can this condition transiently recover on its own?** A missing binary cannot (it is missing until someone installs it); a spawn timeout can (the machine was busy). `strikeThreshold` is therefore DERIVED from it, not independently chosen, and a test pins the two together so they can never drift apart.
+
+`fixClass` follows the survey's observed industry split and bounds what the troubleshooting skill may do: **silent** (kit-owned, idempotent, reversible — just run it), **confirm** (touches user-owned state — PROPOSE it, one-tap approve, [ADR-0018](../docs/adr/0018-memory-commit-propose-and-approve.md)), **advise** (expensive or outside the kit's authority — print the command). **An unknown class defaults to advise**; auto-fix is earned per-fix, never per-tool (Nx's three-condition gate is the template).
+
+**The semantics** (`computeActiveWarnings`, a PURE function over log entries — every edge is testable without a filesystem). Per class, newest-backwards: count CONSECUTIVE `fail` entries, stopping at the first `ok` (**a success resets the streak — that IS the self-clean mechanism**); require the streak to reach `strikeThreshold`; require the NEWEST fail to be within **7 days** (`HEALTH_FRESHNESS_MS` — keyed on "is it still broken NOW", not "when did it start", so a project resumed after a fortnight is not greeted by a warning about something an environment change may long since have fixed). Then **cascade**: a warning whose `dependsOn` names an ACTIVE code is dropped, computed against the pre-cascade set so a chain collapses to its ROOT in one pass. `ts` is sorted as the truth rather than trusting file order, so an out-of-order append cannot silently invert a streak.
+
+**The tail read is BOUNDED** — `HEALTH_TAIL_BYTES` (16 KB), one positional read, with the partial head line DISCARDED (a byte-slice of an earlier record would either fail to parse or, worse, parse into something wrong). The trade is deliberate and stated: evidence older than the tail window is invisible to the whisper, which is correct — a failure with 16 KB of subsequent activity on top of it is not a CURRENT failure.
+
+### 23.3 The whisper — `buildPromptHookOutput` (`capture-prompt.mjs`)
+
+The per-prompt UserPromptSubmit hook emits ONE line while something is actively broken:
+
+```text
+⚠ [core-memory-kit] <title> — load the troubleshooting skill to diagnose; fix: `<primaryAction>`
+```
+
+- **It does NOT inherit the recall hint's gates — the structural rule of this section.** `buildMemoryHint` returns `null` below 10 prompt characters and on a project with no granular archive; both are correct for a RECALL nudge and both are fatal for a FAILURE nudge, because *"go"* is exactly what a user types while their capture is broken and an empty archive is exactly what a project whose extraction has never once succeeded looks like. So the health read is computed independently and the two results are merged into the one output string, **whisper first**. `buildMemoryHint` keeps its signature and its tests; the whisper is additive.
+- **Stateless, present on every prompt while active** (D-412 point 3). No "did I already whisper" sidecar — the Tailscale present-only-when-broken model.
+- **One line, always.** Multiple independent actives collapse to the most severe plus a count (`(+N more kit issues)`); the `dependsOn` cascade has already merged same-root failures upstream, so a count > 1 means genuinely separate problems.
+- **Byte-bounded** (`WHISPER_MAX_BYTES` = 320) — it is paid on every prompt for as long as the failure lasts. The clip eats the TITLE only, protecting the actionable tail: a whisper that says *something broke* and nothing else is worse than no whisper. Truncation walks code points, never bytes.
+- **Fail-open in BOTH directions.** An error in the health read leaves the hint intact; an error in the hint leaves the whisper intact. Neither may suppress the other — the failure the whisper reports is often the same failure that broke the hint.
+- **No privacy surface.** No prompt-derived text enters the whisper at any point; it is built purely from the registry (kit-authored strings) and the log's outcome counts.
+
+**Channels (D-412 point 6).** The whisper rides `additionalContext` — model-facing, no user interruption, every severity. A visible `systemMessage` line is added **only at severity `memory-off`**, as a SIBLING of `hookSpecificOutput` (never nested inside it, which would put a human-facing string in the model's context). `systemMessage` is a UNIVERSAL hook output field — *"Warning message shown to the user"* ([code.claude.com/docs/en/hooks](https://code.claude.com/docs/en/hooks), verified 2026-08-01) — and the split is deliberately asymmetric: interrupting a human deserves a real threshold, and `memory-off` means the kit is effectively not capturing, where silence loses sessions the user believes are being saved.
+
+### 23.4 Wave-1 instrumentation, and three judgement calls in it
+
+Wave 1 covers the capture chain, injection, precompact, index drift, and the MCP tools. Three of the wiring decisions are not obvious, and each is pinned by a test:
+
+1. **`capture-turn` and the lazy-compress spawn are ONE-SIDED (fail only).** Spawning is not extracting — the detached child may still fail — so an `ok` there would clear a genuine extraction-failure streak on every subsequent turn. The child owns its own `ok`.
+2. **`inject-context` records ONE verdict per RUN**, the worst thing that happened in it (`classifyInjectionHealth`, pure + exported). The obvious alternative — `ok` for the snapshot plus a separate `fail` for the spawn — writes `[ok, fail]` on EVERY session start, which pins the tail streak at 1 forever: a two-strike class could then never fire, and the signal would be **dead while looking instrumented**.
+3. **MCP counts a THROWN handler as failure but an `isError` ENVELOPE as `ok`** (`withToolHealth`, wrapped once at the registration seam so tool number 14 cannot forget it). `isError` is the documented way a tool reports an ordinary outcome — id not found, guard rejection, empty search — i.e. the tool WORKED; whispering on it would nag a user who merely asked for something absent. A thrown handler is different in kind: it escapes to the SDK, becomes a JSON-RPC error, and touches no file anywhere.
+
+`auto-extract` owns the split the whole noise gate rests on: at the one point where the backend call resolves, a spawn `ENOENT` (`isBinaryMissingError`, shared rather than re-sniffed per site) routes to `agent-cli-missing`, everything else to `extract-failing`. It is also the ONLY site that can CLEAR `agent-cli-missing`, since nothing probes for the binary.
+
+**The recorded limit (D-412 point 7), documented rather than hidden: a fully dead hook layer kills the whisper too.** Event-driven means a hook that never fires writes nothing. Total hook death stays covered by install auto-recover (Task 248), `cmk doctor`, and the MCP surfaces; **partial** hook failure — the common case, and the one that used to be silent — is what this covers.
+
+### 23.5 The surfaces that consume it
+
+- **The `troubleshooting` skill** — the third scaffolded skill, one keyed section per registry code (symptom → diagnosis → exact fix → fix class), with the confirm-first discipline stated ABOVE the first repair instruction and `cmk doctor` as the fallback section. It is tied to the registry BY TEST: every code must have a section, and every section must declare the same `fixClass` and `primaryAction` the registry declares — a repair book that drifts from the code producing the whisper would name codes the skill cannot look up, or repair at an authority the registry never granted. Kit failure codes only. `cmk install` / `cmk repair --hooks` are deliberately absent from its `allowed-tools`, so a confirm-class fix cannot quietly become runnable.
+- **HC-14** — doctor's view of the same data, reusing `activeWarnings` rather than re-deriving the thresholds (a second copy would drift and produce "doctor says fine, the AI says broken"). Advisory (`warn`, never `fail`). It **SKIPs rather than PASSes** when the log cannot be read: the reader is fail-open by contract, which is right on the hot path and a false green in a diagnostic whose job is to say what it could and could not verify.
+
+The two surfaces answer different questions: the whisper reaches the MODEL on the next prompt; HC-14 reaches the USER when they go looking. Before HC-14, doctor could report thirteen passes while the kit's own failure log held a week of dead extraction — every other check probes CONFIGURATION, none looked at OUTCOMES (the D-298 / HC-10 false-green class, one level up).
+
+### 23.6 Extending it
+
+A new failure class is: a registry entry + the instrumented site that appends its two outcomes + a repair-book section in the skill. **Task 258**'s `stale-refs` scan enters here as a low-severity `advisory` once its noise floor is measured on the real corpus (D-412 point 8) — the registry is the seam, and it stays a SEPARATE task deliberately.
+
+**Verification:** `scripts/live-verify-health-whisper.mjs` (`npm run live-verify:health-whisper`) drives the REAL hook bin against a sandboxed install with a seeded streak and asserts the whisper, the `memory-off` systemMessage, the noise gate, the self-clean, and whisper-vs-HC-14 agreement — with NO manual command run anywhere (the D-169 automatic-path criterion). Zero LLM, zero network, so unlike its sibling live-verify scripts it is cheap to run any time.
+
 ## End of design.md v0.1.0
 
 Sections 1-17 = full design surface. Cross-references to specific FRs and ADRs throughout. The four absorbable changes from the spec-generator comparison (tombstones §6.5, review queue §6.2, native auto-memory detection HC-8, structured logging §6.1) are baked in. §17 was tail-appended 2026-05-26 after the working-product live-test surfaced the spawn-layer Windows bug.

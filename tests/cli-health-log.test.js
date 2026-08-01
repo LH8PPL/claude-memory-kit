@@ -49,6 +49,10 @@ const NOW_MS = Date.parse(NOW);
 let root;
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'cmk-health-'));
+  // Every fixture is an INSTALLED project: `appendHealthEntry` refuses to write
+  // (and refuses to create anything) where `context/` does not exist, so a bare
+  // tmpdir would silently exercise the no-op path instead of the writer.
+  mkdirSync(join(root, 'context'), { recursive: true });
 });
 afterEach(() => {
   try {
@@ -156,6 +160,31 @@ describe('appendHealthEntry (Door 2 state + Door 5 observability)', () => {
     expect(appendHealthEntry(root, undefined)).toEqual({ ok: false });
     // none of the rejects created a file
     expect(existsSync(healthLogPath(root))).toBe(false);
+  });
+
+  it('NEVER scaffolds a memory tier: a root with no context/ is a no-op, not a new directory', () => {
+    // The health log is a diagnostic ABOUT a kit installation, so there is
+    // nothing to diagnose where the kit is not installed. This is not a nicety:
+    // the instrumented sites run on ordinary hook paths in arbitrary
+    // directories, and a `mkdirSync(recursive)` on the way to writing the log
+    // would silently create `context/` in a non-kit repo — exactly what the
+    // Task-190 non-kit-project gate forbids, and how a diagnostic ends up
+    // changing state it has no business touching.
+    const bare = mkdtempSync(join(tmpdir(), 'cmk-bare-'));
+    try {
+      expect(appendHealthEntry(bare, { class: HEALTH_CODES.INJECT_FAILING, outcome: 'ok' })).toEqual({ ok: false });
+      expect(existsSync(join(bare, 'context'))).toBe(false);
+    } finally {
+      rmSync(bare, { recursive: true, force: true });
+    }
+  });
+
+  it('creates .locks INSIDE an existing context/, so a real project never has to pre-make it', () => {
+    // The fixture has context/ but no .locks/ — the state a freshly-installed
+    // project is in before its first lock/audit write.
+    expect(existsSync(join(root, 'context', '.locks'))).toBe(false);
+    expect(appendHealthEntry(root, { class: HEALTH_CODES.INJECT_FAILING, outcome: 'ok' })).toEqual({ ok: true });
+    expect(existsSync(healthLogPath(root))).toBe(true);
   });
 
   it('OVER-MUTATION GUARD: appending one class leaves every other class\'s entries byte-untouched', () => {

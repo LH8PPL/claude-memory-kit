@@ -602,6 +602,36 @@ One of 14 yes/no diagnostics run by [[`cmk doctor`]]. Each has a documented self
 
 Spec: design §14.
 
+### Health log
+
+The kit's own append-only failure record, at `context/.locks/health.log` (NDJSON, the gitignored run-time-state tier — same class as the [[Audit log]]). One line per instrumented operation: `{ts, schema, class, outcome: 'ok'|'fail', detail?}`. Instrumented ops append **both** outcomes, because the `ok` is what clears a warning. Event-driven only — nothing probes the environment to fill it. It carries no derived state: the set of currently-active warnings is computed from its tail on every read.
+
+Cross-refs: [[Failure code]], [[Health whisper]], [[Audit log]]. Spec: design §23.2; D-412.
+
+### Failure code
+
+The stable identifier for one class of kit failure — `agent-cli-missing`, `extract-failing`, `inject-failing`, `precompact-failing`, `index-drift`, `mcp-tool-failing`. It is the key that ties the three surfaces together: the instrumented op writes it to the [[Health log]], the [[Health whisper]] names it, HC-14 reports it, and the `troubleshooting` skill's repair book is sectioned by it. A code is **active** only when its evidence clears the [[Strike threshold]] and is under 7 days old.
+
+Cross-refs: [[Health log]], [[Warnable registry]], [[Health whisper]]. Spec: design §23.2.
+
+### Warnable registry
+
+The frozen table of [[Failure code]]s and their properties, borrowed in shape from Tailscale's `Warnable` struct: `code`, `title`, `severity` (`memory-off` | `degraded` | `advisory`), `dependsOn` (cascade suppression — an active upstream code hides its downstream codes, so one root cause produces one warning), `primaryAction` (the exact repair command), `fixClass` (`silent` | `confirm` | `advise` — how much authority the troubleshooting skill has to apply the fix), `deterministic`, and [[Strike threshold]]. It is the extension point: a new failure class is a registry entry plus its instrumented site plus a repair-book section.
+
+Cross-refs: [[Failure code]], [[Strike threshold]]. Spec: design §23.2; the [self-healing-CLI-repair-UX note](../docs/research/2026-07-29-self-healing-cli-repair-ux.md).
+
+### Strike threshold
+
+The noise gate on the [[Health whisper]]: how many **consecutive** `fail` outcomes for one [[Failure code]], with no `ok` between them, before it is treated as real. **Derived** from whether the failure can transiently recover on its own — a `deterministic` failure (a missing binary is missing until someone installs it) fires on **1**; a stochastic one (a spawn timeout, an API blip) needs **2**. A success resets the streak, which is what makes the warning self-clean with no state to reset.
+
+Cross-refs: [[Health whisper]], [[Warnable registry]]. Spec: design §23.2; D-412.
+
+### Health whisper
+
+The one-line warning the UserPromptSubmit hook injects (as `additionalContext`, model-facing) while a [[Failure code]] is active: the failure, a pointer to the `troubleshooting` skill, and the exact fix command. **Stateless** — present on every prompt while the failure is active and gone the moment a success lands, with no "already warned" record anywhere. Computed independently of the per-prompt recall hint that shares the same hook output, so it still fires on a two-character prompt or a project with no archive — the shapes a broken kit actually has. At severity `memory-off` a user-visible `systemMessage` line is added alongside it.
+
+Cross-refs: [[Failure code]], [[Strike threshold]], [[Health log]], [[Health check (HC)]]. Spec: design §23.3; D-412.
+
 ---
 
 ## Privacy & safety
