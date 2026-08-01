@@ -22,10 +22,11 @@
 // error, and leaves NO trace anywhere on disk today — the silent class.
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, rmSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { withToolHealth } from '../packages/cli/src/mcp-server.mjs';
+import { _resetHealthTransitionState } from '../packages/cli/src/health-log.mjs';
 
 let sandbox;
 let projectRoot;
@@ -34,6 +35,11 @@ beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'cmk-mcp-health-'));
   projectRoot = join(sandbox, 'proj');
   mkdirSync(join(projectRoot, 'context', '.locks'), { recursive: true });
+  // The install marker — the health log refuses to write without it (M2).
+  writeFileSync(join(projectRoot, 'context', 'MEMORY.md'), '# MEMORY\n', 'utf8');
+  // The MCP seam uses the TRANSITION form (B2), whose per-process memory is
+  // module-level and would otherwise carry across cases in this file.
+  _resetHealthTransitionState();
 });
 afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });

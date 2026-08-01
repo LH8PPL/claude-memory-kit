@@ -124,6 +124,9 @@ beforeEach(() => {
   projectRoot = join(sandbox, 'proj');
   mkdirSync(join(projectRoot, 'context', 'sessions'), { recursive: true });
   mkdirSync(join(projectRoot, 'context', '.locks'), { recursive: true });
+  // The install marker — the Task-250 health log refuses to write without it,
+  // so a bare tier would silently exercise the no-op path (M2).
+  writeFileSync(join(projectRoot, 'context', 'MEMORY.md'), '# MEMORY\n', 'utf8');
 });
 
 afterEach(() => {

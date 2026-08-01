@@ -55,7 +55,11 @@ const BIN_PATH = join(REPO_ROOT, 'plugin', 'bin', 'cmk-capture-turn' + '.mjs');
 function makeFixture() {
   const sandbox = mkdtempSync(join(tmpdir(), 'cmk-capture-turn-test-'));
   const projectRoot = join(sandbox, 'proj');
-  mkdirSync(projectRoot, { recursive: true });
+  mkdirSync(join(projectRoot, 'context'), { recursive: true });
+  // The install marker. The Task-250 health log refuses to write without it, so
+  // a bare project dir would silently exercise the no-op path rather than the
+  // spawn-failure recording under test (review finding M2).
+  writeFileSync(join(projectRoot, 'context', 'MEMORY.md'), '# MEMORY\n', 'utf8');
   return { sandbox, projectRoot };
 }
 

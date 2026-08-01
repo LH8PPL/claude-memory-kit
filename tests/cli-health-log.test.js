@@ -34,12 +34,16 @@ import {
   HEALTH_TAIL_BYTES,
   HEALTH_FRESHNESS_MS,
   HEALTH_LOG_SCHEMA_VERSION,
+  DETAIL_TOKEN_PATTERN,
+  INVALID_DETAIL,
   SEVERITY_RANK,
   healthLogPath,
   appendHealthEntry,
   readHealthTail,
   computeActiveWarnings,
   activeWarnings,
+  appendHealthTransition,
+  _resetHealthTransitionState,
 } from '../packages/cli/src/health-log.mjs';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -50,9 +54,11 @@ let root;
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'cmk-health-'));
   // Every fixture is an INSTALLED project: `appendHealthEntry` refuses to write
-  // (and refuses to create anything) where `context/` does not exist, so a bare
+  // (and refuses to create anything) without the install marker, so a bare
   // tmpdir would silently exercise the no-op path instead of the writer.
   mkdirSync(join(root, 'context'), { recursive: true });
+  writeFileSync(join(root, 'context', 'MEMORY.md'), '# MEMORY\n', 'utf8'); // the install marker (M2)
+  _resetHealthTransitionState(); // the module-level map must not leak across cases
 });
 afterEach(() => {
   try {
@@ -162,6 +168,41 @@ describe('appendHealthEntry (Door 2 state + Door 5 observability)', () => {
     expect(existsSync(healthLogPath(root))).toBe(false);
   });
 
+  it('M2: a repo with a coincidental context/ dir but NO install marker is still a no-op', () => {
+    // `context/` is a perfectly ordinary directory name; the install marker
+    // (`context/MEMORY.md`, scaffolded on every project) is the honest
+    // is-the-kit-here test. Bare-directory detection would drop a health log
+    // into somebody's unrelated docs folder.
+    const other = mkdtempSync(join(tmpdir(), 'cmk-other-'));
+    try {
+      mkdirSync(join(other, 'context'), { recursive: true });
+      expect(appendHealthEntry(other, { class: HEALTH_CODES.INJECT_FAILING, outcome: 'ok' })).toEqual({ ok: false });
+      expect(existsSync(join(other, 'context', '.locks'))).toBe(false);
+    } finally {
+      rmSync(other, { recursive: true, force: true });
+    }
+  });
+
+  it('I2: a non-token `detail` is REPLACED, never written through and never thrown on', () => {
+    // The prose said "NEVER user content"; nothing enforced it, so the first
+    // site to pass `err.message` would have put stderr — which can carry a
+    // prompt, a path, or a secret — into a file the whisper reads.
+    const leaky = 'ENOENT: spawn C:/Users/somebody/secret-project/claude.cmd failed\nstack...';
+    expect(appendHealthEntry(root, { class: HEALTH_CODES.EXTRACT_FAILING, outcome: 'fail', detail: leaky })).toEqual({
+      ok: true,
+    });
+    const [e] = readHealthTail(root);
+    expect(e.detail).toBe(INVALID_DETAIL);
+    expect(e.detail).not.toContain('somebody');
+    expect(e.outcome).toBe('fail'); // the EVENT survives; only the reason is dropped
+  });
+
+  it('I2: the real machine tokens the kit passes all pass the guard unchanged', () => {
+    for (const token of ['haiku_timeout', 'spawn-enoent', 'auto-extract-missing', 'mk_timeline', 'index-rebuild-failed']) {
+      expect(DETAIL_TOKEN_PATTERN.test(token), `${token} must be a valid detail token`).toBe(true);
+    }
+  });
+
   it('NEVER scaffolds a memory tier: a root with no context/ is a no-op, not a new directory', () => {
     // The health log is a diagnostic ABOUT a kit installation, so there is
     // nothing to diagnose where the kit is not installed. This is not a nicety:
@@ -208,6 +249,95 @@ describe('appendHealthEntry (Door 2 state + Door 5 observability)', () => {
       HEALTH_CODES.MCP_TOOL_FAILING,
       HEALTH_CODES.INDEX_DRIFT,
     ]);
+  });
+});
+
+// --- B2: transition logging, and the budget × cadence composition -----------
+
+describe('appendHealthTransition — the high-cadence sites (review finding B2)', () => {
+  it('writes ONE baseline ok per process, then suppresses the repeats', () => {
+    for (let i = 0; i < 50; i++) {
+      appendHealthTransition(root, { class: HEALTH_CODES.MCP_TOOL_FAILING, outcome: 'ok' });
+    }
+    expect(readHealthTail(root)).toHaveLength(1);
+  });
+
+  it('NEVER suppresses a fail — consecutive fails stay adjacent, so streaks are exact', () => {
+    appendHealthTransition(root, { class: HEALTH_CODES.MCP_TOOL_FAILING, outcome: 'ok' });
+    appendHealthTransition(root, { class: HEALTH_CODES.MCP_TOOL_FAILING, outcome: 'fail' });
+    appendHealthTransition(root, { class: HEALTH_CODES.MCP_TOOL_FAILING, outcome: 'fail' });
+    expect(readHealthTail(root).map((e) => e.outcome)).toEqual(['ok', 'fail', 'fail']);
+    expect(activeWarnings(root, {}).map((w) => w.code)).toEqual([HEALTH_CODES.MCP_TOOL_FAILING]);
+  });
+
+  it('the RESET ok always lands — the transition that clears a warning is never the one dropped', () => {
+    // This is the property that makes the optimization safe. Suppressing the
+    // first ok after a fail would strand a warning permanently — the exact
+    // stuck-warning class the design claims is structurally impossible.
+    appendHealthTransition(root, { class: HEALTH_CODES.MCP_TOOL_FAILING, outcome: 'fail' });
+    appendHealthTransition(root, { class: HEALTH_CODES.MCP_TOOL_FAILING, outcome: 'fail' });
+    expect(activeWarnings(root, {})).toHaveLength(1);
+    appendHealthTransition(root, { class: HEALTH_CODES.MCP_TOOL_FAILING, outcome: 'ok' });
+    expect(activeWarnings(root, {})).toEqual([]);
+  });
+
+  it('tracks each class independently — a chatty class cannot mask a quiet one', () => {
+    appendHealthTransition(root, { class: HEALTH_CODES.MCP_TOOL_FAILING, outcome: 'ok' });
+    appendHealthTransition(root, { class: HEALTH_CODES.INDEX_DRIFT, outcome: 'ok' });
+    for (let i = 0; i < 20; i++) {
+      appendHealthTransition(root, { class: HEALTH_CODES.MCP_TOOL_FAILING, outcome: 'ok' });
+    }
+    appendHealthTransition(root, { class: HEALTH_CODES.INDEX_DRIFT, outcome: 'fail' });
+    expect(readHealthTail(root).map((e) => [e.class, e.outcome])).toEqual([
+      [HEALTH_CODES.MCP_TOOL_FAILING, 'ok'],
+      [HEALTH_CODES.INDEX_DRIFT, 'ok'],
+      [HEALTH_CODES.INDEX_DRIFT, 'fail'],
+    ]);
+  });
+
+  it('a refused append does not poison the memory — the next call still tries', () => {
+    const bare = mkdtempSync(join(tmpdir(), 'cmk-bare-t-'));
+    try {
+      expect(appendHealthTransition(bare, { class: HEALTH_CODES.INDEX_DRIFT, outcome: 'ok' })).toEqual({ ok: false });
+      // the same class, now on a real project, must still write its baseline
+      expect(appendHealthTransition(root, { class: HEALTH_CODES.INDEX_DRIFT, outcome: 'ok' })).toEqual({ ok: true });
+      expect(readHealthTail(root)).toHaveLength(1);
+    } finally {
+      rmSync(bare, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('COMPOSITION: the tail budget × writer cadence (review finding B2)', () => {
+  it('a sparse 2-strike streak SURVIVES hundreds of high-cadence appends from other classes', () => {
+    // THE BUG THIS PINS: the tail is bounded and SHARED. With a plain `ok` per
+    // MCP tool call and per fact write, ~186 entries of chatter evicted a real
+    // inject-failing streak before the whisper ever read it — the sparse class
+    // was structurally unreachable, which is worse than noisy, because the
+    // feature silently did not work for exactly the failures it was built for.
+    appendHealthEntry(root, { class: HEALTH_CODES.INJECT_FAILING, outcome: 'fail' });
+    appendHealthEntry(root, { class: HEALTH_CODES.INJECT_FAILING, outcome: 'fail' });
+
+    // Now simulate a busy session: 400 tool calls + 200 fact writes, all healthy.
+    for (let i = 0; i < 400; i++) {
+      appendHealthTransition(root, { class: HEALTH_CODES.MCP_TOOL_FAILING, outcome: 'ok' });
+    }
+    for (let i = 0; i < 200; i++) {
+      appendHealthTransition(root, { class: HEALTH_CODES.INDEX_DRIFT, outcome: 'ok' });
+    }
+
+    expect(activeWarnings(root, {}).map((w) => w.code)).toEqual([HEALTH_CODES.INJECT_FAILING]);
+  });
+
+  it('and the raised tail budget covers a burst even WITHOUT transition suppression', () => {
+    // Defence-in-depth for a future site that appends directly: 600 plain
+    // entries must still fit inside HEALTH_TAIL_BYTES alongside the streak.
+    appendHealthEntry(root, { class: HEALTH_CODES.INJECT_FAILING, outcome: 'fail' });
+    appendHealthEntry(root, { class: HEALTH_CODES.INJECT_FAILING, outcome: 'fail' });
+    for (let i = 0; i < 600; i++) {
+      appendHealthEntry(root, { class: HEALTH_CODES.MCP_TOOL_FAILING, outcome: 'ok' });
+    }
+    expect(activeWarnings(root, {}).map((w) => w.code)).toEqual([HEALTH_CODES.INJECT_FAILING]);
   });
 });
 

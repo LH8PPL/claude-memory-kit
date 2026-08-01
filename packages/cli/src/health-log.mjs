@@ -58,14 +58,23 @@ export const HEALTH_OUTCOMES = Object.freeze(['ok', 'fail']);
 
 /**
  * How much of the log tail the hot path reads. The whisper is a per-prompt
- * cost, so the read is BOUNDED rather than whole-file: 16 KB is ~100-200
- * entries, far more than any live streak needs, and it is a single positional
- * read. The trade is deliberate and stated: evidence older than the tail
- * window is invisible to the whisper. That is correct behavior, not a gap —
- * a failure whose last 16 KB of subsequent activity contains no trace of it
- * is not a CURRENT failure.
+ * cost, so the read is BOUNDED rather than whole-file: one positional read.
+ *
+ * RAISED 16 KB → 64 KB (review finding B2). The tail is shared across ALL
+ * classes, so a high-cadence writer evicts a sparse one: 16 KB is ~186 entries,
+ * and a few hundred MCP tool calls could push a real two-strike streak off the
+ * window before the whisper ever saw it — a SPARSE class was structurally
+ * unreachable, not merely delayed. The primary fix is transition-based logging
+ * at the high-cadence sites (`appendHealthTransition` below), which removes the
+ * flood at its source; this raise is defence-in-depth for whatever cadence a
+ * future site brings.
+ *
+ * The trade is still deliberate and stated: evidence older than the tail window
+ * is invisible to the whisper. With transition logging that window now spans a
+ * very long span of real activity, because a healthy class contributes ONE line
+ * per process rather than one per operation.
  */
-export const HEALTH_TAIL_BYTES = 16_384;
+export const HEALTH_TAIL_BYTES = 65_536;
 
 /**
  * The freshness window (D-412 point 2). Evidence older than this never
@@ -197,6 +206,20 @@ export function isBinaryMissingError(err) {
   return /\bENOENT\b/.test(msg);
 }
 
+/**
+ * `detail` must be a short MACHINE TOKEN — an error category, a spawn reason, a
+ * tool name. Never a message, a path, or anything derived from user content.
+ *
+ * The prose contract said exactly that and nothing enforced it, so the first
+ * future site to pass `err.message` would have quietly put stderr — which can
+ * carry a prompt, a path, or a secret — into a file the whisper reads (review
+ * finding I2). A violating value is REPLACED, never rejected and never thrown
+ * on: losing the reason is acceptable, losing the event is not, and a
+ * diagnostic that throws is the thing this module exists to avoid.
+ */
+export const DETAIL_TOKEN_PATTERN = /^[a-z0-9._:-]{1,64}$/i;
+export const INVALID_DETAIL = 'invalid-detail';
+
 /** `<projectRoot>/context/.locks/health.log` — the gitignored run-state tier. */
 export function healthLogPath(projectRoot) {
   return join(projectRoot, 'context', '.locks', 'health.log');
@@ -228,7 +251,13 @@ export function appendHealthEntry(projectRoot, { class: cls, outcome, detail } =
     // the Task-190 non-kit-project gate, and precisely the shape of a diagnostic
     // changing state it has no business touching. The health log describes a kit
     // INSTALLATION; where there is none there is nothing to describe.
-    if (!existsSync(join(projectRoot, 'context'))) return { ok: false };
+    //
+    // The marker is `context/MEMORY.md`, not a bare `context/` directory (review
+    // finding M2): plenty of repos have a `context/` folder for their own
+    // reasons, and the kit must not drop a log into one of them. MEMORY.md is
+    // scaffolded by `cmk install` on every project, so it is the honest
+    // is-the-kit-installed-here test.
+    if (!existsSync(join(projectRoot, 'context', 'MEMORY.md'))) return { ok: false };
     const line = {
       ts: new Date().toISOString(),
       schema: HEALTH_LOG_SCHEMA_VERSION,
@@ -236,14 +265,65 @@ export function appendHealthEntry(projectRoot, { class: cls, outcome, detail } =
       outcome,
     };
     // Omitted rather than null-written: the line is appended on every
-    // instrumented op, so it stays minimal on the success path.
-    if (detail !== undefined && detail !== null && detail !== '') line.detail = String(detail).slice(0, 200);
+    // instrumented op, so it stays minimal on the success path. Non-token
+    // values are REPLACED, not dropped and not thrown on (see the pattern's doc).
+    if (detail !== undefined && detail !== null && detail !== '') {
+      line.detail = DETAIL_TOKEN_PATTERN.test(String(detail)) ? String(detail) : INVALID_DETAIL;
+    }
     mkdirSync(join(projectRoot, 'context', '.locks'), { recursive: true });
     appendFileSync(healthLogPath(projectRoot), `${JSON.stringify(line)}\n`, 'utf8');
     return { ok: true };
   } catch {
     return { ok: false };
   }
+}
+
+/**
+ * Per-process, per-class memory of the last outcome written. Module-level and
+ * deliberately NOT persisted — this is a write-rate optimization, not state the
+ * verdict depends on (ADR-0002 still holds: the active-warning set is derived
+ * from the log's own bytes). A fresh process starts blank and writes one
+ * baseline `ok`, which is exactly right for the one-shot hook bins.
+ */
+const lastOutcomeByClass = new Map();
+
+/** Test-only reset — a module-level map would otherwise leak across cases. */
+export function _resetHealthTransitionState() {
+  lastOutcomeByClass.clear();
+}
+
+/**
+ * Append, but SUPPRESS a repeated `ok` from a high-cadence site (review finding
+ * B2). `fail` always writes; `ok` writes only when this class's last in-process
+ * outcome was a fail — or unknown, so each process still records one healthy
+ * baseline.
+ *
+ * WHY THIS EXISTS. The tail read is bounded and SHARED ACROSS ALL CLASSES, so a
+ * chatty writer evicts a quiet one. Per-tool-call and per-fact-write `ok`s could
+ * push a genuine two-strike streak of a sparse class off the window before the
+ * whisper ever read it — the sparse class was structurally UNREACHABLE, which is
+ * worse than noisy: the feature silently did not work for exactly the failures
+ * it was built for.
+ *
+ * IT PRESERVES THE STREAK SEMANTICS EXACTLY, which is the only reason it is
+ * safe. Consecutive fails still land adjacently (fails are never suppressed);
+ * an `ok` arriving between two fails still lands, because the previous outcome
+ * was a fail — so the reset that clears a warning is never the thing dropped.
+ * Only the 2nd..Nth consecutive `ok` disappears, and those carry no information
+ * the 1st does not.
+ *
+ * Use at HIGH-CADENCE sites only (MCP tool handlers, the per-write reindex).
+ * The low-cadence sites (inject, precompact, extract) append directly: they run
+ * about once per session or per turn, and a plain append keeps their evidence
+ * densest where the whisper cares most.
+ */
+export function appendHealthTransition(projectRoot, { class: cls, outcome, detail } = {}) {
+  if (outcome === 'ok' && lastOutcomeByClass.get(cls) === 'ok') return { ok: true, suppressed: true };
+  const r = appendHealthEntry(projectRoot, { class: cls, outcome, detail });
+  // Only remember what actually landed — if the append was refused (non-kit
+  // root, unknown class), the next call must still be free to try.
+  if (r.ok) lastOutcomeByClass.set(cls, outcome);
+  return r;
 }
 
 /**

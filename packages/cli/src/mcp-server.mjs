@@ -47,7 +47,10 @@ import { lessonsPromote } from './lessons-promote.mjs';
 // Task 250 (D-412) — the MCP half of the health log. A thrown tool handler is
 // the module's one wholly-silent failure path (it becomes a JSON-RPC error and
 // touches no file); this is what gives it a durable trace.
-import { appendHealthEntry, HEALTH_CODES } from './health-log.mjs';
+// The TRANSITION form, not the plain append: the server is long-lived and a
+// session can make hundreds of tool calls, and one `ok` per call was evicting
+// sparse classes from the shared tail read (review finding B2).
+import { appendHealthTransition, HEALTH_CODES } from './health-log.mjs';
 import { resolveReviewQueue, listReviewQueue } from './review-queue.mjs';
 import { resolveConflictQueue, listConflictQueue } from './conflict-queue.mjs';
 import { resolvePruneQueue, listPruneQueue } from './prune-queue.mjs';
@@ -705,14 +708,14 @@ export function withToolHealth(projectRoot, name, handler) {
     try {
       result = await handler(...args);
     } catch (err) {
-      appendHealthEntry(projectRoot, {
+      appendHealthTransition(projectRoot, {
         class: HEALTH_CODES.MCP_TOOL_FAILING,
         outcome: 'fail',
         detail: name, // the TOOL NAME, never the message — a message can carry content
       });
       throw err;
     }
-    appendHealthEntry(projectRoot, { class: HEALTH_CODES.MCP_TOOL_FAILING, outcome: 'ok' });
+    appendHealthTransition(projectRoot, { class: HEALTH_CODES.MCP_TOOL_FAILING, outcome: 'ok' });
     return result;
   };
 }
