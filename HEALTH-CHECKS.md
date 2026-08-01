@@ -168,7 +168,7 @@ Before v0.6.2, the kit's capture hooks resolved the project root as the agent's 
 
 ### HC-14 — Active kit health warnings (advisory)
 
-HC-14 reports failure codes the kit **recorded about itself** — it doesn't probe anything new, it just surfaces warnings already logged by other checks/operations that are still active. Repair path depends on the code:
+HC-14 reports failure codes the kit **recorded about itself** — it probes nothing. The other health checks inspect CONFIGURATION (are the hooks wired, is the INDEX consistent); this one reads OUTCOMES: the kit's background operations write down whether they succeeded as they run, and HC-14 surfaces the ones whose failures are still active (repeated recently enough and not since cleared by a success). Repair path depends on the code:
 
 - Load the **`troubleshooting`** skill for the per-code repair book (`.claude/skills/troubleshooting/SKILL.md`) — it maps each failure code to its fix.
 - **`cmk reindex`** is the one self-applied fix for index-drift codes.
