@@ -2312,7 +2312,7 @@ Single Node binary, ships with the kit. Subcommands:
 | `cmk init-user-tier` | Scaffold `~/.core-memory-kit/` once per machine |
 | `cmk search "<query>" [flags]` | Per §9.3 — hybrid keyword + semantic |
 | `cmk reindex [--boot \| --full]` | Rebuild SQLite cache from markdown |
-| `cmk doctor` | Run HC-1..HC-13 health checks; route to self-repair |
+| `cmk doctor` | Run HC-1..HC-14 health checks; route to self-repair |
 | `cmk config <get\|set\|--show-origin> <key>` | Settings access (§7.2) |
 | `cmk view [--port N]` | Local markdown viewer at `127.0.0.1:37778` |
 | `cmk import-anthropic-memory [--dry-run]` | Per §11.2 |
@@ -2405,7 +2405,7 @@ Implementation: [`packages/cli/src/memory-recovery.mjs`](../packages/cli/src/mem
 
 ## 14. Failure modes + health checks
 
-Thirteen yes/no checks, run on demand by `cmk doctor`. Each has a documented self-repair path; the authoritative per-check table is [HEALTH-CHECKS.md](../HEALTH-CHECKS.md) — the rows below cover HC-1..HC-9 and are kept for their design rationale, while HC-10 (compaction liveness, Task 167), HC-11 (backend CLI, Task 200), HC-12 (deletion propagation, Task 210) and HC-13 (stray tiers, Task 248) live there. (The two memsearch checks — formerly HC-1 "installed" + HC-7 "reachable" — were **removed in Task 120**; the remaining five from requirements.md renumbered to HC-1..HC-5, plus HC-6 native-memory detection per ADR-0011, HC-7 stale-lock detection per PR-B's class-2 lock audit, and HC-8 native-binding health per Task 141a / D-129. The cross-platform-emission audit lives in `validate-platform-commands.mjs`, not a runtime doctor check.)
+Fourteen yes/no checks, run on demand by `cmk doctor`. Each has a documented self-repair path; the authoritative per-check table is [HEALTH-CHECKS.md](../HEALTH-CHECKS.md) — the rows below cover HC-1..HC-9 and are kept for their design rationale, while HC-10 (compaction liveness, Task 167), HC-11 (backend CLI, Task 200), HC-12 (deletion propagation, Task 210), HC-13 (stray tiers, Task 248) and HC-14 (active kit health warnings, Task 250) live there. (The two memsearch checks — formerly HC-1 "installed" + HC-7 "reachable" — were **removed in Task 120**; the remaining five from requirements.md renumbered to HC-1..HC-5, plus HC-6 native-memory detection per ADR-0011, HC-7 stale-lock detection per PR-B's class-2 lock audit, and HC-8 native-binding health per Task 141a / D-129. The cross-platform-emission audit lives in `validate-platform-commands.mjs`, not a runtime doctor check.)
 
 | ID | Check | Repair if failed |
 | --- | --- | --- |

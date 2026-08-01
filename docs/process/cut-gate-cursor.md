@@ -244,7 +244,7 @@ cmk doctor
 - [ ] **★ CU1 — install prints the Cursor success summary.**
       `cmk install --ide cursor` → the summary says **`ready for Cursor`** and names the wired legs (`instruction file + MCP + hooks`), plus the "Restart the agent to activate" line. **FAIL:** an error, or a missing leg.
 
-- [ ] **★ CU1b — `cmk doctor` clean (agent-aware HC-1 for Cursor).** `cmk doctor` → **0 fail** on a fresh Cursor install — **13 checks** (HC-1..HC-13; HC-8 native-bindings, HC-9 version-drift, HC-10 compaction-liveness, HC-11 backend-CLI-present). HC-1 must report **`Cursor capture/inject wired via .cursor/hooks.json (cmk cursor-hook)`** — the Cursor-aware check, NOT a Claude-Code-shaped fail. **HC-9** = PASS on a just-installed project; **HC-10** = SKIP on a fresh install with no cron; **HC-11** = PASS when `cursor-agent` is on PATH (the effective backend for a Cursor install), FAIL with the honest degrade message if it's absent (see ★ BK1, §4f). **FAIL:** HC-1 fails with `cmk repair --hooks` (the Claude hint) → `detectInstallKind` didn't recognize the `.cursor/rules/core-memory-kit.mdc` marker, or the dispatcher isn't on the load-bearing events (the D-185 false-FAIL class).
+- [ ] **★ CU1b — `cmk doctor` clean (agent-aware HC-1 for Cursor).** `cmk doctor` → **0 fail** on a fresh Cursor install — **14 checks** (HC-1..HC-14; HC-8 native-bindings, HC-9 version-drift, HC-10 compaction-liveness, HC-11 backend-CLI-present). HC-1 must report **`Cursor capture/inject wired via .cursor/hooks.json (cmk cursor-hook)`** — the Cursor-aware check, NOT a Claude-Code-shaped fail. **HC-9** = PASS on a just-installed project; **HC-10** = SKIP on a fresh install with no cron; **HC-11** = PASS when `cursor-agent` is on PATH (the effective backend for a Cursor install), FAIL with the honest degrade message if it's absent (see ★ BK1, §4f). **FAIL:** HC-1 fails with `cmk repair --hooks` (the Claude hint) → `detectInstallKind` didn't recognize the `.cursor/rules/core-memory-kit.mdc` marker, or the dispatcher isn't on the load-bearing events (the D-185 false-FAIL class).
 
 - [ ] **★ CU2 — hooks surface: the versioned `.cursor/hooks.json` with the dispatcher on all 6 events.**
       ```powershell
@@ -911,8 +911,8 @@ changed `.cursor/mcp.json` since opening (Cursor launches the MCP server at sess
 
 On a Cursor install, the automatic engine runs through **`cursor-agent`** (off the Cursor subscription, no API key). Unlike the Claude cut-gate operator (who may lack a 2nd agent's CLI), **this operator HAS Cursor — so BK4 is directly runnable here.** BK1–BK3 are CLI-deterministic.
 
-- **★ BK1 — `cmk doctor` HC-11 (cursor-agent present).** On a fresh `--ide cursor` install, `cmk doctor` reports **13** checks and HC-11 = PASS naming `cursor-agent` (the effective backend for a Cursor install). To prove the FAIL path, script `runDoctor({ projectRoot, userDir, backendCliProbe: () => ({ agent: 'cursor', bin: 'agent.cmd', present: false, reason: 'cursor-agent not found on PATH' }) })` → HC-11 = FAIL with the honest "automatic features degraded, file-only still works" message.
-  **PASS:** 13 checks; HC-11 PASS with cursor-agent present, FAIL (naming it) when absent. **FAIL:** a wrong check count, or a silent SKIP when absent (the D-270 bug).
+- **★ BK1 — `cmk doctor` HC-11 (cursor-agent present).** On a fresh `--ide cursor` install, `cmk doctor` reports **14** checks and HC-11 = PASS naming `cursor-agent` (the effective backend for a Cursor install). To prove the FAIL path, script `runDoctor({ projectRoot, userDir, backendCliProbe: () => ({ agent: 'cursor', bin: 'agent.cmd', present: false, reason: 'cursor-agent not found on PATH' }) })` → HC-11 = FAIL with the honest "automatic features degraded, file-only still works" message.
+  **PASS:** 14 checks; HC-11 PASS with cursor-agent present, FAIL (naming it) when absent. **FAIL:** a wrong check count, or a silent SKIP when absent (the D-270 bug).
 
 - **★ BK2 — `cmk install --backend <agent>` (split-brain + fail-fast).** In a throwaway dir:
   ```bash
@@ -1177,7 +1177,7 @@ Open the NEW folder in Cursor (fully restart if Cursor was already running). Ask
 **Health & repair**
 
 - [ ] **F-11**
-      - `cmk doctor` → HC-1..HC-13 accurate (HC-8 = native bindings / npm-12 readiness, v0.3.1; HC-9 = version-drift, v0.3.4; HC-10 = compaction-liveness, v0.4.1 — SKIP when no cron registered; HC-11 = backend LLM CLI present, v0.4.5 — PASS when `cursor-agent` is on PATH, degrades honestly when absent) + the trailing **Memory health (informational)** line renders
+      - `cmk doctor` → HC-1..HC-14 accurate (HC-8 = native bindings / npm-12 readiness, v0.3.1; HC-9 = version-drift, v0.3.4; HC-10 = compaction-liveness, v0.4.1 — SKIP when no cron registered; HC-11 = backend LLM CLI present, v0.4.5 — PASS when `cursor-agent` is on PATH, degrades honestly when absent) + the trailing **Memory health (informational)** line renders
       - `cmk repair --hooks` re-wires if settings drift
       - **`cmk repair --index` → "(index): fixed → reindex completed"** (NOT an error). _v0.3.1: this ran the REAL reindexFull which needs a db; the bug where repair passed no db (since Task 49, masked by every test mocking the reindexer) was found by THIS cut-gate probe — keep it on the real path, no injected reindexer._
       - `cmk repair --all` → all three (hooks/locks/index) report cleanly
