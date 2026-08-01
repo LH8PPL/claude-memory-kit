@@ -327,7 +327,15 @@ export function readHealthTail(projectRoot, { maxBytes = HEALTH_TAIL_BYTES } = {
  *          most-severe first.
  */
 export function computeActiveWarnings(entries, { now } = {}) {
-  const nowMs = now === undefined || now === null ? Date.now() : Date.parse(new Date(now).toISOString());
+  // Parsed defensively rather than via `new Date(now).toISOString()`, which
+  // THROWS a RangeError on an unparseable value — in a module whose entire
+  // contract is "a broken diagnostic degrades to healthy", the one pure function
+  // must not be the thing that throws.
+  let nowMs;
+  if (now === undefined || now === null) nowMs = Date.now();
+  else if (now instanceof Date) nowMs = now.getTime();
+  else if (typeof now === 'number') nowMs = now;
+  else nowMs = Date.parse(String(now));
   if (!Array.isArray(entries) || entries.length === 0 || !Number.isFinite(nowMs)) return [];
 
   // Bucket the well-formed, registry-known, dated entries per class.

@@ -151,6 +151,16 @@ describe('formatHealthWhisper (pure)', () => {
     expect(line).toContain('cmk doctor');
   });
 
+  it('OVER-CAP degenerate case: the bound holds even when the FIXED part alone exceeds it', () => {
+    // Title-only clipping cannot honor the budget if the prefix + skill pointer
+    // + fix command already blow it. Unreachable with the frozen registry (every
+    // primaryAction is a short `cmk` verb) — pinned because a future registry
+    // entry with a long command would otherwise silently break a per-prompt
+    // budget the budget registry claims is enforced.
+    const line = formatHealthWhisper([w({ title: 'z'.repeat(100), primaryAction: 'cmk '.repeat(200) })]);
+    expect(Buffer.byteLength(line, 'utf8')).toBeLessThanOrEqual(WHISPER_MAX_BYTES);
+  });
+
   it('multi-byte characters never split mid-codepoint at the cap', () => {
     const line = formatHealthWhisper([w({ title: '→'.repeat(2000) })]);
     expect(Buffer.byteLength(line, 'utf8')).toBeLessThanOrEqual(WHISPER_MAX_BYTES);

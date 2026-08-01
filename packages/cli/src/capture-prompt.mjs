@@ -394,7 +394,14 @@ export function formatHealthWhisper(warnings) {
   if (Buffer.byteLength(full, 'utf8') <= WHISPER_MAX_BYTES) return full;
   // Over budget: clip the TITLE only, so the pointer + the fix command survive.
   const fixedBytes = Buffer.byteLength(WHISPER_PREFIX + countPart + suffix, 'utf8');
-  return `${WHISPER_PREFIX}${clipToBytes(top.title, Math.max(0, WHISPER_MAX_BYTES - fixedBytes))}${countPart}${suffix}`;
+  const clipped = `${WHISPER_PREFIX}${clipToBytes(top.title, Math.max(0, WHISPER_MAX_BYTES - fixedBytes))}${countPart}${suffix}`;
+  // Final unconditional clamp. Unreachable with the frozen registry (every
+  // primaryAction is a short `cmk` verb), but title-only clipping cannot honor
+  // the budget if the FIXED part alone exceeds it — and a registry entry with a
+  // long primaryAction would then silently blow a per-prompt budget that the
+  // budget registry claims is enforced. Bounding beats staying actionable when
+  // the two conflict: the bound is the promise.
+  return clipToBytes(clipped, WHISPER_MAX_BYTES);
 }
 
 /**

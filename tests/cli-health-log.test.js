@@ -372,6 +372,22 @@ describe('computeActiveWarnings — malformed + unknown input', () => {
     expect(computeActiveWarnings([], { now: NOW })).toEqual([]);
     expect(computeActiveWarnings(undefined, { now: NOW })).toEqual([]);
   });
+
+  it('an unparseable `now` returns [] rather than THROWING (the pure function must not be the thing that breaks)', () => {
+    const live = [entry(HEALTH_CODES.AGENT_CLI_MISSING, 'fail', 1000)];
+    expect(() => computeActiveWarnings(live, { now: 'not-a-timestamp' })).not.toThrow();
+    expect(computeActiveWarnings(live, { now: 'not-a-timestamp' })).toEqual([]);
+  });
+
+  it('accepts a Date or an epoch number for `now`, not only an ISO string', () => {
+    const live = [entry(HEALTH_CODES.AGENT_CLI_MISSING, 'fail', 1000)];
+    expect(computeActiveWarnings(live, { now: new Date(NOW_MS) }).map((w) => w.code)).toEqual([
+      HEALTH_CODES.AGENT_CLI_MISSING,
+    ]);
+    expect(computeActiveWarnings(live, { now: NOW_MS }).map((w) => w.code)).toEqual([
+      HEALTH_CODES.AGENT_CLI_MISSING,
+    ]);
+  });
 });
 
 // --- the reader wrapper + the tail-read byte budget --------------------------
