@@ -113,6 +113,21 @@ describe('formatHealthWhisper (pure)', () => {
     expect(line).not.toMatch(/\n/);
   });
 
+  it('carries the STABLE CODE, not just the prose title (D-412 point 5)', () => {
+    // The code is the key the troubleshooting skill's repair book is sectioned
+    // by, and the one part of this line guaranteed stable across re-wordings of
+    // the title — carrying it makes the whisper→section lookup exact instead of
+    // asking the model to map prose onto a heading.
+    expect(formatHealthWhisper([w()])).toContain(HEALTH_CODES.EXTRACT_FAILING);
+  });
+
+  it('the code survives even when the title is clipped at the byte cap', () => {
+    const line = formatHealthWhisper([w({ title: 'q'.repeat(4000) })]);
+    expect(line).toContain(HEALTH_CODES.EXTRACT_FAILING);
+    expect(line).toContain('troubleshooting');
+    expect(Buffer.byteLength(line, 'utf8')).toBeLessThanOrEqual(WHISPER_MAX_BYTES);
+  });
+
   it('collapses multiple actives to the MOST SEVERE plus a count — still one line', () => {
     const line = formatHealthWhisper([
       w({ code: HEALTH_CODES.EXTRACT_FAILING, title: 'the severe one', severity: 'memory-off' }),

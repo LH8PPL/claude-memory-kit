@@ -174,6 +174,11 @@ async function main() {
       `additionalContext=${ctx.slice(0, 200)}`,
     );
     check(
+      'the whisper carries the STABLE CODE the repair book is sectioned by',
+      ctx.includes('extract-failing'),
+      `additionalContext=${ctx.slice(0, 200)}`,
+    );
+    check(
       'it fires on a 2-char prompt — it does NOT inherit the recall hint gates',
       ctx.includes('troubleshooting') && !ctx.includes('memory-search'),
       `additionalContext=${ctx.slice(0, 200)}`,

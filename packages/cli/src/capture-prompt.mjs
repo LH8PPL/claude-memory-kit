@@ -390,11 +390,17 @@ export function formatHealthWhisper(warnings) {
   const more = warnings.length - 1;
   const suffix = WHISPER_SUFFIX_TEMPLATE(top.primaryAction);
   const countPart = more > 0 ? ` (+${more} more kit issue${more === 1 ? '' : 's'})` : '';
-  const full = `${WHISPER_PREFIX}${top.title}${countPart}${suffix}`;
+  // The CODE leads (D-412 point 5: "whisper carries stable code + one-liner +
+  // skill pointer"). It is the key the troubleshooting skill's repair book is
+  // sectioned by, so carrying it makes the lookup EXACT rather than leaving the
+  // model to map a prose title onto a section heading — and it is the one part
+  // of this line that is guaranteed stable across re-wordings of the title.
+  const full = `${WHISPER_PREFIX}${top.code}: ${top.title}${countPart}${suffix}`;
   if (Buffer.byteLength(full, 'utf8') <= WHISPER_MAX_BYTES) return full;
-  // Over budget: clip the TITLE only, so the pointer + the fix command survive.
-  const fixedBytes = Buffer.byteLength(WHISPER_PREFIX + countPart + suffix, 'utf8');
-  const clipped = `${WHISPER_PREFIX}${clipToBytes(top.title, Math.max(0, WHISPER_MAX_BYTES - fixedBytes))}${countPart}${suffix}`;
+  // Over budget: clip the TITLE only, so the CODE, the pointer, and the fix
+  // command all survive — the three parts a reader can act on.
+  const fixedBytes = Buffer.byteLength(`${WHISPER_PREFIX}${top.code}: ${countPart}${suffix}`, 'utf8');
+  const clipped = `${WHISPER_PREFIX}${top.code}: ${clipToBytes(top.title, Math.max(0, WHISPER_MAX_BYTES - fixedBytes))}${countPart}${suffix}`;
   // Final unconditional clamp. Unreachable with the frozen registry (every
   // primaryAction is a short `cmk` verb), but title-only clipping cannot honor
   // the budget if the FIXED part alone exceeds it — and a registry entry with a

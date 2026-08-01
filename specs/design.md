@@ -4134,8 +4134,10 @@ ONE append-only NDJSON log at `context/.locks/health.log` (the gitignored run-ti
 The per-prompt UserPromptSubmit hook emits ONE line while something is actively broken:
 
 ```text
-⚠ [core-memory-kit] <title> — load the troubleshooting skill to diagnose; fix: `<primaryAction>`
+⚠ [core-memory-kit] <code>: <title> — load the troubleshooting skill to diagnose; fix: `<primaryAction>`
 ```
+
+The **code leads** (D-412 point 5). It is the key the repair book is sectioned by and the only part of the line guaranteed stable across re-wordings of the title, so carrying it makes the whisper → section lookup exact rather than asking the model to map prose onto a heading. It also survives the byte clip, which eats the title only.
 
 - **It does NOT inherit the recall hint's gates — the structural rule of this section.** `buildMemoryHint` returns `null` below 10 prompt characters and on a project with no granular archive; both are correct for a RECALL nudge and both are fatal for a FAILURE nudge, because *"go"* is exactly what a user types while their capture is broken and an empty archive is exactly what a project whose extraction has never once succeeded looks like. So the health read is computed independently and the two results are merged into the one output string, **whisper first**. `buildMemoryHint` keeps its signature and its tests; the whisper is additive.
 - **Stateless, present on every prompt while active** (D-412 point 3). No "did I already whisper" sidecar — the Tailscale present-only-when-broken model.
