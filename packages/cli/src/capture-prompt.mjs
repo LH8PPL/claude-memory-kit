@@ -35,6 +35,9 @@ import { dateFromIso } from './audit-log.mjs';
 import { openIndexDb, getIndexDbPath } from './index-db.mjs';
 import { prepareFtsQuery, enrichFactCitations } from './search.mjs';
 import { appendRecallEntry } from './recall-log.mjs';
+// Task 250 (D-412) — the failure-driven health whisper reads (never writes) the
+// health log from this hot path. Bounded tail read, fail-open.
+import { activeWarnings } from './health-log.mjs';
 
 // Task 75.2 — the per-prompt "memory available" recall nudge (memsearch's
 // UserPromptSubmit hint, D-115's 75.2 half). The SessionStart snapshot +
@@ -324,6 +327,141 @@ export function buildMemoryHint({ projectRoot, prompt, sessionId } = {}) {
   }
   logHintFire({ projectRoot, sessionId, form, ids, query: loggedQuery, error: errored });
   return text;
+}
+
+// --- Task 250 (D-412): the failure-driven health whisper ---------------------
+//
+// The kit's hardest silent-failure problem, and the thing that makes this
+// different from `cmk doctor`: users do not run doctor (U-U5PPSG7Y), and every
+// hook path fails OPEN by design, so a broken capture presents as "nothing
+// happened" for as long as it takes someone to notice. The whisper tells the
+// AGENT — which is right there, on every prompt, and can act.
+//
+// THE ONE STRUCTURAL RULE HERE: the whisper must NOT inherit `buildMemoryHint`'s
+// gates. That function returns null below 10 prompt characters and on a project
+// with no granular archive — both correct for a RECALL nudge and both wrong for
+// a FAILURE nudge, because "go" is exactly what a user types while their capture
+// is broken, and an empty archive is exactly what a project whose extraction has
+// never once succeeded looks like. So the health read is independent, and the
+// two results are merged into the one output string the hook may emit.
+
+/**
+ * The whisper's byte budget. It is paid on EVERY prompt for as long as
+ * something is broken, so it is bounded rather than trusted to stay short —
+ * and the truncation protects the ACTIONABLE tail (skill pointer + fix
+ * command), because a whisper that says "something broke" and nothing else is
+ * worse than no whisper at all.
+ */
+export const WHISPER_MAX_BYTES = 320;
+
+const WHISPER_PREFIX = '⚠ [core-memory-kit] ';
+const WHISPER_SUFFIX_TEMPLATE = (action) =>
+  ` — load the troubleshooting skill to diagnose; fix: \`${action}\``;
+
+/** Truncate to a byte budget without ever splitting a codepoint. */
+function clipToBytes(text, maxBytes) {
+  if (Buffer.byteLength(text, 'utf8') <= maxBytes) return text;
+  // Walk by CODE POINT (Array.from, not slice) so surrogate pairs and combining
+  // marks stay intact — a half-emitted codepoint renders as U+FFFD.
+  const chars = Array.from(text);
+  let out = '';
+  for (const ch of chars) {
+    if (Buffer.byteLength(out + ch + '…', 'utf8') > maxBytes) break;
+    out += ch;
+  }
+  return out + '…';
+}
+
+/**
+ * Render the active warnings as ONE line, or null when nothing is wrong.
+ *
+ * Multiple actives collapse to the most severe plus a count (D-412 point 3):
+ * the whisper competes for the model's attention with the user's actual prompt,
+ * so it gets one line no matter how many things are broken. The dependsOn
+ * cascade has already collapsed same-root failures upstream, so a count > 1
+ * here means genuinely independent problems.
+ *
+ * PURE — no filesystem, no clock. `warnings` is the sorted output of
+ * `activeWarnings` (most severe first).
+ */
+export function formatHealthWhisper(warnings) {
+  if (!Array.isArray(warnings) || warnings.length === 0) return null;
+  const top = warnings[0];
+  const more = warnings.length - 1;
+  const suffix = WHISPER_SUFFIX_TEMPLATE(top.primaryAction);
+  const countPart = more > 0 ? ` (+${more} more kit issue${more === 1 ? '' : 's'})` : '';
+  const full = `${WHISPER_PREFIX}${top.title}${countPart}${suffix}`;
+  if (Buffer.byteLength(full, 'utf8') <= WHISPER_MAX_BYTES) return full;
+  // Over budget: clip the TITLE only, so the pointer + the fix command survive.
+  const fixedBytes = Buffer.byteLength(WHISPER_PREFIX + countPart + suffix, 'utf8');
+  return `${WHISPER_PREFIX}${clipToBytes(top.title, Math.max(0, WHISPER_MAX_BYTES - fixedBytes))}${countPart}${suffix}`;
+}
+
+/**
+ * The USER-visible line — emitted ONLY at severity `memory-off` (D-412 point 6).
+ *
+ * The channel split is deliberate and asymmetric. `additionalContext` is
+ * model-facing and costs the user no interruption, so the whisper lives there
+ * for every severity. `systemMessage` is shown to the human, and interrupting
+ * someone deserves a real threshold: `memory-off` means the kit is effectively
+ * not capturing, and staying quiet about THAT loses sessions the user believes
+ * are being saved. Anything less severe stays model-only.
+ */
+export function formatMemoryOffMessage(warnings) {
+  if (!Array.isArray(warnings)) return null;
+  const off = warnings.find((w) => w.severity === 'memory-off');
+  if (!off) return null;
+  return `[core-memory-kit] Memory capture is OFF — ${off.title}. Fix: \`${off.primaryAction}\``;
+}
+
+/**
+ * The UserPromptSubmit hook's whole output, in one call.
+ *
+ * @returns {{additionalContext: string|null, systemMessage: string|null}}
+ *   `additionalContext` = the whisper (when broken) + the recall hint (when it
+ *   fires), whisper first; `systemMessage` = the human-facing line at
+ *   `memory-off` only. Both null when there is nothing to say.
+ *
+ * FAIL-OPEN, twice over: an error in the health read leaves the hint intact,
+ * and an error in the hint leaves the whisper intact. Neither can suppress the
+ * other, because the failure the whisper reports is often the same failure that
+ * broke the hint.
+ *
+ * PRIVACY: no prompt-derived text enters the whisper at any point — it is built
+ * purely from the registry (kit-authored strings) and the log's outcome counts.
+ * The hint keeps its own FR-15 screen for the text it does touch.
+ */
+export function buildPromptHookOutput({ projectRoot, prompt, sessionId, now } = {}) {
+  let warnings = [];
+  try {
+    warnings = activeWarnings(projectRoot, { now });
+  } catch {
+    warnings = []; // a broken diagnostic must never cost the user their hint
+  }
+  let whisper = null;
+  let systemMessage = null;
+  try {
+    whisper = formatHealthWhisper(warnings);
+    systemMessage = formatMemoryOffMessage(warnings);
+  } catch {
+    whisper = null;
+    systemMessage = null;
+  }
+
+  let hint = null;
+  try {
+    hint = buildMemoryHint({ projectRoot, prompt, sessionId });
+  } catch {
+    hint = null; // never let a hint failure swallow a live failure report
+  }
+
+  const parts = [whisper, hint].filter(Boolean);
+  return {
+    // The whisper LEADS: it is the thing that changes what the agent should do
+    // next, and the hint is advice about a system that may currently be broken.
+    additionalContext: parts.length > 0 ? parts.join('\n\n') : null,
+    systemMessage,
+  };
 }
 
 export function capturePrompt({ payload, projectRoot, now } = {}) {

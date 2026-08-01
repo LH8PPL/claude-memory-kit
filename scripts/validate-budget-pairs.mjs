@@ -188,6 +188,17 @@ export const BUDGET_REGISTRY = [
     overCapPattern: 'UNDER-CAP stochastic: a single blip does NOT fire',
   },
   {
+    name: 'health-whisper byte cap (WHISPER_MAX_BYTES=320 — the per-prompt cost paid on EVERY prompt while a failure is active; Task 250)',
+    sourceRef: 'design §23.3 / D-412 point 3',
+    testFile: 'tests/cli-health-whisper.test.js',
+    // at-cap: a whisper exactly at the budget is emitted whole; over-cap: a
+    // longer one is clipped WITHOUT losing the actionable tail (the skill
+    // pointer + the fix command), because "something broke" alone is worse than
+    // silence. A third case pins that the clip never splits a codepoint.
+    atCapPattern: 'AT-CAP byte budget',
+    overCapPattern: 'OVER-CAP byte budget',
+  },
+  {
     name: 'index-db busy_timeout (5000ms bounded wait before SQLITE_BUSY; Task 219)',
     sourceRef: 'design §16.34 / §16.35 (D-321)',
     suppressed:
