@@ -61,6 +61,8 @@ plugin/
 │   └── auto-extract-memory.sh  ← background extractor (PATH'd when plugin active)
 ├── skills/
 │   ├── memory-write/SKILL.md
+│   ├── memory-search/SKILL.md
+│   ├── troubleshooting/SKILL.md  ← the kit's failure-code repair book
 │   └── bootstrap/SKILL.md
 └── context-template/           ← seeded into user's project by /bootstrap
     ├── USER.md.template

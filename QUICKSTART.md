@@ -47,7 +47,7 @@ cd ~/my-project                                    # the project you want memory
 /core-memory-kit:bootstrap                        # scaffold this project's context/ memory tree (once per project)
 ```
 
-Restart Claude Code afterward so the hooks load. The first two commands are **global** (per machine — the plugin sets `${CLAUDE_PLUGIN_ROOT}` and loads `plugin/hooks/hooks.json` plus the `bootstrap` / `memory-write` / `memory-search` skills); `bootstrap` is **per project** (run it again after a `cd` in each project you want memory in). This route does **not** require the npm CLI; add it later (`npm install -g @lh8ppl/core-memory-kit`) only if you want `cmk search` / `cmk doctor` / cron.
+Restart Claude Code afterward so the hooks load. The first two commands are **global** (per machine — the plugin sets `${CLAUDE_PLUGIN_ROOT}` and loads `plugin/hooks/hooks.json` plus the `bootstrap` / `memory-write` / `memory-search` / `troubleshooting` skills); `bootstrap` is **per project** (run it again after a `cd` in each project you want memory in). This route does **not** require the npm CLI; add it later (`npm install -g @lh8ppl/core-memory-kit`) only if you want `cmk search` / `cmk doctor` / cron.
 
 ## 2. Scaffold the kit into your project (Route A)
 

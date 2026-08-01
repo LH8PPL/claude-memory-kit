@@ -1,6 +1,6 @@
 {
   "name": "core-memory-kit",
-  "description": "Per-project in-repo memory system for Claude Code. Frozen-snapshot session loads, auto-extract Stop hook, memory-write skill, keyword search, optional auto-curation crons.",
+  "description": "Per-project in-repo memory system for Claude Code. Frozen-snapshot session loads, auto-extract Stop hook, memory-write + memory-search + troubleshooting skills, keyword search, optional auto-curation crons.",
   "version": "0.1.1",
   "author": {
     "name": "Lior Hollander"

@@ -49,6 +49,9 @@ describe('Task 172 — evaluatePermissionRequest (Door 1: decision contract)', (
     expect(evaluatePermissionRequest({ tool_name: 'Skill(memory-search)' })).toEqual(
       ALLOW_DECISION,
     );
+    expect(evaluatePermissionRequest({ tool_name: 'Skill(troubleshooting)' })).toEqual(
+      ALLOW_DECISION,
+    );
   });
 
   it('APPROVES the kit skills via the tool_input.name form (payload-shape robustness)', () => {
@@ -57,6 +60,9 @@ describe('Task 172 — evaluatePermissionRequest (Door 1: decision contract)', (
     ).toEqual(ALLOW_DECISION);
     expect(
       evaluatePermissionRequest({ tool_name: 'Skill', tool_input: { skill: 'memory-search' } }),
+    ).toEqual(ALLOW_DECISION);
+    expect(
+      evaluatePermissionRequest({ tool_name: 'Skill', tool_input: { name: 'troubleshooting' } }),
     ).toEqual(ALLOW_DECISION);
   });
 

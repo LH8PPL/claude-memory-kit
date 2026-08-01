@@ -25,7 +25,7 @@
 
 // The kit's own scaffolded skills (template/.claude/skills/<name>). Keep in sync
 // with the Skill(...) entries in settings-hooks.mjs KIT_ALLOW.
-const KIT_SKILLS = Object.freeze(['memory-write', 'memory-search']);
+const KIT_SKILLS = Object.freeze(['memory-write', 'memory-search', 'troubleshooting']);
 
 // The allow decision shape CC expects on stdout for a PermissionRequest hook.
 export const ALLOW_DECISION = Object.freeze({

@@ -264,6 +264,8 @@ export function writeKitHooks(settingsPath) {
     'Skill(memory-write:*)',
     'Skill(memory-search)',
     'Skill(memory-search:*)',
+    'Skill(troubleshooting)',
+    'Skill(troubleshooting:*)',
     'mcp__cmk__*',
     ...MCP_AUTO_APPROVE.map((tool) => `mcp__cmk__${tool}`),
   ];

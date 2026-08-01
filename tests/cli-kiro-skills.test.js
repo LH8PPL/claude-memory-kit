@@ -45,10 +45,10 @@ describe('Task 50.I — Kiro skills leg', () => {
 
       // Door 1 — Response
       expect(r.action).toBe('installed');
-      expect(r.skills.sort()).toEqual(['memory-search', 'memory-write']);
+      expect(r.skills.sort()).toEqual(['memory-search', 'memory-write', 'troubleshooting']);
 
       // Door 2 — State
-      for (const name of ['memory-search', 'memory-write']) {
+      for (const name of ['memory-search', 'memory-write', 'troubleshooting']) {
         const p = join(projectRoot, '.kiro', 'skills', name, 'SKILL.md');
         expect(existsSync(p)).toBe(true);
       }
@@ -76,7 +76,7 @@ describe('Task 50.I — Kiro skills leg', () => {
       // ("Invalid SKILL.md frontmatter"). Claude Code reads leniently and never
       // surfaced it. So assert the TRANSLATED output (what Kiro consumes) parses.
       installKiroSkills({ projectRoot });
-      for (const name of ['memory-search', 'memory-write']) {
+      for (const name of ['memory-search', 'memory-write', 'troubleshooting']) {
         const text = readFileSync(join(projectRoot, '.kiro', 'skills', name, 'SKILL.md'), 'utf8');
         const fm = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
         expect(fm, `${name}: has frontmatter`).not.toBeNull();

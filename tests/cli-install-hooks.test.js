@@ -137,6 +137,9 @@ describe('Task 49 — settings.json content (Door 2: state)', () => {
     // the cut-gate9 pre-session file check, 2026-06-11).
     expect(settings.permissions.allow).toContain('Skill(memory-search)');
     expect(settings.permissions.allow).toContain('Skill(memory-search:*)'); // Task 169
+    // Task 250 — the troubleshooting skill gets the same allow-list treatment.
+    expect(settings.permissions.allow).toContain('Skill(troubleshooting)');
+    expect(settings.permissions.allow).toContain('Skill(troubleshooting:*)');
     // Task 108b — the MCP tools are allow-listed too (R2 / D-80): the model's
     // memory ops via mk_remember / mk_forget / … run without a per-call prompt.
     expect(settings.permissions.allow).toContain('mcp__cmk__*');
@@ -159,6 +162,7 @@ describe('Task 49 — settings.json content (Door 2: state)', () => {
     expect(settings.permissions.allow.filter((a) => a === 'Bash(cmk:*)')).toHaveLength(1);
     expect(settings.permissions.allow.filter((a) => a === 'Skill(memory-write)')).toHaveLength(1);
     expect(settings.permissions.allow.filter((a) => a === 'Skill(memory-search)')).toHaveLength(1);
+    expect(settings.permissions.allow.filter((a) => a === 'Skill(troubleshooting)')).toHaveLength(1);
     expect(settings.permissions.allow.filter((a) => a === 'mcp__cmk__*')).toHaveLength(1);
 
     // Over-mutation: a user's pre-existing allow entry survives.
