@@ -14,12 +14,13 @@
 //  Per design §17.1 door 4 = message queues, door 5 = observability.)
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { writeFact } from '../packages/cli/src/write-fact.mjs';
 import { readAuditLog } from '../packages/cli/src/audit-log.mjs';
 import { resolveTierRoot } from '../packages/cli/src/tier-paths.mjs';
+import { _resetHealthTransitionState } from '../packages/cli/src/health-log.mjs';
 
 let sandbox;
 let projectRoot;
@@ -27,6 +28,13 @@ let projectRoot;
 beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'cmk-reindex-fail-'));
   projectRoot = join(sandbox, 'proj');
+  // An INSTALLED project. The health log refuses to write without the install
+  // marker (`context/MEMORY.md`) so a repo that merely has a `context/` folder
+  // never gets one — a bare sandbox would silently exercise that no-op path
+  // instead of the writer under test.
+  mkdirSync(join(projectRoot, 'context'), { recursive: true });
+  writeFileSync(join(projectRoot, 'context', 'MEMORY.md'), '# MEMORY\n', 'utf8');
+  _resetHealthTransitionState(); // the per-process transition map must not leak across cases
 });
 afterEach(() => rmSync(sandbox, { recursive: true, force: true }));
 

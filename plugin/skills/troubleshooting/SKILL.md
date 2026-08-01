@@ -12,7 +12,7 @@ description: >-
   skill covers the KIT's own health only — not the content of what was
   remembered (use memory-search for recall) and not general shell debugging.
 context: fork
-allowed-tools: Bash(cmk doctor) Bash(cmk doctor *) Bash(cmk reindex) Bash(cmk reindex *) Bash(cmk repair *) Bash(cmk stats *) Bash(cmk search *) mcp__cmk__mk_search
+allowed-tools: Bash(cmk doctor) Bash(cmk doctor *) Bash(cmk reindex) Bash(cmk reindex *) Bash(cmk search *) mcp__cmk__mk_search
 ---
 
 # Repairing the memory kit
@@ -34,6 +34,13 @@ Each failure code below carries a **fix class**, and it is binding:
 
 When you are unsure which class a failure belongs to, treat it as **advise**.
 An unknown failure never earns silent repair.
+
+This is enforced, not just asked for: the only repair commands granted to this
+skill are `cmk doctor`, `cmk reindex`, and read-only lookups. **`cmk install`
+and every form of `cmk repair` are deliberately ungranted** — where a section
+below tells you to propose one, you propose it and the user runs it. If a
+command you need is not available to you, that is the boundary working, not a
+misconfiguration to route around.
 
 The kit's memory tiers are only ever written through the kit's own commands.
 Never hand-edit a file under the memory directories to "fix" anything — that
@@ -142,8 +149,11 @@ facts may not be findable by search yet. Nothing is lost; the index is a
 derived view and rebuilding it is safe and repeatable.
 
 - **Fix:** run `cmk reindex`. Then say, in one line, that you rebuilt the index.
-- **Confirm it cleared:** `cmk doctor` **HC-4** reports INDEX consistency; a
-  successful rebuild also appends the `ok` that clears the whisper.
+- **Confirm it cleared:** `cmk doctor` **HC-4** reports INDEX consistency, and
+  **HC-14** stops listing `index-drift`. Any successful rebuild — `cmk reindex`,
+  `cmk repair --index`, or the one that follows the next captured fact —
+  records the success that clears the warning, so running the fix above is
+  genuinely enough. You do not have to do anything else to dismiss it.
 
 This is the one code on this page you fix without asking.
 

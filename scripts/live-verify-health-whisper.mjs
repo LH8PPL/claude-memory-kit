@@ -217,6 +217,30 @@ async function main() {
       `after=${recovered.parsed?.hookSpecificOutput?.additionalContext}`,
     );
 
+    // ---- 4b. THE PRESCRIBED FIX ACTUALLY CLEARS IT (review finding B1) -----
+    // The whisper for index-drift says ``fix: `cmk reindex` ``. Before this was
+    // fixed, running that command changed nothing: the clearing `ok` was only
+    // written by writeFact's inline rebuild, so an agent doing exactly as told
+    // watched the warning persist for up to 7 days. This drives the REAL verb.
+    seedFailures('index-drift', 1); // deterministic → one strike is enough
+    const drifted = firePromptHook('go');
+    const driftCtx = drifted.parsed?.hookSpecificOutput?.additionalContext ?? '';
+    const prescribes = driftCtx.includes('index-drift') && driftCtx.includes('cmk reindex');
+    const fix = spawnSync(cmkBin, ['reindex'], {
+      cwd: proj,
+      env,
+      encoding: 'utf8',
+      timeout: 120_000,
+      shell: IS_WIN,
+    });
+    const afterFix = firePromptHook('go');
+    const afterCtx = afterFix.parsed?.hookSpecificOutput?.additionalContext ?? '';
+    check(
+      'B1: the whisper prescribes `cmk reindex`, and running it CLEARS the warning',
+      prescribes && fix.status === 0 && !afterCtx.includes('index-drift'),
+      `prescribed=${prescribes} reindexExit=${fix.status} after=${afterCtx.slice(0, 160)}`,
+    );
+
     // ---- 5. doctor agrees with the whisper (the shared-threshold contract) --
     seedFailures('agent-cli-missing', 1); // deterministic → fires on one strike
     const whispered = firePromptHook('go');
