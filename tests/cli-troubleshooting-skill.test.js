@@ -105,12 +105,41 @@ describe('the troubleshooting skill — the safety contract', () => {
     expect(tools).not.toMatch(/\bEdit\b|\bWrite\b/);
   });
 
-  it('does NOT grant the confirm-class repairs it is told to PROPOSE', () => {
-    // `cmk install` and `cmk repair --hooks` rewrite install/settings state.
-    // The book proposes them; the grant must not quietly make them runnable
-    // unattended, or the prose discipline would be the only thing standing
-    // between a mis-fire and a rewritten settings file.
+  // Review finding B3: the grant list was `Bash(cmk repair *)`, which includes
+  // `--hooks` (rewrites settings.json) and `--format` (migrates COMMITTED
+  // memory markdown) — both confirm-class, both claimed absent by design §23.5.
+  // The claim was false and the "cannot mutate" test above did not catch it,
+  // because it only looked for `cmk remember`-shaped verbs. These two tests pin
+  // the boundary in BOTH directions so a widened grant fails the suite.
+  it('grants EXACTLY the diagnosis + silent-fix surface, and nothing else (positive list)', () => {
+    const granted = tools.trim().split(/\s+(?=Bash\(|mcp__)/).map((t) => t.trim()).filter(Boolean);
+    expect(granted.sort()).toEqual(
+      [
+        'Bash(cmk doctor)',
+        'Bash(cmk doctor *)',
+        'Bash(cmk reindex)',
+        'Bash(cmk reindex *)',
+        'Bash(cmk search *)',
+        'mcp__cmk__mk_search',
+      ].sort(),
+    );
+  });
+
+  it('grants NO form of cmk repair or cmk install — the confirm-class fixes stay propose-only', () => {
+    // `cmk repair --index` alone would be safe, but a Bash() pattern is a
+    // PREFIX match: `Bash(cmk repair --index*)` also admits
+    // `cmk repair --index --hooks`, which rewrites settings.json. The pattern
+    // language cannot express "this flag and no other", so repair is ungranted
+    // entirely rather than granted with a hole in it.
+    expect(tools).not.toMatch(/Bash\(cmk repair/);
     expect(tools).not.toMatch(/Bash\(cmk install/);
+    expect(tools).not.toMatch(/--hooks/);
+    expect(tools).not.toMatch(/--format/);
+    expect(tools).not.toMatch(/--all/);
+  });
+
+  it('tells the reader the boundary is enforced, so an ungranted command reads as intent', () => {
+    expect(body.toLowerCase()).toMatch(/deliberately ungranted|enforced, not just asked for/);
   });
 
   it('forbids hand-editing the memory tiers as a repair', () => {
