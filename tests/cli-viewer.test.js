@@ -27,6 +27,8 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { request as httpRequest, Agent as HttpAgent } from 'node:http';
 import { install } from '../packages/cli/src/install.mjs';
 import { writeFact } from '../packages/cli/src/write-fact.mjs';
@@ -375,7 +377,13 @@ async function getJson(base, path, init) {
 // The doctor's backend-CLI probe spawns the user's agent binary. Production
 // keeps that (the viewer's /api/health must say exactly what `cmk doctor`
 // says); the tests stub it so the suite never depends on what is installed.
-const STUB_DOCTOR = { backendCliProbe: () => ({ present: false, reason: 'stubbed in test' }) };
+//
+// It reports PRESENT so the baseline sandbox is doctor-clean — otherwise every
+// route test would sit permanently behind an HC-11 failure and the B1 tests
+// below could not tell a seeded failure from the fixture's own noise.
+const STUB_DOCTOR = {
+  backendCliProbe: () => ({ present: true, bin: 'claude', agent: 'claude' }),
+};
 
 describe('viewer — JSON API routes (255.2)', () => {
   let base;
@@ -482,9 +490,56 @@ describe('viewer — JSON API routes (255.2)', () => {
     expect(body.edges.out.some((e) => e.type === 'cites' && e.dst === 'anchor:D-414')).toBe(true);
     expect(Array.isArray(body.edges.in)).toBe(true);
 
-    // The answer to the field's #1 delete-from-viewer demand (§24.1.3).
-    expect(body.commands.forget).toBe(`cmk forget ${P_ALPHA}`);
-    expect(body.commands.trust).toBe(`cmk trust ${P_ALPHA} high`);
+    // M8 — the answer to the field's #1 delete-from-viewer demand (§24.1.3)
+    // has to be REAL AS PASTED. A bare `cmk forget <id>` stops at an
+    // interactive confirm, so the paste appeared to do nothing; the human
+    // choosing to paste and run in their own shell IS the ADR-0018 confirmation.
+    expect(body.commands.forget).toBe(`cmk forget ${P_ALPHA} --yes`);
+    expect(body.commands.get).toBe(`cmk get ${P_ALPHA}`);
+    expect(body.state_note).toBeNull();
+
+    // The trust command used to ECHO the current level, so running it changed
+    // nothing. It is now a template over the whole ladder.
+    expect(body.commands.trust).toBeUndefined();
+    expect(body.commands.trust_current).toBe('high');
+    expect(body.commands.trust_options.map((o) => o.level)).toEqual(['low', 'medium', 'high']);
+    for (const o of body.commands.trust_options) {
+      expect(o.command).toBe(`cmk trust ${P_ALPHA} ${o.level}`);
+      expect(o.current).toBe(o.level === 'high');
+    }
+    // Every offered command must actually CHANGE something — the current level
+    // is marked so the page can refuse to hand out a no-op.
+    expect(body.commands.trust_options.filter((o) => !o.current)).toHaveLength(2);
+  });
+
+  it('I1 — an ARCHIVED fact offers an honest state note, never dead commands', async () => {
+    const { status, body } = await getJson(base, `/api/fact/${P_OLD}`);
+    expect(status).toBe(200);
+    expect(body.found).toBe(true);
+    // M2: named for WHERE the row came from, not for what it means (the graph
+    // node's `superseded` means something else — "has a successor").
+    expect(body.fact.from_archive).toBe(true);
+    expect(body.fact.superseded).toBeUndefined();
+
+    // `cmk forget` / `cmk trust` are no-ops against a fact already out of the
+    // live corpus — three controls that look actionable and do nothing.
+    expect(body.commands).toBeNull();
+    expect(body.state_note.kind).toBe('archived');
+    expect(body.state_note.text).toMatch(/no actions apply/i);
+    expect(body.state_note.superseded_by).toBe(P_NEW);
+    // …and it points at the version that IS actionable.
+    expect(body.state_note.text).toContain(P_NEW);
+  });
+
+  it('M1 — an archived fact reports its path the way a live row does', async () => {
+    const live = await getJson(base, `/api/fact/${P_ALPHA}`);
+    const archived = await getJson(base, `/api/fact/${P_OLD}`);
+    // Both are relative to the same base, so both carry the tier's own prefix.
+    expect(live.body.fact.source_file).toMatch(/^context\/memory\//);
+    expect(archived.body.fact.source_file).toBe(
+      `context/memory/archive/superseded/${P_OLD}.md`,
+    );
+    expect(archived.body.fact.tier).toBe('P');
   });
 
   it('/api/fact/:id carries the supersession chain, forward-directed', async () => {
@@ -629,6 +684,9 @@ describe('viewer — JSON API routes (255.2)', () => {
     expect(body.strip.state).toBe('warn');
     expect(body.strip.text).toContain(expected[0].title);
     expect(body.strip.action).toBe(expected[0].primaryAction);
+    // Precedence: with the doctor CLEAN, the health-log warning is the headline.
+    // (A doctor FAIL outranks it — pinned by the B1 test below.)
+    expect(body.fail_count).toBe(0);
   });
 
   it('/api/health strip is a quiet green line when nothing is warning', async () => {
@@ -636,6 +694,55 @@ describe('viewer — JSON API routes (255.2)', () => {
     expect(body.active_warnings).toEqual([]);
     expect(body.strip.state).toBe('ok');
     expect(body.strip.text).toMatch(/\w/);
+    // With the doctor table in hand the positive claim may be absolute…
+    expect(body.strip.text).toMatch(/all \d+ health checks passing/);
+  });
+
+  it('B1 — a FAILING doctor check turns the strip red, and NAMES the checks', async () => {
+    // The strip used to read only the health LOG. A hook that was never
+    // registered never runs and therefore never logs, so the log stays silent
+    // while the doctor table goes red — and the most prominent line in the UI
+    // printed a green all-clear directly above it (the HC-10 false-green
+    // class). The full route has the checks in scope; it must fold them in.
+    // The reviewer's own reproduction: unwire the hooks. Nothing logs, because
+    // a hook that is not registered never runs.
+    rmSync(join(projectRoot, '.claude', 'settings.json'), { force: true });
+
+    const { body } = await getJson(base, '/api/health');
+
+    expect(body.fail_count).toBeGreaterThan(0);
+    expect(body.checks.find((c) => c.id === 'HC-1').status).toBe('fail');
+    // The health LOG is silent — this is exactly the blind spot.
+    expect(body.active_warnings).toEqual([]);
+    // …and the strip must NOT be green anyway.
+    expect(body.strip.state).not.toBe('ok');
+    expect(body.strip.text).not.toMatch(/passing|fine/i);
+    expect(body.strip.text).toMatch(/FAILING/);
+    // It names WHICH checks, so the line is actionable without scrolling.
+    const failedIds = body.checks.filter((c) => c.status === 'fail').map((c) => c.id);
+    for (const id of failedIds) expect(body.strip.text).toContain(id);
+    expect(body.strip.action).toBe('cmk doctor');
+  });
+
+  it('B1 — the ?strip=1 quick check never makes a claim it cannot support', async () => {
+    // Without the doctor it cannot see an unregistered hook, so its positive
+    // wording is bounded to what the log proves: "no failures RECORDED".
+    const { body } = await getJson(base, '/api/health?strip=1');
+    expect(body.strip.state).toBe('ok');
+    expect(body.strip.text).toBe('no failures recorded (quick check)');
+    expect(body.strip.text).not.toMatch(/capture|recall|index|fine|healthy/i);
+  });
+
+  it('M4 — an UNREADABLE queue reads as unknown, never as a silent all-clear', async () => {
+    // A directory where the queue file is expected makes the read throw.
+    const queuePath = join(projectRoot, 'context', 'queues', 'conflicts.md');
+    rmSync(queuePath, { force: true });
+    mkdirSync(queuePath, { recursive: true });
+
+    const { body } = await getJson(base, '/api/health?strip=1');
+    expect(body.queues.unreadable).toBe(true);
+    expect(body.strip.state).toBe('warn');
+    expect(body.strip.text).toMatch(/could not be read/i);
   });
 
   it('/api/health?strip=1 answers the pinned line WITHOUT running the doctor', async () => {
@@ -646,7 +753,7 @@ describe('viewer — JSON API routes (255.2)', () => {
     expect(status).toBe(200);
     expect(body.strip).toBeTruthy();
     expect(body.active_warnings).toEqual([]);
-    expect(body.queues).toEqual({ conflicts: 0, review: 0 });
+    expect(body.queues).toEqual({ conflicts: 0, review: 0, unreadable: false });
     expect(body.checks).toBeUndefined();
     expect(body.fail_count).toBeUndefined();
   });
@@ -728,6 +835,10 @@ describe('viewer — JSON API routes (255.2)', () => {
   });
 
   it('STRUCTURALLY read-only: every method × every route is 405 (§24.1.3)', async () => {
+    // I2: capture the CONTENT before, not just the shape — a count survives a
+    // rewrite of every row.
+    const before = await getJson(base, '/api/facts');
+    const tierBefore = snapshotTier(projectRoot);
     const routes = [
       '/',
       '/facts',
@@ -748,9 +859,13 @@ describe('viewer — JSON API routes (255.2)', () => {
         expect(res.headers.allow).toBe('GET, HEAD');
       }
     }
-    // Over-mutation guard: the whole tier survived the write attempts intact.
+    // Over-mutation guard: every ROW is byte-identical, and so is the tier on
+    // disk — not merely the same number of them (I2).
     const after = await getJson(base, '/api/facts');
-    expect(after.body.count).toBeGreaterThanOrEqual(5);
+    expect(after.body.facts).toEqual(before.body.facts);
+    expect(snapshotTier(projectRoot).filter((p) => !p.includes('.index'))).toEqual(
+      tierBefore.filter((p) => !p.includes('.index')),
+    );
   });
 
   it('HEAD is allowed and carries headers with no body', async () => {
@@ -864,6 +979,30 @@ describe('viewer — the HTML page (255.3)', () => {
     // mutating request (the structural read-only claim, from the client side).
     expect(html).not.toMatch(/method:\s*['"](?:POST|PUT|PATCH|DELETE)['"]/i);
     expect(html).not.toMatch(/\bfetch\((?:[^)]*),\s*\{[^}]*method/);
+  });
+
+  it('I3 — the inline script uses NO HTML-parsing sink, structurally', () => {
+    // The page renders untrusted content (fact bodies, FTS snippets, health
+    // messages) and is safe today only because every write goes through
+    // textContent / createElement / append. That is a DISCIPLINE, and the next
+    // editor reaching for `innerHTML` to save three lines would silently turn a
+    // fact body into markup. This converts the discipline into enforcement.
+    const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+    const SINKS = [
+      'innerHTML',
+      'outerHTML',
+      'insertAdjacentHTML',
+      'document.write',
+      'srcdoc',
+      'setHTML',
+      'createContextualFragment',
+    ];
+    const found = SINKS.filter((sink) => script.includes(sink));
+    expect(
+      found,
+      `viewer-page.html reaches for an HTML-parsing sink: ${found.join(', ')}. ` +
+        'Render untrusted text with textContent/createElement instead — see design §24.1.1.',
+    ).toEqual([]);
   });
 
   it('the inline script PARSES — a syntax error would ship a blank page', () => {
@@ -983,14 +1122,32 @@ describe('viewer — the `cmk view` CLI glue (255.1)', () => {
   });
 });
 
+/**
+ * I2 — a read-only guard that compares only PATHS proves nothing: the viewer
+ * could rewrite every byte of every fact and the set of filenames would be
+ * identical. Snapshot the path AND size AND mtime AND a content hash, so
+ * "unchanged" means unchanged.
+ */
 function snapshotTier(root) {
   const base = join(root, 'context');
   const out = [];
   const walk = (dir, rel) => {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
       const next = rel ? `${rel}/${e.name}` : e.name;
-      if (e.isDirectory()) walk(join(dir, e.name), next);
-      else out.push(next);
+      const abs = join(dir, e.name);
+      if (e.isDirectory()) {
+        walk(abs, next);
+        continue;
+      }
+      const st = statSync(abs);
+      out.push(
+        [
+          next,
+          st.size,
+          st.mtimeMs,
+          createHash('sha256').update(readFileSync(abs)).digest('hex'),
+        ].join('|'),
+      );
     }
   };
   if (existsSync(base)) walk(base, '');

@@ -307,6 +307,19 @@
     return data;
   }
 
+  // The health VIEW has the doctor table, so its strip is the authoritative
+  // one — repaint the pinned line from it rather than leaving the cheaper
+  // quick-check wording sitting above a table that contradicts it (B1).
+  function repaintStripFrom(data) {
+    if (!data || !data.strip) return;
+    const strip = $('#health-strip');
+    const s = data.strip;
+    if (s.state === 'warn') strip.dataset.state = s.severity === 'memory-off' ? 'bad' : 'warn';
+    else if (s.state === 'queued') strip.dataset.state = 'queued';
+    else strip.dataset.state = 'ok';
+    $('#health-strip-text').textContent = s.text + (s.action ? ' — run `' + s.action + '`' : '');
+  }
+
   // ---- views ------------------------------------------------------------
   //
   // The search box fires per keystroke (debounced), so two requests can be in
@@ -403,11 +416,48 @@
 
     // §24.1.3 — the read-only answer to the field's #1 viewer demand. Copy it,
     // run it in your shell; the safe write path stays the only writer.
+    //
+    // An ARCHIVED record gets a state note instead of buttons: `cmk forget` and
+    // `cmk trust` do not apply to a fact that has already left the live corpus,
+    // and offering them anyway is three controls that look actionable and are
+    // not (I1). Commands render only where they work.
+    if (data.state_note) {
+      const note = el('div', { class: 'block' }, [el('h3', { text: 'State' })]);
+      const card = el('div', { class: 'card muted' });
+      card.append(el('div', { text: data.state_note.text }));
+      if (data.state_note.superseded_by) {
+        card.append(el('a', { class: 'chip', href: '/fact/' + data.state_note.superseded_by, text: 'open the current version → ' + data.state_note.superseded_by }));
+      }
+      note.append(card);
+      out.append(note);
+      return;
+    }
+
     const cmds = el('div', { class: 'block' }, [el('h3', { text: 'Change it from your shell' })]);
+    // `--yes` is on the server's string: what you paste has to be what runs.
     cmds.append(copyRow('forget this fact', data.commands.forget));
-    cmds.append(copyRow('re-rate this fact', data.commands.trust));
     cmds.append(copyRow('read it in the terminal', data.commands.get));
+
+    // The trust ladder, shown as a TEMPLATE rather than one echoed command —
+    // the old single line re-stated the CURRENT level, so pasting it changed
+    // nothing (M8). Every level is offered; the one the fact is already at is
+    // marked and has no copy button, because there is nothing to run.
+    const trust = el('div', { class: 'block' }, [
+      el('h3', { text: 'Re-rate it' }),
+      el('div', { class: 'muted', text: 'Currently ' + (data.commands.trust_current || 'unrated') + '. Copy the level you want:' }),
+    ]);
+    for (const opt of data.commands.trust_options) {
+      if (opt.current) {
+        trust.append(el('div', { class: 'cmd' }, [
+          el('code', { text: opt.command }),
+          el('span', { class: 'muted', text: 'current — nothing to change' }),
+        ]));
+      } else {
+        trust.append(copyRow('set trust to ' + opt.level, opt.command));
+      }
+    }
     out.append(cmds);
+    out.append(trust);
   }
 
   async function viewHealth() {
@@ -415,6 +465,7 @@
     const data = await api('/health'); // the FULL route — this is the one view that wants the doctor
     clear(out);
     if (data.error) { out.append(errorCard(data)); return; }
+    repaintStripFrom(data); // the doctor-informed verdict wins over the quick check
     stamp(data, data.checks.length + ' checks · ' + data.fail_count + ' failing');
 
     if (data.queues && (data.queues.conflicts || data.queues.review)) {

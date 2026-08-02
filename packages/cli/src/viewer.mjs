@@ -55,7 +55,7 @@
 
 import { createServer } from 'node:http';
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { errorResult, ERROR_CATEGORIES } from './result-shapes.mjs';
@@ -106,9 +106,13 @@ const JSON_TYPE = 'application/json; charset=utf-8';
  * instead of silently working on the author's machine and breaking on a plane.
  * `script-src 'unsafe-inline'` (with no host source) is exactly "inline only".
  */
+// `frame-ancestors` is listed EXPLICITLY: it is one of the few directives that
+// does NOT fall back to `default-src`, so `default-src 'none'` does not stop
+// another origin from framing this page and clickjacking it (M3).
 const CSP =
   "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; " +
-  "img-src data:; connect-src 'self'; base-uri 'none'; form-action 'none'";
+  "img-src data:; connect-src 'self'; base-uri 'none'; form-action 'none'; " +
+  "frame-ancestors 'none'";
 
 /** Is this a host we are willing to bind to / answer for? */
 export function isLoopbackHost(host) {
@@ -418,7 +422,14 @@ function withDb(ctx, fn) {
     try {
       reindexBoot({ projectRoot: ctx.projectRoot, userDir: ctx.userDir, db });
     } catch (err) {
-      ctx.logError?.(`cmk view: index refresh failed (${err?.message ?? err}); serving the existing index.`);
+      // M5: the terminal line is the only place this failure surfaces, so it
+      // carries the fix — same wording contract as `cmk search`, which says
+      // exactly this. A degraded-but-silent index is how stale results get
+      // mistaken for missing memory.
+      ctx.logError?.(
+        `cmk view: index refresh failed (${err?.message ?? err}); serving the existing index. ` +
+          'Run `cmk reindex --full` if results look stale.',
+      );
     }
     return fn(db);
   } finally {
@@ -546,7 +557,11 @@ const API = {
     }
     return withDb(ctx, (db) => {
       let row = db.prepare(`SELECT ${ROW_COLUMNS} FROM observations WHERE id = ?`).get(id);
-      let superseded = false;
+      // M2: named for WHERE THE ROW CAME FROM, not for what it means. The old
+      // name (`superseded`) collided with the graph node's `superseded`, which
+      // means something else entirely ("has a successor"). Renamed while the
+      // API still has no consumers — later it would be a breaking change.
+      let fromArchive = false;
       if (!row) {
         // A superseded fact was MOVED out of the live corpus, so it is not in
         // the index — but it is exactly what someone following a supersession
@@ -555,7 +570,7 @@ const API = {
         const archived = findSupersededFact(ctx, id);
         if (!archived) return { status: 404, payload: { found: false, id } };
         row = archived;
-        superseded = true;
+        fromArchive = true;
       }
       const rich = parseRichFactBody(row.body);
       // The depth-1 neighbourhood in BOTH directions and across ALL edge kinds
@@ -566,7 +581,7 @@ const API = {
         status: 200,
         payload: {
           found: true,
-          fact: { ...toFactRow(row), body: row.body, headline: rich.headline, why: rich.why, how: rich.how, superseded },
+          fact: { ...toFactRow(row), body: row.body, headline: rich.headline, why: rich.why, how: rich.how, from_archive: fromArchive },
           edges: {
             out: hops
               .filter((e) => e.direction === 'out')
@@ -576,12 +591,7 @@ const API = {
               .map((e) => ({ src: e.from_id, type: e.type })),
           },
           supersession: supersessionChain(db, id),
-          // §24.1.3 — the read-only answer to "let me delete it from here".
-          commands: {
-            forget: `cmk forget ${id}`,
-            trust: `cmk trust ${id} ${row.trust ?? 'high'}`,
-            get: `cmk get ${id}`,
-          },
+          ...actionsFor({ id, row, fromArchive }),
         },
       };
     });
@@ -703,7 +713,6 @@ const API = {
   async health(route, ctx) {
     const warnings = activeWarnings(ctx.projectRoot);
     const queues = pendingQueues(ctx);
-    const strip = buildStrip(warnings, queues);
 
     // `?strip=1` answers the PINNED LINE ONLY, and this split is load-bearing
     // rather than tidy: the strip is on every view, so a page navigation would
@@ -711,8 +720,15 @@ const API = {
     // user's agent CLI — just to draw one line. The strip's inputs (the health
     // log tail + two queue reads) are cheap file reads; the doctor is the
     // expensive part, and only the health VIEW actually needs it.
+    //
+    // The COST of that split is epistemic, and B1 is what it cost: without the
+    // doctor this line cannot see an unregistered hook, so its positive wording
+    // is bounded to what the log can actually prove (see buildStrip).
     if (route.params?.get('strip') === '1') {
-      return { status: 200, payload: { strip, active_warnings: warnings, queues } };
+      return {
+        status: 200,
+        payload: { strip: buildStrip(warnings, queues, null), active_warnings: warnings, queues },
+      };
     }
 
     const checks = await runDoctor({
@@ -736,7 +752,9 @@ const API = {
         duration_ms: checks.duration_ms ?? null,
         active_warnings: warnings,
         queues,
-        strip,
+        // The full route HAS the doctor table, so the strip folds it in — the
+        // exact information that was in scope and unused when B1 was filed.
+        strip: buildStrip(warnings, queues, list),
       },
     };
   },
@@ -771,56 +789,183 @@ const API = {
   },
 };
 
+/** The trust levels, weakest → strongest. Used to build the trust template. */
+const TRUST_LEVELS = Object.freeze(['low', 'medium', 'high']);
+
 /**
- * How many items are waiting in the two human-decision queues. Best-effort —
- * an unreadable queue reads as zero rather than failing the health view.
+ * What the fact page offers to DO about a fact (§24.1 point 3's copy-the-command
+ * answer to the delete-from-viewer demand) — and, just as importantly, when it
+ * offers nothing.
+ *
+ * I1: an ARCHIVED-superseded fact is not in the live corpus, so `cmk forget` and
+ * `cmk trust` against it are no-ops — three buttons that look actionable and do
+ * nothing. It gets an honest state note instead. Commands render only where
+ * they work.
+ *
+ * M8: on a LIVE fact the pasted text must be REAL as pasted. `cmk forget <id>`
+ * alone stops at an interactive confirm, so the paste appeared to do nothing;
+ * it now carries `--yes` — the human choosing to paste and run IS the
+ * confirmation ADR-0018 asks for, and it happens in their own shell, not in a
+ * click handler. The trust command was worse than useless: it echoed the
+ * CURRENT level, so running it changed nothing. It is now an explicit
+ * TEMPLATE — every level offered, the current one marked, each copy line a
+ * command that would actually move the trust somewhere else.
+ */
+function actionsFor({ id, row, fromArchive }) {
+  if (fromArchive) {
+    return {
+      commands: null,
+      // Deliberately not `commands: {…}` with disabled entries: a null is
+      // unambiguous to any consumer, including the page.
+      state_note: {
+        kind: 'archived',
+        text: row.superseded_by
+          ? `Archived record — superseded by ${row.superseded_by}. It is kept for history; no actions apply.`
+          : 'Archived record — kept for history; no actions apply.',
+        superseded_by: row.superseded_by ?? null,
+      },
+    };
+  }
+  const current = TRUST_LEVELS.includes(row.trust) ? row.trust : null;
+  return {
+    state_note: null,
+    commands: {
+      // `--yes` because a command that stops at a prompt is not what the button
+      // promised. The paste is the confirmation.
+      forget: `cmk forget ${id} --yes`,
+      get: `cmk get ${id}`,
+      // A single `trust` string cannot be both honest and useful here, so the
+      // page gets the whole ladder and marks where the fact currently sits.
+      trust_current: current,
+      trust_options: TRUST_LEVELS.map((level) => ({
+        level,
+        current: level === current,
+        command: `cmk trust ${id} ${level}`,
+      })),
+    },
+  };
+}
+
+/**
+ * How many items are waiting in the two human-decision queues, and whether
+ * either read FAILED — see the note in the function body (M4).
  */
 function pendingQueues(ctx) {
+  // `unreadable` is NOT the same as zero, and collapsing them is how a strip
+  // ends up cheerfully green over a queue it could not open (M4). A read that
+  // throws is reported as such so the strip can say "I don't know" instead of
+  // "nothing pending".
   const count = (fn) => {
     try {
       return fn({ tier: 'P', projectRoot: ctx.projectRoot, userDir: ctx.userDir }).length;
     } catch {
-      return 0;
+      return null;
     }
   };
-  return { conflicts: count(listConflictQueue), review: count(listReviewQueue) };
+  const conflicts = count(listConflictQueue);
+  const review = count(listReviewQueue);
+  return {
+    conflicts: conflicts ?? 0,
+    review: review ?? 0,
+    unreadable: conflicts === null || review === null,
+  };
 }
 
 /**
  * The pinned one-line strip (§24.1 point 4i + point 8).
  *
- * Precedence is deliberate: an ACTIVE FAILURE outranks a full queue, because a
- * broken kit is losing memory while a queue is only waiting on the human. The
- * queue line is §24.1 point 8's stated answer to "no conflict-queue UI in wave
- * 1" — the strip carries the COUNT and names the CLI verb that resolves it, so
- * a pending decision is never invisible just because its screen was deferred.
+ * B1 — WHAT THIS LINE IS ALLOWED TO CLAIM. The strip originally read its whole
+ * verdict from the health LOG, and then said "capture, recall and the index are
+ * all reporting fine." Those are different statements. The health log records
+ * failures of things that RAN; a hook that was never registered never runs and
+ * therefore never logs, so an unwired kit produces a silent log — and the strip
+ * printed a green all-clear directly above a doctor table with a red HC-1. That
+ * is the HC-10 false-green class, on the most prominent line in the UI.
+ *
+ * The rule now: the strip never claims more than its inputs support.
+ *   - Given doctor results (the full route), a FAIL outranks everything and the
+ *     line names the failing checks; a WARN-only table reads amber.
+ *   - Without them (`?strip=1`, the cheap per-view read), the positive case is
+ *     worded as the bounded thing it actually knows: "no failures recorded"
+ *     plus "(quick check)" — never "everything is fine".
+ *
+ * Precedence below that is deliberate: an active failure outranks a full queue,
+ * because a broken kit is losing memory while a queue is only waiting on the
+ * human. The queue line is §24.1 point 8's stated answer to "no conflict-queue
+ * UI in wave 1" — the strip carries the COUNT and names the CLI verb that
+ * resolves it, so a pending decision is never invisible.
+ *
+ * @param {Array} warnings   activeWarnings() — the health-log verdict
+ * @param {object} queues    pendingQueues()
+ * @param {Array|null} checks  doctor checks when the caller has them, else null
  */
-function buildStrip(warnings, queues) {
+function buildStrip(warnings, queues, checks = null) {
+  const base = { code: null, severity: null, action: null, queues };
+
+  // 1. Doctor FAIL — the loudest thing the viewer can know, and the case that
+  //    used to be invisible here entirely.
+  if (Array.isArray(checks)) {
+    const failed = checks.filter((c) => c.status === 'fail');
+    if (failed.length) {
+      return {
+        ...base,
+        state: 'warn',
+        severity: 'memory-off',
+        text: `${failed.length} health check(s) FAILING: ${failed.map((c) => c.id).join(', ')}`,
+        action: 'cmk doctor',
+      };
+    }
+  }
+
+  // 2. An active health-log warning.
   if (warnings.length) {
     const w = warnings[0];
-    return { state: 'warn', text: w.title, action: w.primaryAction, code: w.code, severity: w.severity, queues };
+    return { ...base, state: 'warn', text: w.title, action: w.primaryAction, code: w.code, severity: w.severity };
   }
+
+  // 3. Doctor WARN — real, but advisory.
+  if (Array.isArray(checks)) {
+    const warned = checks.filter((c) => c.status === 'warn');
+    if (warned.length) {
+      return {
+        ...base,
+        state: 'warn',
+        severity: 'advisory',
+        text: `${warned.length} health check(s) warning: ${warned.map((c) => c.id).join(', ')}`,
+        action: 'cmk doctor',
+      };
+    }
+  }
+
+  // 4. A queue the viewer could not read is an unknown, not an all-clear (M4).
+  if (queues.unreadable) {
+    return {
+      ...base,
+      state: 'warn',
+      severity: 'advisory',
+      text: 'a decision queue could not be read — its pending count is unknown',
+      action: 'cmk doctor',
+    };
+  }
+
+  // 5. Real pending work.
   const pending = [];
   if (queues.conflicts > 0) pending.push(`${queues.conflicts} conflict(s)`);
   if (queues.review > 0) pending.push(`${queues.review} item(s) awaiting review`);
   if (pending.length) {
     return {
+      ...base,
       state: 'queued',
-      text: `memory is healthy — ${pending.join(' and ')} waiting on you`,
-      action: queues.conflicts > 0 ? 'cmk queue conflicts' : 'cmk queue review',
-      code: null,
       severity: 'advisory',
-      queues,
+      text: `${pending.join(' and ')} waiting on you`,
+      action: queues.conflicts > 0 ? 'cmk queue conflicts' : 'cmk queue review',
     };
   }
-  return {
-    state: 'ok',
-    text: 'memory is healthy — capture, recall and the index are all reporting fine.',
-    action: null,
-    code: null,
-    severity: null,
-    queues,
-  };
+
+  // 6. Nothing known to be wrong — worded to the evidence actually in hand.
+  return Array.isArray(checks)
+    ? { ...base, state: 'ok', text: `all ${checks.length} health checks passing` }
+    : { ...base, state: 'ok', text: 'no failures recorded (quick check)' };
 }
 
 /** Full rows for a set of ids, order-independent (the caller re-orders). */
@@ -828,6 +973,17 @@ function hydrate(db, ids) {
   if (ids.length === 0) return [];
   const holes = ids.map(() => '?').join(',');
   return db.prepare(`SELECT ${ROW_COLUMNS} FROM observations WHERE id IN (${holes})`).all(...ids);
+}
+
+/**
+ * A fact file's path as the observations table would record it: relative to the
+ * USER dir for the U tier, to the project root otherwise. Mirrors
+ * `index-rebuild.relativeSource` so archived and live rows carry the same shape.
+ */
+function relativeFactPath(absPath, tier, ctx) {
+  const base = tier === 'U' ? ctx.userDir : ctx.projectRoot;
+  if (!base) return absPath.replaceAll('\\', '/');
+  return relative(base, absPath).replaceAll('\\', '/');
 }
 
 /** Look up one archived-superseded fact, shaped like an observations row. */
@@ -844,7 +1000,13 @@ function findSupersededFact(ctx, id) {
       write_source: fm.write_source ?? null,
       heading_path: fm.title ?? null,
       body: f.body,
-      source_file: `memory/archive/superseded/${f.filename}`,
+      // M1: formed by the SAME rule the indexer uses for a live row
+      // (`relativeSource` — relative to the user dir for U, to the project root
+      // for P/L), so an archived fact's location reads
+      // `context/memory/archive/superseded/<id>.md` rather than a bare
+      // `memory/...` that silently dropped the tier's own prefix and could not
+      // be pasted anywhere useful.
+      source_file: relativeFactPath(f.path, f.tier, ctx),
       source_line: 1,
       created_at: fm.created_at ? Date.parse(fm.created_at) : null,
       expires_at: null,
