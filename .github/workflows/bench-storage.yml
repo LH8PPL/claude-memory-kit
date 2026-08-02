@@ -1,14 +1,14 @@
-# Task 141b perf bake-off (D-147) — node:sqlite vs better-sqlite3 on the kit's
+﻿# Task 141b perf bake-off (D-147) ג€” node:sqlite vs better-sqlite3 on the kit's
 # gated read/search paths. NOT a per-PR gate: it's the evaluation harness that
 # decides the node:sqlite migration. A CI runner is far quieter than a dev
 # laptop, so the measurement noise (rsd) should fall below the 3% bar and give
 # the trustworthy verdict a laptop can't (the bench itself reports INCONCLUSIVE
 # + exit 2 when its noise rivals the bar).
 #
-# Manually triggered (workflow_dispatch). Node comes from .nvmrc (Task 243) —
+# Manually triggered (workflow_dispatch). Node comes from .nvmrc (Task 243) ג€”
 # and the REAL floor is node:sqlite's EXTENSION loading (allowExtension /
 # loadExtension, used by runChild for sqlite-vec), which landed in Node
-# 22.13.0 / 23.5.0 — the module itself exists from 22.5. A bare-major .nvmrc
+# 22.13.0 / 23.5.0 ג€” the module itself exists from 22.5. A bare-major .nvmrc
 # resolves to the latest 22.x (>= 22.13), so the pin is safe; an exact pin
 # below 22.13 would crash the bench, which the conditional invariant in
 # tests/scripts-validate-node-pin.test.js guards.
@@ -39,7 +39,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-      - run: npm ci --no-audit --no-fund
+      - uses: ./.github/actions/npm-ci-retry
       - name: Run the storage bake-off
         run: |
           node --experimental-sqlite scripts/bench-storage.mjs \
@@ -47,4 +47,4 @@ jobs:
             --batch "${{ github.event.inputs.batch }}" \
             --n "${{ github.event.inputs.n }}"
         # The script exits: 0 = PASS (clean), 1 = FAIL (clean), 2 = INCONCLUSIVE
-        # (noise ≥ bar). All three are informative — don't mask the exit code.
+        # (noise ג‰¥ bar). All three are informative ג€” don't mask the exit code.

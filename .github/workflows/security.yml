@@ -1,9 +1,9 @@
-# Security scanning (Task 53). Three gates, run on every push + PR:
+﻿# Security scanning (Task 53). Three gates, run on every push + PR:
 #   - secrets : gitleaks (in-repo, config-controlled; complements the
 #               GitGuardian app already installed on the repo)
 #   - audit   : `npm audit` HARD-GATE on high/critical (dev-only moderates
 #               in the vitest/vite/esbuild toolchain don't block; they land
-#               as Dependabot PRs — see .github/dependabot.yml)
+#               as Dependabot PRs ג€” see .github/dependabot.yml)
 #   - osv     : osv-scanner (OSV.dev DB, broader than npm advisories);
 #               reports SARIF to the Security tab
 name: Security
@@ -13,11 +13,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  # Task 237 — the STANDING watch. The push/PR gates only fire when someone
+  # Task 237 ג€” the STANDING watch. The push/PR gates only fire when someone
   # pushes, so an advisory published after the last PR reaches nobody. Observed
   # live 2026-07-21: two advisories landed overnight and were caught only
   # because an unrelated research commit happened to be pushed that afternoon.
-  # DAILY, not the weekly the task first proposed — that same day produced two
+  # DAILY, not the weekly the task first proposed ג€” that same day produced two
   # advisories in ~24h, so a weekly cadence would mean up to 7 days of unknown
   # exposure on a surface this small. Cheap: two scanners over ~8 direct deps.
   schedule:
@@ -52,10 +52,10 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-      - run: npm ci --no-audit --no-fund
+      - uses: ./.github/actions/npm-ci-retry
       # Hard-gate on high/critical in SHIPPED (production) deps only:
       # `--omit=dev` excludes the vitest/vite/esbuild test toolchain, so a
-      # dev-only advisory never blocks a release — Dependabot tracks those
+      # dev-only advisory never blocks a release ג€” Dependabot tracks those
       # as routine update PRs. What users install must stay clean.
       - run: npm audit --omit=dev --audit-level=high
 
@@ -67,13 +67,13 @@ jobs:
       contents: read
     uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.8
 
-  # Task 237 — delivery. A failed CHECK on a scheduled run notifies nobody
+  # Task 237 ג€” delivery. A failed CHECK on a scheduled run notifies nobody
   # (there is no PR to annotate), so the standing watch reports to an ISSUE.
   # Only on `schedule`/`workflow_dispatch`: on a PR the check failure IS the
   # delivery, and filing an issue there would double-report.
   watch-report:
     name: Supply-chain watch report
-    # `!cancelled()` not `always()` — GitHub's own docs warn always() also fires
+    # `!cancelled()` not `always()` ג€” GitHub's own docs warn always() also fires
     # on a CANCELLED run, which would drive the full collect->report->issue
     # pipeline against partial state (skill-review).
     if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
@@ -88,7 +88,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-      - run: npm ci --no-audit --no-fund
+      - uses: ./.github/actions/npm-ci-retry
       # Both scanners run again here in REPORT mode (never failing the step) so
       # the reporter sees their raw JSON. `|| true` is deliberate: a scanner
       # exiting non-zero is the normal case when it finds something.
@@ -108,12 +108,12 @@ jobs:
           node scripts/supply-chain-report.mjs --audit audit.json --osv osv.json --out issue-body.md > verdict.json
           echo "alert=$(node -e "process.stdout.write(String(require('./verdict.json').shouldAlert))")" >> "$GITHUB_OUTPUT"
           echo "scan=$(node -e "process.stdout.write(require('./verdict.json').scanStatus)")" >> "$GITHUB_OUTPUT"
-          # The issue TITLE — wired here so `gh issue create --title "$ISSUE_TITLE"`
+          # The issue TITLE ג€” wired here so `gh issue create --title "$ISSUE_TITLE"`
           # is never blank. Its absence was Task 237's untested delivery gap: the
           # pure reporter produced `title`, the workflow only read shouldAlert +
           # scanStatus, and the create step crashed `title can't be blank` the
           # FIRST time a real finding fired (2026-07-22). Unit tests fed the
-          # function, never the workflow's output wiring — the D-303 class.
+          # function, never the workflow's output wiring ג€” the D-303 class.
           echo "title=$(node -e "process.stdout.write(require('./verdict.json').title)")" >> "$GITHUB_OUTPUT"
       # Fail LOUDLY to an issue, not silently to a log (the task's own wording).
       # The stable marker in the body means a re-run updates the open issue
@@ -122,19 +122,19 @@ jobs:
         if: steps.report.outputs.alert == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          # Via env, never inline ${{ }} in a run block — defence in depth so a
+          # Via env, never inline ${{ }} in a run block ג€” defence in depth so a
           # future edit that puts package names in the title cannot reopen the
           # injection class (skill-review hardening).
           ISSUE_TITLE: ${{ steps.report.outputs.title }}
         run: |
           # Scoped by LABEL + AUTHOR, not a bare body substring: this repo is
-          # public, and ISSUE_MARKER is a literal in our own source — a user
+          # public, and ISSUE_MARKER is a literal in our own source ג€” a user
           # quoting that file would otherwise have their issue hijacked
           # (body overwritten, then auto-closed). Skill-review finding.
           existing=$(gh issue list --state open --label security --author app/github-actions --search "cmk:supply-chain-watch in:body" --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
             gh issue edit "$existing" --body-file issue-body.md
-            gh issue comment "$existing" --body "Watch re-ran $(date -u +%Y-%m-%dT%H:%MZ) — findings still present (body updated)."
+            gh issue comment "$existing" --body "Watch re-ran $(date -u +%Y-%m-%dT%H:%MZ) ג€” findings still present (body updated)."
           else
             gh issue create --title "$ISSUE_TITLE" --body-file issue-body.md --label security
           fi
@@ -148,11 +148,11 @@ jobs:
         run: |
           existing=$(gh issue list --state open --label security --author app/github-actions --search "cmk:supply-chain-watch in:body" --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
-            gh issue comment "$existing" --body "Supply-chain watch is clean as of $(date -u +%Y-%m-%dT%H:%MZ) — closing."
+            gh issue comment "$existing" --body "Supply-chain watch is clean as of $(date -u +%Y-%m-%dT%H:%MZ) ג€” closing."
             gh issue close "$existing"
           fi
       - name: Fail loudly when a scan did not actually run
         if: steps.report.outputs.scan != 'ok'
         run: |
-          echo "::error::A supply-chain scanner produced no readable output — treating as INCOMPLETE, not clean. Any open watch issue was left open deliberately."
+          echo "::error::A supply-chain scanner produced no readable output ג€” treating as INCOMPLETE, not clean. Any open watch issue was left open deliberately."
           exit 1

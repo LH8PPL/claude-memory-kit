@@ -1,10 +1,10 @@
-# CI provenance publish (Task 53). Replaces the local `npm publish` flow.
+﻿# CI provenance publish (Task 53). Replaces the local `npm publish` flow.
 #
 # Triggers on a `v*` tag (or manual dispatch). Runs the full test suite as
 # a gate, then publishes @lh8ppl/core-memory-kit with a SIGNED PROVENANCE
-# attestation (OIDC `id-token: write`) — proving the tarball was built from
+# attestation (OIDC `id-token: write`) ג€” proving the tarball was built from
 # THIS repo + commit. The npm token lives ONLY as the encrypted GitHub
-# secret NPM_TOKEN (a least-privilege granular token), never on a laptop —
+# secret NPM_TOKEN (a least-privilege granular token), never on a laptop ג€”
 # that storage, not the token type, is what leaked in the local flow.
 #
 # canonicalize is unchanged at 0.1.0 (already on npm) and is NOT republished
@@ -30,7 +30,7 @@ jobs:
     name: Publish cli (npm provenance)
     runs-on: ubuntu-latest
     permissions:
-      id-token: write # OIDC — required for `npm publish --provenance`
+      id-token: write # OIDC ג€” required for `npm publish --provenance`
       contents: write # create the GitHub Release from the changelog
     steps:
       - uses: actions/checkout@v7
@@ -38,17 +38,17 @@ jobs:
         with:
           node-version-file: .nvmrc
           registry-url: 'https://registry.npmjs.org'
-      - run: npm ci --no-audit --no-fund
+      - uses: ./.github/actions/npm-ci-retry
       # Full-suite gate before anything reaches the registry. Live-Haiku
       # spawn-smokes auto-skip in CI (no `claude` binary on PATH).
       - run: npm test
       # Extract the GitHub Release notes from the CHANGELOG section the
       # release mechanic finalized (scripts/print-release-notes.mjs)
-      # BEFORE publishing — so a missing/empty section fails the run
+      # BEFORE publishing ג€” so a missing/empty section fails the run
       # before the IRREVERSIBLE npm publish, instead of marking a
       # successful publish as failed. Tag-push only (workflow_dispatch
       # has no tag to release). One file (CHANGELOG.md) drives npm + the
-      # GitHub Release — no hand-written notes.
+      # GitHub Release ג€” no hand-written notes.
       - name: Extract release notes from CHANGELOG (fail-fast pre-publish)
         if: startsWith(github.ref, 'refs/tags/v')
         run: node scripts/print-release-notes.mjs "${GITHUB_REF_NAME#v}" > /tmp/release-notes.md
