@@ -702,6 +702,93 @@ describe('viewer — JSON API routes (255.2)', () => {
   });
 });
 
+describe('viewer — the HTML page (255.3)', () => {
+  let base;
+  let html;
+  beforeEach(async () => {
+    const r = await boot();
+    base = r.url;
+    html = await (await fetch(base)).text();
+  });
+
+  it('is ONE self-contained file — no framework, no bundler, no CDN (§24.1.7)', async () => {
+    // Every subresource reference must be local. A remote one would work on the
+    // author's machine and break on a plane, and the CSP would reject it — this
+    // catches it at test time instead of in someone's browser console.
+    const externals = [...html.matchAll(/(?:src|href)\s*=\s*["']([^"']+)["']/gi)]
+      .map((m) => m[1])
+      .filter((u) => /^(?:https?:)?\/\//i.test(u));
+    expect(externals).toEqual([]);
+    expect(html).not.toMatch(/<script[^>]+\ssrc=/i);
+    expect(html).not.toMatch(/<link[^>]+rel=["']?stylesheet/i);
+
+    // And the response says so: the CSP permits inline only, no host source.
+    const res = await fetch(base);
+    const csp = res.headers.get('content-security-policy');
+    expect(csp).toMatch(/default-src 'none'/);
+    expect(csp).toMatch(/script-src 'unsafe-inline'/);
+    expect(csp).not.toMatch(/https?:/);
+    expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(res.headers.get('cache-control')).toBe('no-store');
+  });
+
+  it('ships all five wave-1 views + the search box (§24.1.4)', () => {
+    for (const view of ['facts', 'fact', 'graph', 'health', 'decisions']) {
+      expect(html).toContain(`data-view="${view}"`);
+    }
+    expect(html).toContain('id="q"'); // the search box IS the landing feature
+    expect(html).toContain('id="health-strip"'); // pinned, on every view
+  });
+
+  it('carries the freshness label + a manual refresh control, and NO live-watch (§24.1.6)', () => {
+    expect(html).toContain('id="freshness"');
+    expect(html).toContain('id="refresh"');
+    // Task 259 owns live refresh; wave 1 must not have grown one by accident.
+    expect(html).not.toMatch(/EventSource|new WebSocket|text\/event-stream/);
+  });
+
+  it('renders the copy-the-command answer to the delete demand, never a write call', () => {
+    // The command STRINGS come from the API (pinned in the route test); what
+    // the page owes is the affordance that surfaces them.
+    expect(html).toContain('commands.forget');
+    expect(html).toContain('commands.trust');
+    expect(html).toContain('clipboard.writeText');
+    // The page is a consumer of its own read API — it must never attempt a
+    // mutating request (the structural read-only claim, from the client side).
+    expect(html).not.toMatch(/method:\s*['"](?:POST|PUT|PATCH|DELETE)['"]/i);
+    expect(html).not.toMatch(/\bfetch\((?:[^)]*),\s*\{[^}]*method/);
+  });
+
+  it('the inline script PARSES — a syntax error would ship a blank page', () => {
+    // The kit has no DOM test environment (adding one would be a new dependency
+    // the §24.1.7 zero-dep contract forbids), so this is the floor a unit test
+    // can reach: the script is compiled exactly as a browser would compile it,
+    // which catches the one failure mode that turns the whole viewer into an
+    // empty window. RUNTIME behaviour is covered by live-verify's real fetches
+    // against the real bin, and the visual pass needs a human with a browser —
+    // stated rather than implied.
+    const m = html.match(/<script>([\s\S]*?)<\/script>/);
+    expect(m).toBeTruthy();
+    expect(() => new Function(m[1])).not.toThrow();
+  });
+
+  it('a deep link to any view serves the same page (client-side routing)', async () => {
+    for (const path of ['/facts', '/graph', '/health', '/decisions', '/fact/P-2DZG7XF4']) {
+      const res = await fetch(new URL(path, base));
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe(html);
+    }
+  });
+
+  it('a 404 page is still a page, and still offline', async () => {
+    const res = await fetch(new URL('/no-such-view', base));
+    expect(res.status).toBe(404);
+    const body = await res.text();
+    expect(body).toContain('<!doctype html>');
+    expect(body).not.toMatch(/https?:\/\//);
+  });
+});
+
 describe('viewer — the `cmk view` CLI glue (255.1)', () => {
   it('is registered as a verb with the documented flags', () => {
     const sub = subcommands.find((s) => s.name === 'view');
