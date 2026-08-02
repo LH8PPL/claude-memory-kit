@@ -34,11 +34,23 @@ const CMK_BIN = join(REPO_ROOT, 'packages', 'cli', 'bin', 'cmk.mjs');
  * Invoke `cmk` with the given args. Returns { status, stdout, stderr }.
  * Always shells through `node` to dodge the bin-shim-on-Windows quirk.
  */
+// The timeout is not decoration (Task 255). This helper runs REAL verbs from
+// the REPO ROOT — which is itself a kit project — with no bound, so a verb that
+// legitimately BLOCKS (a server, a watcher, an interactive prompt) hangs the
+// entire suite silently and forever: no failing test, no output, just a run
+// that never ends. That happened: `cmk view` reached this smoke loop before it
+// was classified below, and two full-suite runs sat wedged on an orphaned
+// server until the process list explained why. A bound turns that from a
+// twenty-minute mystery into a named failure on the offending verb.
+const SMOKE_TIMEOUT_MS = 60_000;
+
 function runCmk(args, { input } = {}) {
   return spawnSync(process.execPath, [CMK_BIN, ...args], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
     input,
+    timeout: SMOKE_TIMEOUT_MS,
+    killSignal: 'SIGKILL',
   });
 }
 
@@ -73,7 +85,7 @@ function runCmk(args, { input } = {}) {
  *               from the repo cwd here they exit 2 (no anchor/fact found / bad
  *               id), so they're excluded from the scaffold's exit-0 stub loop.
  */
-const NON_STUB_VERBS = new Set(['version', 'install', 'uninstall', 'reindex', 'forget', 'init-user-tier', 'trust', 'search', 'remember', 'daily-distill', 'weekly-curate', 'register-crons', 'compress', 'doctor', 'digest', 'import-anthropic-memory', 'import-claude-md', 'config', 'repair', 'roll', 'disable-native-memory', 'enable-native-memory', 'get', 'timeline', 'cite', 'recent-activity', 'hook', 'cursor-hook', 'codex-hook', 'redact', 'purge', 'import-sessions', 'expand', 'links', 'tour', 'backfill']); // cursor-hook + codex-hook: Task 196 — wired; logic tested by cli-cursor-hook-bin.test.js. redact + purge: Task 96 (ADR-0022) — wired; require --pattern / --hard --yes (exit 2 otherwise); logic tested by cli-redact.test.js against tempdir sandboxes — never invoked unguarded from the repo cwd here (purge --hard is irreversible). import-sessions: Task 225 — wired; requires --yes non-interactively (exit 2 otherwise) and would discover the maintainer's REAL ~/.claude history from the repo cwd; logic tested by cli-import-sessions.test.js against tempdir sandboxes. backfill: Task 174 — wired; the CRON does it automatically (D-169), the verb is the manual override; it shells out to git + the compressor, so it is exercised in cli-backfill.test.js against tempdir git repos rather than the real one here
+const NON_STUB_VERBS = new Set(['version', 'install', 'uninstall', 'reindex', 'forget', 'init-user-tier', 'trust', 'search', 'remember', 'daily-distill', 'weekly-curate', 'register-crons', 'compress', 'doctor', 'digest', 'import-anthropic-memory', 'import-claude-md', 'config', 'repair', 'roll', 'disable-native-memory', 'enable-native-memory', 'get', 'timeline', 'cite', 'recent-activity', 'hook', 'cursor-hook', 'codex-hook', 'redact', 'purge', 'import-sessions', 'expand', 'links', 'tour', 'backfill', 'view']); // cursor-hook + codex-hook: Task 196 — wired; logic tested by cli-cursor-hook-bin.test.js. redact + purge: Task 96 (ADR-0022) — wired; require --pattern / --hard --yes (exit 2 otherwise); logic tested by cli-redact.test.js against tempdir sandboxes — never invoked unguarded from the repo cwd here (purge --hard is irreversible). import-sessions: Task 225 — wired; requires --yes non-interactively (exit 2 otherwise) and would discover the maintainer's REAL ~/.claude history from the repo cwd; logic tested by cli-import-sessions.test.js against tempdir sandboxes. backfill: Task 174 — wired; the CRON does it automatically (D-169), the verb is the manual override; it shells out to git + the compressor, so it is exercised in cli-backfill.test.js against tempdir git repos rather than the real one here. view: Task 255 — wired, and the ONE verb here that BLOCKS BY DESIGN: bare `cmk view` binds a port, opens a browser and serves until Ctrl-C, so smoke-running it from the repo cwd wedges the whole suite on an orphaned server (it did, twice, before this entry existed) AND serves the maintainer's real memory. Same class as `mcp serve`, which is excluded for being a child. Its logic is tested by cli-viewer.test.js over real HTTP and by `npm run live-verify:viewer` against the real bin in a sandbox
 
 // Wired child sub-verbs (e.g. `cmk queue conflicts` shipped in Task 25).
 // Listed as "<parent>/<child>" so the generic child-stub assertion
