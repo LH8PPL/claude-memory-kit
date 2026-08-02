@@ -4193,6 +4193,28 @@ A new failure class is: a registry entry + the instrumented site that appends it
 
 **Verification:** `scripts/live-verify-health-whisper.mjs` (`npm run live-verify:health-whisper`) drives the REAL hook bin against a sandboxed install with a seeded streak and asserts the whisper, the `memory-off` systemMessage, the noise gate, the self-clean, and whisper-vs-HC-14 agreement — with NO manual command run anywhere (the D-169 automatic-path criterion). Zero LLM, zero network, so unlike its sibling live-verify scripts it is cheap to run any time.
 
+## 24. The memory viewer — `cmk view` (Task 255, v0.6.4 headline; grill-ratified 2026-08-02, D-414)
+
+The kit's own read-only UI over the memory it manages — the D-121 lineage finally built (the v0.1.0 stub was removed with "design it properly first"; D-397 committed to building it; the 2026-08-02 grill ratified this design). The Obsidian vault (Task 254) remains the free companion; this section owns the KIT-SEMANTIC rendering Obsidian cannot do. Prior-art: the [2026-08-02 viewer survey](../docs/research/2026-08-02-memory-viewer-prior-art.md) (claude-mem 89k★ / PAI-Pulse / hermes / datasette / mdserve).
+
+### 24.1 The contract (the 8 ratified points)
+
+1. **Ephemeral localhost server.** `cmk view` binds **127.0.0.1 ONLY** (a non-loopback bind request is refused, stated in the error), picks a free port, auto-opens the browser (URL printed as fallback), serves until Ctrl-C. NO resident daemon — the datasette lifecycle, deliberately against the claude-mem/Pulse resident shape and its complaint class ("viewer never turns off"; viewer breaks when the daemon evolves).
+2. **API-first routes.** Every view is JSON and HTML from the SAME route (datasette's pattern): the server doubles as the kit's local read API. Future consumers (team layer, integrations) build on the JSON side without re-architecture. The HTML page is a consumer of its own API.
+3. **Read-only, structurally.** The server MOUNTS no write route — not auth-gated, absent (ADR-0018: the safe write path stays the only writer). The field's #1 demand (delete-from-viewer — four claude-mem issues, still open) is answered in the UI: copy-able `cmk forget <id>` / `cmk trust <id>` beside every fact.
+4. **Five wave-1 views:** (i) **landing** — pinned one-line health strip (green when quiet, the active 250-warning when not) + FTS search box + newest facts (trust · date · source badges); (ii) **fact detail** — body, Why/How, trust tier + history, edges (cites / superseded-by as a local neighborhood), source session, the copy commands; (iii) **graph** — kit-semantic: trust as color, supersession as direction, anchors as hubs (232/256 edges); (iv) **health** — the doctor checks + active health-log warnings rendered; (v) **decisions** — the DECISIONS.md journal chronologically, superseded/retracted entries visible but struck (the evolution view `--scope decisions` search cannot give).
+5. **All three tiers** (P/L/U), badge-labeled, injection-precedence semantics. The user tier on screen is one more reason loopback-only is non-negotiable.
+6. **Manual refresh + per-view freshness labels** ("as of HH:MM" — the Pulse TabFreshness borrow). SSE live-refresh is **Task 259** (deferred, named trigger).
+7. **Zero new dependencies:** node stdlib `http`, ONE committed static HTML file with inline vanilla JS, the existing better-sqlite3 FTS. No framework, no bundler (the 89k★ precedent's consumer runtime is exactly this after their esbuild step — we skip the step by not needing React).
+8. **Deferred, stated:** timeline (mk_timeline/`cmk recent` cover it), conflict-queue UI (the health strip shows the count and points at the CLI), stats page.
+
+### 24.2 Boundaries and hazards
+
+- **Search parity is the point:** the FTS search box is the landing feature (the 89k★ precedent ships search in its API but NOT its UI — the gap we exist to not repeat).
+- **The port/launch shape** follows `register-crons`' platform discipline for the browser-open command (platform-commands.mjs; `start`/`open`/`xdg-open`).
+- **No fs.watch anywhere in wave 1** — the one platform-sensitive moving part, deliberately excluded (Task 259 owns it).
+- **Empty/uninstalled projects:** `cmk view` on a project without `context/MEMORY.md` explains and exits — it must not scaffold (the 250 no-scaffold guard class).
+
 ## End of design.md v0.1.0
 
 Sections 1-17 = full design surface. Cross-references to specific FRs and ADRs throughout. The four absorbable changes from the spec-generator comparison (tombstones §6.5, review queue §6.2, native auto-memory detection HC-8, structured logging §6.1) are baked in. §17 was tail-appended 2026-05-26 after the working-product live-test surfaced the spawn-layer Windows bug.
