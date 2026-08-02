@@ -627,7 +627,11 @@ const API = {
           trust: r.trust,
           trust_score: r.trust_score,
           created_at: r.created_at,
-          superseded: false,
+          // A fact can be superseded and STILL be in the live index (the
+          // successor was written but the predecessor has not been archived
+          // yet). Reading the flag off the row rather than off which loop
+          // found it keeps the colour honest in that window.
+          superseded: r.superseded_by != null,
         });
       }
       // The predecessors: history the live corpus no longer holds.

@@ -535,6 +535,10 @@ describe('viewer — JSON API routes (255.2)', () => {
     expect(sup.dst).toBe(P_NEW);
     expect(nodes.get(P_OLD).superseded).toBe(true);
     expect(nodes.get(P_NEW).superseded).toBe(false);
+    // The flag reads off the ROW, not off which walk found the node — a fact
+    // whose successor exists but which has not been archived yet is still
+    // superseded, and must not be coloured as current.
+    expect(body.nodes.filter((n) => n.superseded).map((n) => n.id)).toEqual([P_OLD]);
 
     // Every edge endpoint must exist as a node, or the page draws into space.
     for (const e of body.edges) {
