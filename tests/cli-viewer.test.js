@@ -27,7 +27,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { request as httpRequest } from 'node:http';
+import { request as httpRequest, Agent as HttpAgent } from 'node:http';
 import { install } from '../packages/cli/src/install.mjs';
 import { writeFact } from '../packages/cli/src/write-fact.mjs';
 import { appendHealthEntry, activeWarnings, HEALTH_CODES } from '../packages/cli/src/health-log.mjs';
@@ -191,6 +191,29 @@ describe('viewer — server core (255.1)', () => {
     server = null;
   });
 
+  it('close() does not hang on a keep-alive connection (a browser holds one open)', async () => {
+    const r = await boot();
+    // A real browser keeps its socket open between requests. `server.close()`
+    // alone waits for those sockets, so Ctrl-C with the tab still open would
+    // never return — a viewer you cannot stop.
+    const agent = new HttpAgent({ keepAlive: true });
+    await new Promise((resolve, reject) => {
+      const req = httpRequest({ ...urlParts(r.url), agent }, (res) => {
+        res.resume();
+        res.on('end', resolve);
+      });
+      req.on('error', reject);
+      req.end();
+    });
+    const closed = await Promise.race([
+      r.close().then(() => 'closed'),
+      new Promise((res) => setTimeout(() => res('HUNG'), 4000)),
+    ]);
+    agent.destroy();
+    expect(closed).toBe('closed');
+    server = null;
+  });
+
   it('starting the viewer mutates nothing under context/ (read-only, Door 2)', async () => {
     const before = snapshotTier(projectRoot);
     const r = await boot();
@@ -328,6 +351,12 @@ function raw(base, path, { method = 'GET', headers = {} } = {}) {
     req.on('error', reject);
     req.end();
   });
+}
+
+/** Split a viewer URL into the node:http request fields. */
+function urlParts(url, path = '/') {
+  const u = new URL(path, url);
+  return { host: u.hostname, port: u.port, path: u.pathname + u.search };
 }
 
 /** GET a JSON route and return {status, body}. */

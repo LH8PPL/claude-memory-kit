@@ -318,6 +318,14 @@ export async function startViewer({
     bound.length = 0;
     if (closed) return;
     closed = true;
+    // `server.close()` stops ACCEPTING but waits for open sockets to end — and
+    // a browser holds its connection open on keep-alive, so Ctrl-C with the tab
+    // still open would hang the shutdown indefinitely. A viewer the user cannot
+    // stop is precisely the resident-daemon complaint class §24 exists to avoid,
+    // so the sockets are dropped explicitly. Safe here in a way it would not be
+    // for a writer: every in-flight request is a read.
+    server.closeIdleConnections?.();
+    server.closeAllConnections?.();
     await new Promise((resolve) => server.close(() => resolve()));
   };
   for (const sig of signals) {

@@ -157,11 +157,11 @@
 
   <div class="toolbar">
     <input type="search" id="q" placeholder="Search your memory…" autocomplete="off" spellcheck="false" />
-    <select id="tier" title="Filter by tier">
+    <select id="tier" title="Filter by tier. At session start the tiers are injected with local &gt; project &gt; user precedence — the most specific wins and the others are logged as shadowed.">
       <option value="">all tiers</option>
-      <option value="P">P · project</option>
-      <option value="L">L · local</option>
-      <option value="U">U · user</option>
+      <option value="P">P · project (committed, travels with the repo)</option>
+      <option value="L">L · local (this machine only, gitignored)</option>
+      <option value="U">U · user (you, across every project)</option>
     </select>
     <button id="refresh" type="button" title="Re-read from disk">Refresh</button>
     <span id="freshness">as of —</span>
@@ -350,6 +350,20 @@
     head.append(el('div', { class: 'body', text: f.headline || f.snippet }));
     head.append(factMeta(f));
     out.append(head);
+
+    // Trust is two numbers, not one label: the declared tier (high/medium/low,
+    // in the meta row above) and the LEARNED score with the count of outcome
+    // signals behind it. Showing the evidence count matters because the search
+    // blend only lets the score move ranking once there is enough of it.
+    if (typeof f.trust_score === 'number') {
+      out.append(el('div', { class: 'block' }, [
+        el('h3', { text: 'Trust' }),
+        el('div', { class: 'muted', text:
+          'declared ' + f.trust + ' · learned score ' + f.trust_score.toFixed(2) +
+          ' from ' + (f.signal_count || 0) + ' outcome signal(s)' +
+          ((f.signal_count || 0) < 3 ? ' — not yet enough evidence to move search ranking' : '') }),
+      ]));
+    }
 
     if (f.why) out.append(el('div', { class: 'block' }, [el('h3', { text: 'Why' }), el('div', { class: 'body', text: f.why })]));
     if (f.how) out.append(el('div', { class: 'block' }, [el('h3', { text: 'How to apply' }), el('div', { class: 'body', text: f.how })]));
