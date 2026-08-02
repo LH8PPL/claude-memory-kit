@@ -16124,3 +16124,128 @@ _(retracted 2026-07-22)_
 
 **When:** 2026-08-01 · **Fact:** `P-GRC5M9WA`
 **Why:** Diagnostic-to-fix pipelines lose credibility if the fix doesn't clear the warning. Repeated alerts erode user trust.
+
+<!-- decision:P-XQCMXU6R -->
+
+## Fix round dispatched with nine findings; glob fix pre-solves Task 249 and applie
+
+**When:** 2026-07-29 · **Fact:** `P-XQCMXU6R`
+
+<!-- decision:P-WJFN7URN -->
+
+## Bash() prefix cannot safely express git --index-only operations
+
+**When:** 2026-08-02 · **Fact:** `P-WJFN7URN`
+**Why:** Affects gateability of certain repairs; operations requiring this pattern cannot be granted
+
+<!-- decision:P-UYPGM6MK -->
+
+## Core-memory-kit gate chain and post-merge workflow
+
+**When:** 2026-08-02 · **Fact:** `P-UYPGM6MK`
+**Why:** Standard workflow for commits to core-memory-kit; next session needs to know gate sequence and post-merge operations
+
+<!-- decision:P-PJaSYQKY -->
+
+## Two-pass review process with B/I/M categorization
+
+**When:** 2026-08-02 · **Fact:** `P-PJaSYQKY`
+**Why:** Ensures consistent review quality and explicit classification of change types across both passes
+
+<!-- decision:P-T2PBQP3Y -->
+
+## Memory Tier Flushing Rules
+
+**When:** 2026-08-02 · **Fact:** `P-T2PBQP3Y`
+**Why:** Prevents accidental commit of machine-local memory; maintains segregation between committed and local-only storage
+
+<!-- decision:P-Fa5UYREN -->
+
+## Post-Merge Ship Workflow Sequence
+
+**When:** 2026-08-02 · **Fact:** `P-Fa5UYREN`
+**Why:** Ensures consistency, documentation, and prevents shipping with unclean state or undetected CI failures
+
+<!-- decision:P-9HYFHR3N -->
+
+## Viewer Delivery Shape — Candidates and Recommendation
+
+**When:** 2026-08-02 · **Fact:** `P-9HYFHR3N`
+**Why:** D-121 has been parked since June; viewer delivery shape is the last blocker to v0.6.4. Shape choice drives capability, zero-dep constraint satisfaction, and audience fit.
+
+<!-- decision:P-NH4Q6EMU -->
+
+## Memory Viewer Design: Ephemeral Localhost Server
+
+**When:** 2026-08-02 · **Fact:** `P-NH4Q6EMU`
+**Why:** Ephemeral lifecycle avoids "viewer won't turn off" complaints that plague daemon-based tools; read-only aligns ADR-0018; search fills a concrete gap in existing viewers; zero-dep preserves kit's lightweight stance.
+
+<!-- decision:P-ZHYQ9LX2 -->
+
+## Prior-Art Research Discipline and Filing
+
+**When:** 2026-08-02 · **Fact:** `P-ZHYQ9LX2`
+**Why:** Prevents random exploration and hallucinatory references; ensures research is systematic, traceable, and current; creates reusable records for future phases and tasks
+
+<!-- decision:P-MLHBNSDE -->
+
+## Research Methodology - Targeted File-Level Reads
+
+**When:** 2026-08-02 · **Fact:** `P-MLHBNSDE`
+**Why:** Balances research efficiency against completeness; targeted inspection provides sufficient detail for architectural decisions without full clone overhead
+
+<!-- decision:P-TLPMa5CD -->
+
+## Q1: Viewer Runtime Model — Ephemeral Localhost (Pending Ratification)
+
+**When:** 2026-08-02 · **Fact:** `P-TLPMa5CD`
+**Why:** This foundational architectural decision determines build strategy, deployment model, lifecycle management, and UX flow for the entire viewer feature.
+
+<!-- decision:P-VDAQL5YB -->
+
+## cmk view integrates with core memory subsystems
+
+**When:** 2026-08-02 · **Fact:** `P-VDAQL5YB`
+**Why:** The viewer is not a standalone UI; it's the surface over the kit's data model. These subsystems must be complete and working correctly for the viewer to provide value.
+
+<!-- decision:P-ARCDSP99 -->
+
+## cmk view purpose and headline use cases
+
+**When:** 2026-08-02 · **Fact:** `P-ARCDSP99`
+**Why:** Solidified in decision D-397 after June stub removal (D-121) and July Obsidian observation ("not the wow I thought it would be"). The memory system is invisible without a viewer that understands kit semantics, not generic note tools.
+
+<!-- decision:P-2aFXDV2M -->
+
+## Q1 Locked: cmk view Ephemeral Server Architecture
+
+**When:** 2026-08-02 · **Fact:** `P-2aFXDV2M`
+**Why:** User affirmed this approach on 2026-08-02 after evaluating options; it's the committed implementation direction
+
+<!-- decision:P-WTJQGYT9 -->
+
+## Q2 Landing Design — Search-First (Locked)
+
+**When:** 2026-08-02 · **Fact:** `P-WTJQGYT9`
+**Why:** Search-first prioritizes discoverability; health strip shows system status at a glance. Confirmed by user (2026-08-02). This is the locked design for Q2 shipping.
+
+<!-- decision:P-KT3V7FLR -->
+
+## Q3 Wave-1 — Four Views Confirmed
+
+**When:** 2026-08-02 · **Fact:** `P-KT3V7FLR`
+**Why:** These 4 views offer unique kit-specific value without duplicating existing CLI or covering rare edge states. User confirmed (2026-08-02).
+
+<!-- decision:P-CXADBWXH -->
+
+## Q3 Wave 1 Viewer: Five Views Locked
+
+**When:** 2026-08-02 · **Fact:** `P-CXADBWXH`
+**Why:** Locked scope baseline for Q3 implementation — prevents scope creep and gives clear ship list.
+
+<!-- decision:P-5QaU2CTC -->
+
+## cmk view — Proposed Wave-1 Design
+
+**When:** 2026-08-02 · **Fact:** `P-5QaU2CTC`
+**Why:** Consolidated after Q1–Q5 design deliberation. Defines shape, scope, wave-1 priorities, and deferral criteria for implementation.
