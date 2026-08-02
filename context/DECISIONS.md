@@ -15666,3 +15666,461 @@ _(retracted 2026-07-22)_
 
 **When:** 2026-07-27 · **Fact:** `P-TFZDPX6J`
 **Why:** Applied during Task 257 coverage gate work; existing project discipline referenced as the decision principle.
+
+<!-- decision:P-A7AWBVRJ -->
+
+## Documentation pattern — features need README note + link to fuller explanation f
+
+**When:** 2026-07-23 · **Fact:** `P-A7AWBVRJ`
+
+<!-- decision:P-P4aEK7EX -->
+
+## Graph feature purpose is memory **visualization and understanding** to improve A
+
+**When:** 2026-07-23 · **Fact:** `P-P4aEK7EX`
+
+<!-- decision:P-QRLNJBK4 -->
+
+## Project philosophy — "best at what it does" in its niche, not broad appeal; acce
+
+**When:** 2026-07-23 · **Fact:** `P-QRLNJBK4`
+
+<!-- decision:P-KF6FRB9U -->
+
+## Sequence: engage first on thinking → let user react → execute on clear signal. D
+
+**When:** 2026-07-23 · **Fact:** `P-KF6FRB9U`
+
+<!-- decision:P-4JEDA2EX -->
+
+## Kit's differentiator from Skills: manages entire context lifecycle (creation, tr
+
+**When:** 2026-07-23 · **Fact:** `P-4JEDA2EX`
+
+<!-- decision:P-LWRPVYQF -->
+
+## Prefers to pause work at safe checkpoints ("pause when you can"), not mid-flight
+
+**When:** 2026-07-27 · **Fact:** `P-LWRPVYQF`
+
+<!-- decision:P-CGHPXEFV -->
+
+## Claude Code MCP Server Overhead Per Instance
+
+**When:** 2026-07-27 · **Fact:** `P-CGHPXEFV`
+**Why:** Explains high memory usage when running multiple Claude Code windows; informs decisions about instance count vs. resource constraints.
+
+<!-- decision:P-JL6M3Y5B -->
+
+## MCP Configuration Includes Redundant Memory Server
+
+**When:** 2026-07-27 · **Fact:** `P-JL6M3Y5B`
+**Why:** Redundancy creates unnecessary memory overhead; identifying and removing it optimizes resource usage and tool clutter.
+
+<!-- decision:P-MC2UDaUT -->
+
+## Claude Code Window-Close Leaves Zombie claude.exe Processes
+
+**When:** 2026-07-27 · **Fact:** `P-MC2UDaUT`
+**Why:** Future debugging sessions need to distinguish this known Claude Code pattern from kit issues. Knowing the signature helps rapid diagnosis.
+
+<!-- decision:P-D5CLV6ZA -->
+
+## Core-Memory-Kit Stores All State As On-Disk Markdown
+
+**When:** 2026-07-27 · **Fact:** `P-D5CLV6ZA`
+**Why:** Understanding this design ensures appropriate trust; the kit won't lose memory state even if processes die unexpectedly. When troubleshooting, failures must be in external systems (Claude Code, MCP) or explicit user actions.
+
+<!-- decision:P-GN773PaV -->
+
+## Whole-Tier Flush Rule for Context Directory
+
+**When:** 2026-07-27 · **Fact:** `P-GN773PaV`
+**Why:** Emerged from debugging two staging failures this week; protects against silent clobbering and race conditions in context state.
+
+<!-- decision:P-E5HaW2F6 -->
+
+## Task 257 (BOM blindness) is complete; root cause was data-destruction path in co
+
+**When:** 2026-07-27 · **Fact:** `P-E5HaW2F6`
+
+<!-- decision:P-4GHLSSH6 -->
+
+## Fix uses heal-on-rewrite: legitimate operations (cmk trust, redact, merge) drop
+
+**When:** 2026-07-27 · **Fact:** `P-4GHLSSH6`
+
+<!-- decision:P-ENAHCWY5 -->
+
+## Cross-implementation divergence found: Node and Python generated different IDs f
+
+**When:** 2026-07-27 · **Fact:** `P-ENAHCWY5`
+
+<!-- decision:P-VJYGHNYN -->
+
+## Version Cut Workflow Pattern
+
+**When:** 2026-07-27 · **Fact:** `P-VJYGHNYN`
+**Why:** Clarifies the end-to-end process for v0.6.3 and future versions; establishes clean division: autopilot handles code-to-staged, user performs final tag push
+
+<!-- decision:P-CMZ3RST4 -->
+
+## Task 247 Review Checklist
+
+**When:** 2026-07-27 · **Fact:** `P-CMZ3RST4`
+**Why:** Specific verification points reviewer checks before merge approval
+
+<!-- decision:P-3BGLYSBJ -->
+
+## Byte-Preservation as Hard Constraint for Archive Splits
+
+**When:** 2026-07-27 · **Fact:** `P-3BGLYSBJ`
+**Why:** Downstream validators depend on byte-exact archive state. Any divergence breaks validator integrity.
+
+<!-- decision:P-SMaT2YJ5 -->
+
+## Glob Fix Enables Archive Anchor Supply from Day One
+
+**When:** 2026-07-27 · **Fact:** `P-SMaT2YJ5`
+**Why:** Without the fix, anchor distribution across archive segments would be ambiguous or incorrect, blocking clean boundary selection.
+
+<!-- decision:P-QJ73YHV7 -->
+
+## One-Line-Pointer Design for Numbering Validator Consistency
+
+**When:** 2026-07-27 · **Fact:** `P-QJ73YHV7`
+**Why:** Archive operations and task sequencing can otherwise cause validator state divergence. Centralizing shipped task references in one location prevents ID collisions and consistency gaps.
+
+<!-- decision:P-YaFS3Na7 -->
+
+## Archive Naming and Directory Placement Convention
+
+**When:** 2026-07-27 · **Fact:** `P-YaFS3Na7`
+**Why:** Same-directory placement ensures relative links in moved content remain valid. Consistent naming enables discovery.
+
+<!-- decision:P-HNCCMUSB -->
+
+## Archive Registration in DOCUMENTATION-MAP.md
+
+**When:** 2026-07-27 · **Fact:** `P-HNCCMUSB`
+**Why:** DOCUMENTATION-MAP is the authoritative index of project artifacts. Unregistered archives are orphaned.
+
+<!-- decision:P-L5MHSW2T -->
+
+## Byte-Preservation Verification Workflow for Archive Splits
+
+**When:** 2026-07-27 · **Fact:** `P-L5MHSW2T`
+**Why:** Archive splits are lossless operations — lost or altered bytes are catastrophic. This workflow catches corruption, truncation, or reordering before commit.
+
+<!-- decision:P-YE5NXD3U -->
+
+## Pointer Format for Archived Task Entries
+
+**When:** 2026-07-27 · **Fact:** `P-YE5NXD3U`
+**Why:** Enables readers to quickly locate archived entries. Preserves metadata inline without requiring archive consultation.
+
+<!-- decision:P-KVFQaBQ2 -->
+
+## Task Entry Boundary Definition (specs/tasks.md)
+
+**When:** 2026-07-27 · **Fact:** `P-KVFQaBQ2`
+**Why:** Prevents orphaning of entry-level metadata (sub-tasks, audit notes, decision substeps) when splitting into archives.
+
+<!-- decision:P-QZCWT97Q -->
+
+## Three Archive Splits at v0.5 Release Boundary
+
+**When:** 2026-07-27 · **Fact:** `P-QZCWT97Q`
+**Why:** These boundaries mark the canonical v0.5.0 release point. All content verified byte-identical to main originals; zero bytes lost.
+
+<!-- decision:P-JZL3HYPP -->
+
+## Archive Eligibility Criterion for Task Parents
+
+**When:** 2026-07-27 · **Fact:** `P-JZL3HYPP`
+**Why:** A prior pass archived 8 parents (IDs 45, 46, 50, 51, 68, 76, 78, 116) with 21 open sub-boxes between them; review caught the miss and all 8 were restored. The criterion and its historical rationale are now in the file to prevent recurrence.
+
+<!-- decision:P-KHBKVE4N -->
+
+## File Pointer Format and Interpretation
+
+**When:** 2026-07-27 · **Fact:** `P-KHBKVE4N`
+**Why:** Readers unfamiliar with the archive structure can misinterpret truncated pointers.
+
+<!-- decision:P-JG6P5HN4 -->
+
+## Three-File Archive Structure
+
+**When:** 2026-07-27 · **Fact:** `P-JG6P5HN4`
+**Why:** Archiving is project-wide (tasks, decisions, build campaigns). One unified strategy is simpler than per-document policies.
+
+<!-- decision:P-4A5L794D -->
+
+## Zero-Loss Archive Verification Method
+
+**When:** 2026-07-27 · **Fact:** `P-4A5L794D`
+**Why:** Archive operations risk silent data loss and broken links. Machine-verifiable checks give confidence before merge.
+
+<!-- decision:P-XTMaJDH4 -->
+
+## Stress-flake root cause — hook-timeout config gap
+
+**When:** 2026-07-28 · **Fact:** `P-XTMaJDH4`
+**Why:** Prevents wasted debugging cycles; identifies config rather than infrastructure as the culprit for intermittent hook failures.
+
+<!-- decision:P-T44Q77R6 -->
+
+## Task 252 review completed — six bugs fixed via multi-round fixes
+
+**When:** 2026-07-28 · **Fact:** `P-T44Q77R6`
+**Why:** Demonstrates how initial fixes introduce regressions and how the review cycle catches and corrects them iteratively.
+
+<!-- decision:P-SECZaAQQ -->
+
+## Claude-Memory-Kit Captures Dogfood Facts About Its Own Debugging
+
+**When:** 2026-07-28 · **Fact:** `P-SECZaAQQ`
+**Why:** Reflects the project's design philosophy of using itself as a test subject; the kit's debugging generates insights that feed back into system design
+
+<!-- decision:P-BD6V9C7C -->
+
+## D-408 Housekeeping Supersedes D-395
+
+**When:** 2026-07-28 · **Fact:** `P-BD6V9C7C`
+**Why:** Tracks work-queue resolution and design decisions; D-395 should not be reopened or treated as a valid path
+
+<!-- decision:P-YPTPaYNB -->
+
+## hookTimeout Identified as Root-Cause of D-406
+
+**When:** 2026-07-28 · **Fact:** `P-YPTPaYNB`
+**Why:** Root-cause identification is essential for post-mortem understanding and preventing recurrence of timing-related issues
+
+<!-- decision:P-RVXW3NEW -->
+
+## Task 252 (maskPii) Completed — Five Sonar Smells Fixed
+
+**When:** 2026-07-28 · **Fact:** `P-RVXW3NEW`
+**Why:** Completes a privacy-critical Sonar cleanup; the five-smell pattern and behavior-lock methodology may be reusable for future PII-related fixes
+
+<!-- decision:P-L49CVMaT -->
+
+## Release Workflow: 250-Disposition Grill-Gate
+
+**When:** 2026-07-28 · **Fact:** `P-L49CVMaT`
+**Why:** Staged release process with optional review gate; allows intentional checkpoints without blocking automatic forward movement when review isn't needed.
+
+<!-- decision:P-76M6R7TW -->
+
+## Design Reference: awrshift/claude-memory-kit
+
+**When:** 2026-07-29 · **Fact:** `P-76M6R7TW`
+**Why:** Understanding the predecessor context helps inform design decisions and identify novel vs. borrowed patterns; comparative analysis guides architecture and feature choices.
+
+<!-- decision:P-L7HTEB5H -->
+
+## Build Pipeline Time Constraint
+
+**When:** 2026-07-29 · **Fact:** `P-L7HTEB5H`
+**Why:** Explains why work can't ship same-day even if ready; planning must account for this lag
+
+<!-- decision:P-BJABLRF3 -->
+
+## Release Philosophy — Ship Finished Work, Don't Hold for Versions
+
+**When:** 2026-07-29 · **Fact:** `P-BJABLRF3`
+**Why:** Maximizes user value delivery and momentum; separates genuine constraints (build pipeline) from artificial ones (version labels)
+
+<!-- decision:P-MD92EVYJ -->
+
+## Release and Version-Binding Workflow
+
+**When:** 2026-07-29 · **Fact:** `P-MD92EVYJ`
+**Why:** Ensures stable, automated releases with CI gates; clarifies which project work is tied to versioning vs. can happen on its own timeline
+
+<!-- decision:P-V64HWUUZ -->
+
+## npm Registry Instability and v0.6.4 Workflow Hardening
+
+**When:** 2026-07-29 · **Fact:** `P-V64HWUUZ`
+**Why:** Registry instability is causing build failures; retry-once-on-npm ci is a proven, concrete mitigation worth prioritizing in the next release cycle
+
+<!-- decision:P-LNK4DKSP -->
+
+## Release Workflow — Tag and Automated Publishing
+
+**When:** 2026-07-29 · **Fact:** `P-LNK4DKSP`
+**Why:** Established automated process that prevents manual publish errors, ensures consistent releases, and maintains an auditable trail
+
+<!-- decision:P-KNVGPTYX -->
+
+## core-memory-kit Dogfoods Its Own Memory System
+
+**When:** 2026-07-29 · **Fact:** `P-KNVGPTYX`
+**Why:** Dogfooding is a quality signal and a lived test of the system under real-world complexity. Grounds design decisions in actual usage patterns and validates system resilience.
+
+<!-- decision:P-MHGKJ7TN -->
+
+## v0.6.3 Feature and Fix Summary
+
+**When:** 2026-07-29 · **Fact:** `P-MHGKJ7TN`
+**Why:** Itemizes the substantive work shipped in v0.6.3; useful for release notes, documentation, and understanding the current feature set.
+
+<!-- decision:P-KKX7KACY -->
+
+## v0.6.3 Released
+
+**When:** 2026-07-29 · **Fact:** `P-KKX7KACY`
+**Why:** Marks the completion of a full development and release cycle; confirms the publish pipeline (full test suite, npm release, GitHub Release automation) works end-to-end.
+
+<!-- decision:P-CBSETCAG -->
+
+## v0.6.4 and Follow-Up Work
+
+**When:** 2026-07-29 · **Fact:** `P-CBSETCAG`
+**Why:** Defines the next sprint priorities — maintenance/health work before feature development.
+
+<!-- decision:P-A7SQ5QTE -->
+
+## Doc Update & Release Boundary Rule
+
+**When:** 2026-07-29 · **Fact:** `P-A7SQ5QTE`
+**Why:** Keeps docs synchronized incrementally; avoids batch doc-churn at release time and preserves version history
+
+<!-- decision:P-XaK9PK3Z -->
+
+## Doc Validation System Metrics
+
+**When:** 2026-07-29 · **Fact:** `P-XaK9PK3Z`
+**Why:** Provides automated assurance that documentation stays accurate and complete as codebase evolves
+
+<!-- decision:P-6BAYY2CC -->
+
+## Recursive Improvement Pattern via Verification Questions
+
+**When:** 2026-07-29 · **Fact:** `P-6BAYY2CC`
+**Why:** Shows project maturity; signals when a manual verification pattern should become an automated gate
+
+<!-- decision:P-U2T3Ma6S -->
+
+## User authorizes autopilot through remaining v0.6.3 riders and cut prep; activate
+
+**When:** 2026-07-27 · **Fact:** `P-U2T3Ma6S`
+
+<!-- decision:P-PNX2K5US -->
+
+## Prefers work to continue incrementally with natural pause/checkpoint points rath
+
+**When:** 2026-07-28 · **Fact:** `P-PNX2K5US`
+
+<!-- decision:P-EDWTFJ3Q -->
+
+## Q1 Refined: Auto-fix vs Whisper Boundary (cmk doctor)
+
+**When:** 2026-08-01 · **Fact:** `P-EDWTFJ3Q`
+**Why:** All mature CLI tools converge on this boundary (git, Claude Code, npm doctor, brew, flutter, Nx CI, Tailscale). Nx adds verification-as-precondition; Tailscale's Warnables model is production-grade design for the nudge registry.
+
+<!-- decision:P-X7Y2QXH4 -->
+
+## Research Complete: Self-healing CLI Repair UX (Task 250)
+
+**When:** 2026-08-01 · **Fact:** `P-X7Y2QXH4`
+**Why:** Directly informs Q1 sharpening. Tailscale's Warnables pattern is production-ready for cmk's nudge registry.
+
+<!-- decision:P-LST9P25P -->
+
+## Silent Failure Fixes vs Whisper Policy
+
+**When:** 2026-08-01 · **Fact:** `P-LST9P25P`
+**Why:** Users won't run `cmk doctor` themselves, so the kit must notify the model. Environmental failures have outside-system implications requiring judgment.
+
+<!-- decision:P-KC3D9H6L -->
+
+## Architecture Decisions via ADR References
+
+**When:** 2026-08-01 · **Fact:** `P-KC3D9H6L`
+**Why:** Project uses ADR (Architecture Decision Record) pattern to document and enforce design principles consistently.
+
+<!-- decision:P-GMZARVVZ -->
+
+## Health State Tracking via Append-Only Event Log
+
+**When:** 2026-08-01 · **Fact:** `P-GMZARVVZ`
+**Why:** Append-only log is race-condition-free under concurrent writers; avoids mutable state hazards; provides audit trail; O(1) hot-path check latency on tail-reads.
+
+<!-- decision:P-49SD2W3C -->
+
+## Self-Healing Pattern for Safe Operations
+
+**When:** 2026-08-01 · **Fact:** `P-49SD2W3C`
+**Why:** Reduces noise for recoverable errors; reserves confirmation UX for risky actions (adheres to ADR-0018 "kit proposes, user owns").
+
+<!-- decision:P-DU7X5SA6 -->
+
+## Troubleshooting Skill Architecture — Shape (b) Confirmed
+
+**When:** 2026-08-01 · **Fact:** `P-DU7X5SA6`
+**Why:** Confirmed over shape (a) generic diagnostician; enables efficient fix routing while preserving user control
+
+<!-- decision:P-ZJCLFRC7 -->
+
+## Health Monitoring — Error Notification Routing
+
+**When:** 2026-08-01 · **Fact:** `P-ZJCLFRC7`
+**Why:** User approved this design; reflects preference against session-time nagging while ensuring critical awareness
+
+<!-- decision:P-2RHLEEPM -->
+
+## Health Whisper — Structural Dependency Limit
+
+**When:** 2026-08-01 · **Fact:** `P-2RHLEEPM`
+**Why:** Important to document this limit; sets expectations and identifies where alternative coverage lives
+
+<!-- decision:P-U4BAVXA7 -->
+
+## Wave 1 Instrumentation Scope
+
+**When:** 2026-08-01 · **Fact:** `P-U4BAVXA7`
+**Why:** Prioritize instrumentation for capture chain (core memory function) in initial phase
+
+<!-- decision:P-UXCMUV5a -->
+
+## Task 258 Kept Separate from Task 250 (Approved)
+
+**When:** 2026-08-01 · **Fact:** `P-UXCMUV5a`
+**Why:** Task 250 targets strictly actionable failures (wave 1 scope). Task 258 is advisory in nature ("some facts cite files that moved") — a different severity class. Coupling them would gate Task 250's release on Task 258's measurement work, causing unnecessary scope creep.
+
+<!-- decision:P-7M3YGMYR -->
+
+## Health-Log System Architecture (Ratified)
+
+**When:** 2026-08-01 · **Fact:** `P-7M3YGMYR`
+**Why:** User ratified this design; it defines health monitoring and failure handling for entire kit implementation. Task 258 (stale-refs advisory) deferred to later, using registry as entry point.
+
+<!-- decision:P-T2DNJQaF -->
+
+## Full Gate Re-Run on Final Code After Code Review
+
+**When:** 2026-08-01 · **Fact:** `P-T2DNJQaF`
+**Why:** Critical paths require end-to-end verification; a unit-test pass may fail under stress or live conditions. New live checks verify the specific fix worked.
+
+<!-- decision:P-W5BQJPEK -->
+
+## Log Flooding From High-Cadence Operations Masks Real Failures
+
+**When:** 2026-08-01 · **Fact:** `P-W5BQJPEK`
+**Why:** Without signal isolation, drift detection and health diagnostics become unreliable; real failures go invisible.
+
+<!-- decision:P-VCL4DAKB -->
+
+## Skill Allowed-Tools Must Be Narrow and Boundary-Tested
+
+**When:** 2026-08-01 · **Fact:** `P-VCL4DAKB`
+**Why:** Over-granted permissions execute powerful commands silently, violating design invariants about which operations must be interactive.
+
+<!-- decision:P-GRC5M9WA -->
+
+## Whispers Must Clear When Their Prescribed Fix Runs
+
+**When:** 2026-08-01 · **Fact:** `P-GRC5M9WA`
+**Why:** Diagnostic-to-fix pipelines lose credibility if the fix doesn't clear the warning. Repeated alerts erode user trust.
