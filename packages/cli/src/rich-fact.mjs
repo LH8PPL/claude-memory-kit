@@ -44,3 +44,52 @@ export function buildRichFactBody({ text, why, how }) {
   if (how && String(how).trim()) parts.push(`**How to apply:** ${String(how).trim()}`);
   return parts.join('\n\n');
 }
+
+// The inverse of buildRichFactBody. It lives HERE, beside the writer, because
+// the two are one contract: change the label and both move together. Task 255's
+// fact-detail view is the first reader that needs the parts back out.
+//
+// MARKER regexes only — no content capture. The old shape captured the block
+// body with a lazy `[\s\S]*?` bounded by a lookahead, which re-scans the tail
+// at every position: polynomial backtracking on a body an LLM wrote (the
+// Sonar super-linear flag, and it was right). The markers alone are anchored
+// and unambiguous (linear); the CONTENT is sliced between marker positions in
+// plain code below, which cannot backtrack at all.
+const WHY_MARKER_RE = /(?:^|\n)[ \t]*\*\*Why:\*\*[ \t]*/;
+const HOW_MARKER_RE = /(?:^|\n)[ \t]*\*\*How to apply:\*\*[ \t]*/;
+
+// Where a marker's block STARTS (after the marker) and where the marker line
+// itself begins (for headline slicing) — or null when absent.
+function findMarker(text, re) {
+  const m = re.exec(text);
+  if (!m) return null;
+  const lineStart = m.index + (m[0].startsWith('\n') ? 1 : 0);
+  return { lineStart, contentStart: m.index + m[0].length };
+}
+
+/**
+ * Split a fact body back into its headline + Why + How parts.
+ *
+ * A body that carries neither block (the terse capture path, an imported fact,
+ * a scratchpad bullet) returns the whole text as `headline` with both blocks
+ * null — the common case, and never an error: a plain fact is not malformed.
+ *
+ * @param {string} body
+ * @returns {{headline: string, why: string|null, how: string|null}}
+ */
+export function parseRichFactBody(body) {
+  const text = typeof body === 'string' ? body : '';
+  const why = findMarker(text, WHY_MARKER_RE);
+  const how = findMarker(text, HOW_MARKER_RE);
+  // Each block runs from its marker to the OTHER block's line (when the other
+  // block comes later) or to the end — the same bounds the old lookaheads
+  // expressed, now as two comparisons.
+  const whyEnd = how && why && how.lineStart > why.lineStart ? how.lineStart : text.length;
+  const howEnd = why && how && why.lineStart > how.lineStart ? why.lineStart : text.length;
+  const firstLineStart = Math.min(why?.lineStart ?? Infinity, how?.lineStart ?? Infinity);
+  return {
+    headline: (Number.isFinite(firstLineStart) ? text.slice(0, firstLineStart) : text).trim(),
+    why: why ? text.slice(why.contentStart, whyEnd).trim() || null : null,
+    how: how ? text.slice(how.contentStart, howEnd).trim() || null : null,
+  };
+}

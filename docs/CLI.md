@@ -179,6 +179,23 @@ Print a readable digest of everything in memory (facts grouped by type, with tru
 cmk digest
 ```
 
+### `cmk view [--port <n>] [--host <host>] [--no-open] [--project <dir>]`
+
+**Open your memory in a browser — read-only.** One command starts a small local server, opens a tab, and serves five views over what the kit has captured: a **search-first landing page** with a pinned health line and your newest facts (trust · date · source badges), **fact detail** (the body, its Why/How, trust and its history, the fact's edges, and copy-able `cmk forget` / `cmk trust` commands), the **graph** (trust as colour, supersession as direction, doc anchors as hubs), **health** (the `cmk doctor` checks plus any active warnings), and the **decision journal** (chronological, with retracted entries struck through). All three tiers appear, badged `P` / `L` / `U`.
+
+- **Ephemeral, not a daemon.** It binds a free port, serves until you press Ctrl-C, and leaves nothing running. Re-run it whenever you want it.
+- **Loopback only, and this is not configurable.** The viewer serves your memory — including the user tier — over plain HTTP with no authentication, so it binds `127.0.0.1` and refuses anything else, and it rejects requests that arrive under someone else's hostname. There is no auth mode to turn on.
+- **Read-only structurally.** No write route exists — not disabled, absent. Anything other than `GET`/`HEAD` gets `405`. To change memory, copy the `cmk forget` / `cmk trust` command the fact page shows you and run it in your shell (`cmk view` never edits anything).
+- **JSON on the same routes.** Every view answers HTML or JSON: `/facts`, `/facts.json`, `/api/facts`, or `Accept: application/json`. So the viewer doubles as a local read API (`/api/facts?q=&tier=`, `/api/fact/:id`, `/api/graph`, `/api/health`, `/api/decisions`).
+- **Manual refresh, honest labels.** Each view says when its data was read; the Refresh button re-reads. Live auto-refresh is deliberately not in this version.
+- **Needs a kit project.** Run it somewhere with no `context/MEMORY.md` and it explains and exits — it will never scaffold memory for you.
+
+```bash
+cmk view                 # pick a free port, open the browser
+cmk view --no-open       # just print the URL (CI, remote shells, tmux)
+cmk view --port 7777     # pin the port
+```
+
 ### `cmk doctor`
 
 Run the health checks (HC-1..HC-14); reports PASS/WARN/FAIL/SKIP with a repair command per failure (WARN is advisory — the command is shown but the exit code is untouched). HC-8 (npm 12 readiness) verifies the native bindings load and emits the exact `--allow-scripts` remediation when npm blocked an install script. HC-9 flags project-scaffold version drift after a global update — and WARNs when the installed `cmk` itself is behind the npm registry's published `latest` (Task 245: the silent-upgrade-failure class; skipped offline/CI, opt out with `CMK_SKIP_UPDATE_CHECK=1`); HC-10 is an informational scheduled-compaction-liveness heads-up; **HC-11 (backend LLM CLI present)** checks that the CLI of the agent this project runs its automatic engine on (`claude` / `kiro-cli` / `cursor-agent`) is on your PATH — when it's missing, it FAILS with an honest "automatic features degraded, file-only still works" message (never a silent no-op); **HC-12 (deletion propagation)** verifies every tombstoned fact is actually gone from the derived surfaces (the search index + distilled summaries) and names any survivor's exact location — SKIPs as *vacuous* when nothing has been forgotten yet. The report ends with an informational **memory-health section** (content quality: fact count + trust distribution, old-and-untouched facts, possible duplicate pairs, pending queue items) — read-only, never affects the exit code.

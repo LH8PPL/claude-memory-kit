@@ -58,6 +58,7 @@ import { extractTranscript, discoverSessions, harnessSlugForPath } from './trans
 import { importSessions, DEFAULT_MAX_SESSIONS } from './import-sessions.mjs';
 import { buildTour } from './tour.mjs';
 import { runRepair } from './repair.mjs';
+import { startViewer } from './viewer.mjs';
 import { runRoll, ROLL_SCOPES } from './roll.mjs';
 import { lessonsPromote } from './lessons-promote.mjs';
 import {
@@ -2373,6 +2374,60 @@ async function runDoctorCli(/* options */) {
   }
 }
 
+// Task 255 (design §24 / D-414): `cmk view` — the read-only memory viewer.
+//
+// The command's whole job is: resolve the roots, hand them to the deep module,
+// and then STAY ALIVE. That last part is the only thing worth a comment: the
+// action returns a promise that never settles while the server is listening, so
+// commander's `parseAsync` does not fall off the end of the process and drop
+// the port. The signals bound below are what resolves it.
+export async function runView(options, _command, deps = {}) {
+  options = options ?? {};
+  const log = deps.log ?? console.log;
+  const logError = deps.logError ?? console.error;
+  const projectRoot = options?.project
+    ? resolvePath(normalizeProjectPath(options.project))
+    : resolvePath(process.cwd());
+  const userDir =
+    deps.userDir ?? process.env.MEMORY_KIT_USER_DIR ?? join(homedir(), '.core-memory-kit');
+
+  let port = 0;
+  if (options?.port !== undefined) {
+    port = Number(options.port);
+    if (!Number.isInteger(port) || port < 0 || port > 65535) {
+      logError(`cmk view: --port must be an integer 0-65535 (got ${options.port})`);
+      process.exitCode = 2;
+      return;
+    }
+  }
+
+  // commander's `--no-open` sets `options.open === false`; absent means true.
+  const open = options?.open !== false;
+
+  const r = await (deps.startViewer ?? startViewer)({
+    projectRoot,
+    userDir,
+    host: options?.host ?? '127.0.0.1',
+    port,
+    open,
+    log,
+    logError,
+    signals: deps.signals ?? ['SIGINT', 'SIGTERM'],
+    ...(deps.onShutdown ? { onShutdown: deps.onShutdown } : {}),
+  });
+
+  if (r.action === 'error') {
+    for (const e of r.errors ?? []) logError(`cmk view: ${e}`);
+    process.exitCode = 2;
+    return;
+  }
+  // Hold the process open. The bound SIGINT/SIGTERM handlers close the server
+  // and call onShutdown (process.exit by default), so nothing needs to resolve
+  // this in production; tests pass their own deps and never reach here.
+  if (deps.hold === false) return r;
+  await new Promise(() => {});
+}
+
 // Task 129 (D-121): `cmk config` — real, replacing the v0.1.0 stub. Dotted-key
 // get/set/--show-origin over the per-tier settings.json files. Dep-injectable
 // (cwd/userDir/log/logError) on the runImportClaudeMd pattern for testing the
@@ -3560,6 +3615,18 @@ export const subcommands = [
     description: 'run health checks HC-1..HC-14; print structured report with self-repair commands',
     milestone: 37,
     action: runDoctorCli,
+  },
+  {
+    name: 'view',
+    description: 'open the read-only memory viewer in your browser — facts + search, fact detail, the graph, health, and the decision journal. Ephemeral: binds 127.0.0.1 on a free port and serves until Ctrl-C. Never writes.',
+    milestone: 255,
+    optionSpec: [
+      { flags: '--port <n>', description: 'bind this port instead of a free one (default: an OS-assigned free port)' },
+      { flags: '--host <host>', description: 'loopback literal to bind: 127.0.0.1 (default) | localhost | ::1. Non-loopback is refused — the viewer has no authentication.' },
+      { flags: '--no-open', description: 'do not launch a browser; just print the URL (CI / remote shells)' },
+      { flags: '--project <dir>', description: 'project root to view (default: cwd)' },
+    ],
+    action: runView,
   },
   {
     name: 'backfill',

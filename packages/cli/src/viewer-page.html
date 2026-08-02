@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>cmk view — your memory</title>
+<!--
+  The kit's memory viewer (Task 255, design §24).
+
+  ONE file, on purpose. No framework, no bundler, no CDN, no build step — the
+  page is a plain consumer of the read API the same server exposes, and the
+  response's CSP (`default-src 'none'`) means a stray external reference fails
+  loudly rather than silently working on the author's machine.
+
+  It is READ-ONLY and it stays that way: this page never issues a request with a
+  method other than GET. The answer to "let me delete this from here" is the
+  copy-able `cmk forget` command on every fact — the server mounts no route that
+  could do it anyway.
+-->
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #fbfaf8; --panel: #ffffff; --ink: #1c1b19; --muted: #6b6862;
+    --line: #e4e0d9; --accent: #7a5cff; --accent-soft: #efeaff;
+    --ok: #1f7a4d; --ok-soft: #e6f4ec;
+    --warn: #9a6400; --warn-soft: #fdf3e0;
+    --bad: #a3271f; --bad-soft: #fbeceb;
+    --tier-p: #2f6f9f; --tier-l: #7a5cff; --tier-u: #b06a1f;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17161a; --panel: #1f1e24; --ink: #ecebe8; --muted: #9c988f;
+      --line: #33313a; --accent: #a993ff; --accent-soft: #2a2440;
+      --ok: #6fd39b; --ok-soft: #1c3128;
+      --warn: #e2b25e; --warn-soft: #34291a;
+      --bad: #f0928a; --bad-soft: #361f1e;
+      --tier-p: #7db4de; --tier-l: #a993ff; --tier-u: #dda56a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 ui-sans-serif, -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+  }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace; }
+  a { color: inherit; }
+  header { border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; }
+  .bar { max-width: 1080px; margin: 0 auto; padding: 14px 20px 0; }
+  .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .brand h1 { font-size: 17px; margin: 0; letter-spacing: -0.01em; }
+  .brand .path { color: var(--muted); font-size: 12.5px; }
+  .brand .ro {
+    margin-left: auto; font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 2px 9px;
+  }
+  nav { display: flex; gap: 4px; margin-top: 12px; flex-wrap: wrap; }
+  nav a {
+    text-decoration: none; padding: 7px 13px; border-radius: 8px 8px 0 0;
+    color: var(--muted); font-size: 14px; border: 1px solid transparent; border-bottom: none;
+  }
+  nav a:hover { color: var(--ink); background: var(--bg); }
+  nav a[aria-current="page"] { color: var(--ink); background: var(--bg); border-color: var(--line); font-weight: 600; }
+  main { max-width: 1080px; margin: 0 auto; padding: 18px 20px 60px; }
+
+  #health-strip {
+    display: flex; align-items: center; gap: 10px; margin: 14px 0 4px;
+    padding: 9px 13px; border-radius: var(--radius); font-size: 13.5px;
+    border: 1px solid var(--line); background: var(--panel);
+  }
+  #health-strip[data-state="ok"] { background: var(--ok-soft); border-color: transparent; color: var(--ok); }
+  #health-strip[data-state="warn"] { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
+  #health-strip[data-state="queued"] { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+  #health-strip[data-state="bad"] { background: var(--bad-soft); border-color: transparent; color: var(--bad); }
+  #health-strip .dot { width: 8px; height: 8px; border-radius: 99px; background: currentColor; flex: none; }
+  #health-strip .fix { margin-left: auto; }
+
+  .toolbar { display: flex; gap: 10px; align-items: center; margin: 16px 0 10px; flex-wrap: wrap; }
+  input[type="search"], select, button {
+    font: inherit; color: inherit; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 11px;
+  }
+  input[type="search"] { flex: 1 1 320px; min-width: 200px; }
+  input[type="search"]:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  #freshness { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 13px 15px; margin-bottom: 9px;
+  }
+  a.card { display: block; text-decoration: none; }
+  a.card:hover { border-color: var(--accent); }
+  .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 9px; font-size: 12px; color: var(--muted); }
+  .badge { border-radius: 99px; padding: 1px 8px; font-size: 11px; border: 1px solid var(--line); }
+  .tier-P { color: var(--tier-p); border-color: currentColor; }
+  .tier-L { color: var(--tier-l); border-color: currentColor; }
+  .tier-U { color: var(--tier-u); border-color: currentColor; }
+  .trust-high { color: var(--ok); border-color: currentColor; }
+  .trust-medium { color: var(--warn); border-color: currentColor; }
+  .trust-low { color: var(--muted); border-color: currentColor; }
+  .state { color: var(--bad); border-color: currentColor; }
+  .snippet { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .snippet b { background: var(--accent-soft); border-radius: 3px; padding: 0 2px; font-weight: 600; }
+  .muted { color: var(--muted); }
+  .empty { color: var(--muted); padding: 34px 4px; text-align: center; }
+
+  h2 { font-size: 16px; margin: 22px 0 8px; }
+  .block { margin: 14px 0; }
+  .block h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin: 0 0 5px; }
+  .body { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .cmd { display: flex; gap: 8px; align-items: center; margin-bottom: 7px; }
+  .cmd code { flex: 1; background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 6px 9px; font-size: 13px; overflow-x: auto; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font-size: 12px; border: 1px solid var(--line); border-radius: 99px; padding: 2px 9px; text-decoration: none; }
+  .chip:hover { border-color: var(--accent); }
+
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+  .st { font-weight: 600; }
+  .st-pass { color: var(--ok); } .st-warn { color: var(--warn); }
+  .st-fail { color: var(--bad); } .st-skip { color: var(--muted); }
+
+  .decision { border-left: 3px solid var(--line); padding-left: 13px; margin-bottom: 18px; }
+  .decision.retracted { opacity: .62; }
+  .decision.retracted h3 { text-decoration: line-through; }
+  .decision h3 { font-size: 15px; margin: 0 0 3px; text-transform: none; letter-spacing: 0; color: var(--ink); }
+
+  #graph-wrap { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow-x: auto; }
+  #graph { display: block; width: 100%; height: 560px; touch-action: none; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin: 9px 2px; }
+  .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 99px; background: currentColor; margin-right: 5px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand">
+      <h1>cmk view</h1>
+      <span class="path mono" id="project-path"></span>
+      <span class="ro" title="This viewer mounts no write route. Use the copy-able commands.">read-only</span>
+    </div>
+    <nav>
+      <a href="/facts" data-nav="facts">Memory</a>
+      <a href="/graph" data-nav="graph">Graph</a>
+      <a href="/health" data-nav="health">Health</a>
+      <a href="/decisions" data-nav="decisions">Decisions</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div id="health-strip" data-state="loading"><span class="dot"></span><span id="health-strip-text">reading health…</span><a class="fix hidden" id="health-strip-fix" href="/health">details</a></div>
+
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="Search your memory…" aria-label="Search your memory" autocomplete="off" spellcheck="false" />
+    <select id="tier" aria-label="Filter by tier" title="Filter by tier. At session start the tiers are injected with local &gt; project &gt; user precedence — the most specific wins and the others are logged as shadowed.">
+      <option value="">all tiers</option>
+      <option value="P">P · project (committed, travels with the repo)</option>
+      <option value="L">L · local (this machine only, gitignored)</option>
+      <option value="U">U · user (you, across every project)</option>
+    </select>
+    <button id="refresh" type="button" title="Re-read from disk">Refresh</button>
+    <span id="freshness">as of —</span>
+  </div>
+
+  <section data-view="facts" class="hidden"><div id="facts-out"></div></section>
+  <section data-view="fact" class="hidden"><div id="fact-out"></div></section>
+  <section data-view="graph" class="hidden">
+    <div class="legend">
+      <span style="color:var(--ok)">high trust</span>
+      <span style="color:var(--warn)">medium</span>
+      <span style="color:var(--muted)">low</span>
+      <span style="color:var(--bad)">superseded (arrow points at the successor)</span>
+      <span style="color:var(--accent)">doc anchor (hub)</span>
+    </div>
+    <div id="graph-wrap"><svg id="graph" role="img" aria-label="memory graph"></svg></div>
+    <p class="muted" id="graph-note"></p>
+  </section>
+  <section data-view="health" class="hidden"><div id="health-out"></div></section>
+  <section data-view="decisions" class="hidden"><div id="decisions-out"></div></section>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---- tiny helpers -----------------------------------------------------
+  const $ = (sel) => document.querySelector(sel);
+  const el = (tag, props = {}, kids = []) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (k === 'class') n.className = v;
+      else if (k === 'text') n.textContent = v;
+      else if (v !== null && v !== undefined) n.setAttribute(k, v);
+    }
+    for (const kid of [kids].flat()) if (kid) n.append(kid);
+    return n;
+  };
+  const clear = (n) => n.replaceChildren();
+
+  // The ONLY request shape this page makes. No method, no body — GET is all
+  // the server mounts, and all this page is allowed to want.
+  async function api(path) {
+    const res = await fetch('/api' + path, { headers: { accept: 'application/json' } });
+    const data = await res.json().catch(() => ({ error: 'unreadable response' }));
+    if (!res.ok && !data.error) data.error = 'request failed (' + res.status + ')';
+    return data;
+  }
+
+  const hhmm = (iso) => {
+    const d = iso ? new Date(iso) : new Date();
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  };
+
+  // Freshness is stated per view, never implied (§24.1.6 — the TabFreshness
+  // borrow). This page does not watch the filesystem; if the label is old, it
+  // is old, and Refresh is how it stops being old.
+  function stamp(payload, what) {
+    $('#freshness').textContent = 'as of ' + hhmm(payload && payload.generated_at) + ' · ' + what;
+  }
+
+  function badge(text, cls) { return el('span', { class: 'badge ' + (cls || ''), text }); }
+
+  function factMeta(f) {
+    const m = el('div', { class: 'meta' });
+    m.append(badge(f.tier, 'tier-' + f.tier));
+    if (f.trust) m.append(badge(f.trust + ' trust', 'trust-' + f.trust));
+    if (f.state) m.append(badge(f.state, 'state'));
+    if (f.date) m.append(el('span', { text: f.date }));
+    if (f.write_source) m.append(el('span', { text: f.write_source }));
+    m.append(el('span', { class: 'mono', text: f.id }));
+    return m;
+  }
+
+  // FTS returns <b>…</b> around the matched terms. Render those as real marks
+  // WITHOUT letting anything else through as markup: split on the tags and
+  // append text nodes, so a fact whose body contains "<script>" stays text.
+  function snippetNode(text) {
+    const wrap = el('div', { class: 'snippet' });
+    let rest = String(text || '');
+    while (rest.length) {
+      const open = rest.indexOf('<b>');
+      if (open === -1) { wrap.append(rest); break; }
+      wrap.append(rest.slice(0, open));
+      const close = rest.indexOf('</b>', open);
+      if (close === -1) { wrap.append(rest.slice(open + 3)); break; }
+      wrap.append(el('b', { text: rest.slice(open + 3, close) }));
+      rest = rest.slice(close + 4);
+    }
+    return wrap;
+  }
+
+  function copyRow(label, command) {
+    const code = el('code', { text: command });
+    const btn = el('button', { type: 'button', text: 'Copy' });
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(command);
+        btn.textContent = 'Copied';
+      } catch {
+        // No clipboard permission (or an old browser): select it so ⌘/Ctrl-C
+        // still works. Never leave the user with a dead button.
+        const r = document.createRange();
+        r.selectNodeContents(code);
+        const s = window.getSelection();
+        s.removeAllRanges(); s.addRange(r);
+        btn.textContent = 'Selected — press Ctrl/⌘-C';
+      }
+      setTimeout(() => { btn.textContent = 'Copy'; }, 2200);
+    });
+    return el('div', { class: 'cmd', title: label }, [code, btn]);
+  }
+
+  function errorCard(data) {
+    return el('div', { class: 'card' }, [
+      el('strong', { text: 'Could not read this view.' }),
+      el('div', { class: 'muted', text: String(data && data.error || 'unknown error') }),
+    ]);
+  }
+
+  // ---- the pinned health strip (every view) -----------------------------
+  //
+  // `?strip=1` deliberately: the strip is on EVERY view, and the full health
+  // route runs all 14 doctor checks (one of which probes the agent CLI as a
+  // subprocess). Paying that on every navigation to draw one line would make
+  // the whole viewer feel broken.
+  async function paintStrip() {
+    const data = await api('/health?strip=1');
+    const strip = $('#health-strip');
+    const text = $('#health-strip-text');
+    const fix = $('#health-strip-fix');
+    if (data.error) {
+      strip.dataset.state = 'warn';
+      text.textContent = 'health could not be read: ' + data.error;
+      return data;
+    }
+    const s = data.strip || {};
+    if (s.state === 'warn') strip.dataset.state = s.severity === 'memory-off' ? 'bad' : 'warn';
+    else if (s.state === 'queued') strip.dataset.state = 'queued';
+    else strip.dataset.state = 'ok';
+    text.textContent = s.text + (s.action ? ' — run `' + s.action + '`' : '');
+    fix.classList.remove('hidden');
+    return data;
+  }
+
+  // The health VIEW has the doctor table, so its strip is the authoritative
+  // one — repaint the pinned line from it rather than leaving the cheaper
+  // quick-check wording sitting above a table that contradicts it (B1).
+  function repaintStripFrom(data) {
+    if (!data || !data.strip) return;
+    const strip = $('#health-strip');
+    const s = data.strip;
+    if (s.state === 'warn') strip.dataset.state = s.severity === 'memory-off' ? 'bad' : 'warn';
+    else if (s.state === 'queued') strip.dataset.state = 'queued';
+    else strip.dataset.state = 'ok';
+    $('#health-strip-text').textContent = s.text + (s.action ? ' — run `' + s.action + '`' : '');
+  }
+
+  // ---- views ------------------------------------------------------------
+  //
+  // The search box fires per keystroke (debounced), so two requests can be in
+  // flight at once whenever a query outruns the debounce — and responses are
+  // not ordered. Without this token the SLOWER, OLDER response can land last
+  // and repaint the list with results for a prefix the user already finished
+  // typing. Search is the landing feature; showing stale hits for it is the one
+  // wrongness a browse UI cannot get away with.
+  let factsSeq = 0;
+
+  async function viewFacts() {
+    const seq = ++factsSeq;
+    const out = $('#facts-out');
+    const q = $('#q').value.trim();
+    const tier = $('#tier').value;
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (tier) params.set('tier', tier);
+    const data = await api('/facts' + (params.toString() ? '?' + params : ''));
+    if (seq !== factsSeq) return; // a newer query went out while this one flew
+    clear(out);
+    if (data.error) { out.append(errorCard(data)); return; }
+    stamp(data, data.mode === 'search' ? data.count + ' hit(s) for “' + data.query + '”' : 'newest ' + data.count);
+    if (!data.facts.length) {
+      out.append(el('p', { class: 'empty', text: q
+        ? 'Nothing matches “' + q + '”. Try fewer words — search is keyword, not fuzzy.'
+        : 'No memory captured here yet. It fills as you work; `cmk remember` captures one by hand.' }));
+      return;
+    }
+    for (const f of data.facts) {
+      const card = el('a', { class: 'card', href: '/fact/' + f.id });
+      card.append(snippetNode(f.snippet));
+      card.append(factMeta(f));
+      out.append(card);
+    }
+    if (data.clamped) out.append(el('p', { class: 'muted', text: 'Showing the first ' + data.limit + ' — refine the search to narrow it.' }));
+  }
+
+  async function viewFact(id) {
+    const out = $('#fact-out');
+    const data = await api('/fact/' + encodeURIComponent(id));
+    clear(out);
+    if (data.error || data.found === false) {
+      out.append(errorCard({ error: data.error || ('no fact with id ' + id) }));
+      stamp(data, 'fact');
+      return;
+    }
+    stamp(data, 'fact ' + data.fact.id);
+    const f = data.fact;
+    out.append(el('a', { class: 'chip', href: '/facts', text: '← all memory' }));
+    const head = el('div', { class: 'card' });
+    head.append(el('div', { class: 'body', text: f.headline || f.snippet }));
+    head.append(factMeta(f));
+    out.append(head);
+
+    // Trust is two numbers, not one label: the declared tier (high/medium/low,
+    // in the meta row above) and the LEARNED score with the count of outcome
+    // signals behind it. Showing the evidence count matters because the search
+    // blend only lets the score move ranking once there is enough of it.
+    if (typeof f.trust_score === 'number') {
+      out.append(el('div', { class: 'block' }, [
+        el('h3', { text: 'Trust' }),
+        el('div', { class: 'muted', text:
+          'declared ' + f.trust + ' · learned score ' + f.trust_score.toFixed(2) +
+          ' from ' + (f.signal_count || 0) + ' outcome signal(s)' +
+          ((f.signal_count || 0) < 3 ? ' — not yet enough evidence to move search ranking' : '') }),
+      ]));
+    }
+
+    if (f.why) out.append(el('div', { class: 'block' }, [el('h3', { text: 'Why' }), el('div', { class: 'body', text: f.why })]));
+    if (f.how) out.append(el('div', { class: 'block' }, [el('h3', { text: 'How to apply' }), el('div', { class: 'body', text: f.how })]));
+
+    if (data.supersession && data.supersession.length > 1) {
+      const chips = el('div', { class: 'chips' });
+      data.supersession.forEach((sid, i) => {
+        chips.append(el('a', { class: 'chip', href: '/fact/' + sid, text: (i ? '→ ' : '') + sid + (sid === f.id ? ' (this one)' : '') }));
+      });
+      out.append(el('div', { class: 'block' }, [el('h3', { text: 'Supersession — oldest to newest' }), chips]));
+    }
+
+    const links = el('div', { class: 'chips' });
+    for (const e of data.edges.out) {
+      links.append(el('a', { class: 'chip', href: e.resolved ? '/fact/' + e.dst : '/graph', text: e.type + ' → ' + e.dst + (e.resolved ? '' : ' (unresolved)') }));
+    }
+    for (const e of data.edges.in) {
+      links.append(el('a', { class: 'chip', href: '/fact/' + e.src, text: e.src + ' → ' + e.type + ' (here)' }));
+    }
+    if (links.childElementCount) out.append(el('div', { class: 'block' }, [el('h3', { text: 'Edges' }), links]));
+
+    out.append(el('div', { class: 'block' }, [
+      el('h3', { text: 'Source' }),
+      el('div', { class: 'mono muted', text: f.source_file + ':' + f.source_line }),
+    ]));
+
+    // §24.1.3 — the read-only answer to the field's #1 viewer demand. Copy it,
+    // run it in your shell; the safe write path stays the only writer.
+    //
+    // An ARCHIVED record gets a state note instead of buttons: `cmk forget` and
+    // `cmk trust` do not apply to a fact that has already left the live corpus,
+    // and offering them anyway is three controls that look actionable and are
+    // not (I1). Commands render only where they work.
+    if (data.state_note) {
+      const note = el('div', { class: 'block' }, [el('h3', { text: 'State' })]);
+      const card = el('div', { class: 'card muted' });
+      card.append(el('div', { text: data.state_note.text }));
+      if (data.state_note.superseded_by) {
+        card.append(el('a', { class: 'chip', href: '/fact/' + data.state_note.superseded_by, text: 'open the current version → ' + data.state_note.superseded_by }));
+      }
+      note.append(card);
+      out.append(note);
+      return;
+    }
+
+    const cmds = el('div', { class: 'block' }, [el('h3', { text: 'Change it from your shell' })]);
+    // `--yes` is on the server's string: what you paste has to be what runs.
+    cmds.append(copyRow('forget this fact', data.commands.forget));
+    cmds.append(copyRow('read it in the terminal', data.commands.get));
+
+    // The trust ladder, shown as a TEMPLATE rather than one echoed command —
+    // the old single line re-stated the CURRENT level, so pasting it changed
+    // nothing (M8). Every level is offered; the one the fact is already at is
+    // marked and has no copy button, because there is nothing to run.
+    const trust = el('div', { class: 'block' }, [
+      el('h3', { text: 'Re-rate it' }),
+      el('div', { class: 'muted', text: 'Currently ' + (data.commands.trust_current || 'unrated') + '. Copy the level you want:' }),
+    ]);
+    for (const opt of data.commands.trust_options) {
+      if (opt.current) {
+        trust.append(el('div', { class: 'cmd' }, [
+          el('code', { text: opt.command }),
+          el('span', { class: 'muted', text: 'current — nothing to change' }),
+        ]));
+      } else {
+        trust.append(copyRow('set trust to ' + opt.level, opt.command));
+      }
+    }
+    out.append(cmds);
+    out.append(trust);
+  }
+
+  async function viewHealth() {
+    const out = $('#health-out');
+    const data = await api('/health'); // the FULL route — this is the one view that wants the doctor
+    clear(out);
+    if (data.error) { out.append(errorCard(data)); return; }
+    repaintStripFrom(data); // the doctor-informed verdict wins over the quick check
+    stamp(data, data.checks.length + ' checks · ' + data.fail_count + ' failing');
+
+    if (data.queues && (data.queues.conflicts || data.queues.review)) {
+      // §24.1 point 8: there is no conflict-queue SCREEN in wave 1, so the
+      // count + the verb that resolves it are surfaced rather than hidden.
+      const q = el('div', { class: 'card' });
+      q.append(el('strong', { text: 'Waiting on you' }));
+      q.append(el('div', { class: 'muted', text:
+        [data.queues.conflicts ? data.queues.conflicts + ' conflicting capture(s)' : null,
+         data.queues.review ? data.queues.review + ' item(s) awaiting review' : null]
+          .filter(Boolean).join(' · ') + ' — resolved from your shell:' }));
+      if (data.queues.conflicts) q.append(copyRow('resolve conflicts', 'cmk queue conflicts'));
+      if (data.queues.review) q.append(copyRow('walk the review queue', 'cmk queue review'));
+      out.append(q);
+    }
+
+    if (data.active_warnings.length) {
+      const list = el('div', { class: 'block' }, [el('h3', { text: 'Active warnings' })]);
+      for (const w of data.active_warnings) {
+        const c = el('div', { class: 'card' });
+        c.append(el('strong', { text: w.title }));
+        c.append(el('div', { class: 'meta' }, [
+          badge(w.severity, w.severity === 'advisory' ? 'trust-low' : 'state'),
+          el('span', { text: w.strikes + ' consecutive failure(s)' }),
+          el('span', { text: 'since ' + (w.brokenSince || '—') }),
+        ]));
+        c.append(copyRow('the prescribed fix', w.primaryAction));
+        list.append(c);
+      }
+      out.append(list);
+    }
+
+    const rows = [el('tr', {}, [el('th', { text: 'Check' }), el('th', { text: 'Status' }), el('th', { text: 'What it found' })])];
+    for (const c of data.checks) {
+      const tr = el('tr');
+      tr.append(el('td', {}, [el('div', { text: c.name }), el('div', { class: 'muted mono', text: c.id })]));
+      tr.append(el('td', {}, el('span', { class: 'st st-' + c.status, text: c.status })));
+      const td = el('td');
+      td.append(el('div', { text: c.message || '' }));
+      if (c.recoveryCommand) td.append(copyRow('recovery', c.recoveryCommand));
+      tr.append(td);
+      rows.push(tr);
+    }
+    out.append(el('table', {}, [el('tbody', {}, rows)]));
+  }
+
+  async function viewDecisions() {
+    const out = $('#decisions-out');
+    const data = await api('/decisions');
+    clear(out);
+    if (data.error) { out.append(errorCard(data)); return; }
+    stamp(data, data.count + ' decision(s)');
+    if (!data.count) {
+      out.append(el('p', { class: 'empty', text: 'No decisions journaled yet. They accumulate as decisions get captured — `cmk remember --type project --why …` writes one.' }));
+      return;
+    }
+    for (const d of data.decisions) {
+      const box = el('div', { class: 'decision' + (d.retracted ? ' retracted' : '') });
+      box.append(el('h3', { text: d.title || d.id }));
+      const meta = el('div', { class: 'meta' });
+      if (d.when) meta.append(el('span', { text: d.when }));
+      if (d.retracted) meta.append(badge('retracted', 'state'));
+      meta.append(el('a', { class: 'chip', href: '/fact/' + d.fact_id, text: d.fact_id }));
+      box.append(meta);
+      if (d.why) box.append(el('div', { class: 'body', text: d.why }));
+      out.append(box);
+    }
+  }
+
+  // ---- the graph --------------------------------------------------------
+  //
+  // A small force layout, hand-rolled because pulling in a library would break
+  // the zero-dependency contract for something this simple. Deterministic seed
+  // so the same corpus lays out the same way twice — a graph that reshuffles on
+  // every refresh is unreadable.
+  const TRUST_COLOR = { high: 'var(--ok)', medium: 'var(--warn)', low: 'var(--muted)' };
+
+  async function viewGraph() {
+    const svg = $('#graph');
+    const note = $('#graph-note');
+    const data = await api('/graph');
+    clear(svg);
+    if (data.error) { note.textContent = data.error; return; }
+    stamp(data, data.nodes.length + ' nodes · ' + data.edges.length + ' edges');
+    note.textContent =
+      data.fact_count + ' fact(s)' +
+      (data.truncated ? ' — showing the newest ' + data.node_limit : '') +
+      (data.anchor_count ? ' · ' + data.anchor_count + ' doc anchor(s)' : '') +
+      (data.dangling_count ? ' · ' + data.dangling_count + ' dangling link(s)' : '') +
+      (data.archived_count ? ' · ' + data.archived_count + ' superseded predecessor(s)' : '');
+    if (!data.nodes.length) { note.textContent = 'Nothing to draw yet — the graph fills as facts link to each other.'; return; }
+
+    const W = svg.clientWidth || 900;
+    const H = svg.clientHeight || 560;
+    let seed = 42;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+
+    const nodes = data.nodes.map((n) => ({ ...n, x: rnd() * W, y: rnd() * H, vx: 0, vy: 0 }));
+    const index = new Map(nodes.map((n) => [n.id, n]));
+    const edges = data.edges.map((e) => ({ ...e, a: index.get(e.src), b: index.get(e.dst) })).filter((e) => e.a && e.b);
+    for (const e of edges) { e.a.deg = (e.a.deg || 0) + 1; e.b.deg = (e.b.deg || 0) + 1; }
+
+    // A few hundred iterations is plenty at this scale and costs milliseconds.
+    for (let step = 0; step < 320; step++) {
+      const k = 1 - step / 340;
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i], b = nodes[j];
+          let dx = a.x - b.x, dy = a.y - b.y;
+          let d2 = dx * dx + dy * dy;
+          if (d2 < 1) { dx = rnd() - 0.5; dy = rnd() - 0.5; d2 = 1; }
+          const f = 2600 / d2;
+          const d = Math.sqrt(d2);
+          a.vx += (dx / d) * f; a.vy += (dy / d) * f;
+          b.vx -= (dx / d) * f; b.vy -= (dy / d) * f;
+        }
+      }
+      for (const e of edges) {
+        const dx = e.b.x - e.a.x, dy = e.b.y - e.a.y;
+        const d = Math.max(Math.hypot(dx, dy), 1);
+        const f = (d - 110) * 0.02;
+        e.a.vx += (dx / d) * f; e.a.vy += (dy / d) * f;
+        e.b.vx -= (dx / d) * f; e.b.vy -= (dy / d) * f;
+      }
+      for (const n of nodes) {
+        n.vx += (W / 2 - n.x) * 0.002;
+        n.vy += (H / 2 - n.y) * 0.002;
+        n.x = Math.min(W - 24, Math.max(24, n.x + n.vx * k * 0.35));
+        n.y = Math.min(H - 24, Math.max(24, n.y + n.vy * k * 0.35));
+        n.vx *= 0.72; n.vy *= 0.72;
+      }
+    }
+
+    const NS = 'http://www.w3.org/2000/svg';
+    const svgEl = (tag, attrs) => {
+      const n = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+      return n;
+    };
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    const defs = document.createElementNS(NS, 'defs');
+    const marker = svgEl('marker', { id: 'arrow', viewBox: '0 0 10 10', refX: '18', refY: '5', markerWidth: '7', markerHeight: '7', orient: 'auto-start-reverse' });
+    marker.append(svgEl('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: 'var(--bad)' }));
+    defs.append(marker);
+    svg.append(defs);
+
+    for (const e of edges) {
+      const superseded = e.type === 'superseded_by';
+      const line = svgEl('line', {
+        x1: e.a.x, y1: e.a.y, x2: e.b.x, y2: e.b.y,
+        stroke: superseded ? 'var(--bad)' : 'var(--line)',
+        'stroke-width': superseded ? 1.8 : 1,
+        'stroke-dasharray': e.resolved ? '' : '3 3',
+      });
+      // Supersession is the one DIRECTED relationship on this canvas: the arrow
+      // always points from the old fact at the one that replaced it.
+      if (superseded) line.setAttribute('marker-end', 'url(#arrow)');
+      const edgeTitle = document.createElementNS(NS, 'title');
+      edgeTitle.textContent = e.src + ' —' + e.type + '→ ' + e.dst;
+      line.append(edgeTitle);
+      svg.append(line);
+    }
+    for (const n of nodes) {
+      const anchor = n.kind === 'anchor';
+      const r = anchor ? 5 + Math.min(6, (n.deg || 0)) : 5 + Math.min(7, (n.deg || 0) * 1.4);
+      const g = svgEl('g', { transform: 'translate(' + n.x + ',' + n.y + ')' });
+      const dot = svgEl('circle', {
+        r,
+        fill: anchor ? 'var(--accent)' : (TRUST_COLOR[n.trust] || 'var(--muted)'),
+        stroke: n.superseded ? 'var(--bad)' : 'var(--panel)',
+        'stroke-width': n.superseded ? 2 : 1.5,
+        opacity: n.superseded ? 0.65 : 1,
+      });
+      const title = document.createElementNS(NS, 'title');
+      title.textContent = n.label + (n.tier ? ' · ' + n.tier : '') + (n.trust ? ' · ' + n.trust + ' trust' : '') + (n.superseded ? ' · superseded' : '');
+      dot.append(title);
+      g.append(dot);
+      // Label only the nodes that anchor the shape — labelling everything on a
+      // few-hundred-node canvas is illegible, and the tooltip carries the rest.
+      if ((n.deg || 0) >= 2 || anchor) {
+        const label = svgEl('text', { x: r + 4, y: 4, 'font-size': '10', fill: 'var(--muted)' });
+        label.textContent = anchor ? n.id.replace(/^anchor:/, '') : String(n.label).replace(/\.md.*$/, '');
+        g.append(label);
+      }
+      if (!anchor) {
+        const link = svgEl('a', { href: '/fact/' + n.id });
+        link.append(g);
+        svg.append(link);
+      } else {
+        svg.append(g);
+      }
+    }
+  }
+
+  // ---- routing ----------------------------------------------------------
+  function show(view) {
+    for (const s of document.querySelectorAll('section[data-view]')) {
+      s.classList.toggle('hidden', s.dataset.view !== view);
+    }
+    for (const a of document.querySelectorAll('nav a')) {
+      const on = a.dataset.nav === view || (view === 'fact' && a.dataset.nav === 'facts');
+      if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    }
+    // The search toolbar belongs to the facts view only.
+    $('.toolbar').classList.toggle('hidden', view !== 'facts');
+  }
+
+  function currentRoute() {
+    const p = location.pathname.replace(/\.json$/, '');
+    if (p.startsWith('/fact/')) return { view: 'fact', id: decodeURIComponent(p.slice(6)) };
+    if (p === '/graph' || p === '/health' || p === '/decisions') return { view: p.slice(1) };
+    return { view: 'facts' };
+  }
+
+  async function render() {
+    const route = currentRoute();
+    show(route.view);
+    $('#freshness').textContent = 'reading…';
+    paintStrip();
+    const job = (async () => {
+      if (route.view === 'fact') return viewFact(route.id);
+      if (route.view === 'graph') return viewGraph();
+      if (route.view === 'health') return viewHealth();
+      if (route.view === 'decisions') return viewDecisions();
+      return viewFacts();
+    })();
+    await job.catch((err) => { $('#freshness').textContent = 'failed: ' + err.message; });
+  }
+
+  function go(href) {
+    history.pushState({}, '', href);
+    render();
+  }
+
+  document.addEventListener('click', (ev) => {
+    const a = ev.target.closest ? ev.target.closest('a[href^="/"]') : null;
+    if (!a || ev.metaKey || ev.ctrlKey || ev.shiftKey || a.target) return;
+    ev.preventDefault();
+    go(a.getAttribute('href'));
+  });
+  window.addEventListener('popstate', render);
+
+  let debounce;
+  $('#q').addEventListener('input', () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => { if (currentRoute().view === 'facts') viewFacts(); else go('/facts'); }, 220);
+  });
+  $('#tier').addEventListener('change', () => { if (currentRoute().view === 'facts') viewFacts(); else go('/facts'); });
+  // Manual refresh, and nothing automatic: no filesystem watch on the server,
+  // no server-sent-events client here. Live refresh is Task 259 — deliberately
+  // not wave 1, and a test asserts this page has not grown one by accident.
+  $('#refresh').addEventListener('click', render);
+
+  $('#project-path').textContent = location.host;
+  render();
+})();
+</script>
+</body>
+</html>

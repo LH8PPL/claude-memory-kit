@@ -198,3 +198,31 @@ export function* eachLiveFact(opts = {}) {
     yield fact;
   }
 }
+
+/** Where a superseded fact is MOVED to, relative to its tier's fact dir. */
+export const SUPERSEDED_SUBDIR = ['archive', 'superseded'];
+
+/**
+ * Yield every SUPERSEDED fact — the ones the kit moved out of the top-level
+ * walk into `<factDir>/archive/superseded/<id>.md` when a successor replaced
+ * them (write-fact's supersession path).
+ *
+ * A separate generator rather than a flag on `eachFact` for the same reason
+ * `eachLiveFact` is separate: these facts are deliberately NOT in the live
+ * corpus (they are not indexed, they do not answer searches), and a caller that
+ * wants them is asking a different question — "how did this get here?" — not a
+ * broader version of "what do we know?". Making that visible in the call keeps
+ * a future contributor from folding history into a recall path by accident.
+ *
+ * Two readers today: `graph-index`'s supersession edges (the chain's backward
+ * pointers live only here) and Task 255's viewer, whose graph must draw the
+ * predecessor and whose fact page must open it.
+ */
+export function* eachSupersededFact({ projectRoot, userDir, tiers } = {}) {
+  for (const tier of tiers ?? tiersFor({ projectRoot, userDir })) {
+    const tierRoot = resolveTierRoot({ tier, projectRoot, userDir });
+    const dir = join(resolveFactDir(tier, tierRoot), ...SUPERSEDED_SUBDIR);
+    if (!existsSync(dir)) continue;
+    yield* eachFactIn(dir, { tier, tierRoot, superseded: true });
+  }
+}
