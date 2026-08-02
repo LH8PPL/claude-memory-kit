@@ -394,13 +394,23 @@ function handle(req, res, ctx) {
       });
     })
     .catch((err) => {
+      // A BadRequest carries a DEVELOPER-authored message — every `new
+      // BadRequest(...)` site in this file passes a string literal (the only
+      // interpolated values are `JSON.stringify` of already-rejected input and
+      // the search core's own kit-generated error strings; never an exception
+      // or a stack). So its message is safe to return.
       if (err instanceof BadRequest) {
         return sendJson(res, 400, { view: route.view, error: err.message });
       }
-      ctx.logError?.(`cmk view: ${route.view} failed — ${err?.message ?? err}`);
-      // The message only — a stack in a browser tab helps nobody and can name
-      // paths the page has no business showing.
-      return sendJson(res, 500, { view: route.view, error: String(err?.message ?? err) });
+      // An UNEXPECTED error's message is attacker-influenceable and may name a
+      // path or carry a stack fragment. It goes to the terminal ONLY; the HTTP
+      // client gets a constant. (CodeQL js/stack-trace-exposure: no tainted
+      // value reaches the response.)
+      ctx.logError?.(`cmk view: ${route.view} failed — ${err?.stack ?? err?.message ?? err}`);
+      return sendJson(res, 500, {
+        view: route.view,
+        error: 'internal error — see the terminal running `cmk view` for details',
+      });
     });
 }
 

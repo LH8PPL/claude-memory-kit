@@ -156,8 +156,8 @@
   <div id="health-strip" data-state="loading"><span class="dot"></span><span id="health-strip-text">reading health…</span><a class="fix hidden" id="health-strip-fix" href="/health">details</a></div>
 
   <div class="toolbar">
-    <input type="search" id="q" placeholder="Search your memory…" autocomplete="off" spellcheck="false" />
-    <select id="tier" title="Filter by tier. At session start the tiers are injected with local &gt; project &gt; user precedence — the most specific wins and the others are logged as shadowed.">
+    <input type="search" id="q" placeholder="Search your memory…" aria-label="Search your memory" autocomplete="off" spellcheck="false" />
+    <select id="tier" aria-label="Filter by tier" title="Filter by tier. At session start the tiers are injected with local &gt; project &gt; user precedence — the most specific wins and the others are logged as shadowed.">
       <option value="">all tiers</option>
       <option value="P">P · project (committed, travels with the repo)</option>
       <option value="L">L · local (this machine only, gitignored)</option>
@@ -197,7 +197,7 @@
       else if (k === 'text') n.textContent = v;
       else if (v !== null && v !== undefined) n.setAttribute(k, v);
     }
-    for (const kid of [].concat(kids)) if (kid) n.append(kid);
+    for (const kid of [kids].flat()) if (kid) n.append(kid);
     return n;
   };
   const clear = (n) => n.replaceChildren();
@@ -585,7 +585,7 @@
       }
       for (const e of edges) {
         const dx = e.b.x - e.a.x, dy = e.b.y - e.a.y;
-        const d = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
+        const d = Math.max(Math.hypot(dx, dy), 1);
         const f = (d - 110) * 0.02;
         e.a.vx += (dx / d) * f; e.a.vy += (dy / d) * f;
         e.b.vx -= (dx / d) * f; e.b.vy -= (dy / d) * f;

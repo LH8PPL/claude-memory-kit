@@ -2381,7 +2381,8 @@ async function runDoctorCli(/* options */) {
 // action returns a promise that never settles while the server is listening, so
 // commander's `parseAsync` does not fall off the end of the process and drop
 // the port. The signals bound below are what resolves it.
-export async function runView(options = {}, _command, deps = {}) {
+export async function runView(options, _command, deps = {}) {
+  options = options ?? {};
   const log = deps.log ?? console.log;
   const logError = deps.logError ?? console.error;
   const projectRoot = options?.project
