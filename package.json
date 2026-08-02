@@ -43,7 +43,8 @@
     "lint:backlog-triggers": "node scripts/validate-backlog-triggers.mjs",
     "sync:plugin-skills": "node scripts/sync-plugin-skills.mjs",
     "validate:template": "node scripts/validate-template.mjs",
-    "bench:recall": "node scripts/bench-recall.mjs"
+    "bench:recall": "node scripts/bench-recall.mjs",
+    "live-verify:viewer": "node scripts/live-verify-viewer.mjs"
   },
   "devDependencies": {
     "@huggingface/transformers": "^4.2.0",
