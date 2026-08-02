@@ -70,6 +70,8 @@ import { traverseLinks, supersessionChain } from './graph-index.mjs';
 import { readDecisionsJournal } from './decisions-journal.mjs';
 import { activeWarnings } from './health-log.mjs';
 import { runDoctor } from './doctor.mjs';
+import { listConflictQueue } from './conflict-queue.mjs';
+import { listReviewQueue } from './review-queue.mjs';
 import { stateFieldFor } from './state-label.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -677,17 +679,27 @@ const API = {
    * would be a second opinion about the user's own kit, which is worse than no
    * viewer at all.
    */
-  async health(_route, ctx) {
+  async health(route, ctx) {
+    const warnings = activeWarnings(ctx.projectRoot);
+    const queues = pendingQueues(ctx);
+    const strip = buildStrip(warnings, queues);
+
+    // `?strip=1` answers the PINNED LINE ONLY, and this split is load-bearing
+    // rather than tidy: the strip is on every view, so a page navigation would
+    // otherwise run all 14 doctor checks — including a subprocess probe of the
+    // user's agent CLI — just to draw one line. The strip's inputs (the health
+    // log tail + two queue reads) are cheap file reads; the doctor is the
+    // expensive part, and only the health VIEW actually needs it.
+    if (route.params?.get('strip') === '1') {
+      return { status: 200, payload: { strip, active_warnings: warnings, queues } };
+    }
+
     const checks = await runDoctor({
       projectRoot: ctx.projectRoot,
       userDir: ctx.userDir,
       ...ctx.doctorOptions,
     });
-    const warnings = activeWarnings(ctx.projectRoot);
     const list = checks.checks ?? [];
-    const strip = warnings.length
-      ? { state: 'warn', text: warnings[0].title, action: warnings[0].primaryAction, code: warnings[0].code, severity: warnings[0].severity }
-      : { state: 'ok', text: 'memory is healthy — capture, recall and the index are all reporting fine.', action: null, code: null, severity: null };
     return {
       status: 200,
       payload: {
@@ -702,6 +714,7 @@ const API = {
         warn_count: list.filter((c) => c.status === 'warn').length,
         duration_ms: checks.duration_ms ?? null,
         active_warnings: warnings,
+        queues,
         strip,
       },
     };
@@ -736,6 +749,58 @@ const API = {
     };
   },
 };
+
+/**
+ * How many items are waiting in the two human-decision queues. Best-effort —
+ * an unreadable queue reads as zero rather than failing the health view.
+ */
+function pendingQueues(ctx) {
+  const count = (fn) => {
+    try {
+      return fn({ tier: 'P', projectRoot: ctx.projectRoot, userDir: ctx.userDir }).length;
+    } catch {
+      return 0;
+    }
+  };
+  return { conflicts: count(listConflictQueue), review: count(listReviewQueue) };
+}
+
+/**
+ * The pinned one-line strip (§24.1 point 4i + point 8).
+ *
+ * Precedence is deliberate: an ACTIVE FAILURE outranks a full queue, because a
+ * broken kit is losing memory while a queue is only waiting on the human. The
+ * queue line is §24.1 point 8's stated answer to "no conflict-queue UI in wave
+ * 1" — the strip carries the COUNT and names the CLI verb that resolves it, so
+ * a pending decision is never invisible just because its screen was deferred.
+ */
+function buildStrip(warnings, queues) {
+  if (warnings.length) {
+    const w = warnings[0];
+    return { state: 'warn', text: w.title, action: w.primaryAction, code: w.code, severity: w.severity, queues };
+  }
+  const pending = [];
+  if (queues.conflicts > 0) pending.push(`${queues.conflicts} conflict(s)`);
+  if (queues.review > 0) pending.push(`${queues.review} item(s) awaiting review`);
+  if (pending.length) {
+    return {
+      state: 'queued',
+      text: `memory is healthy — ${pending.join(' and ')} waiting on you`,
+      action: queues.conflicts > 0 ? 'cmk queue conflicts' : 'cmk queue review',
+      code: null,
+      severity: 'advisory',
+      queues,
+    };
+  }
+  return {
+    state: 'ok',
+    text: 'memory is healthy — capture, recall and the index are all reporting fine.',
+    action: null,
+    code: null,
+    severity: null,
+    queues,
+  };
+}
 
 /** Full rows for a set of ids, order-independent (the caller re-orders). */
 function hydrate(db, ids) {

@@ -84,6 +84,7 @@ is a line; a system is a line that *bites its own tail*. The kit's whole thesis 
 | **MEASURE** — `trust_score` + passive signals | dampen/reinforce on contradiction/supersession/restatement | ✅ (partial) | a number per fact |
 | **TEMPORAL** — validity windows + expiry + the weekly judged sweep (Task 66, v0.4.4; D-258/D-259) | facts stay TRUE as they age: `shape` classifies, `expires_at` self-hides+tombstones, the temporal sweep closes a superseded State fact's window (event-time) — and thereby AUTO-GENERATES the supersession + restatement signals MEASURE consumes (previously only manual merges fired them) | ✅ | a currency keeper |
 | **CURATE** — consolidate / graduate / re-curation | cap-relief, demote-not-evict, (dream re-curation = deferred) | 🟡 | a housekeeper |
+| **INSPECT** — `cmk view` (Task 255, v0.6.4; D-414) + the Obsidian vault map (254) | the HUMAN's read port onto the system: an ephemeral loopback UI over facts/trust/edges/health/decisions. Structurally read-only, so it adds a **reader edge only** — it cannot write, cannot log, and therefore cannot perturb the loop it displays | ✅ | a window |
 | **The judge** (§3) | what tells MEASURE "good or bad" | ⚠️ mostly absent | a verdict source |
 | **Earned-judgment** (§5) | "method A > method B", *learned* not told | ✗ unsolved-at-our-scale | a conclusion |
 
@@ -108,6 +109,7 @@ MEASURE  ──SHOULD-close-loop-to──► RETRIEVE   ⚠ OPEN EDGE: today MEA
 MEASURE  ──composes-with──► CURATE       (utility gates keep/demote/prune — ExpeL: gate SURVIVAL not just rank)
 CURATE   ──feeds──►  RETRIEVE            (what survives is what's surfaced next)
 EPISODE-N ──carries-to──► EPISODE-N+1 via TIERS   (THE cross-session edge — the whole emerges from THIS)
+{TIERS, MEASURE, CURATE, health} ──displayed-by──► INSPECT   (a READ-ONLY tap: `cmk view` shows the loop, never joins it)
 
 THE-WHOLE  ──emerges-from──►  {the two closing edges}   (continuity + learning; not from any node)
 
@@ -118,6 +120,7 @@ ANY-WRITE ──constrained-by──► markdown-is-truth (ADR-0002)  (no neural
 ANY-COMMITTED-WRITE ──constrained-by──► the privacy screen (ADR-0019, §6.10)  (nothing PERSONAL reaches a git-committed tier — L1 masks + L3 judges before commit; sensitive facts route local-only/drop; fail-closed)
 promotion ──constrained-by──► the silent-success asymmetry  (can prune reliably, can barely promote)
 "A>B"-claim ──constrained-by──► the scale floor (§5)        (few episodes → provisional, never verified)
+INSPECT ──constrained-by──► observe-without-disturbing (§24.1.3)  (must NOT write, and must NOT log — a browse in recall.log would corrupt the ADR-0024 fire-rate it is meant to display)
 ```
 
 **Why the edges are the point (three worked examples of edge-blindness):**

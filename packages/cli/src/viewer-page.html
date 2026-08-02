@@ -70,6 +70,7 @@
   }
   #health-strip[data-state="ok"] { background: var(--ok-soft); border-color: transparent; color: var(--ok); }
   #health-strip[data-state="warn"] { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
+  #health-strip[data-state="queued"] { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
   #health-strip[data-state="bad"] { background: var(--bad-soft); border-color: transparent; color: var(--bad); }
   #health-strip .dot { width: 8px; height: 8px; border-radius: 99px; background: currentColor; flex: none; }
   #health-strip .fix { margin-left: auto; }
@@ -282,8 +283,13 @@
   }
 
   // ---- the pinned health strip (every view) -----------------------------
+  //
+  // `?strip=1` deliberately: the strip is on EVERY view, and the full health
+  // route runs all 14 doctor checks (one of which probes the agent CLI as a
+  // subprocess). Paying that on every navigation to draw one line would make
+  // the whole viewer feel broken.
   async function paintStrip() {
-    const data = await api('/health');
+    const data = await api('/health?strip=1');
     const strip = $('#health-strip');
     const text = $('#health-strip-text');
     const fix = $('#health-strip-fix');
@@ -293,8 +299,10 @@
       return data;
     }
     const s = data.strip || {};
-    strip.dataset.state = s.state === 'warn' ? (s.severity === 'memory-off' ? 'bad' : 'warn') : 'ok';
-    text.textContent = s.state === 'warn' ? s.text + (s.action ? ' — run `' + s.action + '`' : '') : s.text;
+    if (s.state === 'warn') strip.dataset.state = s.severity === 'memory-off' ? 'bad' : 'warn';
+    else if (s.state === 'queued') strip.dataset.state = 'queued';
+    else strip.dataset.state = 'ok';
+    text.textContent = s.text + (s.action ? ' — run `' + s.action + '`' : '');
     fix.classList.remove('hidden');
     return data;
   }
@@ -377,12 +385,26 @@
     out.append(cmds);
   }
 
-  async function viewHealth(pre) {
+  async function viewHealth() {
     const out = $('#health-out');
-    const data = pre || await api('/health');
+    const data = await api('/health'); // the FULL route — this is the one view that wants the doctor
     clear(out);
     if (data.error) { out.append(errorCard(data)); return; }
     stamp(data, data.checks.length + ' checks · ' + data.fail_count + ' failing');
+
+    if (data.queues && (data.queues.conflicts || data.queues.review)) {
+      // §24.1 point 8: there is no conflict-queue SCREEN in wave 1, so the
+      // count + the verb that resolves it are surfaced rather than hidden.
+      const q = el('div', { class: 'card' });
+      q.append(el('strong', { text: 'Waiting on you' }));
+      q.append(el('div', { class: 'muted', text:
+        [data.queues.conflicts ? data.queues.conflicts + ' conflicting capture(s)' : null,
+         data.queues.review ? data.queues.review + ' item(s) awaiting review' : null]
+          .filter(Boolean).join(' · ') + ' — resolved from your shell:' }));
+      if (data.queues.conflicts) q.append(copyRow('resolve conflicts', 'cmk queue conflicts'));
+      if (data.queues.review) q.append(copyRow('walk the review queue', 'cmk queue review'));
+      out.append(q);
+    }
 
     if (data.active_warnings.length) {
       const list = el('div', { class: 'block' }, [el('h3', { text: 'Active warnings' })]);
@@ -581,20 +603,18 @@
     return { view: 'facts' };
   }
 
-  let inFlight = null;
   async function render() {
     const route = currentRoute();
     show(route.view);
     $('#freshness').textContent = 'reading…';
-    const strip = paintStrip();
+    paintStrip();
     const job = (async () => {
       if (route.view === 'fact') return viewFact(route.id);
       if (route.view === 'graph') return viewGraph();
-      if (route.view === 'health') return viewHealth(await strip);
+      if (route.view === 'health') return viewHealth();
       if (route.view === 'decisions') return viewDecisions();
       return viewFacts();
     })();
-    inFlight = job;
     await job.catch((err) => { $('#freshness').textContent = 'failed: ' + err.message; });
   }
 
@@ -622,7 +642,6 @@
   // not wave 1, and a test asserts this page has not grown one by accident.
   $('#refresh').addEventListener('click', render);
 
-  api('/health').then(() => {}).catch(() => {});
   $('#project-path').textContent = location.host;
   render();
 })();

@@ -31,6 +31,7 @@ import { request as httpRequest } from 'node:http';
 import { install } from '../packages/cli/src/install.mjs';
 import { writeFact } from '../packages/cli/src/write-fact.mjs';
 import { appendHealthEntry, activeWarnings, HEALTH_CODES } from '../packages/cli/src/health-log.mjs';
+import { writeConflictEntry } from '../packages/cli/src/conflict-queue.mjs';
 import {
   startViewer,
   LOOPBACK_HOSTS,
@@ -577,6 +578,50 @@ describe('viewer — JSON API routes (255.2)', () => {
     expect(body.active_warnings).toEqual([]);
     expect(body.strip.state).toBe('ok');
     expect(body.strip.text).toMatch(/\w/);
+  });
+
+  it('/api/health?strip=1 answers the pinned line WITHOUT running the doctor', async () => {
+    // The strip renders on every view; paying 14 checks (one of them a
+    // subprocess probe) per navigation to draw one line is the difference
+    // between a viewer that feels instant and one that feels broken.
+    const { status, body } = await getJson(base, '/api/health?strip=1');
+    expect(status).toBe(200);
+    expect(body.strip).toBeTruthy();
+    expect(body.active_warnings).toEqual([]);
+    expect(body.queues).toEqual({ conflicts: 0, review: 0 });
+    expect(body.checks).toBeUndefined();
+    expect(body.fail_count).toBeUndefined();
+  });
+
+  it('§24.1 point 8 — a pending conflict queue is COUNTED on the strip, not hidden', async () => {
+    // There is no conflict-queue screen in wave 1; the deferral is only honest
+    // if the count still reaches the user with the verb that resolves it.
+    const w = writeConflictEntry({
+      tier: 'P',
+      projectRoot,
+      newId: P_NEW,
+      newText: 'the deploy target is eu-central',
+      newTrust: 'high',
+      existingId: P_ALPHA,
+      existingText: 'the deploy target is eu-west',
+      existingTrust: 'high',
+      similarity: 0.91,
+      similarityBackend: 'jaccard',
+    });
+    expect(w.action).not.toBe('error');
+
+    const { body } = await getJson(base, '/api/health?strip=1');
+    expect(body.queues.conflicts).toBe(1);
+    expect(body.strip.state).toBe('queued');
+    expect(body.strip.text).toMatch(/1 conflict/);
+    expect(body.strip.action).toBe('cmk queue conflicts');
+
+    // …and a REAL failure outranks it — a broken kit is losing memory, a queue
+    // is only waiting on a human.
+    appendHealthEntry(projectRoot, { class: HEALTH_CODES.INDEX_DRIFT, outcome: 'fail' });
+    const after = await getJson(base, '/api/health?strip=1');
+    expect(after.body.strip.state).toBe('warn');
+    expect(after.body.strip.queues.conflicts).toBe(1); // still reported, just not the headline
   });
 
   it('/api/decisions is the journal chronologically, retracted entries flagged', async () => {
