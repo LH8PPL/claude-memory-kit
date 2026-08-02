@@ -991,7 +991,7 @@ describe('viewer — the HTML page (255.3)', () => {
     // js/bad-tag-filter: a filter that only knows lowercase `<script>` is the
     // classic bypass shape — held to the same standard even though this file
     // is kit-authored).
-    const script = html.match(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/i)[1];
+    const script = html.match(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/i)[1];
     const SINKS = [
       'innerHTML',
       'outerHTML',
@@ -1017,7 +1017,7 @@ describe('viewer — the HTML page (255.3)', () => {
     // empty window. RUNTIME behaviour is covered by live-verify's real fetches
     // against the real bin, and the visual pass needs a human with a browser —
     // stated rather than implied.
-    const m = html.match(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/i);
+    const m = html.match(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/i);
     expect(m).toBeTruthy();
     expect(() => new Function(m[1])).not.toThrow();
   });
