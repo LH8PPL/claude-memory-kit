@@ -1,0 +1,39 @@
+name: npm ci with retry
+description: >-
+  Run `npm ci` with bounded retries. Registry/CDN blips (ENETUNREACH /
+  ETIMEDOUT reaching registry.npmjs.org or its CDN) reddened five runs in the
+  week of 2026-07-29 with nothing wrong in the tree; each cost a log-read to
+  confirm "just the registry" before a rerun, because this repo's rule is to
+  diagnose from logs rather than reflex-rerun. Retrying at the source makes the
+  transient class self-healing and turns a run that fails all attempts back
+  into a real signal. Same reasoning as Task 250's noise threshold, applied to
+  our own CI. (D-415.)
+
+inputs:
+  attempts:
+    description: How many times to try `npm ci` before giving up.
+    required: false
+    default: '3'
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        CMK_NPM_CI_ATTEMPTS: ${{ inputs.attempts }}
+      run: |
+        set -u
+        attempts="${CMK_NPM_CI_ATTEMPTS}"
+        for i in $(seq 1 "${attempts}"); do
+          if npm ci --no-audit --no-fund; then
+            [ "${i}" -gt 1 ] && echo "npm ci succeeded on attempt ${i}."
+            exit 0
+          fi
+          if [ "${i}" -lt "${attempts}" ]; then
+            backoff=$(( i * 10 ))
+            echo "npm ci attempt ${i}/${attempts} failed — retrying in ${backoff}s..."
+            sleep "${backoff}"
+          fi
+        done
+        echo "npm ci failed ${attempts} consecutive attempts — this is a real failure, not a registry blip."
+        exit 1

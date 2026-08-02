@@ -1,15 +1,15 @@
-# SonarQube Cloud (SonarCloud) CI-based analysis — code-quality / maintainability
+﻿# SonarQube Cloud (SonarCloud) CI-based analysis ג€” code-quality / maintainability
 # / reliability / security-hotspots + coverage. Adapted from SonarCloud's
 # generated "With GitHub Actions" snippet, with the npm + coverage steps added
 # so the lcov report (sonar.javascript.lcov.reportPaths in sonar-project.properties)
 # exists before the scan.
 #
 # NOTE: CI-based analysis is mutually exclusive with SonarCloud "Automatic
-# Analysis" — the latter must be OFF in the project settings (the GitHub-Action
+# Analysis" ג€” the latter must be OFF in the project settings (the GitHub-Action
 # onboarding turns it off). SONAR_TOKEN is a repo Actions secret.
 #
 # KNOWN-RED (D-39): the "SonarCloud Code Analysis" gate check stays ERROR on
-# `new_security_hotspots_reviewed` — 27 false-positive hotspots (internal-only
+# `new_security_hotspots_reviewed` ג€” 27 false-positive hotspots (internal-only
 # regexes / provenance sha1 / fixed-binary spawns). ACCEPTED as cosmetic: it never
 # blocks a merge, and real security is gated green by CodeQL + gitleaks +
 # osv-scanner + npm-audit. The clean fix (remove that one gate condition) is
@@ -37,11 +37,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-      - run: npm ci --no-audit --no-fund
-      # Cache the HF test model (bge-small) — SAME step as ci.yml's test +
+      - uses: ./.github/actions/npm-ci-retry
+      # Cache the HF test model (bge-small) ג€” SAME step as ci.yml's test +
       # coverage jobs (Task 125.3 / PR #152). Without it this job's uncached
       # runner re-fetches the model, hits the HF Hub's shared-IP rate limit
-      # (HTTP 429), and the semantic-backend tests FAIL — which aborts the
+      # (HTTP 429), and the semantic-backend tests FAIL ג€” which aborts the
       # vitest run before `coverage/lcov.info` is written, so Sonar finds no
       # LCOV and reports new_coverage:0% (the v0.3.1 cut-gate PR #184 symptom).
       # The cacheDir is INSIDE node_modules (@huggingface/transformers
@@ -57,7 +57,7 @@ jobs:
       # is the hard threshold gate; here we only need the lcov for Sonar).
       - run: npm run test:coverage || true
       - name: SonarQube Cloud Scan
-        # SHA-pinned (v8.1.0) per SonarCloud's generated snippet — supply-chain
+        # SHA-pinned (v8.1.0) per SonarCloud's generated snippet ג€” supply-chain
         # hardening (Task 53), and the ref is verified to exist.
         uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
         env:

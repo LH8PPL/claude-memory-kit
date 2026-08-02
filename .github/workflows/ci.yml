@@ -1,8 +1,8 @@
-# Full test-suite CI (added with Task 53). Until now only install-matrix +
-# canonicalize-parity ran in CI — the full vitest suite (validators + 1190+
+﻿# Full test-suite CI (added with Task 53). Until now only install-matrix +
+# canonicalize-parity ran in CI ג€” the full vitest suite (validators + 1190+
 # tests) never did. This job closes that gap AND proves `npm test` passes on
 # a clean Linux runner, which is the exact gate publish.yml runs before it
-# publishes — so the release gate is validated on every PR, not first
+# publishes ג€” so the release gate is validated on every PR, not first
 # exercised at tag time.
 #
 # Live-Haiku spawn-smokes auto-skip here (no `claude` binary on PATH).
@@ -19,12 +19,12 @@ permissions:
 
 jobs:
   lint:
-    # The kit's 20 structural validators (npm run lint) — run as a SEPARATE,
+    # The kit's 20 structural validators (npm run lint) ג€” run as a SEPARATE,
     # named, fast-failing check so a lint error (e.g. an invalid SKILL.md YAML
-    # frontmatter — the D-195 Kiro-reject class) surfaces in the PR UI in
+    # frontmatter ג€” the D-195 Kiro-reject class) surfaces in the PR UI in
     # seconds, not buried inside the slow "Full test suite" run. `npm test`
     # still runs these too (test = `npm run lint && vitest run`), so this is an
-    # early gate, not a duplicate source of truth — the validator chain lives in
+    # early gate, not a duplicate source of truth ג€” the validator chain lives in
     # ONE place (the `lint` script). No HF model cache needed: validators don't
     # touch the semantic backend.
     name: Lint (structural validators)
@@ -34,7 +34,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-      - run: npm ci --no-audit --no-fund
+      - uses: ./.github/actions/npm-ci-retry
       - run: npm run lint
 
   test:
@@ -45,26 +45,26 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-      - run: npm ci --no-audit --no-fund
-      # Task 125.3 — cache the HF test model (bge-small) so the semantic-backend
+      - uses: ./.github/actions/npm-ci-retry
+      # Task 125.3 ג€” cache the HF test model (bge-small) so the semantic-backend
       # tests don't re-download it every run. Shared runner IPs get rate-limited
-      # by the HF Hub (HTTP 429) — the PR #152 CI failure class. The package's
+      # by the HF Hub (HTTP 429) ג€” the PR #152 CI failure class. The package's
       # default cacheDir is INSIDE node_modules (verified against
       # @huggingface/transformers src/env.js DEFAULT_CACHE_DIR), and npm ci
-      # wipes node_modules — so this step must run AFTER npm ci (restore here,
+      # wipes node_modules ג€” so this step must run AFTER npm ci (restore here,
       # auto-save at job end).
       - uses: actions/cache@v6
         with:
           path: node_modules/@huggingface/transformers/.cache
           key: hf-models-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          # A lockfile bump shouldn't force a fresh model download — the model
+          # A lockfile bump shouldn't force a fresh model download ג€” the model
           # files are content-stable per model id; partial restore is safe.
           restore-keys: hf-models-${{ runner.os }}-
       - run: npm test
 
   coverage:
     # Code-quality gate (Task 54): runs vitest with v8 coverage and enforces
-    # the 70% ratchet thresholds in vitest.config.js — coverage can't silently
+    # the 70% ratchet thresholds in vitest.config.js ג€” coverage can't silently
     # regress. The lcov report is uploaded as an artifact (SonarCloud / manual
     # inspection consume it). Separate from `test` because test:coverage runs
     # vitest only (the validators run in the `test` job).
@@ -75,14 +75,14 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-      - run: npm ci --no-audit --no-fund
-      # Same HF model cache as the test job (Task 125.3) — test:coverage runs
+      - uses: ./.github/actions/npm-ci-retry
+      # Same HF model cache as the test job (Task 125.3) ג€” test:coverage runs
       # the same semantic-backend tests.
       - uses: actions/cache@v6
         with:
           path: node_modules/@huggingface/transformers/.cache
           key: hf-models-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          # A lockfile bump shouldn't force a fresh model download — the model
+          # A lockfile bump shouldn't force a fresh model download ג€” the model
           # files are content-stable per model id; partial restore is safe.
           restore-keys: hf-models-${{ runner.os }}-
       - run: npm run test:coverage

@@ -33,13 +33,12 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      - name: Install Node deps (with retry — npm transient "Exit handler" bug on macOS)
-        shell: bash
-        run: |
-          # npm ci is deterministic + faster than npm install when
-          # package-lock.json is present. Retry once on transient
-          # failure (well-known npm bug on macOS GHA runners).
-          npm ci --no-audit --no-fund || (echo "first npm ci attempt failed; retrying after 5s..." && sleep 5 && npm ci --no-audit --no-fund)
+      # Retries live in the shared composite action now (D-415). This job had
+      # the ONLY hand-rolled retry — added for npm's transient "Exit handler"
+      # bug on macOS runners; that class is a subset of what the shared action
+      # covers, and converging it means one place to tune.
+      - name: Install Node deps (retrying)
+        uses: ./.github/actions/npm-ci-retry
 
       - name: Run cmk install in a tempdir + capture scaffold tree
         shell: bash
