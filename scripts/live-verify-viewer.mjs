@@ -19,8 +19,9 @@
 // Run: npm run live-verify:viewer   [--keep] [--verbose]
 
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, existsSync, readdirSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { request as httpRequest } from 'node:http';
+import { connect as netConnect } from 'node:net';
 import { tmpdir, platform } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -60,6 +61,26 @@ function http(url, { method = 'GET', headers = {} } = {}) {
     req.on('timeout', () => req.destroy(new Error('request timed out')));
     req.on('error', reject);
     req.end();
+  });
+}
+
+/**
+ * Write a request line to a RAW socket, byte for byte, and return the whole
+ * response text. Needed because every HTTP client in Node normalizes `..` out
+ * of a path before sending — so a traversal test built on one of them never
+ * actually asks the server the question it thinks it is asking (M6).
+ */
+function rawLine(base, requestLine) {
+  const u = new URL(base);
+  return new Promise((resolve, reject) => {
+    const sock = netConnect({ host: u.hostname, port: Number(u.port) }, () => {
+      sock.write(`${requestLine}\r\nHost: 127.0.0.1:${u.port}\r\nConnection: close\r\n\r\n`);
+    });
+    let body = '';
+    sock.setTimeout(15_000, () => sock.destroy(new Error('raw request timed out')));
+    sock.on('data', (c) => { body += c; });
+    sock.on('end', () => resolve(body));
+    sock.on('error', reject);
   });
 }
 
@@ -117,7 +138,44 @@ async function main() {
     ], { cwd: proj, env });
     runCmk(['remember', 'The deploy target is the eu-west region'], { cwd: proj, env });
     runCmk(['digest'], { cwd: proj, env }); // populates context/DECISIONS.md
-    log('corpus seeded through the real bins');
+
+    // A REAL supersession edge, so the graph check below is not vacuous: an
+    // `edges.every(...)` over an EMPTY array passes no matter what the route
+    // returns, which is exactly the kind of green that means nothing. The
+    // successor is a genuine fact the real bin just wrote; only the archived
+    // predecessor is a fixture, written where the kit itself archives one.
+    const factsDir = join(proj, 'context', 'memory');
+    const successorId = readdirSync(factsDir)
+      .filter((n) => n.endsWith('.md') && n !== 'INDEX.md' && n !== 'MAP.md')
+      .map((n) => /^id:\s*([PUL]-\S+)$/m.exec(readFileSync(join(factsDir, n), 'utf8'))?.[1])
+      .find(Boolean);
+    if (!successorId) throw new Error('no seeded fact id found — the corpus did not write');
+    const archDir = join(factsDir, 'archive', 'superseded');
+    mkdirSync(archDir, { recursive: true });
+    const predecessorId = 'P-2DZG7XF4';
+    writeFileSync(
+      join(archDir, `${predecessorId}.md`),
+      [
+        '---',
+        `id: ${predecessorId}`,
+        'type: project',
+        'title: the previous toolchain rule',
+        'created_at: 2026-07-01T09:00:00Z',
+        'write_source: user-explicit',
+        'trust: high',
+        'source_file: user-explicit',
+        'source_line: 1',
+        `source_sha1: ${'a'.repeat(64)}`,
+        `superseded_by: ${successorId}`,
+        '---',
+        '',
+        'We used to pin the toolchain by hand in each workflow.',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+    runCmk(['reindex', '--full'], { cwd: proj, env }); // build the edges table
+    log(`corpus seeded through the real bins (supersession ${predecessorId} → ${successorId})`);
 
     // ---- 1. the real bin serves, and STAYS UP ------------------------------
     server = startView(['--no-open'], { cwd: proj, env });
@@ -163,19 +221,42 @@ async function main() {
     const id = facts.json.facts[0].id;
     const detail = await http(`${base}/api/fact/${id}`);
     check(
-      '/api/fact/:id returns the body and the copy-able commands',
+      '/api/fact/:id returns the body and commands that are REAL as pasted (M8)',
       detail.status === 200 && detail.json.found === true &&
-        detail.json.commands.forget === `cmk forget ${id}` &&
-        detail.json.commands.trust.startsWith(`cmk trust ${id} `),
-      `id=${id} status=${detail.status}`,
+        detail.json.commands.forget === `cmk forget ${id} --yes` &&
+        detail.json.commands.trust_options.length === 3 &&
+        detail.json.commands.trust_options.filter((o) => !o.current).length === 2,
+      `id=${id} status=${detail.status} cmds=${JSON.stringify(detail.json.commands)}`,
+    );
+    const archived = await http(`${base}/api/fact/${predecessorId}`);
+    check(
+      'I1: an ARCHIVED fact answers with a state note and NO dead commands',
+      archived.status === 200 && archived.json.found === true &&
+        archived.json.fact.from_archive === true &&
+        archived.json.commands === null &&
+        archived.json.state_note.superseded_by === successorId,
+      `status=${archived.status} note=${JSON.stringify(archived.json.state_note)}`,
+    );
+    check(
+      'M1: the archived fact reports a tier-prefixed path, like a live row',
+      archived.json.fact.source_file === `context/memory/archive/superseded/${predecessorId}.md`,
+      `source_file=${archived.json.fact.source_file}`,
     );
 
     const graph = await http(`${base}/api/graph`);
     check(
-      '/api/graph returns nodes + edges, every edge endpoint present as a node',
-      graph.status === 200 && Array.isArray(graph.json.nodes) &&
+      '/api/graph returns a NON-EMPTY edge set, every endpoint present as a node',
+      graph.status === 200 &&
+        Array.isArray(graph.json.nodes) &&
+        graph.json.edges.length > 0 && // an every() over [] is a green that means nothing
         graph.json.edges.every((e) => graph.json.nodes.some((n) => n.id === e.src) && graph.json.nodes.some((n) => n.id === e.dst)),
       `nodes=${graph.json?.nodes?.length} edges=${graph.json?.edges?.length}`,
+    );
+    check(
+      'the seeded supersession appears as a DIRECTED edge, old → new',
+      graph.json.edges.some((e) => e.type === 'superseded_by' && e.src === predecessorId && e.dst === successorId) &&
+        graph.json.nodes.find((n) => n.id === predecessorId)?.superseded === true,
+      `edges=${JSON.stringify(graph.json.edges?.filter((e) => e.type === 'superseded_by'))}`,
     );
 
     const health = await http(`${base}/api/health`);
@@ -184,15 +265,47 @@ async function main() {
       health.status === 200 && health.json.checks.length === 14 && ['ok', 'warn'].includes(health.json.strip.state),
       `checks=${health.json?.checks?.length} strip=${health.json?.strip?.state}`,
     );
-    // The composition that matters: the strip must agree with what `cmk doctor`
-    // itself reports about HC-14, because both read the same health log.
-    const doctor = runCmk(['doctor'], { cwd: proj, env });
-    const doctorSaysWarn = /HC-14[^\n]*\b(?:FAIL|WARN)\b/i.test(`${doctor.stdout ?? ''}${doctor.stderr ?? ''}`);
+    // M7 was tautological: it compared the strip against a doctor line on a
+    // sandbox where BOTH were clean, so it passed by matching nothing to
+    // nothing. B1 is the real question — does the pinned line stay green while
+    // the doctor table under it turns red? Seed a doctor-VISIBLE failure the
+    // health log cannot know about (an unregistered hook never runs, so it
+    // never logs) and demand the strip follows.
+    const stripBefore = await http(`${base}/api/health?strip=1`);
     check(
-      'the health strip and `cmk doctor` HC-14 agree on the same evidence',
-      (health.json.strip.state === 'warn') === doctorSaysWarn,
-      `strip=${health.json.strip.state} doctorHC14Warn=${doctorSaysWarn}`,
+      'baseline: the quick-check strip is green and says only what it can prove',
+      stripBefore.json.strip.state === 'ok' &&
+        stripBefore.json.strip.text === 'no failures recorded (quick check)',
+      `strip=${JSON.stringify(stripBefore.json.strip)}`,
     );
+
+    rmSync(join(proj, '.claude', 'settings.json'), { force: true }); // unwire the hooks
+    const broken = await http(`${base}/api/health`);
+    const doctor = runCmk(['doctor'], { cwd: proj, env });
+    const doctorOut = `${doctor.stdout ?? ''}${doctor.stderr ?? ''}`;
+    const hc1Failed = broken.json.checks.find((c) => c.id === 'HC-1')?.status === 'fail';
+    check(
+      'B1: a doctor FAIL turns the pinned strip non-green, and NAMES the failing check',
+      hc1Failed &&
+        broken.json.fail_count > 0 &&
+        broken.json.strip.state !== 'ok' &&
+        broken.json.strip.text.includes('HC-1') &&
+        !/passing|fine/i.test(broken.json.strip.text),
+      `hc1=${hc1Failed} fails=${broken.json.fail_count} strip=${JSON.stringify(broken.json.strip)}`,
+    );
+    check(
+      'B1: the health LOG is silent about it — which is exactly why the fold was needed',
+      Array.isArray(broken.json.active_warnings) && broken.json.active_warnings.length === 0,
+      `active_warnings=${JSON.stringify(broken.json.active_warnings)}`,
+    );
+    check(
+      'the viewer and `cmk doctor` agree that HC-1 is failing (one source, two surfaces)',
+      // `formatDoctorReport` prints `[FAIL] HC-1: …` — the status leads.
+      /\[FAIL\s*\]\s*HC-1:/.test(doctorOut),
+      `doctor HC-1 line: ${doctorOut.split(/\r?\n/).filter((l) => /HC-1:/.test(l)).join(' | ')}`,
+    );
+    // Put it back so the later read-only + shutdown checks run against a normal install.
+    runCmk(['repair', '--hooks'], { cwd: proj, env });
 
     const decisions = await http(`${base}/api/decisions`);
     check(
@@ -226,11 +339,28 @@ async function main() {
     const rebind = await http(`${base}/api/facts`, { headers: { host: 'evil.example.com' } });
     check('a request under a foreign Host is refused 403 (DNS-rebinding guard)', rebind.status === 403, `status=${rebind.status}`);
 
-    const traversal = await http(`${base}/../../package.json`);
+    // M6: sent down a RAW SOCKET. Both `fetch` and node:http normalize `..`
+    // out of the path before a byte leaves the process, so the previous check
+    // was asking the server about `/package.json` — a path it was never going
+    // to serve — and could not have caught a traversal even if one existed.
+    // A hand-written request line is the only way the dot segments arrive.
+    const traversals = [
+      '/../../package.json',
+      '/api/fact/../../../package.json',
+      '/%2e%2e%2f%2e%2e%2fpackage.json',
+      '/..%5c..%5cpackage.json',
+    ];
+    const leaks = [];
+    for (const path of traversals) {
+      const r = await rawLine(base, `GET ${path} HTTP/1.1`);
+      const leaked = /"name"\s*:\s*"@lh8ppl\/core-memory-kit"/.test(r) || /root:x:/.test(r);
+      const ok = / 200 /.test(r.split('\n')[0]) === false || !leaked;
+      if (!ok || leaked) leaks.push(`${path} -> ${r.split('\r\n')[0]}`);
+    }
     check(
-      'a traversal attempt reaches no file',
-      traversal.status !== 200 || !traversal.body.includes('@lh8ppl/core-memory-kit'),
-      `status=${traversal.status}`,
+      `no traversal reaches a file — ${traversals.length} raw dot-segment request(s), unnormalized`,
+      leaks.length === 0,
+      leaks.join('; '),
     );
 
     // ---- 5. the CLI-level refusals (exit codes, not exceptions) ------------
