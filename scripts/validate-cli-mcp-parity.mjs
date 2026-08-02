@@ -83,6 +83,12 @@ export const CLI_ONLY = new Set([
   // operating memory. If an agent ever needs the numbers (e.g. Task 194
   // auto-tuning), that's a deliberate future MCP addition, not drift.
   'stats',
+  // `view` is the human-facing read-only viewer (Task 255) — a browser UI for a
+  // PERSON to browse their memory, in the same class as doctor/stats/tour. The
+  // model already has every one of the viewer's reads as an MCP tool
+  // (mk_search / mk_get / mk_links / mk_recent_activity); an `mk_view` would
+  // hand it a URL it cannot open. CLI-only by contract, not by omission.
+  'view',
   // `redact` is the compliance scrub (Task 96, ADR-0022) — CLI-only BY
   // CONTRACT, not by omission: the destructive/compliance path stays
   // explicit-human (§6.5). `purge` (already listed above) is its

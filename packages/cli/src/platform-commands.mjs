@@ -132,6 +132,46 @@ export function listDir(path) {
   return `ls ${quote(path)}`;
 }
 
+/**
+ * Build the "open this URL in the user's default browser" SPAWN descriptor
+ * (Task 255 / design §24.2 — the `cmk view` launch shape follows
+ * `register-crons`' platform discipline).
+ *
+ * This one is deliberately NOT a copy-paste string like its siblings: the kit
+ * SPAWNS it rather than printing it, so it returns `{command, args}` for
+ * `spawn()` instead of a shell line. It still lives here because the concern is
+ * identical — "what does this primitive look like on the user's platform" — and
+ * a second home for that judgement is exactly the drift the module exists to
+ * prevent.
+ *
+ *   win32  → cmd /c start "" <url>   (`start` is a cmd builtin, not an exe;
+ *                                     the empty "" is the window TITLE arg —
+ *                                     without it `start` eats the URL as the
+ *                                     title when it is quoted)
+ *   darwin → open <url>
+ *   other  → xdg-open <url>          (freedesktop; the Linux/BSD standard)
+ *
+ * NOT shell-escaped, and it does not need to be: `spawn` with an args array
+ * never goes through a shell on POSIX, and the only caller passes a
+ * kit-constructed `http://127.0.0.1:<port>/` URL — no `&`, no quotes, no
+ * user-controlled bytes. A caller that ever wants to open an arbitrary URL must
+ * validate it first.
+ *
+ * @param {string} url
+ * @returns {{command: string, args: string[]}}
+ */
+export function openBrowserCommand(url) {
+  if (IS_WINDOWS) {
+    // platform-commands: ignore this IS the platform-commands helper — the
+    // win32 branch of the browser-open primitive, not a hardcoded emission.
+    return { command: 'cmd', args: ['/c', 'start', '', url] };
+  }
+  if (process.platform === 'darwin') {
+    return { command: 'open', args: [url] };
+  }
+  return { command: 'xdg-open', args: [url] };
+}
+
 // Exported for the validator + tests to assert which platform the
 // helper is currently emitting for. Useful for cross-platform CI
 // matrices where the test asserts both halves.
