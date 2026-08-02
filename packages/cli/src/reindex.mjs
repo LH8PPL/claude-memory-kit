@@ -19,6 +19,14 @@ import { parse } from './frontmatter.mjs';
 // produce different diffs on different machines.
 import { listFactFiles, MAP_FILENAME } from './fact-store.mjs';
 import { buildVaultMap } from './vault-map.mjs';
+// Task 250 (D-412) — the `index-drift` warning CLEARS here, because this is the
+// one function that actually rebuilds the INDEX. Putting the clear anywhere
+// narrower (writeFact's inline rebuild) left the whisper's own prescribed fix —
+// `cmk reindex` — unable to clear the warning it prescribes.
+// The TRANSITION form, not the plain append: a fact-writing process reindexes
+// once per fact, and one `ok` per write is exactly the cadence flood that was
+// evicting sparse classes from the shared tail (review finding B2).
+import { appendHealthTransition, HEALTH_CODES } from './health-log.mjs';
 
 const INDEX_SIZE_WARN_BYTES = 25 * 1024;
 const HOOK_MAX_LEN = 80;
@@ -147,6 +155,17 @@ export function reindex(opts = {}) {
   } catch (mapErr) {
     pushWarning(`reindex: vault map (${MAP_FILENAME}) not written: ${mapErr.message}`);
   }
+
+  // Task 250 (B1) — THE INDEX IS IN STEP AGAIN, so the `index-drift` warning
+  // clears. This sits at the ONE place that rebuilds INDEX.md, which is what
+  // makes the whisper's prescribed fix actually work: `cmk reindex`,
+  // `cmk repair --index`, the boot reindex, and writeFact's inline rebuild all
+  // arrive here. Previously only writeFact's call site appended the `ok`, so an
+  // agent that did exactly what the whisper told it to could not clear the
+  // warning — the Tailscale #19241 stuck-warning class the design claims is
+  // structurally impossible. `appendHealthEntry` no-ops without a kit project
+  // root, so a user-tier reindex (no projectRoot) writes nothing.
+  appendHealthTransition(projectRoot, { class: HEALTH_CODES.INDEX_DRIFT, outcome: 'ok' });
 
   return {
     tier,

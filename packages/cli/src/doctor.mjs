@@ -1,4 +1,4 @@
-// `cmk doctor` — health checks HC-1..HC-13 (Task 37, T-031; memsearch HC-1/HC-7 removed in Task 120; HC-8 native bindings added in Task 141a; HC-9 version-drift/update-path added in Task 162 / D-176; HC-13 stray-tier backstop added in Task 248).
+// `cmk doctor` — health checks HC-1..HC-14 (Task 37, T-031; memsearch HC-1/HC-7 removed in Task 120; HC-8 native bindings added in Task 141a; HC-9 version-drift/update-path added in Task 162 / D-176; HC-13 stray-tier backstop added in Task 248; HC-14 active health warnings added in Task 250 / D-412).
 //
 // Public boundary:
 //   async runDoctor({projectRoot, userDir, now, promptUser?, ...overrides})
@@ -6,9 +6,9 @@
 //
 // HCResult shape:
 //   {
-//     id: 'HC-1' | ... | 'HC-7',
+//     id: 'HC-1' | ... | 'HC-14',
 //     name: string,
-//     status: 'pass' | 'fail' | 'skip',
+//     status: 'pass' | 'warn' | 'fail' | 'skip',   // `warn` = advisory (Task 245)
 //     message: string,
 //     recoveryCommand?: string,   // surfaced on fail
 //     requiresInstall?: boolean,  // if true, caller must promptUser first
@@ -31,8 +31,10 @@
 // auto-invoking it.
 
 import {
+  closeSync,
   existsSync,
   mkdirSync,
+  openSync,
   readFileSync,
   readdirSync,
   statSync,
@@ -48,6 +50,9 @@ import { isCompactionNeeded } from './compaction-state.mjs';
 import { getNativeAutoMemoryState } from './native-memory.mjs';
 import { checkKitBinding, checkEmbedderBinding } from './native-binding.mjs';
 import { resolveDefaultSearchMode } from './semantic-backend.mjs';
+// Task 250 (D-412) — HC-14 reads the SAME active-warning computation the
+// per-prompt whisper reads, so the two surfaces can never disagree.
+import { activeWarnings, healthLogPath } from './health-log.mjs';
 import { checkVersionDrift, checkPublishedLatest } from './version-drift.mjs';
 import { findManagedBlock, compareVersions } from './claude-md.mjs';
 import { getKitVersion, kitOwnedScaffoldDrift } from './install.mjs';
@@ -700,7 +705,7 @@ async function hc8NativeBindings({ projectRoot, kitBindingProbe, embedderBinding
 }
 
 /**
- * Run the full 8-check health audit.
+ * Run the full health audit (HC-1..HC-14).
  *
  * @param {object} opts
  * @param {string} opts.projectRoot
@@ -950,6 +955,98 @@ function hc12DeletionPropagation({ projectRoot }) {
 // ADVISORY: `warn`, never `fail`. Nothing is broken — a stray tier is frozen,
 // safe, and its facts are already recovered; the user just has a folder to
 // delete. A `fail` would put a non-zero exit code on a healthy project.
+// --- HC-14: no active kit health warnings (Task 250, D-412) ----------------
+//
+// WHY, given the whisper reports the same failures: the whisper reaches the
+// MODEL on the next prompt; this reaches the USER when they go looking. Before
+// it, doctor could report thirteen passes while the kit's own failure log held
+// a week of dead extraction — because every other check probes CONFIGURATION
+// (are the hooks registered, is the INDEX consistent) and none of them looked
+// at OUTCOMES. That is the D-298 / HC-10 false-green class, one level up.
+//
+// IT REUSES `activeWarnings` RATHER THAN RE-DERIVING THE THRESHOLDS. A second
+// copy of "2 consecutive fails, 7-day window, dependsOn cascade" would drift on
+// the first tuning change and produce "doctor says fine, the AI says broken" —
+// leaving the user to adjudicate between two of the kit's own surfaces.
+//
+// ADVISORY: `warn`, never `fail`. A kit whose extraction hiccuped twice must
+// not put a non-zero exit code on an otherwise healthy project; the whisper is
+// the actionable channel and this is the visible one.
+function hc14HealthWarnings({ projectRoot, now }) {
+  const name = 'No active kit health warnings';
+  // The `id: 'HC-14'` literal is repeated at every return rather than hoisted
+  // into a shorthand `const id`. That is DELIBERATE and it is a contract, not a
+  // style preference: `validate-docs --only counts` derives the live health-check
+  // count by scanning this directory for the `id: 'HC-N'` object-literal form,
+  // so a hoisted-and-shorthanded id makes a real, wired check INVISIBLE to the
+  // count gate — which is how a doc could claim 14 checks while the validator
+  // insisted there were 13. Every other HC in this file is written the same way.
+  const logPath = healthLogPath(projectRoot);
+  // `activeWarnings` is FAIL-OPEN by contract — an unreadable log reads as "no
+  // evidence". That is right on the per-prompt hot path (never nag because a
+  // diagnostic broke) and would be a FALSE GREEN here, where the whole job is
+  // to say honestly what could and could not be verified. So doctor probes
+  // readability itself and SKIPs rather than passing.
+  if (existsSync(logPath)) {
+    try {
+      // BOTH probes are needed. `openSync` catches a permission/lock failure —
+      // but NOT a directory sitting where the log belongs: POSIX rejects that
+      // with EISDIR while Windows opens it happily, so an isFile() check is what
+      // makes the skip verdict behave the same on both platforms.
+      if (!statSync(logPath).isFile()) {
+        return { id: 'HC-14', name, status: 'skip', message: 'health log path is not a file' };
+      }
+      closeSync(openSync(logPath, 'r'));
+    } catch (err) {
+      return {
+        id: 'HC-14',
+        name,
+        status: 'skip',
+        message: `health log unreadable: ${err?.message ?? err}`,
+      };
+    }
+  }
+  let warnings;
+  try {
+    warnings = activeWarnings(projectRoot, { now });
+  } catch (err) {
+    return {
+      id: 'HC-14',
+      name,
+      status: 'skip',
+      message: `health scan unavailable: ${err?.message ?? err}`,
+    };
+  }
+  if (warnings.length === 0) {
+    return {
+      id: 'HC-14',
+      name,
+      status: 'pass',
+      message: 'no active kit failures recorded in the last 7 days',
+    };
+  }
+  // Codes, not prose: the code is the key the troubleshooting skill's repair
+  // book is sectioned by, so naming it is what makes the report actionable.
+  const codes = warnings.map((w) => `${w.code} (${w.severity}, ${w.strikes}x)`).join('; ');
+  // A repair command is offered only when it is not the command the user just
+  // ran. Most codes' primaryAction is `cmk doctor` — correct in the WHISPER,
+  // where the model has not run doctor yet, and circular HERE, where this line
+  // is printed BY doctor ("→ repair: cmk doctor"). When the action is a real
+  // next step (`cmk reindex`) it is surfaced; otherwise the message's pointer to
+  // the troubleshooting skill IS the next step. Emitting nothing beats emitting
+  // a loop.
+  const action = warnings.find((w) => w.primaryAction !== 'cmk doctor')?.primaryAction;
+  return {
+    id: 'HC-14',
+    name,
+    status: 'warn',
+    message:
+      `${warnings.length} active kit failure${warnings.length === 1 ? '' : 's'}: ${codes} — ` +
+      'load the troubleshooting skill for the per-code repair steps',
+    ...(action ? { recoveryCommand: action } : {}),
+  };
+}
+
 function hc13StrayTiers({ projectRoot }) {
   const name = 'No stray memory tiers below the project root';
   let r;
@@ -1058,6 +1155,7 @@ export async function runDoctor({
       recoveryCommand: 'npm install -g @lh8ppl/core-memory-kit@latest',
     };
   }
+  const c14 = hc14HealthWarnings({ projectRoot, now: ts });
   const c10 = hc10CompactionLiveness({ projectRoot, now: ts });
   const c11 = hc11BackendCli({ projectRoot, userDir: resolvedUserDir, backendCliProbe });
   const c12 = hc12DeletionPropagation({ projectRoot });
@@ -1065,7 +1163,7 @@ export async function runDoctor({
 
   return {
     action: 'completed',
-    checks: [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13],
+    checks: [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14],
     duration_ms: Date.now() - t0,
   };
 }

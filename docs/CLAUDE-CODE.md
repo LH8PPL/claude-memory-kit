@@ -15,7 +15,7 @@ A Claude Code install scaffolds the 3-tier `context/` layout, injects `.gitignor
 | Surface | Location | For |
 | --- | --- | --- |
 | **CLAUDE.md block** | `<repo>/CLAUDE.md` (managed marker block) | memory-awareness — loaded into Claude's context each session |
-| **Skills** | `.claude/skills/memory-search` + `memory-write` | the on-demand recall + capture procedures |
+| **Skills** | `.claude/skills/memory-search` + `memory-write` + `troubleshooting` | the on-demand recall + capture + failure-code repair procedures |
 | **MCP server** | `.claude/settings.json` (`mcp__cmk__*`) | drives memory as tools (`mk_remember` etc.) |
 | **Lifecycle hooks** | `.claude/settings.json` | the automatic loop: `SessionStart` inject, `Stop`/`SessionEnd` capture + compress, `PreCompact` compaction-boundary roll, `UserPromptSubmit` prompt-capture, `PostToolUse` edit-observation |
 | **Delete-guardrail** | a `PreToolUse` hook (`cmk-guard-memory`, matcher `Bash\|PowerShell`) | blocks a destructive shell command aimed at a memory path (fail-open) |

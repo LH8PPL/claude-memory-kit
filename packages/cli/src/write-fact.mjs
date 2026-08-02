@@ -24,6 +24,10 @@ import { sanitizePrivacyTags } from './privacy.mjs';
 import { maskPii, localUsernames, resolvePrivacyScreen } from './pii-patterns.mjs';
 import { appendRedactions } from './redactions-log.mjs';
 import { checkPoisonGuard, logPoisonGuardRejection } from './poison-guard.mjs';
+// Task 250 (D-412) — the INDEX-drift half of the health log. writeFact is the
+// ONE boundary every fact create flows through, so it is where "is the INDEX
+// still in step with the archive?" is actually knowable as an EVENT.
+import { appendHealthTransition, HEALTH_CODES } from './health-log.mjs';
 
 // Task 191 (ADR-0017 Phase 1b): 'judgment' is a LOOP-BORN type — written by
 // judgment.mjs (earned method-preferences with an evidence log), never by the
@@ -472,7 +476,26 @@ export function writeFact(opts = {}) {
   const doReindex = opts._reindexFn ?? reindex;
   try {
     doReindex({ tier: opts.tier, projectRoot: opts.projectRoot, userDir: opts.userDir, warn: () => {} });
+    // Task 250: the success-side `ok` is NOT appended here — `reindex()` itself
+    // owns it now (review finding B1), so every route that rebuilds the INDEX
+    // clears the warning, including the `cmk reindex` the whisper prescribes.
+    // Appending here too would double-write on the real path for no signal.
   } catch (reindexErr) {
+    // Task 250: DETERMINISTIC — a stale INDEX does not un-stale itself; it
+    // stays behind until something rebuilds it. So one strike is enough, and
+    // the only thing that clears it is a rebuild that actually succeeded.
+    //
+    // The TRANSITION form, even though a fail is never suppressed: it also
+    // UPDATES the shared per-process memory that `reindex()`'s `ok` consults.
+    // Using the plain append here would leave that memory reading `ok` from an
+    // earlier rebuild in the same process, so the next successful reindex would
+    // be suppressed as a repeat — and the warning this line just raised could
+    // never clear. Same stuck-warning class as review finding B1, one level in.
+    appendHealthTransition(opts.projectRoot, {
+      class: HEALTH_CODES.INDEX_DRIFT,
+      outcome: 'fail',
+      detail: 'index-rebuild-failed',
+    });
     // index rebuild is best-effort; capture already succeeded — but leave a
     // trace so a lagging committed INDEX is diagnosable, never silent.
     try {

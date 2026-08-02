@@ -17,9 +17,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node
 import { join } from 'node:path';
 import { resolveTemplateDir } from './install.mjs';
 
-// The kit skills that map to Kiro. (memory-search + memory-write — the two the
-// kit scaffolds for Claude Code.)
-const KIT_SKILLS = ['memory-search', 'memory-write'];
+// The kit skills that map to Kiro — every skill the kit scaffolds for Claude
+// Code (recall, capture, and the Task-250 failure-code repair book).
+const KIT_SKILLS = ['memory-search', 'memory-write', 'troubleshooting'];
 
 // Frontmatter keys Kiro does NOT use — dropped on translation. Everything else
 // in the frontmatter (name, description) + the whole body is preserved.

@@ -119,13 +119,15 @@ describe('Task 37 — runDoctor (cmk doctor health checks)', () => {
     // count + order extended, intent preserved.
     // Contract update Task 210: HC-12 (deletion propagation, D-308) joined.
     // Contract update Task 248: HC-13 (stray-tier backstop, D-389/D-394) joined.
-    it('emits exactly 13 checks with id HC-1..HC-13 in order', async () => {
+    // Contract update Task 250: HC-14 (active health warnings, D-412) joined.
+    it('emits exactly 14 checks with id HC-1..HC-14 in order', async () => {
       const r = await runDoctor({ projectRoot, userDir });
       expect(r.action).toBe('completed');
-      expect(r.checks.length).toBe(13);
+      expect(r.checks.length).toBe(14);
       const ids = r.checks.map((c) => c.id);
       expect(ids).toEqual([
         'HC-1', 'HC-2', 'HC-3', 'HC-4', 'HC-5', 'HC-6', 'HC-7', 'HC-8', 'HC-9', 'HC-10', 'HC-11', 'HC-12', 'HC-13',
+        'HC-14',
       ]);
       // Every check has the canonical shape. `warn` joined the status enum in
       // Task 245 (advisory: repair shown, exit code untouched) and HC-13 uses it.

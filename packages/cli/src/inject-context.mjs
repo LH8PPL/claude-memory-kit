@@ -47,6 +47,8 @@ import { listConflictQueue } from './conflict-queue.mjs';
 import { listReviewQueue } from './review-queue.mjs';
 import { parse as parseFactFrontmatter } from './frontmatter.mjs';
 import { stripBom } from './read-json.mjs';
+// Task 250 (D-412) — the failure-driven health nudge's session-start half.
+import { appendHealthEntry, HEALTH_CODES } from './health-log.mjs';
 
 // Task 66.4 (D-259): the contradiction-catch demo surface — ONE bounded line
 // after the preamble when the weekly temporal sweep closed validity windows
@@ -1154,7 +1156,62 @@ function spawnLazyCompress(projectRoot, compressLazyPath) {
   }
 }
 
-export function injectContext({
+/**
+ * Task 250 (D-412) — classify one inject run for the health log. PURE, and
+ * exported so the verdict is testable without a filesystem.
+ *
+ * The rule that matters is ONE OUTCOME PER RUN. Emitting `ok` for the snapshot
+ * and a separate `fail` for a failed lazy-compress spawn writes [ok, fail] on
+ * EVERY session start, which pins the tail streak at 1 forever — a
+ * two-strike class could then never fire, and the signal would be structurally
+ * dead while looking instrumented. So the run's verdict is the WORST thing that
+ * happened in it.
+ *
+ * @param {object} a
+ * @param {boolean} [a.threw] the snapshot build itself threw.
+ * @param {object|null} [a.lazyTrigger] the lazy-compress trigger result.
+ * @returns {{outcome: 'ok'|'fail', detail?: string}}
+ */
+export function classifyInjectionHealth({ threw, lazyTrigger } = {}) {
+  if (threw) return { outcome: 'fail', detail: 'snapshot-build-threw' };
+  if (lazyTrigger?.verdict === 'error') return { outcome: 'fail', detail: 'lazy-trigger-error' };
+  if (lazyTrigger && lazyTrigger.spawned === false) {
+    return { outcome: 'fail', detail: 'lazy-compress-spawn-failed' };
+  }
+  return { outcome: 'ok' };
+}
+
+/**
+ * The public boundary. Wraps the build so that a THROWN snapshot build still
+ * leaves evidence — the whole point of the health log is that the silent paths
+ * stop being silent, and an exception escaping to the bin (which catches and
+ * emits `{continue:true}`) is the silentest path there is. The error is
+ * re-thrown unchanged: this adds observability, it does not swallow.
+ */
+export function injectContext(opts = {}) {
+  let result;
+  try {
+    result = buildInjection(opts);
+  } catch (err) {
+    // The rare path, so the project-root re-derivation is paid only here.
+    try {
+      appendHealthEntry(
+        discoverProjectRoot(opts.cwd ?? process.cwd()),
+        { class: HEALTH_CODES.INJECT_FAILING, ...classifyInjectionHealth({ threw: true }) },
+      );
+    } catch {
+      /* the diagnostic must never mask the real error */
+    }
+    throw err;
+  }
+  appendHealthEntry(result.projectRoot, {
+    class: HEALTH_CODES.INJECT_FAILING,
+    ...classifyInjectionHealth({ lazyTrigger: result.lazyTrigger }),
+  });
+  return result;
+}
+
+function buildInjection({
   cwd,
   userDir,
   now,
@@ -1505,6 +1562,9 @@ export function injectContext({
     lazyTrigger,
     bytes: Buffer.byteLength(snapshot, 'utf8'),
     injectionMode,
+    // Task 250: additive — lets the wrapper record the run's health outcome
+    // without re-walking the tree for the project root on the hot path.
+    projectRoot,
   };
 }
 

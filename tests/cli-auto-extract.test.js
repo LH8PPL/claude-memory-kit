@@ -1598,3 +1598,87 @@ describe('Task 136 — clipped rich facts are dropped, never written', () => {
     expect(backend.calls[0].maxOutputBytes).toBe(8192);
   });
 });
+
+// --- Task 250: the health log's capture-chain half (Door 5) -------------------
+// The whisper's evidence store. auto-extract is where the backend call actually
+// happens, so it is the ONE site that knows whether the agent's CLI ran at all:
+// a spawn ENOENT is the DETERMINISTIC `agent-cli-missing` event (the CLI is gone
+// until someone installs it — 1 strike), anything else is the STOCHASTIC
+// `extract-failing` (a timeout/API blip genuinely recovers — 2 strikes).
+// Both outcomes are appended, because the `ok` is what clears the warning.
+describe('Task 250 — auto-extract appends BOTH health outcomes (Door 5)', () => {
+  let sandbox;
+  let projectRoot;
+
+  beforeEach(async () => {
+    const f = makeFixture();
+    sandbox = f.sandbox;
+    projectRoot = f.projectRoot;
+    await installFixture(projectRoot);
+  });
+  afterEach(() => {
+    rmSync(sandbox, { recursive: true, force: true });
+  });
+
+  function readHealth() {
+    const p = join(projectRoot, 'context', '.locks', 'health.log');
+    if (!existsSync(p)) return [];
+    return readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  }
+
+  it('a SUCCESSFUL backend call appends ok for extract-failing AND agent-cli-missing', async () => {
+    const turnFile = writeTurnFile(projectRoot, { user: 'u', assistant: 'a' });
+    await runAutoExtract({ turnFile, projectRoot, haikuBackend: mockBackend('SKIP') });
+    const health = readHealth();
+    const byClass = Object.fromEntries(health.map((e) => [e.class, e.outcome]));
+    expect(byClass['extract-failing']).toBe('ok');
+    // The CLI demonstrably ran — that is the evidence that clears the
+    // deterministic upstream warning, and nothing else in wave 1 can clear it.
+    expect(byClass['agent-cli-missing']).toBe('ok');
+    expect(health.every((e) => e.schema === 1 && typeof e.ts === 'string')).toBe(true);
+  });
+
+  it('a backend FAILURE appends extract-failing:fail carrying the error category as detail', async () => {
+    const failing = new MockHaikuBackend({ throwError: new Error('haiku call failed: rate-limited') });
+    const turnFile = writeTurnFile(projectRoot, 'a turn');
+    await runAutoExtract({ turnFile, projectRoot, haikuBackend: failing });
+    const health = readHealth();
+    expect(health).toHaveLength(1);
+    expect(health[0].class).toBe('extract-failing');
+    expect(health[0].outcome).toBe('fail');
+    expect(health[0].detail).toBe('haiku_failed');
+    // NOT the deterministic class — an API error is not a missing binary.
+    expect(health.some((e) => e.class === 'agent-cli-missing')).toBe(false);
+  });
+
+  it('a spawn ENOENT routes to the DETERMINISTIC agent-cli-missing, not extract-failing', async () => {
+    // What a missing `claude` / `kiro-cli` / `cursor-agent` actually looks like
+    // coming out of the compressor: the child's async 'error' event rejects with
+    // the raw spawn error, which carries code ENOENT.
+    const enoent = Object.assign(new Error("spawn claude ENOENT"), { code: 'ENOENT' });
+    const failing = new MockHaikuBackend({ throwError: enoent });
+    const turnFile = writeTurnFile(projectRoot, 'a turn');
+    await runAutoExtract({ turnFile, projectRoot, haikuBackend: failing });
+    const health = readHealth();
+    expect(health).toHaveLength(1);
+    expect(health[0].class).toBe('agent-cli-missing');
+    expect(health[0].outcome).toBe('fail');
+  });
+
+  it('a skip that never called the backend appends NOTHING (no evidence either way)', async () => {
+    // An empty turn proves nothing about the CLI's health — recording an `ok`
+    // here would silently clear a real failure streak on the next blank turn.
+    const turnFile = writeTurnFile(projectRoot, '   ');
+    const r = await runAutoExtract({ turnFile, projectRoot, haikuBackend: mockBackend('SKIP') });
+    expect(r.action).toBe('skipped');
+    expect(readHealth()).toEqual([]);
+  });
+
+  it('a broken health log never breaks extraction (fail-open)', async () => {
+    // A DIRECTORY where the log file belongs — every append fails.
+    mkdirSync(join(projectRoot, 'context', '.locks', 'health.log'), { recursive: true });
+    const turnFile = writeTurnFile(projectRoot, { user: 'u', assistant: 'a' });
+    const r = await runAutoExtract({ turnFile, projectRoot, haikuBackend: mockBackend('SKIP') });
+    expect(r.action).toBe('skipped'); // nothing_durable — extraction itself unaffected
+  });
+});

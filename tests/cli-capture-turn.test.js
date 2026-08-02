@@ -55,7 +55,11 @@ const BIN_PATH = join(REPO_ROOT, 'plugin', 'bin', 'cmk-capture-turn' + '.mjs');
 function makeFixture() {
   const sandbox = mkdtempSync(join(tmpdir(), 'cmk-capture-turn-test-'));
   const projectRoot = join(sandbox, 'proj');
-  mkdirSync(projectRoot, { recursive: true });
+  mkdirSync(join(projectRoot, 'context'), { recursive: true });
+  // The install marker. The Task-250 health log refuses to write without it, so
+  // a bare project dir would silently exercise the no-op path rather than the
+  // spawn-failure recording under test (review finding M2).
+  writeFileSync(join(projectRoot, 'context', 'MEMORY.md'), '# MEMORY\n', 'utf8');
   return { sandbox, projectRoot };
 }
 
@@ -646,6 +650,77 @@ describe('Task 21 — captureTurn() boundary', () => {
       const nowMd = readFileSync(join(projectRoot, 'context', 'sessions', 'now.md'), 'utf8');
       expect(nowMd).toContain('the tree is clean');
       expect(nowMd).not.toContain('**Tools:**');
+    });
+  });
+
+  // Task 250 (D-412) — the health log's capture-chain half. A spawn that never
+  // happened means the turn was written to the transcript but NOTHING will
+  // extract it, which is the silent-failure class the whisper exists for.
+  //
+  // Deliberately ONE-SIDED: a successful spawn appends NOTHING. Spawning is not
+  // extracting — the detached child may still fail — so an `ok` here would
+  // clear a genuine extraction failure streak on every subsequent turn and make
+  // the warning structurally unreachable. The child owns its own `ok`.
+  describe('Task 250 — spawn failures append extract-failing (Door 5)', () => {
+    function readHealth() {
+      const p = join(projectRoot, 'context', '.locks', 'health.log');
+      if (!existsSync(p)) return [];
+      return readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+    }
+
+    it('a missing auto-extract script appends extract-failing:fail with the reason as detail', () => {
+      captureTurn({
+        payload: { assistant_message: 'turn body' },
+        projectRoot,
+        now: '2026-05-27T09:00:00Z',
+        autoExtractPath: join(sandbox, 'does-not-exist.mjs'),
+      });
+      const health = readHealth();
+      expect(health).toHaveLength(1);
+      expect(health[0]).toMatchObject({
+        class: 'extract-failing',
+        outcome: 'fail',
+        detail: 'auto-extract-missing',
+        schema: 1,
+      });
+    });
+
+    it('a null auto-extract path appends extract-failing:fail', () => {
+      captureTurn({
+        payload: { assistant_message: 'turn body' },
+        projectRoot,
+        now: '2026-05-27T09:01:00Z',
+        autoExtractPath: null,
+      });
+      expect(readHealth().map((e) => [e.class, e.outcome, e.detail])).toEqual([
+        ['extract-failing', 'fail', 'no-auto-extract-path'],
+      ]);
+    });
+
+    it('a SUCCESSFUL spawn appends NOTHING — spawning is not extracting', () => {
+      const stubScript = join(sandbox, 'noop-health.mjs');
+      writeFileSync(stubScript, 'process.exit(0);\n');
+      const r = captureTurn({
+        payload: { assistant_message: 'turn body' },
+        projectRoot,
+        now: '2026-05-27T09:02:00Z',
+        autoExtractPath: stubScript,
+      });
+      expect(r.spawned).toBe(true);
+      expect(readHealth()).toEqual([]);
+    });
+
+    it('OVER-MUTATION GUARD: the health append leaves extract.log untouched', () => {
+      captureTurn({
+        payload: { assistant_message: 'turn body' },
+        projectRoot,
+        now: '2026-05-27T09:03:00Z',
+        autoExtractPath: null,
+      });
+      // the pre-existing Door-5 surface still gets its own, separate entry
+      const logPath = join(projectRoot, 'context', 'sessions', '2026-05-27.extract.log');
+      const entries = readFileSync(logPath, 'utf8').trim().split('\n').map(JSON.parse);
+      expect(entries.filter((e) => e.phase === 'spawn')).toHaveLength(1);
     });
   });
 

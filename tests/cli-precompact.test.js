@@ -124,6 +124,9 @@ beforeEach(() => {
   projectRoot = join(sandbox, 'proj');
   mkdirSync(join(projectRoot, 'context', 'sessions'), { recursive: true });
   mkdirSync(join(projectRoot, 'context', '.locks'), { recursive: true });
+  // The install marker — the Task-250 health log refuses to write without it,
+  // so a bare tier would silently exercise the no-op path (M2).
+  writeFileSync(join(projectRoot, 'context', 'MEMORY.md'), '# MEMORY\n', 'utf8');
 });
 
 afterEach(() => {
@@ -399,5 +402,55 @@ describe('Task 235 — the REAL hook bin (Door 3)', () => {
     // Generous bound: this asserts "does not run the LLM inline", not a
     // stopwatch. An inline compress would be 20-80s (D-179 measurements).
     expect(Date.now() - t0).toBeLessThan(10_000);
+  });
+});
+
+// --- Task 250: the precompact half of the health log (Door 5) -----------------
+// The precompact worker is DETACHED and writes its result only to a stderr
+// nobody reads (stdio:'ignore'), so a crashed worker is invisible unless
+// something durable records it. The health entry is that record -- and it rides
+// the SAME funnel as the precompact log, so the two can never disagree.
+describe('Task 250 -- runPreCompact appends health outcomes (Door 5)', () => {
+  function readHealth() {
+    const p = join(projectRoot, 'context', '.locks', 'health.log');
+    if (!existsSync(p)) return [];
+    return readFileSync(p, 'utf8').split(/\r?\n/).filter(Boolean).map((l) => JSON.parse(l));
+  }
+
+  it('a successful roll appends precompact-failing:ok', async () => {
+    seedNow('## 2026-08-01T10:00:00Z — turn\nwe chose Postgres for staging\n');
+    const r = await runPreCompact({
+      projectRoot,
+      backend: backendReturning('## Decisions\n- chose Postgres for staging\n'),
+    });
+    expect(r.action).not.toBe('error');
+    const health = readHealth();
+    expect(health).toHaveLength(1);
+    expect(health[0]).toMatchObject({ class: 'precompact-failing', outcome: 'ok', schema: 1 });
+  });
+
+  it('a backend failure appends precompact-failing:fail', async () => {
+    seedNow('## 2026-08-01T10:00:00Z — turn\nirreplaceable content\n');
+    const r = await runPreCompact({
+      projectRoot,
+      backend: new MockHaikuBackend({ throwError: new Error('haiku down') }),
+    });
+    expect(r.action).toBe('error');
+    const health = readHealth();
+    expect(health).toHaveLength(1);
+    expect(health[0]).toMatchObject({ class: 'precompact-failing', outcome: 'fail' });
+  });
+
+  it('a gate SKIP appends nothing -- a run that never happened is not evidence', async () => {
+    seedNow('   '); // empty buffer -> the gate skips before any backend call
+    const r = await runPreCompact({ projectRoot, backend: backendReturning('x') });
+    expect(r.action).toBe('skipped');
+    expect(readHealth()).toEqual([]);
+  });
+
+  it('OVER-MUTATION GUARD: the health append leaves precompact.log own entry intact', async () => {
+    seedNow('## 2026-08-01T10:00:00Z — turn\ncontent worth banking\n');
+    await runPreCompact({ projectRoot, backend: backendReturning('## Decisions\n- something\n') });
+    expect(logLines().filter((e) => e.scope === 'precompact')).toHaveLength(1);
   });
 });

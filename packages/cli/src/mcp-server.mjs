@@ -44,6 +44,13 @@ import { rememberRich, nonProjectTierNote, prepareNearDupGuard } from './remembe
 import { forget } from './forget.mjs';
 import { overrideTrust } from './trust.mjs';
 import { lessonsPromote } from './lessons-promote.mjs';
+// Task 250 (D-412) — the MCP half of the health log. A thrown tool handler is
+// the module's one wholly-silent failure path (it becomes a JSON-RPC error and
+// touches no file); this is what gives it a durable trace.
+// The TRANSITION form, not the plain append: the server is long-lived and a
+// session can make hundreds of tool calls, and one `ok` per call was evicting
+// sparse classes from the shared tail read (review finding B2).
+import { appendHealthTransition, HEALTH_CODES } from './health-log.mjs';
 import { resolveReviewQueue, listReviewQueue } from './review-queue.mjs';
 import { resolveConflictQueue, listConflictQueue } from './conflict-queue.mjs';
 import { resolvePruneQueue, listPruneQueue } from './prune-queue.mjs';
@@ -678,6 +685,42 @@ function makeMkQueueResolve({ projectRoot, userDir }) {
 // --- Server build + run ----------------------------------------------
 
 /**
+ * Task 250 (D-412) — wrap one tool handler so a THROWN handler leaves evidence.
+ *
+ * THE LINE THIS DRAWS, and why it is the whole design: an `isError:true`
+ * envelope is the documented way a tool reports an ordinary outcome (id not
+ * found, Poison_Guard rejection, empty search) — the tool WORKED. Only a THROWN
+ * handler is a kit failure, and it is the silent one: it escapes into the SDK,
+ * becomes a JSON-RPC error, and touches no log on disk anywhere in this module.
+ * Counting `isError` as failure would whisper at a user who merely asked for
+ * something that isn't there, which is precisely the noise the strike threshold
+ * exists to kill.
+ *
+ * Exported for its own boundary test — a wrapper that swallowed, re-wrapped, or
+ * narrowed a handler would be a far worse bug than the silence it fixes, so the
+ * passthrough (identity of the thrown error, identity of the result, all args
+ * forwarded) is pinned rather than assumed.
+ */
+export function withToolHealth(projectRoot, name, handler) {
+  if (!projectRoot) return handler; // nothing to log to; stay a pure passthrough
+  return async (...args) => {
+    let result;
+    try {
+      result = await handler(...args);
+    } catch (err) {
+      appendHealthTransition(projectRoot, {
+        class: HEALTH_CODES.MCP_TOOL_FAILING,
+        outcome: 'fail',
+        detail: name, // the TOOL NAME, never the message — a message can carry content
+      });
+      throw err;
+    }
+    appendHealthTransition(projectRoot, { class: HEALTH_CODES.MCP_TOOL_FAILING, outcome: 'ok' });
+    return result;
+  };
+}
+
+/**
  * Build the kit's MCP server. Caller passes context (projectRoot, userDir,
  * db handle, optional semanticBackend). Returns the McpServer instance
  * ready for `.connect(transport)`.
@@ -691,8 +734,13 @@ export function buildMcpServer({ projectRoot, userDir, db, semanticBackend }) {
     version: PKG_VERSION,
   });
 
+  // Task 250: ONE registration seam, so the health wrapper cannot be forgotten
+  // on tool number 14. Every `registerTool(...)` below is this, not the SDK's.
+  const registerTool = (name, schema, handler) =>
+    server.registerTool(name, schema, withToolHealth(projectRoot, name, handler));
+
   // mk_search
-  server.registerTool(
+  registerTool(
     'mk_search',
     {
       description: 'Search kit memory. FTS5 keyword by default; semantic + hybrid use the embedded Layer-5b backend (sqlite-vec + a local ONNX embedder — needs the optional @huggingface/transformers install).',
@@ -715,7 +763,7 @@ export function buildMcpServer({ projectRoot, userDir, db, semanticBackend }) {
   // mk_get
   // M1: bounded `.max(100)` to prevent soft-DoS via a 100k-id request
   // opening 100k prepared statements + writing 100k JSON-encoded rows.
-  server.registerTool(
+  registerTool(
     'mk_get',
     {
       description: 'Fetch full observation bodies + provenance + relations by ID.',
@@ -727,7 +775,7 @@ export function buildMcpServer({ projectRoot, userDir, db, semanticBackend }) {
   );
 
   // mk_timeline
-  server.registerTool(
+  registerTool(
     'mk_timeline',
     {
       description: 'Sequential context around an anchor observation — N observations before + N after by created_at.',
@@ -741,7 +789,7 @@ export function buildMcpServer({ projectRoot, userDir, db, semanticBackend }) {
   );
 
   // mk_expand
-  server.registerTool(
+  registerTool(
     'mk_expand',
     {
       description: "Expand a recall hit to its source-file neighborhood — the enclosing heading section, bounded (the recall ladder's middle rung between a search hit and the transcript drill).",
@@ -753,7 +801,7 @@ export function buildMcpServer({ projectRoot, userDir, db, semanticBackend }) {
   );
 
   // mk_links (Task 232 — the relational adjacency axis; ADR-0023 ACTIVATE slice)
-  server.registerTool(
+  registerTool(
     'mk_links',
     {
       description: "Traverse a fact's relations — its backlinks (what points AT it), out-links (its `related`/[[cross-links]]), and full supersession chain (what replaced what, in order). Also accepts an ANCHOR token (D-nnn, Task nnn, ADR-nnnn, FR-nn, NFR-nn) to answer \"what cites this anchor\" (its citers as backlinks). The graph-only shapes flat search can't answer. Read-only.",
@@ -767,7 +815,7 @@ export function buildMcpServer({ projectRoot, userDir, db, semanticBackend }) {
   );
 
   // mk_cite
-  server.registerTool(
+  registerTool(
     'mk_cite',
     {
       description: 'Render a canonical Markdown citation link for a kit observation.',
@@ -782,7 +830,7 @@ export function buildMcpServer({ projectRoot, userDir, db, semanticBackend }) {
   // M1: bounded `.max(5000)` on text — a 10MB body would burn Poison_Guard
   // regex time + index-fts size. 5000 chars matches the kit's per-bullet
   // soft cap (design §2.1).
-  server.registerTool(
+  registerTool(
     'mk_remember',
     {
       description: 'Explicit user-driven save to kit memory with audit trail.',
@@ -806,7 +854,7 @@ export function buildMcpServer({ projectRoot, userDir, db, semanticBackend }) {
   );
 
   // mk_recent_activity
-  server.registerTool(
+  registerTool(
     'mk_recent_activity',
     {
       description: 'List recently added observations within a time window (by creation time).',
@@ -819,7 +867,7 @@ export function buildMcpServer({ projectRoot, userDir, db, semanticBackend }) {
   );
 
   // mk_trust (Task 108b — mutate parity). Reversible; audited.
-  server.registerTool(
+  registerTool(
     'mk_trust',
     {
       description: 'Override the trust level (low|medium|high) of a fact or bullet by ID. Reversible + audited. Parity with `cmk trust`.',
@@ -832,7 +880,7 @@ export function buildMcpServer({ projectRoot, userDir, db, semanticBackend }) {
   );
 
   // mk_lessons_promote (Task 108b — mutate parity). Sanitized + audited.
-  server.registerTool(
+  registerTool(
     'mk_lessons_promote',
     {
       description: 'Promote a project-tier (P-) fact to the cross-project user tier so it applies in every project. Sanitized + secret-screened + audited. Parity with `cmk lessons promote`.',
@@ -848,7 +896,7 @@ export function buildMcpServer({ projectRoot, userDir, db, semanticBackend }) {
   // mk_forget (Task 108b — DESTRUCTIVE mutate parity). Two-step confirm-token:
   // the first call previews + returns a confirm_token; call again with that
   // token to execute. Tombstones (audit trail preserved), never hard-deletes.
-  server.registerTool(
+  registerTool(
     'mk_forget',
     {
       description: 'Tombstone (forget) a fact by ID. DESTRUCTIVE + two-step: the first call previews what would be removed and returns a confirm_token; call again with confirm set to that token to execute. Audit trail preserved. Parity with `cmk forget`.',
@@ -863,7 +911,7 @@ export function buildMcpServer({ projectRoot, userDir, db, semanticBackend }) {
   );
 
   // mk_queue_list (Task 108b — queue parity). Read-only: show pending entries.
-  server.registerTool(
+  registerTool(
     'mk_queue_list',
     {
       description: "List pending entries in the review queue (medium-trust auto-extracts awaiting promotion), the conflict queue (writes that clashed with existing facts), or the prune queue (survival-gate candidates — trust floored + still failing). Read-only. Parity with `cmk queue review` / `cmk queue conflicts` / `cmk queue prune`.",
@@ -875,7 +923,7 @@ export function buildMcpServer({ projectRoot, userDir, db, semanticBackend }) {
   );
 
   // mk_queue_resolve (Task 108b — queue parity). Resolve one entry by id.
-  server.registerTool(
+  registerTool(
     'mk_queue_resolve',
     {
       description: "Resolve one queued entry by ID. review: 'promote' (land it in MEMORY.md at high trust) | 'discard'. conflicts: 'keep-old' | 'keep-new' (merge-both composes content — use `cmk queue conflicts`). prune: 'convert' (retain as a typed anti-pattern warning) | 'forget' (tombstone) | 'keep' (dismiss, never re-queued). Audited.",

@@ -152,7 +152,9 @@ describe('installKiroPermissions — writes the IDE 1.0 trust store (50.N.5)', (
     expect(byCap('mcp')).toBeTruthy();
     expect(byCap('skill')).toBeTruthy();
     expect(byCap('mcp').match).toHaveLength(13); // all 13 tools (mk_links joined in Task 232)
-    expect(byCap('skill').match).toEqual(expect.arrayContaining(['memory-write', 'memory-search']));
+    expect(byCap('skill').match).toEqual(
+      expect.arrayContaining(['memory-write', 'memory-search', 'troubleshooting']),
+    );
   });
 });
 

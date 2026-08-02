@@ -1,20 +1,26 @@
-// @doors: 1, 2, 4
+// @doors: 1, 2, 5
 // Door 1: writeFact still returns action:'created' even when the INDEX rebuild fails.
 // Door 2: the fact FILE is durably on disk regardless (best-effort reindex preserved).
-// Door 4: a failed INDEX rebuild now emits an audit entry (INDEX_REBUILD_FAILED)
+// Door 5: a failed INDEX rebuild emits an audit entry (INDEX_REBUILD_FAILED)
 //   instead of being SILENTLY swallowed — the D-152 gap (a committed INDEX could
 //   lag with zero trace after an auto-extract write whose detached reindex was
-//   killed/errored; nothing surfaced it).
+//   killed/errored; nothing surfaced it) — plus, since Task 250, a health.log
+//   `index-drift` outcome on BOTH the success and the failure path.
 // Door 3 N/A: in-process; no subprocess spawn.
-// Door 5 N/A: no message-queue surface.
+// Door 4 N/A: no message-queue surface.
+// (Header numbering corrected 2026-08-01 alongside the Task-250 assertions: it
+//  carried the pre-2026-07-07 swapped form, where the audit-log assertion was
+//  labelled door 4 and door 5 was written off as "no message-queue surface".
+//  Per design §17.1 door 4 = message queues, door 5 = observability.)
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { writeFact } from '../packages/cli/src/write-fact.mjs';
 import { readAuditLog } from '../packages/cli/src/audit-log.mjs';
 import { resolveTierRoot } from '../packages/cli/src/tier-paths.mjs';
+import { _resetHealthTransitionState } from '../packages/cli/src/health-log.mjs';
 
 let sandbox;
 let projectRoot;
@@ -22,6 +28,13 @@ let projectRoot;
 beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'cmk-reindex-fail-'));
   projectRoot = join(sandbox, 'proj');
+  // An INSTALLED project. The health log refuses to write without the install
+  // marker (`context/MEMORY.md`) so a repo that merely has a `context/` folder
+  // never gets one — a bare sandbox would silently exercise that no-op path
+  // instead of the writer under test.
+  mkdirSync(join(projectRoot, 'context'), { recursive: true });
+  writeFileSync(join(projectRoot, 'context', 'MEMORY.md'), '# MEMORY\n', 'utf8');
+  _resetHealthTransitionState(); // the per-process transition map must not leak across cases
 });
 afterEach(() => rmSync(sandbox, { recursive: true, force: true }));
 
@@ -39,6 +52,21 @@ const baseOpts = (over = {}) => ({
   projectRoot,
   ...over,
 });
+
+/** The Task-250 health log, minus the volatile ts/schema fields. */
+function readHealth() {
+  const p = join(projectRoot, 'context', '.locks', 'health.log');
+  if (!existsSync(p)) return [];
+  return readFileSync(p, 'utf8')
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((l) => {
+      const { ts, schema, ...rest } = JSON.parse(l);
+      expect(schema).toBe(1);
+      expect(Number.isFinite(Date.parse(ts))).toBe(true);
+      return rest;
+    });
+}
 
 describe('writeFact — INDEX rebuild failure is observable, not swallowed (D-152)', () => {
   it('a thrown reindex still creates the fact AND records the failure in the audit log', () => {
@@ -61,6 +89,25 @@ describe('writeFact — INDEX rebuild failure is observable, not swallowed (D-15
     const failEntry = log.find((e) => e.reasonCode === 'index-rebuild-failed');
     expect(failEntry).toBeTruthy();
     expect(failEntry.id).toBe(r.id);
+
+    // Task 250 — the same event, recorded for the WHISPER. DETERMINISTIC: a
+    // stale INDEX does not un-stale itself, so this fires on ONE strike.
+    expect(readHealth()).toEqual([{ class: 'index-drift', outcome: 'fail', detail: 'index-rebuild-failed' }]);
+  });
+
+  it('a successful reindex appends index-drift:ok — the only thing that clears the warning', () => {
+    const r = writeFact(baseOpts({ slug: 'healthy-fact', title: 'healthy fact', body: 'a body that indexes fine' }));
+    expect(r.action).toBe('created');
+    expect(readHealth()).toEqual([{ class: 'index-drift', outcome: 'ok' }]);
+  });
+
+  it('OVER-MUTATION GUARD: a fail then a success leaves BOTH records — the log is append-only', () => {
+    writeFact(baseOpts({ slug: 'f1', title: 'f one', body: 'body one here', _reindexFn: () => { throw new Error('x'); } }));
+    writeFact(baseOpts({ slug: 'f2', title: 'f two', body: 'body two here' }));
+    expect(readHealth()).toEqual([
+      { class: 'index-drift', outcome: 'fail', detail: 'index-rebuild-failed' },
+      { class: 'index-drift', outcome: 'ok' },
+    ]);
   });
 
   it('a successful reindex does NOT emit a failure entry (no false alarms)', () => {

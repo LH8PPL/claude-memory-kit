@@ -41,7 +41,7 @@ import { MCP_AUTO_APPROVE } from './kiro-constants.mjs';
 // (also used for the IDE's mcp.json autoApprove), so the two never drift.
 const MCP_MATCH = MCP_AUTO_APPROVE.map((t) => `core-memory-kit/${t}`);
 const SHELL_MATCH = Object.freeze(['cmd.exe /c cmk hook *', 'cmd.exe /c cmk-guard-memory*']);
-const SKILL_MATCH = Object.freeze(['memory-write', 'memory-search']);
+const SKILL_MATCH = Object.freeze(['memory-write', 'memory-search', 'troubleshooting']);
 
 // The kit's owned MATCH ENTRIES, per capability+effect. Ownership is PER-ENTRY
 // (not per-rule): Kiro stores ONE rule per (capability, effect) with a combined

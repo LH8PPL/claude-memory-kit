@@ -42,11 +42,11 @@ const tierPathsPath = join(dirname(modulePath), 'tier-paths.mjs');
 let readHookStdin;
 let parseHookPayload;
 let capturePrompt;
-let buildMemoryHint;
+let buildPromptHookOutput;
 let resolveHookProjectRoot;
 try {
   ({ readHookStdin, parseHookPayload } = await import(pathToFileURL(readHookStdinPath).href));
-  ({ capturePrompt, buildMemoryHint } = await import(pathToFileURL(modulePath).href));
+  ({ capturePrompt, buildPromptHookOutput } = await import(pathToFileURL(modulePath).href));
   ({ resolveHookProjectRoot } = await import(pathToFileURL(tierPathsPath).href));
 } catch (err) {
   process.stderr.write(
@@ -87,17 +87,27 @@ try {
 
 // Task 75.2 — emit the "memory available" recall nudge as additionalContext
 // (the MODEL-facing UserPromptSubmit field per Anthropic's hooks doc;
-// systemMessage is user-display). Best-effort: a hint failure must never
-// break the capture protocol.
+// systemMessage is user-display). Task 250 (D-412) folds the failure-driven
+// health whisper into the SAME string, and adds the human-facing
+// `systemMessage` line at severity memory-off only. Best-effort: neither may
+// ever break the capture protocol.
 try {
-  const hint = buildMemoryHint({ projectRoot, prompt: payload?.prompt, sessionId: payload?.session_id });
-  if (hint) {
-    process.stdout.write(
-      JSON.stringify({
-        continue: true,
-        hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: hint },
-      }),
-    );
+  const { additionalContext, systemMessage } = buildPromptHookOutput({
+    projectRoot,
+    prompt: payload?.prompt,
+    sessionId: payload?.session_id,
+  });
+  if (additionalContext || systemMessage) {
+    const out = { continue: true };
+    if (additionalContext) {
+      out.hookSpecificOutput = { hookEventName: 'UserPromptSubmit', additionalContext };
+    }
+    // `systemMessage` is a UNIVERSAL hook output field (verified against
+    // code.claude.com/docs/en/hooks, 2026-08-01: "Warning message shown to the
+    // user"), so it rides as a SIBLING of hookSpecificOutput — never nested
+    // inside it, which would put a human-facing string in the model's context.
+    if (systemMessage) out.systemMessage = systemMessage;
+    process.stdout.write(JSON.stringify(out));
     process.exit(0);
   }
 } catch (err) {

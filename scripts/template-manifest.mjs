@@ -36,6 +36,8 @@ export const requiredDirs = [
   { path: 'template/.claude', description: 'Claude Code config scaffolded into <project>/.claude/' },
   { path: 'template/.claude/skills', description: 'skills scaffolded by cmk install (Task 69)' },
   { path: 'template/.claude/skills/memory-write', description: 'the memory-write skill (canonical source)' },
+  { path: 'template/.claude/skills/memory-search', description: 'the memory-search skill (canonical source)' },
+  { path: 'template/.claude/skills/troubleshooting', description: 'the troubleshooting skill (canonical source)' },
 ];
 
 /** @type {ManifestFile[]} */
@@ -71,6 +73,8 @@ export const requiredFiles = [
   // to plugin/skills/ by scripts/sync-plugin-skills.mjs; guarded by
   // scripts/validate-skill-sources.mjs.
   { path: 'template/.claude/skills/memory-write/SKILL.md', description: 'memory-write skill — safe cmk-routed capture' },
+  { path: 'template/.claude/skills/memory-search/SKILL.md', description: 'memory-search skill — recall from project memory' },
+  { path: 'template/.claude/skills/troubleshooting/SKILL.md', description: 'troubleshooting skill — the kit failure-code repair book' },
 ];
 
 /** Flatten to absolute-like paths for grep-friendly output. */

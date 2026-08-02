@@ -8,7 +8,7 @@
     {
       "name": "core-memory-kit",
       "source": "./plugin",
-      "description": "Frozen-snapshot session loads, auto-extract Stop hook, memory-write + bootstrap skills, optional memsearch semantic recall, optional auto-curation crons.",
+      "description": "Frozen-snapshot session loads, auto-extract Stop hook, memory-write + memory-search + troubleshooting + bootstrap skills, optional memsearch semantic recall, optional auto-curation crons.",
       "version": "0.1.1",
       "author": {
         "name": "Lior Hollander"
