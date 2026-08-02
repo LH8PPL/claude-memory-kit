@@ -545,6 +545,31 @@ describe('viewer — JSON API routes (255.2)', () => {
       expect(nodes.has(e.src)).toBe(true);
       expect(nodes.has(e.dst)).toBe(true);
     }
+
+    // Anchor hubs and DANGLING targets are both ride-along nodes, but they mean
+    // opposite things — a hub is structure the corpus earned, a dangler is a
+    // reference to a fact that does not exist. Counting them as one number let
+    // the page say "N doc anchors" about a set that could be mostly broken.
+    expect(body.anchor_count).toBe(body.nodes.filter((n) => n.kind === 'anchor').length);
+    expect(body.dangling_count).toBe(body.nodes.filter((n) => n.kind === 'dangling').length);
+  });
+
+  it('a dangling link is counted as dangling, never as a doc anchor', async () => {
+    // A `related:` slug pointing at a fact that does not exist — the shape that
+    // made the conflated count wrong on any real corpus.
+    seedFact({
+      id: 'P-P9HKNNHY',
+      tier: 'P',
+      slug: 'dangler',
+      body: 'This one references a fact nobody wrote.',
+      related: ['ghost-fact-that-does-not-exist'],
+    });
+    const { body } = await getJson(base, '/api/graph');
+    expect(body.dangling_count).toBe(1);
+    expect(body.nodes.find((n) => n.id === 'ghost-fact-that-does-not-exist').kind).toBe('dangling');
+    // …and the anchor count is unmoved by it (the whole point of the split).
+    expect(body.anchor_count).toBe(body.nodes.filter((n) => n.kind === 'anchor').length);
+    expect(body.nodes.some((n) => n.kind === 'anchor' && n.id === 'anchor:D-414')).toBe(true);
   });
 
   it('the graph budget: AT-CAP nodes are returned whole, OVER-CAP truncates and says so', async () => {
@@ -566,10 +591,10 @@ describe('viewer — JSON API routes (255.2)', () => {
 
     const overCap = await getJson(base, '/api/graph?limit=2');
     expect(overCap.body.truncated).toBe(true);
-    // The budget bounds LIVE facts; anchor hubs + archived predecessors ride on
-    // top and are reported separately (see the route's own note).
+    // The budget bounds LIVE facts; anchor hubs, dangling targets and archived
+    // predecessors ride on top and are each reported separately (route note).
     expect(overCap.body.nodes.length).toBeLessThanOrEqual(
-      2 + overCap.body.anchor_count + overCap.body.archived_count,
+      2 + overCap.body.anchor_count + overCap.body.dangling_count + overCap.body.archived_count,
     );
     expect(overCap.body.nodes.filter((n) => n.kind === 'fact' && !n.superseded).length).toBe(2);
 
@@ -821,6 +846,10 @@ describe('viewer — the HTML page (255.3)', () => {
   it('carries the freshness label + a manual refresh control, and NO live-watch (§24.1.6)', () => {
     expect(html).toContain('id="freshness"');
     expect(html).toContain('id="refresh"');
+    // The search box fires per keystroke, so two responses can race; the page
+    // must discard a stale one rather than repaint with it.
+    expect(html).toContain('factsSeq');
+    expect(html).toMatch(/seq !== factsSeq/);
     // Task 259 owns live refresh; wave 1 must not have grown one by accident.
     expect(html).not.toMatch(/EventSource|new WebSocket|text\/event-stream/);
   });

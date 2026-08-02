@@ -308,7 +308,17 @@
   }
 
   // ---- views ------------------------------------------------------------
+  //
+  // The search box fires per keystroke (debounced), so two requests can be in
+  // flight at once whenever a query outruns the debounce — and responses are
+  // not ordered. Without this token the SLOWER, OLDER response can land last
+  // and repaint the list with results for a prefix the user already finished
+  // typing. Search is the landing feature; showing stale hits for it is the one
+  // wrongness a browse UI cannot get away with.
+  let factsSeq = 0;
+
   async function viewFacts() {
+    const seq = ++factsSeq;
     const out = $('#facts-out');
     const q = $('#q').value.trim();
     const tier = $('#tier').value;
@@ -316,6 +326,7 @@
     if (q) params.set('q', q);
     if (tier) params.set('tier', tier);
     const data = await api('/facts' + (params.toString() ? '?' + params : ''));
+    if (seq !== factsSeq) return; // a newer query went out while this one flew
     clear(out);
     if (data.error) { out.append(errorCard(data)); return; }
     stamp(data, data.mode === 'search' ? data.count + ' hit(s) for “' + data.query + '”' : 'newest ' + data.count);
@@ -492,6 +503,7 @@
       data.fact_count + ' fact(s)' +
       (data.truncated ? ' — showing the newest ' + data.node_limit : '') +
       (data.anchor_count ? ' · ' + data.anchor_count + ' doc anchor(s)' : '') +
+      (data.dangling_count ? ' · ' + data.dangling_count + ' dangling link(s)' : '') +
       (data.archived_count ? ' · ' + data.archived_count + ' superseded predecessor(s)' : '');
     if (!data.nodes.length) { note.textContent = 'Nothing to draw yet — the graph fills as facts link to each other.'; return; }
 

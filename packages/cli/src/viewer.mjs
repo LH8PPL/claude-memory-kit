@@ -591,14 +591,16 @@ const API = {
    * The kit-semantic graph (§24.1.4 iii): trust is the colour, supersession is
    * the direction, anchors are the hubs.
    *
-   * `node_limit` budgets the LIVE facts (newest-first). Two node classes ride
-   * on top of it rather than inside it, and the counts are reported separately
-   * so the page can say so: anchor hubs (the structure that makes a bounded
-   * slice legible) and archived-superseded predecessors (the direction the view
-   * exists to show — a supersession arrow with no tail is not a supersession
-   * arrow). Both are naturally an order of magnitude smaller than the fact
-   * corpus. Trigger to revisit: a project where `archived_count + anchor_count`
-   * approaches `node_limit` — then they need their own budgets, not a shared one.
+   * `node_limit` budgets the LIVE facts (newest-first). Three node classes ride
+   * on top of it rather than inside it, each counted on its own so the page can
+   * name it accurately: anchor hubs (the structure that makes a bounded slice
+   * legible), dangling link targets (a reference to a fact that does not exist
+   * — worth seeing, but not the same thing as a hub), and archived-superseded
+   * predecessors (the direction the view exists to show — a supersession arrow
+   * with no tail is not a supersession arrow). All three are naturally an order
+   * of magnitude smaller than the fact corpus. Trigger to revisit: a project
+   * where their sum approaches `node_limit` — then they need their own budgets
+   * rather than an unbounded ride-along.
    *
    * Edges are filtered to pairs whose BOTH endpoints made the cut, so the page
    * never draws an arrow into nothing.
@@ -651,7 +653,12 @@ const API = {
       }
 
       const allEdges = db.prepare('SELECT src, dst, type, dst_resolved FROM edges ORDER BY src, dst, type').all();
+      // Counted SEPARATELY, not lumped: an anchor hub is real structure the
+      // corpus earned, a dangling node is a link pointing at a fact that does
+      // not exist. Reporting them as one number let the page say "N doc
+      // anchors" about a set that might be mostly broken links.
       let anchorCount = 0;
+      let danglingCount = 0;
       const edges = [];
       for (const e of allEdges) {
         if (!nodes.has(e.src)) continue;
@@ -663,7 +670,8 @@ const API = {
           if (e.dst_resolved === 1) continue; // a resolved id that fell outside the slice
           const kind = e.dst.startsWith('anchor:') ? 'anchor' : 'dangling';
           nodes.set(e.dst, { id: e.dst, kind, label: e.dst, tier: null, trust: null, trust_score: null, created_at: null, superseded: false });
-          anchorCount += 1;
+          if (kind === 'anchor') anchorCount += 1;
+          else danglingCount += 1;
         }
         edges.push({ src: e.src, dst: e.dst, type: e.type, resolved: e.dst_resolved === 1 });
       }
@@ -677,6 +685,7 @@ const API = {
           fact_count: total,
           archived_count: archivedCount,
           anchor_count: anchorCount,
+          dangling_count: danglingCount,
           nodes: [...nodes.values()],
           edges,
         },
