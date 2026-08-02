@@ -213,6 +213,106 @@ export function normalizeDecisionsJournal(content) {
   return result;
 }
 
+// --- The READER (Task 255) ------------------------------------------------
+//
+// The journal has exactly one FORMAT, so it gets exactly one PARSER. This
+// module is where the format is written (buildDecisionEntry above), so it is
+// where reading it belongs — the shared-module discipline applied to a shape
+// that had already been re-derived once: `search.mjs`'s `--scope decisions`
+// backend grew its own marker-splitter, and the viewer's `/api/decisions` would
+// have been the third copy of the same seven subtle rules (line-start-only
+// markers, strip-the-plumbing-before-matching, the retraction tag sits on the
+// line UNDER the heading and only there). Both consumers now take this one.
+//
+// Deliberately kept as SPANS over the raw text rather than a re-render: the
+// journal is append-only and hand-editable (§the D-161 contract — a human may
+// write prose between entries), so a parser that reconstructs entries would
+// quietly drop whatever it did not model. Every entry carries its raw `block`.
+
+/** Entry-boundary marker. Intentionally looser than ID_PATTERN — it matches
+ *  what the WRITER emits, so a legacy/hand-edited id still forms a boundary
+ *  rather than silently merging two entries into one. */
+const ENTRY_MARKER_RE = /<!--\s*decision:([PUL]-[^\s]+)\s*-->/g;
+const MARKER_STRIP_RE = /<!--\s*decision:[PUL]-[^\s]+\s*-->/g;
+const WHEN_RE = /\*\*When:\*\*\s*([^\s·]+)/;
+const FACT_RE = /\*\*Fact:\*\*\s*`([^`]+)`/;
+const WHY_LINE_RE = /(?:^|\n)[ \t]*\*\*Why:\*\*[ \t]*([^\n]+)/;
+
+/**
+ * Parse `DECISIONS.md` into its ordered entries. Pure; journal order (oldest
+ * first) is preserved because the journal IS the chronology.
+ *
+ * @param {string} content
+ * @returns {Array<{id,title,when,factId,why,retracted,sourceLine,block,cleaned}>}
+ */
+export function parseDecisionsJournal(content) {
+  if (typeof content !== 'string' || content === '') return [];
+
+  // A marker is a boundary ONLY at line start: a marker QUOTED inside a Why or
+  // a body (a meta-decision about the journal format, or one entry citing
+  // another's marker) must not false-split the entry.
+  const markers = [];
+  let m;
+  ENTRY_MARKER_RE.lastIndex = 0;
+  while ((m = ENTRY_MARKER_RE.exec(content)) !== null) {
+    if (m.index === 0 || content[m.index - 1] === '\n') {
+      markers.push({ id: m[1], start: m.index });
+    }
+  }
+
+  const entries = [];
+  for (let i = 0; i < markers.length; i++) {
+    const start = markers[i].start;
+    const end = i + 1 < markers.length ? markers[i + 1].start : content.length;
+    const block = content.slice(start, end);
+    // Strip the PLUMBING before anything reads the entry as prose: the marker
+    // comment (whose literal text contains "decision", which otherwise matches
+    // every search for that word) and the heading hashes.
+    const cleaned = block.replace(MARKER_STRIP_RE, '').replace(/^#{1,6}\s+/gm, '');
+
+    // The heading is a line-start `## ` (the block opens with the marker, so
+    // the heading is never at block offset 0 — match `\n## `).
+    const headingNl = block.indexOf('\n## ');
+    let title = null;
+    let retracted = false;
+    if (headingNl !== -1) {
+      const lineEnd = block.indexOf('\n', headingNl + 1);
+      title = block.slice(headingNl + 4, lineEnd === -1 ? block.length : lineEnd).trim();
+      // The retraction tag sits on its OWN line directly under the heading (the
+      // updateDecisionsJournal inserter's contract) — scoping the check there is
+      // what stops an entry whose Why merely MENTIONS "_(retracted" from being
+      // mislabeled.
+      const afterHeading = lineEnd === -1 ? '' : block.slice(lineEnd + 1);
+      retracted = afterHeading.startsWith(RETRACT_TAG);
+    }
+
+    const whenMatch = WHEN_RE.exec(block);
+    const factMatch = FACT_RE.exec(block);
+    const whyMatch = WHY_LINE_RE.exec(block);
+    entries.push({
+      id: markers[i].id,
+      title,
+      when: whenMatch ? whenMatch[1] : null,
+      factId: factMatch ? factMatch[1] : markers[i].id,
+      why: whyMatch ? whyMatch[1].trim() : null,
+      retracted,
+      // 1-based line of the marker — the drill-back into DECISIONS.md.
+      sourceLine: content.slice(0, start).split('\n').length,
+      block,
+      cleaned,
+    });
+  }
+  return entries;
+}
+
+/** `parseDecisionsJournal` over the project's journal file. Missing file → [] —
+ *  a project that has captured no decisions yet is empty, not broken. */
+export function readDecisionsJournal(projectRoot) {
+  const file = join(projectRoot, 'context', 'DECISIONS.md');
+  if (!existsSync(file)) return [];
+  return parseDecisionsJournal(readFileSync(file, 'utf8'));
+}
+
 // --- File-IO orchestration (the impure shell over the pure core) ----------
 
 // Leading indent is [ \t]* (NOT \s*) so it can't match the newline the

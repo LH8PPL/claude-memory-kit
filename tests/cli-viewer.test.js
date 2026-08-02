@@ -16,11 +16,27 @@
 // server on an ephemeral port. Nothing here reaches into internal helpers.
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, readdirSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { request as httpRequest } from 'node:http';
 import { install } from '../packages/cli/src/install.mjs';
-import { startViewer, LOOPBACK_HOSTS } from '../packages/cli/src/viewer.mjs';
+import { writeFact } from '../packages/cli/src/write-fact.mjs';
+import { appendHealthEntry, activeWarnings, HEALTH_CODES } from '../packages/cli/src/health-log.mjs';
+import {
+  startViewer,
+  LOOPBACK_HOSTS,
+  VIEWER_DEFAULT_LIMIT,
+  VIEWER_MAX_LIMIT,
+} from '../packages/cli/src/viewer.mjs';
 import { subcommands, runView } from '../packages/cli/src/subcommands.mjs';
 
 let sandbox, projectRoot, userDir, server;
@@ -184,6 +200,505 @@ describe('viewer — server core (255.1)', () => {
     expect(after.filter((p) => !p.includes('.index'))).toEqual(
       before.filter((p) => !p.includes('.index')),
     );
+  });
+});
+
+// --- The corpus the route tests browse ------------------------------------
+//
+// Real ids from fixtures/canonicalize-vectors.json's alphabet, re-prefixed per
+// tier so the P/L/U badging is provable rather than assumed.
+const P_ALPHA = 'P-2DZG7XF4'; // cites [[bravo]] + anchor D-414; the FTS target
+const P_BRAVO = 'P-34GZDKAW';
+const L_LOCAL = 'L-56UXMRD6';
+const U_HABIT = 'U-D6YL7RBC';
+const P_OLD = 'P-GDZU5542'; // superseded BY P_NEW (archived)
+const P_NEW = 'P-NJD6HT3P';
+
+function seedFact({ id, tier, slug, body, related, root }) {
+  const r = writeFact({
+    projectRoot,
+    userDir,
+    tier,
+    type: 'feedback',
+    slug,
+    title: slug,
+    body,
+    writeSource: 'user-explicit',
+    trust: tier === 'U' ? 'medium' : 'high',
+    sourceFile: 'MEMORY.md',
+    sourceLine: 1,
+    sourceSha1: 'a'.repeat(40),
+    id,
+    related,
+  });
+  if (r.action === 'error') throw new Error(`seedFact ${slug}: ${(r.errors ?? []).join('; ')}`);
+  void root;
+  return r.path;
+}
+
+function seedCorpus() {
+  seedFact({
+    id: P_ALPHA,
+    tier: 'P',
+    slug: 'alpha',
+    body:
+      'The quicksort pivot rule we settled on.\n\n' +
+      '**Why:** because the naive midpoint degraded on sorted input.\n' +
+      '**How to apply:** pick the median of three.\n\n' +
+      'See [[bravo]] and D-414.',
+    related: ['bravo'],
+  });
+  // Two distinct citers: graph-index's MIN_ANCHOR_CITERS floor means a doc
+  // anchor cited by only ONE fact forms no hub and gets no edge (design §9.5.1).
+  seedFact({ id: P_BRAVO, tier: 'P', slug: 'bravo', body: 'The bravo fact body, also per D-414.' });
+  seedFact({ id: L_LOCAL, tier: 'L', slug: 'local-thing', body: 'A machine-local note.' });
+  seedFact({ id: U_HABIT, tier: 'U', slug: 'habit', body: 'A cross-project habit.' });
+  seedFact({ id: P_NEW, tier: 'P', slug: 'ver2', body: 'The current version of the rule.' });
+
+  // A superseded predecessor lives in the archive (that is where the kit MOVES
+  // it), so the graph's supersession direction has a real edge to draw.
+  const arch = join(projectRoot, 'context', 'memory', 'archive', 'superseded');
+  mkdirSync(arch, { recursive: true });
+  writeFileSync(
+    join(arch, `${P_OLD}.md`),
+    [
+      '---',
+      `id: ${P_OLD}`,
+      'type: feedback',
+      'title: ver1',
+      'created_at: 2026-06-23T17:26:37Z',
+      'write_source: user-explicit',
+      'trust: high',
+      'source_file: user-explicit',
+      'source_line: 1',
+      `source_sha1: ${'a'.repeat(64)}`,
+      `superseded_by: ${P_NEW}`,
+      '---',
+      '',
+      'The superseded version of the rule.',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+}
+
+function seedDecisions() {
+  writeFileSync(
+    join(projectRoot, 'context', 'DECISIONS.md'),
+    [
+      '# Decisions',
+      '',
+      `<!-- decision:${P_ALPHA} -->`,
+      '',
+      '## Use median-of-three pivots',
+      '',
+      `**When:** 2026-07-01 · **Fact:** \`${P_ALPHA}\``,
+      '**Why:** the naive midpoint degraded on sorted input',
+      '',
+      `<!-- decision:${P_BRAVO} -->`,
+      '',
+      '## Drop the bravo experiment',
+      '_(retracted 2026-07-14)_',
+      '',
+      `**When:** 2026-07-02 · **Fact:** \`${P_BRAVO}\``,
+      '**Why:** superseded by the median rule',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+}
+
+/**
+ * A RAW http request — `fetch`/undici refuses to send a `Host` override and
+ * refuses the `TRACE` method outright, and both are exactly what the
+ * rebinding-guard and read-only tests need to send.
+ */
+function raw(base, path, { method = 'GET', headers = {} } = {}) {
+  const u = new URL(path, base);
+  return new Promise((resolve, reject) => {
+    const req = httpRequest(
+      { host: u.hostname, port: u.port, path: u.pathname + u.search, method, headers },
+      (res) => {
+        let body = '';
+        res.on('data', (c) => (body += c));
+        res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+      },
+    );
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+/** GET a JSON route and return {status, body}. */
+async function getJson(base, path, init) {
+  const res = await fetch(new URL(path, base), init);
+  const text = await res.text();
+  let body = null;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    body = text;
+  }
+  return { status: res.status, headers: res.headers, body };
+}
+
+// The doctor's backend-CLI probe spawns the user's agent binary. Production
+// keeps that (the viewer's /api/health must say exactly what `cmk doctor`
+// says); the tests stub it so the suite never depends on what is installed.
+const STUB_DOCTOR = { backendCliProbe: () => ({ present: false, reason: 'stubbed in test' }) };
+
+describe('viewer — JSON API routes (255.2)', () => {
+  let base;
+  beforeEach(async () => {
+    seedCorpus();
+    seedDecisions();
+    const r = await boot({ doctorOptions: STUB_DOCTOR });
+    base = r.url;
+  });
+
+  it('/api/facts lists newest-first across ALL THREE tiers, badged (§24.1.5)', async () => {
+    const { status, body } = await getJson(base, '/api/facts');
+    expect(status).toBe(200);
+    expect(body.view).toBe('facts');
+    expect(body.mode).toBe('recent');
+    expect(body.query).toBeNull();
+    expect(typeof body.generated_at).toBe('string');
+    expect(body.count).toBe(body.facts.length);
+
+    const byId = new Map(body.facts.map((f) => [f.id, f]));
+    expect(byId.get(P_ALPHA).tier).toBe('P');
+    expect(byId.get(L_LOCAL).tier).toBe('L');
+    expect(byId.get(U_HABIT).tier).toBe('U');
+    // The badges the landing page renders must all be present on every row.
+    for (const f of body.facts) {
+      expect(f).toHaveProperty('trust');
+      expect(f).toHaveProperty('created_at');
+      expect(f).toHaveProperty('source_file');
+      expect(f).toHaveProperty('title');
+    }
+    // Newest-first.
+    const dates = body.facts.map((f) => f.created_at);
+    expect([...dates].sort((a, b) => b - a)).toEqual(dates);
+  });
+
+  it('/api/facts?q= runs the FTS search (the landing feature the 89k★ precedent lacks)', async () => {
+    const { body } = await getJson(base, '/api/facts?q=quicksort');
+    expect(body.mode).toBe('search');
+    expect(body.query).toBe('quicksort');
+    expect(body.facts.map((f) => f.id)).toContain(P_ALPHA);
+    expect(body.facts.map((f) => f.id)).not.toContain(L_LOCAL);
+
+    const none = await getJson(base, '/api/facts?q=zzzznotpresent');
+    expect(none.body.count).toBe(0);
+    expect(none.body.facts).toEqual([]);
+  });
+
+  it('/api/facts?tier= filters to one tier, in both modes', async () => {
+    const recent = await getJson(base, '/api/facts?tier=L');
+    expect(recent.body.tier).toBe('L');
+    expect(recent.body.facts.map((f) => f.id)).toEqual([L_LOCAL]);
+
+    const searched = await getJson(base, '/api/facts?q=fact&tier=P');
+    expect(searched.body.facts.every((f) => f.tier === 'P')).toBe(true);
+
+    const bogus = await getJson(base, '/api/facts?tier=Z');
+    expect(bogus.status).toBe(400);
+    expect(String(bogus.body.error)).toMatch(/tier/i);
+  });
+
+  it('the facts budget: AT-CAP limit is honored, OVER-CAP clamps and says so', async () => {
+    const atCap = await getJson(base, `/api/facts?limit=${VIEWER_MAX_LIMIT}`);
+    expect(atCap.status).toBe(200);
+    expect(atCap.body.limit).toBe(VIEWER_MAX_LIMIT);
+    expect(atCap.body.clamped).toBe(false);
+
+    const overCap = await getJson(base, `/api/facts?limit=${VIEWER_MAX_LIMIT + 1}`);
+    expect(overCap.status).toBe(200);
+    expect(overCap.body.limit).toBe(VIEWER_MAX_LIMIT);
+    expect(overCap.body.clamped).toBe(true);
+
+    const dflt = await getJson(base, '/api/facts');
+    expect(dflt.body.limit).toBe(VIEWER_DEFAULT_LIMIT);
+
+    const one = await getJson(base, '/api/facts?limit=1');
+    expect(one.body.facts).toHaveLength(1);
+
+    for (const bad of ['0', '-3', 'abc']) {
+      const r = await getJson(base, `/api/facts?limit=${bad}`);
+      expect(r.status).toBe(400);
+    }
+  });
+
+  it('/api/fact/:id returns the body, Why/How, trust, source, dates and edges', async () => {
+    const { status, body } = await getJson(base, `/api/fact/${P_ALPHA}`);
+    expect(status).toBe(200);
+    expect(body.view).toBe('fact');
+    expect(body.found).toBe(true);
+    const f = body.fact;
+    expect(f.id).toBe(P_ALPHA);
+    expect(f.tier).toBe('P');
+    expect(f.trust).toBe('high');
+    expect(typeof f.trust_score).toBe('number');
+    expect(f.write_source).toBe('user-explicit');
+    expect(f.source_file).toMatch(/alpha\.md$/);
+    expect(f.created_at).toBeTruthy();
+    expect(f.body).toContain('quicksort');
+    expect(f.why).toMatch(/naive midpoint/);
+    expect(f.how).toMatch(/median of three/);
+
+    // The local neighborhood the design asks for (§24.1.4 ii).
+    const outDsts = body.edges.out.map((e) => e.dst);
+    expect(outDsts).toContain(P_BRAVO); // related: + [[bravo]] both resolve
+    expect(body.edges.out.some((e) => e.type === 'cites' && e.dst === 'anchor:D-414')).toBe(true);
+    expect(Array.isArray(body.edges.in)).toBe(true);
+
+    // The answer to the field's #1 delete-from-viewer demand (§24.1.3).
+    expect(body.commands.forget).toBe(`cmk forget ${P_ALPHA}`);
+    expect(body.commands.trust).toBe(`cmk trust ${P_ALPHA} high`);
+  });
+
+  it('/api/fact/:id carries the supersession chain, forward-directed', async () => {
+    const { body } = await getJson(base, `/api/fact/${P_OLD}`);
+    expect(body.found).toBe(true);
+    expect(body.fact.superseded_by).toBe(P_NEW);
+    expect(body.supersession).toContain(P_NEW);
+  });
+
+  it('/api/fact/:id — unknown id 404s, malformed id 400s, neither leaks a path', async () => {
+    const unknown = await getJson(base, '/api/fact/P-ZZZZZZZZ'); // validate-test-ids: ignore
+    expect(unknown.status).toBe(404);
+    expect(unknown.body.found).toBe(false);
+
+    for (const bad of ['nope', 'P-short', 'P-2DZG7XF4x', '%00', 'C%3A%5CWindows']) {
+      const r = await getJson(base, `/api/fact/${bad}`);
+      expect([400, 404]).toContain(r.status);
+      expect(JSON.stringify(r.body)).not.toContain(projectRoot.replace(/\\/g, '\\\\'));
+    }
+  });
+
+  it('a dot-segment in the fact path NORMALIZES to a view — it never traverses', async () => {
+    // WHATWG URL collapses `..` (and its `%2e%2e` spelling) before the router
+    // sees it, so `/api/fact/..` is literally a request for `/api/` — the facts
+    // view — not a walk out of anything. Pinned so the behavior is a decision.
+    for (const path of ['/api/fact/..', '/api/fact/%2e%2e']) {
+      const r = await getJson(base, path);
+      expect(r.status).toBe(200);
+      expect(r.body.view).toBe('facts');
+    }
+  });
+
+  it('/api/graph returns kit-semantic nodes + edges (trust colour, supersession direction, anchor hubs)', async () => {
+    const { status, body } = await getJson(base, '/api/graph');
+    expect(status).toBe(200);
+    expect(body.view).toBe('graph');
+    const nodes = new Map(body.nodes.map((n) => [n.id, n]));
+    expect(nodes.get(P_ALPHA).trust).toBe('high');
+    expect(typeof nodes.get(P_ALPHA).trust_score).toBe('number');
+    expect(nodes.get(P_ALPHA).tier).toBe('P');
+    expect(nodes.get(P_ALPHA).kind).toBe('fact');
+    // The anchor hub is a NODE, not a dangling string (§24.1.4 iii).
+    expect(nodes.get('anchor:D-414').kind).toBe('anchor');
+
+    const sup = body.edges.find((e) => e.type === 'superseded_by');
+    expect(sup).toBeTruthy();
+    expect(sup.src).toBe(P_OLD); // direction: old -> new, never the reverse
+    expect(sup.dst).toBe(P_NEW);
+    expect(nodes.get(P_OLD).superseded).toBe(true);
+    expect(nodes.get(P_NEW).superseded).toBe(false);
+
+    // Every edge endpoint must exist as a node, or the page draws into space.
+    for (const e of body.edges) {
+      expect(nodes.has(e.src)).toBe(true);
+      expect(nodes.has(e.dst)).toBe(true);
+    }
+  });
+
+  it('the graph budget: AT-CAP nodes are returned whole, OVER-CAP truncates and says so', async () => {
+    const total = (await getJson(base, '/api/graph')).body.fact_count;
+    expect(total).toBeGreaterThan(2);
+
+    // AT-CAP: a limit of exactly the corpus size returns all of it, untruncated.
+    const atCap = await getJson(base, `/api/graph?limit=${total}`);
+    expect(atCap.body.node_limit).toBe(total);
+    expect(atCap.body.truncated).toBe(false);
+    expect(atCap.body.nodes.filter((n) => n.kind === 'fact' && !n.superseded).length).toBe(total);
+
+    // OVER-CAP by one: the same corpus, one fact short, and it SAYS so.
+    const overByOne = await getJson(base, `/api/graph?limit=${total - 1}`);
+    expect(overByOne.body.truncated).toBe(true);
+    expect(overByOne.body.nodes.filter((n) => n.kind === 'fact' && !n.superseded).length).toBe(
+      total - 1,
+    );
+
+    const overCap = await getJson(base, '/api/graph?limit=2');
+    expect(overCap.body.truncated).toBe(true);
+    // The budget bounds LIVE facts; anchor hubs + archived predecessors ride on
+    // top and are reported separately (see the route's own note).
+    expect(overCap.body.nodes.length).toBeLessThanOrEqual(
+      2 + overCap.body.anchor_count + overCap.body.archived_count,
+    );
+    expect(overCap.body.nodes.filter((n) => n.kind === 'fact' && !n.superseded).length).toBe(2);
+
+    const clamped = await getJson(base, `/api/graph?limit=${VIEWER_MAX_LIMIT + 1}`);
+    expect(clamped.body.node_limit).toBe(VIEWER_MAX_LIMIT);
+    expect(clamped.body.clamped).toBe(true);
+  });
+
+  it('/api/health renders the doctor checks AND agrees with the 250 health-log evidence', async () => {
+    // A deterministic class fires on ONE strike (health-log's own semantics —
+    // reused, never re-thresholded here).
+    appendHealthEntry(projectRoot, { class: HEALTH_CODES.INDEX_DRIFT, outcome: 'fail' });
+
+    const { status, body } = await getJson(base, '/api/health');
+    expect(status).toBe(200);
+    expect(body.view).toBe('health');
+    expect(body.checks.length).toBe(14);
+    for (const c of body.checks) {
+      expect(c).toHaveProperty('id');
+      expect(c).toHaveProperty('name');
+      expect(['pass', 'warn', 'fail', 'skip']).toContain(c.status);
+    }
+    expect(typeof body.fail_count).toBe('number');
+
+    // The route must not re-derive the warning set — it must BE the same one
+    // the whisper uses, or the strip and the nudge can disagree.
+    const expected = activeWarnings(projectRoot);
+    expect(body.active_warnings).toEqual(expected);
+    expect(body.active_warnings.map((w) => w.code)).toContain(HEALTH_CODES.INDEX_DRIFT);
+
+    // The pinned one-line strip: the active warning when there is one.
+    expect(body.strip.state).toBe('warn');
+    expect(body.strip.text).toContain(expected[0].title);
+    expect(body.strip.action).toBe(expected[0].primaryAction);
+  });
+
+  it('/api/health strip is a quiet green line when nothing is warning', async () => {
+    const { body } = await getJson(base, '/api/health');
+    expect(body.active_warnings).toEqual([]);
+    expect(body.strip.state).toBe('ok');
+    expect(body.strip.text).toMatch(/\w/);
+  });
+
+  it('/api/decisions is the journal chronologically, retracted entries flagged', async () => {
+    const { status, body } = await getJson(base, '/api/decisions');
+    expect(status).toBe(200);
+    expect(body.view).toBe('decisions');
+    expect(body.count).toBe(2);
+    expect(body.decisions.map((d) => d.id)).toEqual([P_ALPHA, P_BRAVO]); // journal order
+    expect(body.decisions[0].title).toBe('Use median-of-three pivots');
+    expect(body.decisions[0].when).toBe('2026-07-01');
+    expect(body.decisions[0].why).toMatch(/naive midpoint/);
+    expect(body.decisions[0].retracted).toBe(false);
+    expect(body.decisions[1].retracted).toBe(true);
+    expect(body.decisions[1].source_line).toBeGreaterThan(body.decisions[0].source_line);
+  });
+
+  it('a project with no decision journal answers empty, not 500', async () => {
+    rmSync(join(projectRoot, 'context', 'DECISIONS.md'), { force: true });
+    const { status, body } = await getJson(base, '/api/decisions');
+    expect(status).toBe(200);
+    expect(body.count).toBe(0);
+    expect(body.decisions).toEqual([]);
+  });
+
+  it('§24.1.2 — the SAME route answers HTML or JSON three ways', async () => {
+    for (const path of ['/facts', '/graph', '/health', '/decisions', `/fact/${P_ALPHA}`]) {
+      const html = await fetch(new URL(path, base));
+      expect(html.headers.get('content-type')).toMatch(/text\/html/);
+
+      const suffixed = await fetch(new URL(`${path}.json`, base));
+      expect(suffixed.headers.get('content-type')).toMatch(/application\/json/);
+
+      const negotiated = await fetch(new URL(path, base), {
+        headers: { accept: 'application/json' },
+      });
+      expect(negotiated.headers.get('content-type')).toMatch(/application\/json/);
+
+      const prefixed = await fetch(new URL(`/api${path}`, base));
+      expect(prefixed.headers.get('content-type')).toMatch(/application\/json/);
+
+      // Same payload from both spellings — minus the per-response envelope
+      // fields that are, by design, different on every request.
+      const strip = ({ generated_at, took_ms, duration_ms, ...rest }) => rest;
+      expect(strip(await suffixed.json())).toEqual(strip(await prefixed.json()));
+    }
+  });
+
+  it('STRUCTURALLY read-only: every method × every route is 405 (§24.1.3)', async () => {
+    const routes = [
+      '/',
+      '/facts',
+      '/api/facts',
+      `/api/fact/${P_ALPHA}`,
+      '/api/graph',
+      '/api/health',
+      '/api/decisions',
+      '/nope',
+    ];
+    // Sent RAW: undici rejects TRACE outright, and the point of this test is
+    // that the SERVER refuses every method, not that the client does.
+    const methods = ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'TRACE', 'PROPFIND'];
+    for (const path of routes) {
+      for (const method of methods) {
+        const res = await raw(base, path, { method });
+        expect(`${method} ${path} -> ${res.status}`).toBe(`${method} ${path} -> 405`);
+        expect(res.headers.allow).toBe('GET, HEAD');
+      }
+    }
+    // Over-mutation guard: the whole tier survived the write attempts intact.
+    const after = await getJson(base, '/api/facts');
+    expect(after.body.count).toBeGreaterThanOrEqual(5);
+  });
+
+  it('HEAD is allowed and carries headers with no body', async () => {
+    const res = await fetch(new URL('/api/facts', base), { method: 'HEAD' });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toMatch(/application\/json/);
+    expect(await res.text()).toBe('');
+  });
+
+  it('no route reaches a file outside the tier — traversal attempts 404', async () => {
+    const attempts = [
+      '/../../package.json',
+      '/api/fact/..%2F..%2Fpackage.json',
+      '/api/../../package.json',
+      '/api/facts/../../../../etc/passwd',
+      '/%2e%2e%2f%2e%2e%2fpackage.json',
+      '/api/fact/%00',
+    ];
+    for (const path of attempts) {
+      const res = await fetch(`${base.replace(/\/$/, '')}${path}`);
+      expect([400, 404]).toContain(res.status);
+      const text = await res.text();
+      expect(text).not.toContain('"@lh8ppl/core-memory-kit"');
+      expect(text).not.toContain('root:x:');
+    }
+  });
+
+  it('a request with a non-loopback Host header is refused (DNS-rebinding guard)', async () => {
+    // Binding loopback does NOT stop a hostile page from resolving its own
+    // domain to 127.0.0.1 and reading the user's memory through their browser.
+    // The Host header is the only thing that tells those apart.
+    for (const host of ['evil.example.com', 'memory.attacker.test:80']) {
+      const res = await raw(base, '/api/facts', { headers: { host } });
+      expect(`${host} -> ${res.status}`).toBe(`${host} -> 403`);
+    }
+    // …and the legitimate spellings still work.
+    for (const host of ['127.0.0.1', 'localhost:1', '[::1]:1']) {
+      const res = await raw(base, '/api/facts', { headers: { host } });
+      expect(`${host} -> ${res.status}`).toBe(`${host} -> 200`);
+    }
+  });
+
+  it('Door 5 (negative) — browsing writes NO recall-log entry', async () => {
+    const recall = join(projectRoot, 'context', '.locks', 'recall.log');
+    const before = existsSync(recall) ? readFileSync(recall, 'utf8') : null;
+    await getJson(base, '/api/facts?q=quicksort');
+    await getJson(base, '/api/facts');
+    await getJson(base, `/api/fact/${P_ALPHA}`);
+    const after = existsSync(recall) ? readFileSync(recall, 'utf8') : null;
+    // Browse traffic in the recall log would corrupt the ADR-0024 fire-rate.
+    expect(after).toBe(before);
   });
 });
 

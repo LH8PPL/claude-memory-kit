@@ -20,11 +20,8 @@
 // fact-store.eachFact (never a hand-rolled readdir), frontmatter parsing is
 // already done by that walker, and path/id concerns stay in tier-paths.
 
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { eachFact, listMarkdownFiles, tiersFor } from './fact-store.mjs';
-import { parse as parseFrontmatter } from './frontmatter.mjs';
-import { ID_PATTERN, resolveTierRoot, resolveFactDir } from './tier-paths.mjs';
+import { eachFact, eachSupersededFact } from './fact-store.mjs';
+import { ID_PATTERN } from './tier-paths.mjs';
 
 // Fact filenames are `<type>_<slug>.md`; `related:` values + `[[slug]]` body
 // wikilinks reference the bare SLUG (slugifyFact output — only [a-z0-9-], never
@@ -257,25 +254,17 @@ export function relatedSlugs(related) {
 // the top-level walk), so the chain's backward pointers live only there. Read
 // each archived file's frontmatter for its id + superseded_by. Best-effort per
 // file: a malformed archive entry is skipped, never fatal to the rebuild.
+// Task 255: the WALK now comes from fact-store's `eachSupersededFact` (the
+// shared archive generator — the viewer needed the same walk to draw the
+// predecessor node, and two copies of "where superseded facts live" is exactly
+// the drift fact-store.mjs exists to stop). What stays here is the only part
+// that is this module's own: which of those facts yields a usable EDGE.
 function readArchivedSupersededEdges({ projectRoot, userDir }) {
   const out = [];
-  for (const tier of tiersFor({ projectRoot, userDir })) {
-    const tierRoot = resolveTierRoot({ tier, projectRoot, userDir });
-    const dir = join(resolveFactDir(tier, tierRoot), 'archive', 'superseded');
-    if (!existsSync(dir)) continue;
-    for (const filename of listMarkdownFiles(dir)) {
-      let frontmatter;
-      try {
-        ({ frontmatter } = parseFrontmatter(readFileSync(join(dir, filename), 'utf8')));
-      } catch {
-        continue;
-      }
-      const src = frontmatter?.id;
-      const dst = frontmatter?.superseded_by;
-      if (typeof src === 'string' && ID_PATTERN.test(src)
-        && typeof dst === 'string' && ID_PATTERN.test(dst)) {
-        out.push({ src, dst });
-      }
+  for (const { id: src, frontmatter } of eachSupersededFact({ projectRoot, userDir })) {
+    const dst = frontmatter?.superseded_by;
+    if (ID_PATTERN.test(src) && typeof dst === 'string' && ID_PATTERN.test(dst)) {
+      out.push({ src, dst });
     }
   }
   return out;

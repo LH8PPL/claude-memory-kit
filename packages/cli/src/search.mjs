@@ -47,9 +47,8 @@
 // hybrid + semantic paths. Production callers (the `cmk search` CLI in
 // subcommands.mjs) pass undefined; v0.1.x lands the real backend.
 
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { ERROR_CATEGORIES, errorResult } from './result-shapes.mjs';
+import { readDecisionsJournal } from './decisions-journal.mjs';
 import { appendRecallEntry } from './recall-log.mjs';
 import { VALID_TIERS } from './tier-paths.mjs';
 import { stateFieldFor } from './state-label.mjs';
@@ -618,74 +617,34 @@ function flattenSnippet(s) {
 //   ### <title>                       (a retracted entry carries _(retracted DATE)_)
 //   **When:** <date> · **Fact:** `<id>`
 //   **Why:** <why>                    (optional)
-// Entries are separated by the machine marker; we split on it, match the query
-// as a case-insensitive substring over the entry text, and report the retract
-// marker so recall can answer "did this change / what did we reject".
-const DECISION_MARKER_RE = /<!--\s*decision:([PUL]-[^\s]+)\s*-->/g;
+// Entries are separated by the machine marker; we match the query as a
+// case-insensitive substring over the entry text, and report the retract marker
+// so recall can answer "did this change / what did we reject".
+//
+// Task 255: the SPLITTING + retract-detection rules moved to their format's
+// owner, `decisions-journal.mjs::parseDecisionsJournal` — the module that
+// WRITES the journal is the module that reads it, and the viewer's
+// `/api/decisions` route would otherwise have been the third hand-rolled copy
+// of the same subtleties (line-start-only markers; strip the plumbing before
+// matching, or every search for "decision" matches every marker comment; the
+// retract tag counts only on the line directly under the `## ` heading). This
+// backend keeps what is genuinely ITS OWN: the match, the snippet, the ranking.
 const DECISIONS_SNIPPET_MAX = 240;
 
 function runDecisionsKeywordSearch(_db, opts) {
-  const file = join(opts.projectRoot, 'context', 'DECISIONS.md');
-  if (!existsSync(file)) return []; // no journal yet → empty, not an error
-  const content = readFileSync(file, 'utf8');
-
-  // Split the body into entry spans keyed by the decision marker. Each span runs
-  // from its marker to the next marker (or EOF). A marker is an entry boundary
-  // ONLY at line-start — the writer (buildDecisionEntry) always emits it first
-  // on its own line, so a marker QUOTED inside a Why/body (a meta-decision about
-  // the journal format, or a fact citing another's marker) does NOT false-split
-  // the entry (skill-review I2). DECISION_MARKER_RE is module-level /g + reset
-  // here; the function is fully synchronous (no await between reset and the
-  // loop), so there is no shared-state re-entrancy hazard.
-  const markers = [];
-  let m;
-  DECISION_MARKER_RE.lastIndex = 0;
-  while ((m = DECISION_MARKER_RE.exec(content)) !== null) {
-    const atLineStart = m.index === 0 || content[m.index - 1] === '\n';
-    if (atLineStart) markers.push({ id: m[1], start: m.index });
-  }
-
+  const entries = readDecisionsJournal(opts.projectRoot); // no journal → []
   const needle = opts.query.trim().toLowerCase();
   const hits = [];
-  for (let i = 0; i < markers.length; i++) {
-    const start = markers[i].start;
-    const end = i + 1 < markers.length ? markers[i + 1].start : content.length;
-    const block = content.slice(start, end);
-    // Strip the plumbing (the `<!-- decision:ID -->` marker + the `### ` heading
-    // hashes) BEFORE matching, so the query matches the human signal (title /
-    // When / Why) — NOT the literal word "decision" inside every marker comment
-    // (the self-review false-positive: searching "decision" matched all entries
-    // via their markers). Uses a FRESH regex (not the shared module-level
-    // DECISION_MARKER_RE) so the loop's .exec lastIndex isn't clobbered.
-    const cleaned = block
-      .replace(/<!--\s*decision:[PUL]-[^\s]+\s*-->/g, '')
-      .replace(/^#{1,6}\s+/gm, '');
-    if (!cleaned.toLowerCase().includes(needle)) continue;
-
-    // The line offset of the marker = source_line drill-back into DECISIONS.md.
-    const sourceLine = content.slice(0, start).split('\n').length;
-    // Retracted-tag detection mirrors the WRITER's contract: the tag sits on its
-    // own line DIRECTLY after the `## ` heading (decisions-journal.mjs §2 —
-    // buildDecisionEntry emits `## ` h2 entries; the retract inserter puts the
-    // tag at headingEnd+1), so scope the check there — NOT a raw-block substring,
-    // which would mislabel an active entry whose Why merely MENTIONS "_(retracted"
-    // (skill-review I1). Match the heading line-start (`\n## `) so body text
-    // containing `##` can't be mistaken for the heading. (Was `### ` — a
-    // pre-existing bug: the writer emits `## `, so this never matched and EVERY
-    // decision read `retracted:false` — Task 164.3.)
-    // The heading is a line-start `## ` (the block opens with the marker comment,
-    // so the heading is never at block offset 0 — match `\n## `).
-    const headingNl = block.indexOf('\n## ');
-    const afterHeading =
-      headingNl === -1 ? '' : block.slice(block.indexOf('\n', headingNl + 1) + 1);
-    const retracted = afterHeading.startsWith('_(retracted');
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i];
+    if (!e.cleaned.toLowerCase().includes(needle)) continue;
     hits.push({
-      id: markers[i].id,
-      snippet: flattenSnippet(cleaned).slice(0, DECISIONS_SNIPPET_MAX),
+      id: e.id,
+      snippet: flattenSnippet(e.cleaned).slice(0, DECISIONS_SNIPPET_MAX),
       source_file: 'context/DECISIONS.md',
-      source_line: sourceLine,
-      retracted,
-      // `score` is POSITIONAL (the marker index), NOT an FTS relevance rank —
+      source_line: e.sourceLine,
+      retracted: e.retracted,
+      // `score` is POSITIONAL (the entry index), NOT an FTS relevance rank —
       // the journal is chronological, so a lower score = an earlier decision.
       // Don't fuse/sort this against the facts/transcripts scopes' rank scores.
       score: i,

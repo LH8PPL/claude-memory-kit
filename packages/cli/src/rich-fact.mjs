@@ -44,3 +44,38 @@ export function buildRichFactBody({ text, why, how }) {
   if (how && String(how).trim()) parts.push(`**How to apply:** ${String(how).trim()}`);
   return parts.join('\n\n');
 }
+
+// The inverse of buildRichFactBody. It lives HERE, beside the writer, because
+// the two are one contract: change the label and both move together. Task 255's
+// fact-detail view is the first reader that needs the parts back out.
+//
+// Leading indent is `[ \t]*` (never `\s*`) so it cannot also match the newline
+// the `(?:^|\n)` anchor already consumed — that overlap is the backtracking
+// ambiguity static analysis flags as ReDoS. Disjoint classes = linear.
+const WHY_BLOCK_RE = /(?:^|\n)[ \t]*\*\*Why:\*\*[ \t]*([\s\S]*?)(?=\n[ \t]*\*\*(?:How to apply):\*\*|$)/;
+const HOW_BLOCK_RE = /(?:^|\n)[ \t]*\*\*How to apply:\*\*[ \t]*([\s\S]*?)(?=\n[ \t]*\*\*Why:\*\*|$)/;
+
+/**
+ * Split a fact body back into its headline + Why + How parts.
+ *
+ * A body that carries neither block (the terse capture path, an imported fact,
+ * a scratchpad bullet) returns the whole text as `headline` with both blocks
+ * null — the common case, and never an error: a plain fact is not malformed.
+ *
+ * @param {string} body
+ * @returns {{headline: string, why: string|null, how: string|null}}
+ */
+export function parseRichFactBody(body) {
+  const text = typeof body === 'string' ? body : '';
+  const why = WHY_BLOCK_RE.exec(text);
+  const how = HOW_BLOCK_RE.exec(text);
+  const firstBlock = Math.min(
+    why ? why.index + (why[0].startsWith('\n') ? 1 : 0) : Infinity,
+    how ? how.index + (how[0].startsWith('\n') ? 1 : 0) : Infinity,
+  );
+  return {
+    headline: (Number.isFinite(firstBlock) ? text.slice(0, firstBlock) : text).trim(),
+    why: why ? why[1].trim() || null : null,
+    how: how ? how[1].trim() || null : null,
+  };
+}

@@ -60,6 +60,17 @@ import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { errorResult, ERROR_CATEGORIES } from './result-shapes.mjs';
 import { openBrowserCommand } from './platform-commands.mjs';
+import { openIndexDb } from './index-db.mjs';
+import { reindexBoot } from './index-rebuild.mjs';
+import { search as searchAction, SEARCH_MODES } from './search.mjs';
+import { ID_PATTERN, VALID_TIERS } from './tier-paths.mjs';
+import { eachSupersededFact } from './fact-store.mjs';
+import { parseRichFactBody } from './rich-fact.mjs';
+import { traverseLinks, supersessionChain } from './graph-index.mjs';
+import { readDecisionsJournal } from './decisions-journal.mjs';
+import { activeWarnings } from './health-log.mjs';
+import { runDoctor } from './doctor.mjs';
+import { stateFieldFor } from './state-label.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -122,7 +133,7 @@ export function isLoopbackHost(host) {
  * simply fails to match a view and 404s, which the tests pin so that a future
  * file-serving route cannot be added without the test noticing.
  */
-export function resolveRoute(rawUrl) {
+export function resolveRoute(rawUrl, { accept = '' } = {}) {
   let u;
   try {
     // WHATWG URL normalizes `..` segments and rejects malformed input, so the
@@ -137,7 +148,10 @@ export function resolveRoute(rawUrl) {
   } catch {
     return { view: null, json: false }; // malformed percent-encoding
   }
-  let json = false;
+  // The three equivalent ways to ask for JSON (§24.1.2). A browser sends
+  // `Accept: text/html,…` so it lands on HTML; `Accept: application/json`
+  // without a wildcard is an unambiguous API client.
+  let json = /\bapplication\/json\b/.test(accept) && !/\btext\/html\b/.test(accept);
   if (path === '/api' || path.startsWith('/api/')) {
     json = true;
     path = path.slice(4) || '/';
@@ -228,6 +242,7 @@ export async function startViewer({
   port = 0,
   open = true,
   openBrowser = defaultOpenBrowser,
+  doctorOptions = {},
   signals = [],
   onShutdown = () => process.exit(0),
   log = console.log,
@@ -262,7 +277,11 @@ export async function startViewer({
     });
   }
 
-  const ctx = { projectRoot, userDir, logError };
+  // `doctorOptions` is a TEST seam only: production passes nothing, so
+  // /api/health runs exactly the probes `cmk doctor` runs (the two must never
+  // be able to disagree). The suite stubs the backend-CLI probe so it does not
+  // depend on which agent binary happens to be installed on the machine.
+  const ctx = { projectRoot, userDir, logError, doctorOptions };
   const server = createServer((req, res) => handle(req, res, ctx));
 
   const listenError = await new Promise((resolve) => {
@@ -329,7 +348,7 @@ function handle(req, res, ctx) {
     return send(res, 403, JSON_TYPE, JSON.stringify({ error: 'cmk view answers loopback hosts only' }));
   }
 
-  const route = resolveRoute(req.url);
+  const route = resolveRoute(req.url, { accept: req.headers.accept ?? '' });
   if (route.view === null) {
     if (route.json) return sendJson(res, 404, { error: 'no such view' });
     return send(res, 404, HTML, '<!doctype html><meta charset="utf-8"><title>404</title><p>No such view. <a href="/">Back to memory</a>.');
@@ -347,10 +366,405 @@ function handle(req, res, ctx) {
     }
   }
 
+  // The JSON side. Every handler returns {status, payload}; a thrown error is a
+  // 500 with its message, never a stack — this is a browser surface.
+  const t0 = Date.now();
+  Promise.resolve()
+    .then(() => API[route.view](route, ctx))
+    .then(({ status, payload }) => {
+      sendJson(res, status, {
+        view: route.view,
+        generated_at: new Date().toISOString(),
+        took_ms: Date.now() - t0,
+        ...payload,
+      });
+    })
+    .catch((err) => {
+      if (err instanceof BadRequest) {
+        return sendJson(res, 400, { view: route.view, error: err.message });
+      }
+      ctx.logError?.(`cmk view: ${route.view} failed — ${err?.message ?? err}`);
+      // The message only — a stack in a browser tab helps nobody and can name
+      // paths the page has no business showing.
+      return sendJson(res, 500, { view: route.view, error: String(err?.message ?? err) });
+    });
+}
+
+// --- The read layer ------------------------------------------------------
+//
+// One DB handle PER REQUEST, opened and closed. Deliberate, not lazy: a
+// long-lived better-sqlite3 handle keeps a Windows file lock on
+// `context/.index/`, which is the D-302 half-broken-install class (a running
+// process holding kit files while npm tries to replace them). A viewer is
+// human-paced; a sqlite open costs a millisecond and buys the property that
+// leaving the tab open all day blocks nothing.
+//
+// The boot reindex is the same incremental mtime/sha refresh every other read
+// verb runs — it is what makes the page's manual Refresh mean something. It
+// touches only `context/.index/`, the rebuildable cache (ADR-0002).
+function withDb(ctx, fn) {
+  const db = openIndexDb({ projectRoot: ctx.projectRoot });
   try {
-    return sendJson(res, 200, { error: 'not implemented' });
-  } catch (err) {
-    ctx.logError?.(`cmk view: ${route.view} failed — ${err?.message ?? err}`);
-    return sendJson(res, 500, { error: String(err?.message ?? err) });
+    try {
+      reindexBoot({ projectRoot: ctx.projectRoot, userDir: ctx.userDir, db });
+    } catch (err) {
+      ctx.logError?.(`cmk view: index refresh failed (${err?.message ?? err}); serving the existing index.`);
+    }
+    return fn(db);
+  } finally {
+    db.close();
   }
+}
+
+class BadRequest extends Error {}
+
+/** Parse + validate `?limit=`, clamping (never rejecting) an over-cap value. */
+function readLimit(params, { fallback = VIEWER_DEFAULT_LIMIT } = {}) {
+  const raw = params.get('limit');
+  if (raw === null || raw === '') return { limit: fallback, clamped: false };
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1) {
+    throw new BadRequest(`limit must be a positive integer (got ${JSON.stringify(raw)})`);
+  }
+  return n > VIEWER_MAX_LIMIT
+    ? { limit: VIEWER_MAX_LIMIT, clamped: true }
+    : { limit: n, clamped: false };
+}
+
+function readTier(params) {
+  const tier = params.get('tier');
+  if (tier === null || tier === '') return null;
+  if (!VALID_TIERS.has(tier)) {
+    throw new BadRequest(`tier must be one of P, L, U (got ${JSON.stringify(tier)})`);
+  }
+  return tier;
+}
+
+const ROW_COLUMNS = `
+  id, tier, trust, trust_score, signal_count, write_source, heading_path, body,
+  source_file, source_line, created_at, expires_at, superseded_by, deleted_at`;
+
+/** The shape every fact row is rendered in, on every route. One place. */
+function toFactRow(row, { snippet, now } = {}) {
+  const rich = parseRichFactBody(row.body);
+  return {
+    id: row.id,
+    tier: row.tier,
+    trust: row.trust,
+    trust_score: row.trust_score,
+    signal_count: row.signal_count,
+    write_source: row.write_source,
+    title: row.heading_path ?? null,
+    snippet: snippet ?? flatten(rich.headline || row.body, 240),
+    source_file: row.source_file,
+    source_line: row.source_line,
+    created_at: row.created_at,
+    date: row.created_at ? new Date(row.created_at).toISOString().slice(0, 10) : null,
+    expires_at: row.expires_at ?? null,
+    superseded_by: row.superseded_by ?? null,
+    ...stateFieldFor(row, now),
+  };
+}
+
+function flatten(s, max) {
+  const flat = String(s ?? '').replace(/\s+/g, ' ').trim();
+  return flat.length > max ? `${flat.slice(0, max)}…` : flat;
+}
+
+const API = {
+  /**
+   * The landing data: an FTS search when `q` is present, else newest-first.
+   *
+   * The search runs WITHOUT `projectRoot`, which is what suppresses `search()`'s
+   * recall-log append. That is not an oversight — see the module header: a human
+   * scrolling a UI is not the model recalling a fact, and mixing the two would
+   * corrupt the ADR-0024 fire-rate measurement.
+   */
+  facts(route, ctx) {
+    const params = route.params;
+    const { limit, clamped } = readLimit(params);
+    const tier = readTier(params);
+    const q = (params.get('q') ?? '').trim();
+
+    return withDb(ctx, (db) => {
+      let rows;
+      let mode;
+      if (q) {
+        mode = 'search';
+        const r = searchAction({
+          db,
+          query: q,
+          mode: SEARCH_MODES.KEYWORD,
+          scope: 'facts',
+          limit,
+          ...(tier ? { tier } : {}),
+        });
+        if (r.action === 'error') throw new BadRequest((r.errors ?? ['search failed']).join('; '));
+        // Re-read the full rows so a search hit and a browse row are the SAME
+        // shape on the wire — the page must not have two renderers.
+        const byId = new Map(hydrate(db, r.results.map((h) => h.id)).map((x) => [x.id, x]));
+        rows = r.results
+          .filter((h) => byId.has(h.id))
+          .map((h) => toFactRow(byId.get(h.id), { snippet: flatten(h.snippet, 240) }));
+      } else {
+        mode = 'recent';
+        rows = db
+          .prepare(
+            `SELECT ${ROW_COLUMNS} FROM observations
+             WHERE deleted_at IS NULL
+               AND (expires_at IS NULL OR expires_at > @now)
+               ${tier ? 'AND tier = @tier' : ''}
+             ORDER BY created_at DESC, id ASC
+             LIMIT @limit`,
+          )
+          .all({ now: Date.now(), limit, ...(tier ? { tier } : {}) })
+          .map((row) => toFactRow(row));
+      }
+      return {
+        status: 200,
+        payload: { mode, query: q || null, tier, limit, clamped, count: rows.length, facts: rows },
+      };
+    });
+  },
+
+  /** One fact, in full: the body split back into headline/Why/How, its trust
+   *  evidence, its dates, and its local edge neighborhood in both directions. */
+  fact(route, ctx) {
+    const id = route.id ?? '';
+    if (!ID_PATTERN.test(id)) {
+      throw new BadRequest('not a kit id — expected the [PUL]-XXXXXXXX shape');
+    }
+    return withDb(ctx, (db) => {
+      let row = db.prepare(`SELECT ${ROW_COLUMNS} FROM observations WHERE id = ?`).get(id);
+      let superseded = false;
+      if (!row) {
+        // A superseded fact was MOVED out of the live corpus, so it is not in
+        // the index — but it is exactly what someone following a supersession
+        // arrow clicked on. Read it from the archive rather than 404ing the
+        // history the graph just drew.
+        const archived = findSupersededFact(ctx, id);
+        if (!archived) return { status: 404, payload: { found: false, id } };
+        row = archived;
+        superseded = true;
+      }
+      const rich = parseRichFactBody(row.body);
+      // The depth-1 neighbourhood in BOTH directions and across ALL edge kinds
+      // (related / link / cites / superseded_by) — the shared traversal, not a
+      // second hand-written pair of queries.
+      const hops = traverseLinks(db, id, { depth: 1, direction: 'both' });
+      return {
+        status: 200,
+        payload: {
+          found: true,
+          fact: { ...toFactRow(row), body: row.body, headline: rich.headline, why: rich.why, how: rich.how, superseded },
+          edges: {
+            out: hops
+              .filter((e) => e.direction === 'out')
+              .map((e) => ({ dst: e.to_id, type: e.type, resolved: e.dst_resolved === 1 })),
+            in: hops
+              .filter((e) => e.direction === 'in')
+              .map((e) => ({ src: e.from_id, type: e.type })),
+          },
+          supersession: supersessionChain(db, id),
+          // §24.1.3 — the read-only answer to "let me delete it from here".
+          commands: {
+            forget: `cmk forget ${id}`,
+            trust: `cmk trust ${id} ${row.trust ?? 'high'}`,
+            get: `cmk get ${id}`,
+          },
+        },
+      };
+    });
+  },
+
+  /**
+   * The kit-semantic graph (§24.1.4 iii): trust is the colour, supersession is
+   * the direction, anchors are the hubs.
+   *
+   * `node_limit` budgets the LIVE facts (newest-first). Two node classes ride
+   * on top of it rather than inside it, and the counts are reported separately
+   * so the page can say so: anchor hubs (the structure that makes a bounded
+   * slice legible) and archived-superseded predecessors (the direction the view
+   * exists to show — a supersession arrow with no tail is not a supersession
+   * arrow). Both are naturally an order of magnitude smaller than the fact
+   * corpus. Trigger to revisit: a project where `archived_count + anchor_count`
+   * approaches `node_limit` — then they need their own budgets, not a shared one.
+   *
+   * Edges are filtered to pairs whose BOTH endpoints made the cut, so the page
+   * never draws an arrow into nothing.
+   */
+  graph(route, ctx) {
+    const { limit, clamped } = readLimit(route.params, { fallback: VIEWER_MAX_LIMIT });
+    return withDb(ctx, (db) => {
+      const live = db
+        .prepare(
+          `SELECT id, tier, trust, trust_score, heading_path, created_at, superseded_by
+             FROM observations WHERE deleted_at IS NULL
+            ORDER BY created_at DESC, id ASC LIMIT @limit`,
+        )
+        .all({ limit });
+      const total = db
+        .prepare('SELECT COUNT(*) AS n FROM observations WHERE deleted_at IS NULL')
+        .get().n;
+
+      const nodes = new Map();
+      for (const r of live) {
+        nodes.set(r.id, {
+          id: r.id,
+          kind: 'fact',
+          label: r.heading_path ?? r.id,
+          tier: r.tier,
+          trust: r.trust,
+          trust_score: r.trust_score,
+          created_at: r.created_at,
+          superseded: false,
+        });
+      }
+      // The predecessors: history the live corpus no longer holds.
+      let archivedCount = 0;
+      for (const f of eachSupersededFact({ projectRoot: ctx.projectRoot, userDir: ctx.userDir })) {
+        archivedCount += 1;
+        nodes.set(f.id, {
+          id: f.id,
+          kind: 'fact',
+          label: f.frontmatter.title ?? f.id,
+          tier: f.tier,
+          trust: f.frontmatter.trust ?? null,
+          trust_score: null,
+          created_at: f.frontmatter.created_at ?? null,
+          superseded: true,
+        });
+      }
+
+      const allEdges = db.prepare('SELECT src, dst, type, dst_resolved FROM edges ORDER BY src, dst, type').all();
+      let anchorCount = 0;
+      const edges = [];
+      for (const e of allEdges) {
+        if (!nodes.has(e.src)) continue;
+        if (!nodes.has(e.dst)) {
+          // An unresolved dst is either an anchor hub (`anchor:D-414`,
+          // `anchor:Task-232`) or a dangling slug someone linked before the
+          // target existed. Both are real structure — promote them to nodes so
+          // the hub-and-spoke shape the design asks for is visible.
+          if (e.dst_resolved === 1) continue; // a resolved id that fell outside the slice
+          const kind = e.dst.startsWith('anchor:') ? 'anchor' : 'dangling';
+          nodes.set(e.dst, { id: e.dst, kind, label: e.dst, tier: null, trust: null, trust_score: null, created_at: null, superseded: false });
+          anchorCount += 1;
+        }
+        edges.push({ src: e.src, dst: e.dst, type: e.type, resolved: e.dst_resolved === 1 });
+      }
+
+      return {
+        status: 200,
+        payload: {
+          node_limit: limit,
+          clamped,
+          truncated: total > limit,
+          fact_count: total,
+          archived_count: archivedCount,
+          anchor_count: anchorCount,
+          nodes: [...nodes.values()],
+          edges,
+        },
+      };
+    });
+  },
+
+  /**
+   * Health, from the two sources that already own it — `runDoctor` for the
+   * checks and `activeWarnings` for the 250 nudge evidence. Neither threshold
+   * is re-derived here: if the strip and the whisper could disagree, the viewer
+   * would be a second opinion about the user's own kit, which is worse than no
+   * viewer at all.
+   */
+  async health(_route, ctx) {
+    const checks = await runDoctor({
+      projectRoot: ctx.projectRoot,
+      userDir: ctx.userDir,
+      ...ctx.doctorOptions,
+    });
+    const warnings = activeWarnings(ctx.projectRoot);
+    const list = checks.checks ?? [];
+    const strip = warnings.length
+      ? { state: 'warn', text: warnings[0].title, action: warnings[0].primaryAction, code: warnings[0].code, severity: warnings[0].severity }
+      : { state: 'ok', text: 'memory is healthy — capture, recall and the index are all reporting fine.', action: null, code: null, severity: null };
+    return {
+      status: 200,
+      payload: {
+        checks: list.map((c) => ({
+          id: c.id,
+          name: c.name,
+          status: c.status,
+          message: c.message ?? null,
+          recoveryCommand: c.recoveryCommand ?? null,
+        })),
+        fail_count: list.filter((c) => c.status === 'fail').length,
+        warn_count: list.filter((c) => c.status === 'warn').length,
+        duration_ms: checks.duration_ms ?? null,
+        active_warnings: warnings,
+        strip,
+      },
+    };
+  },
+
+  /** The append-only journal, in journal order — which IS the chronology. A
+   *  retracted or superseded entry stays visible and flagged; that trail is the
+   *  whole reason this view exists (§24.1.4 v). */
+  decisions(route, ctx) {
+    const { limit, clamped } = readLimit(route.params, { fallback: VIEWER_MAX_LIMIT });
+    const all = readDecisionsJournal(ctx.projectRoot);
+    const slice = all.slice(0, limit);
+    return {
+      status: 200,
+      payload: {
+        count: slice.length,
+        total: all.length,
+        limit,
+        clamped,
+        truncated: all.length > slice.length,
+        decisions: slice.map((d) => ({
+          id: d.id,
+          title: d.title,
+          when: d.when,
+          why: d.why,
+          fact_id: d.factId,
+          retracted: d.retracted,
+          source_file: 'context/DECISIONS.md',
+          source_line: d.sourceLine,
+        })),
+      },
+    };
+  },
+};
+
+/** Full rows for a set of ids, order-independent (the caller re-orders). */
+function hydrate(db, ids) {
+  if (ids.length === 0) return [];
+  const holes = ids.map(() => '?').join(',');
+  return db.prepare(`SELECT ${ROW_COLUMNS} FROM observations WHERE id IN (${holes})`).all(...ids);
+}
+
+/** Look up one archived-superseded fact, shaped like an observations row. */
+function findSupersededFact(ctx, id) {
+  for (const f of eachSupersededFact({ projectRoot: ctx.projectRoot, userDir: ctx.userDir })) {
+    if (f.id !== id) continue;
+    const fm = f.frontmatter;
+    return {
+      id: f.id,
+      tier: f.tier,
+      trust: fm.trust ?? null,
+      trust_score: null,
+      signal_count: null,
+      write_source: fm.write_source ?? null,
+      heading_path: fm.title ?? null,
+      body: f.body,
+      source_file: `memory/archive/superseded/${f.filename}`,
+      source_line: 1,
+      created_at: fm.created_at ? Date.parse(fm.created_at) : null,
+      expires_at: null,
+      superseded_by: fm.superseded_by ?? null,
+      deleted_at: null,
+    };
+  }
+  return null;
 }

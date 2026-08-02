@@ -150,6 +150,20 @@ export const BUDGET_REGISTRY = [
     overCapPattern: 'cited by more than half the corpus is dropped',
   },
   {
+    name: 'viewer facts page size (VIEWER_DEFAULT_LIMIT=50 rows, VIEWER_MAX_LIMIT=200 hard ceiling — an over-cap `?limit=` CLAMPS and reports `clamped:true` rather than 400ing a browse URL)',
+    sourceRef: 'design §24.1 / Task 255 (D-414)',
+    testFile: 'tests/cli-viewer.test.js',
+    atCapPattern: 'AT-CAP limit is honored',
+    overCapPattern: 'OVER-CAP clamps and says so',
+  },
+  {
+    name: 'viewer graph node budget (`?limit=` over LIVE facts, newest-first; anchor hubs + archived-superseded predecessors ride on top and are counted separately; over-cap sets truncated:true)',
+    sourceRef: 'design §24.1 / Task 255 (D-414)',
+    testFile: 'tests/cli-viewer.test.js',
+    atCapPattern: 'AT-CAP: a limit of exactly the corpus size',
+    overCapPattern: 'OVER-CAP by one',
+  },
+  {
     name: 'anchor render cap (MAP_ANCHOR_CITERS_SHOWN=20 — MAP.md lists at most this many citers per anchor then "… and N more"; render-only, edges table unaffected)',
     sourceRef: 'design §9.5.1 / Task 256 (D-400)',
     testFile: 'tests/cli-vault-map.test.js',
