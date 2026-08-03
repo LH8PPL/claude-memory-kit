@@ -36,6 +36,7 @@ A session that has lost all memory must be able to read **only the three spine f
 | [`ARCHITECTURE.md`](../ARCHITECTURE.md) | Six-layer design, for users. |
 | [`docs/SYSTEM-MAP.md`](SYSTEM-MAP.md) | The **systemic** view — the kit as ONE system: whole + parts + the relationships/edges between them (what ARCHITECTURE.md/design.md decompose away). Holds the learn-loop anatomy + the honestly-drawn unsolved region. Companion to ADR-0017. |
 | [`docs/CLI.md`](CLI.md) | Full `cmk` command reference. |
+| [`docs/FEATURES.md`](FEATURES.md) | The long form of every capability the README lists in one line. The README is the front door; this is the detail behind it. |
 | [`docs/OBSIDIAN.md`](OBSIDIAN.md) | How to browse your memory tier as an Obsidian vault (the companion to the kit's own viewer). |
 | [`CHANGELOG.md`](../CHANGELOG.md) | Per-release "what shipped" (cut via `npm run release`). |
 | [`docs/RELEASE-PLAN.md`](RELEASE-PLAN.md) | Forward complement to CHANGELOG: which version each task ships in (release lanes + the one-differentiator-per-minor rule). |
@@ -112,7 +113,7 @@ When you add a doc, add its path to the Registry in the same commit, or the buil
 `specs/requirements.md` · `specs/design.md` · `specs/tasks.md` · `specs/glossary.md` · `specs/tasks-archive.md` (**frozen record**, not Spine — the completed-task entries relocated out of `specs/tasks.md` by Task 249)
 
 **`docs/` top level:**
-`docs/DOCUMENTATION-MAP.md` · `docs/README.md` · `docs/SOURCES.md` · `docs/BOOTSTRAP.md` · `docs/CLI.md` · `docs/MCP.md` · `docs/KIRO.md` · `docs/CURSOR.md` · `docs/CODEX.md` · `docs/CLAUDE-CODE.md` · `docs/OBSIDIAN.md`
+`docs/DOCUMENTATION-MAP.md` · `docs/README.md` · `docs/SOURCES.md` · `docs/BOOTSTRAP.md` · `docs/CLI.md` · `docs/MCP.md` · `docs/KIRO.md` · `docs/CURSOR.md` · `docs/CODEX.md` · `docs/CLAUDE-CODE.md` · `docs/OBSIDIAN.md` · `docs/FEATURES.md`
 
 **`docs/journey/`:**
 `docs/journey/DECISION-LOG.md` · `docs/journey/DECISION-LOG-archive-pre-v0.5.md` · `docs/journey/build-log.md` · `docs/journey/build-log-archive-pre-v0.5.md` · `docs/journey/RESUME-HERE-2026-05-28.md` · `docs/journey/v0.1.0-live-test.md` · `docs/journey/v0.1.0-requirements-coverage.md` · `docs/journey/v0.1.1-self-test-findings.md` · `docs/journey/v0.2.0-live-test-findings.md` · `docs/journey/v0.3.3-live-test-findings.md` · `docs/journey/2026-05-26-live-test-findings.md` · `docs/journey/2026-05-26-live-test-findings-scenarios-3-7.md` · `docs/journey/2026-05-26-snapshot-cap-coordination.md` · `docs/journey/2026-05-26-user-tier-cap-fix.md` (the phase-3 plan is archived → `archive/docs/journey/PHASE-3-PLAN.md`)
