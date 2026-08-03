@@ -1039,6 +1039,200 @@ describe('viewer — the HTML page (255.3)', () => {
   });
 });
 
+/**
+ * Task 260 — the visual pass.
+ *
+ * There is no DOM environment here on purpose (adding one is a dependency the
+ * §24.1.7 zero-dep contract forbids), so these are STRUCTURAL assertions over
+ * the served bytes: the properties whose ABSENCE is what made the page look
+ * undesigned, plus the constraints the pass was not allowed to break. What a
+ * page LOOKS like is the user's call in a real browser — stated, not implied.
+ */
+describe('viewer — the visual pass (260)', () => {
+  let html;
+  let css;
+  let script;
+  beforeEach(async () => {
+    const r = await boot();
+    html = await (await fetch(r.url)).text();
+    css = html.match(/<style\b[^>]*>([\s\S]*?)<\/style\b[^>]*>/i)[1];
+    script = html.match(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/i)[1];
+  });
+
+  it('(3) defines a real surface ladder — page ≠ panel ≠ sunken, in BOTH themes', () => {
+    // The diagnosis was a 2% delta (#fbfaf8 page on #ffffff panels), which left
+    // borders doing 100% of the work and nothing reading as a surface.
+    const root = css.match(/:root\s*\{([\s\S]*?)\}/)[1];
+    for (const token of ['--ground', '--panel', '--sunken', '--line', '--ink', '--ink-2', '--ink-3']) {
+      expect(root, `light theme is missing ${token}`).toContain(token + ':');
+    }
+    const hex = (block, name) =>
+      (block.match(new RegExp('\\' + name + ':\\s*(#[0-9a-f]{6})', 'i')) || [])[1];
+    expect(hex(root, '--ground')).not.toBe(hex(root, '--panel'));
+
+    // Dark is DESIGNED, not an inversion: its own ladder, redefined.
+    const dark = css.match(/@media\s*\(prefers-color-scheme:\s*dark\)\s*\{\s*:root\s*\{([\s\S]*?)\}/);
+    expect(dark, 'no dark-theme token block').toBeTruthy();
+    for (const token of ['--ground', '--panel', '--sunken', '--line', '--ink', '--ink-3']) {
+      expect(dark[1], `dark theme is missing ${token}`).toContain(token + ':');
+    }
+    expect(hex(dark[1], '--ground')).not.toBe(hex(dark[1], '--panel'));
+    expect(hex(dark[1], '--ground')).not.toBe(hex(root, '--ground'));
+  });
+
+  it('(2) badges are TINTED, not outlined — one rule, literal rgba, no color-mix()', () => {
+    const badge = css.match(/\.badge\s*\{([\s\S]*?)\}/);
+    expect(badge, 'no .badge rule').toBeTruthy();
+    expect(badge[1]).toMatch(/background:\s*rgba\(/);
+    expect(badge[1]).toMatch(/border:\s*1px solid rgba\(/);
+    // The old shape: `border-color: currentColor` on every pill variant.
+    expect(css).not.toMatch(/border-color:\s*currentColor/);
+    // color-mix() support was flagged unverified in the survey; both reference
+    // implementations use literal rgba pairs, and so do we.
+    expect(css).not.toMatch(/color-mix\(/);
+  });
+
+  it('(1/4) the card has a title tier, a CSS clamp and a bounded measure', () => {
+    expect(css).toMatch(/\.fact-title\s*\{/);
+    expect(css).toMatch(/-webkit-line-clamp/);
+    // Clamping in CSS keeps the whole string in the DOM (and the a11y tree)
+    // rather than asking the server for more "…".
+    expect(script).toMatch(/clamp-2/);
+    const measure = css.match(/--measure:\s*(\d+)px/);
+    expect(measure, 'no --measure token').toBeTruthy();
+    expect(Number(measure[1])).toBeLessThanOrEqual(820);
+    expect(html).toMatch(/id="facts-out"[^>]*class="measure"/);
+
+    // Four sizes + ONE uppercase micro-label.
+    expect(css).toMatch(/\.micro[^{]*\{[\s\S]*?text-transform:\s*uppercase/);
+    expect(css).toMatch(/letter-spacing:\s*\.12em/);
+  });
+
+  it('(4) ids, dates and counts are tabular — a column that does not wobble', () => {
+    expect(css).toMatch(/font-variant-numeric:\s*tabular-nums/);
+    // The mono stack carries slashed-zero for id/hash columns.
+    expect(css).toMatch(/\.mono[^{]*\{[\s\S]*?slashed-zero/);
+  });
+
+  it('(5) card padding is greater than card gap — the rhythm was inverted', () => {
+    const pad = css.match(/--pad-card:\s*(\d+)px/);
+    const gap = css.match(/--gap-card:\s*(\d+)px/);
+    expect(pad, 'no --pad-card token').toBeTruthy();
+    expect(gap, 'no --gap-card token').toBeTruthy();
+    expect(Number(pad[1])).toBeGreaterThan(Number(gap[1]));
+  });
+
+  it('(6) the header is sticky + blurred and the tabs are real pills, not a seam trick', () => {
+    expect(css).toMatch(/header\s*\{[\s\S]*?position:\s*sticky/);
+    expect(css).toMatch(/backdrop-filter:/);
+    // The seam trick: a tab that fakes "in front" with `border-bottom: none`.
+    expect(css).not.toMatch(/border-bottom:\s*none/);
+    expect(css).toMatch(/nav a\[aria-current="page"\]\s*\{[\s\S]*?background:\s*rgba\(var\(--accent-rgb\)/);
+  });
+
+  it('(7) the health strip is a PILL when ok and a bar only when it is not', () => {
+    const strip = css.match(/#health-strip\s*\{([\s\S]*?)\}/);
+    expect(strip, 'no #health-strip rule').toBeTruthy();
+    expect(strip[1]).toMatch(/display:\s*inline-flex/);
+    const loud = css.match(
+      /#health-strip\[data-state="warn"\][\s\S]{0,200}?\{([\s\S]*?)\}/,
+    );
+    expect(loud[1]).toMatch(/display:\s*flex/);
+    expect(loud[1]).toMatch(/width:\s*100%/);
+    // The SHAPE changed; the state semantics did not (§24.1.1 B1 fold).
+    for (const state of ['ok', 'warn', 'queued', 'bad']) {
+      expect(css).toContain(`#health-strip[data-state="${state}"]`);
+    }
+    expect(script).toMatch(/severity === 'memory-off' \? 'bad' : 'warn'/);
+  });
+
+  it('(8) the graph drops unlinked nodes, halos its labels, and lifts supersession', () => {
+    // Degree-0 nodes were a picture-frame of orphan dots the layout never
+    // relaxed. They are still COUNTED — nothing disappears silently.
+    expect(script).toMatch(/const linked = data\.nodes\.filter/);
+    expect(script).toMatch(/unlinked, not drawn/);
+    // A standing label is earned by degree; the rest appear on hover/focus.
+    expect(script).toMatch(/LABEL_AT/);
+    expect(css).toMatch(/#graph text\.lbl\s*\{[\s\S]*?opacity:\s*0/);
+    expect(css).toMatch(/#graph \.node:hover text\.lbl/);
+    // Halos, so a label survives being drawn over a dot.
+    expect(css).toMatch(/paint-order:\s*stroke/);
+    // Supersession is the one directed claim on the canvas — it reads louder.
+    const base = Number(css.match(/#graph \.edge\s*\{\s*stroke-opacity:\s*([\d.]+)/)[1]);
+    const sup = Number(css.match(/#graph \.edge-super\s*\{\s*stroke-opacity:\s*([\d.]+)/)[1]);
+    expect(sup).toBeGreaterThan(base);
+  });
+
+  it('markdown in a snippet is TOKENIZED to elements — never parsed as HTML', () => {
+    // `**Global install**:` rendered literally in the user's own screenshot.
+    // The fix must not become an HTML parser: every span becomes an element
+    // this code created, with its text set as text.
+    expect(script).toMatch(/MD_INLINE/);
+    expect(script).toMatch(/el\('code', \{ text: seg\.s \}\)/);
+    expect(script).toMatch(/el\('strong', \{ text: seg\.s \}\)/);
+    expect(script).toMatch(/el\('b', \{ text: seg\.s \}\)/);
+    // No markup is ever ASSEMBLED as a string — the shape that precedes an
+    // innerHTML. (A bare `'<b>'` literal is fine and is not that: it is the
+    // needle the FTS marker is SPLIT on, which is how the highlight became
+    // real elements in the first place.)
+    expect(script).not.toMatch(/['"`]<\/?\w+[^'"`]*>['"`]\s*\+/);
+    expect(script).not.toMatch(/\+\s*['"`]\s*<\/?\w+/);
+    expect(script).not.toMatch(/`[^`]*<\w+[^`]*\$\{/);
+  });
+
+  it('the tier filter is a control, not a paragraph — prose moved to title=', () => {
+    // It rendered 335px wide because its option labels were sentences.
+    const options = [...html.matchAll(/<option value="[PLU]"[^>]*>([^<]*)<\/option>/g)].map((m) => m[1]);
+    expect(options).toHaveLength(3);
+    for (const label of options) expect(label.length).toBeLessThanOrEqual(14);
+    expect(html).toMatch(/<option value="P" title="[^"]{10,}"/);
+  });
+
+  it('motion is guarded and the focus ring is keyboard-only', () => {
+    const guard = css.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\n  \}/);
+    expect(guard, 'no prefers-reduced-motion guard').toBeTruthy();
+    expect(guard[1]).toMatch(/transition-duration:[^;]*!important/);
+    expect(guard[1]).toMatch(/animation-duration:[^;]*!important/);
+    // Every transition this page declares lives above the guard, and the guard
+    // is a `*` rule — so a new one cannot escape it.
+    expect(guard[1]).toMatch(/\*,\s*\*::before,\s*\*::after/);
+
+    expect(css).toMatch(/:focus-visible\s*\{[\s\S]*?outline:/);
+    // A mouse click must not leave a ring behind.
+    expect(css).toMatch(/:focus\s*\{\s*outline:\s*none/);
+    expect(css).not.toMatch(/[^-]:focus\s*\{[^}]*outline:\s*2px/);
+  });
+
+  it('the fonts are SYSTEM fonts, with the survey’s two corrections held', () => {
+    expect(css).toMatch(/--ui:\s*system-ui,\s*-apple-system,\s*"Segoe UI"/);
+    expect(css).toMatch(/--mono:\s*ui-monospace,\s*SFMono-Regular/);
+    // Correction (2): system-ui on Windows 11 resolves to Segoe UI, not the
+    // Variable face — naming it in the stack is the common wrong answer.
+    expect(css).not.toContain('Segoe UI Variable');
+    // Zero fetched bytes: no @font-face, no @import, nothing external.
+    expect(css).not.toMatch(/@font-face|@import|url\(\s*['"]?https?:/i);
+  });
+
+  it('the pass changed skin only — every §24 behavior marker is still in place', () => {
+    // A visual pass that quietly moved a contract would be the expensive kind
+    // of regression, so the markers the behavior tests key on are re-asserted
+    // here, in the file that changed.
+    expect(script).toMatch(/factsSeq/);
+    expect(script).toMatch(/api\('\/health\?strip=1'\)/);
+    expect(script).toMatch(/repaintStripFrom/);
+    expect(script).toContain('commands.forget');
+    expect(script).toContain('commands.trust_options');
+    expect(script).toContain('data.state_note');
+    expect(script).toMatch(/clipboard\.writeText/);
+    expect(script).not.toMatch(/method:\s*['"](?:POST|PUT|PATCH|DELETE)['"]/i);
+    expect(script).not.toMatch(/EventSource|new WebSocket/);
+    // And no HTML-parsing sink crept in with the new renderer.
+    for (const sink of ['innerHTML', 'outerHTML', 'insertAdjacentHTML', 'document.write', 'srcdoc', 'setHTML', 'createContextualFragment']) {
+      expect(script, `${sink} appeared in the visual pass`).not.toContain(sink);
+    }
+  });
+});
+
 describe('viewer — the `cmk view` CLI glue (255.1)', () => {
   it('is registered as a verb with the documented flags', () => {
     const sub = subcommands.find((s) => s.name === 'view');
