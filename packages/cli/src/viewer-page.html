@@ -5,12 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>cmk view — your memory</title>
 <!--
-  The kit's memory viewer (Task 255, design §24).
+  The kit's memory viewer (Task 255, design §24; the visual pass is Task 260).
 
   ONE file, on purpose. No framework, no bundler, no CDN, no build step — the
   page is a plain consumer of the read API the same server exposes, and the
   response's CSP (`default-src 'none'`) means a stray external reference fails
-  loudly rather than silently working on the author's machine.
+  loudly rather than silently working on the author's machine. That constraint
+  is §24.1.7, and it is NOT the reason a page looks plain: everything below is
+  hand-written CSS over system fonts, with zero bytes fetched.
 
   It is READ-ONLY and it stays that way: this page never issues a request with a
   method other than GET. The answer to "let me delete this from here" is the
@@ -18,121 +20,397 @@
   could do it anyway.
 -->
 <style>
+  /* ---------------------------------------------------------------------
+     Tokens. A warm neutral ladder (never browser grey), one accent, and one
+     hue per meaning: trust green/amber/grey, supersession red, the tiers
+     blue/violet/ochre. The values come from the 2026-08-03 survey — the warm
+     ink `#2b2520` and dark ground `#1a1916` are claude-mem's; the step
+     semantics are Radix slate's — rather than from taste.
+
+     Every hue also carries its channels as `--*-rgb`, because the ONE badge
+     rule below is a TINT — an `rgba(<hue>, .13)` fill under an
+     `rgba(<hue>, .28)` hairline — and a literal rgba pair is the safer
+     substitution than a colour-mixing function, which both reference
+     implementations avoid too.
+     --------------------------------------------------------------------- */
   :root {
     color-scheme: light dark;
-    --bg: #fbfaf8; --panel: #ffffff; --ink: #1c1b19; --muted: #6b6862;
-    --line: #e4e0d9; --accent: #7a5cff; --accent-soft: #efeaff;
-    --ok: #1f7a4d; --ok-soft: #e6f4ec;
-    --warn: #9a6400; --warn-soft: #fdf3e0;
-    --bad: #a3271f; --bad-soft: #fbeceb;
-    --tier-p: #2f6f9f; --tier-l: #7a5cff; --tier-u: #b06a1f;
-    --radius: 10px;
+
+    /* Surfaces — a real ladder rather than a 2% delta, and ORDERED: in light,
+       elevation is lightness, so panel (raised) > ground > sunken (recessed).
+       `--sunken` shipped LIGHTER than `--ground`, which made the graph canvas
+       and the code chips read as raised (M5). `--panel-hover` is the gentle
+       step a white card takes on hover — sunken is now too dark for that job. */
+    --ground: #f2efe9;
+    --panel: #ffffff;          --panel-rgb: 255,255,255;
+    --panel-hover: #f7f5f1;
+    --sunken: #eae4da;
+    --line: #d7d1c5;
+    --line-soft: #e3ddd2;
+
+    /* Ink and hue. Every value below is pinned by the contrast test: body text
+       clears WCAG AA 4.5:1 on EVERY surface it can land on, and a badge hue
+       clears 4.5:1 against its own tint composited over BOTH panel and ground
+       (design §24.1.2). Do not lighten one without re-running that test. */
+    --ink: #2b2520;
+    --ink-2: #5a5248;
+    --ink-3: #676158;          --ink-3-rgb: 103,97,88;
+
+    --accent: #6044dd;         --accent-rgb: 96,68,221;
+    --ok: #176f30;             --ok-rgb: 23,111,48;
+    --warn: #805a14;           --warn-rgb: 128,90,20;
+    --bad: #b6271e;            --bad-rgb: 182,39,30;
+
+    --tier-p: #085dc2;         --tier-p-rgb: 8,93,194;
+    --tier-l: var(--accent);   --tier-l-rgb: var(--accent-rgb);
+    --tier-u: #8b5416;         --tier-u-rgb: 139,84,22;
+
+    /* the tint pair — one place, so a badge / tab / pill is one declaration */
+    --tint: .13;
+    --tint-line: .28;
+
+    /* rhythm: 4/8/12/16/20/24/32 — and card padding EXCEEDS card gap, which
+       is the way round it was not (13px padding inside a 9px gap made every
+       card crowd its neighbour harder than its own contents) */
+    --pad-card: 16px;
+    --gap-card: 14px;
+    --measure: 760px;
+    --shell: 1080px;
+
+    --r-card: 10px;
+    --r-ctl: 8px;
+    --r-pill: 99px;
+
+    --ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif,
+          "Apple Color Emoji", "Segoe UI Emoji";
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "Cascadia Mono", Consolas,
+            "Liberation Mono", monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #17161a; --panel: #1f1e24; --ink: #ecebe8; --muted: #9c988f;
-      --line: #33313a; --accent: #a993ff; --accent-soft: #2a2440;
-      --ok: #6fd39b; --ok-soft: #1c3128;
-      --warn: #e2b25e; --warn-soft: #34291a;
-      --bad: #f0928a; --bad-soft: #361f1e;
-      --tier-p: #7db4de; --tier-l: #a993ff; --tier-u: #dda56a;
+      /* In dark, elevation runs the other way: ground (deepest) < sunken < panel. */
+      --ground: #1a1916;
+      --panel: #252320;        --panel-rgb: 37,35,32;
+      --panel-hover: #2d2a26;
+      --sunken: #1f1d1a;
+      --line: #3a3834;
+      --line-soft: #302e2a;
+
+      --ink: #dcd6cc;
+      --ink-2: #b8b0a4;
+      /* ink-3 and bad are LIFTED from #938a7e / #e7736a: at the dark tint alpha
+         their badge form measured 3.56 and 4.01, under AA. The other four dark
+         hues already cleared and are left exactly as they were. */
+      --ink-3: #aaa399;        --ink-3-rgb: 170,163,153;
+
+      --accent: #a993ff;       --accent-rgb: 169,147,255;
+      --ok: #4ec97a;           --ok-rgb: 78,201,122;
+      --warn: #e0b055;         --warn-rgb: 224,176,85;
+      --bad: #ea877f;          --bad-rgb: 234,135,127;
+
+      --tier-p: #58a6ff;       --tier-p-rgb: 88,166,255;
+      --tier-u: #dda56a;       --tier-u-rgb: 221,165,106;
+
+      /* a tint needs more alpha to read against a dark ground */
+      --tint: .18;
+      --tint-line: .34;
     }
   }
+
   * { box-sizing: border-box; }
   body {
-    margin: 0; background: var(--bg); color: var(--ink);
-    font: 15px/1.55 ui-sans-serif, -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    margin: 0; background: var(--ground); color: var(--ink);
+    font: 14px/1.6 var(--ui);
+    -webkit-font-smoothing: antialiased;
   }
-  code, .mono { font-family: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace; }
+  code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums slashed-zero; }
   a { color: inherit; }
-  header { border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; }
-  .bar { max-width: 1080px; margin: 0 auto; padding: 14px 20px 0; }
-  .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-  .brand h1 { font-size: 17px; margin: 0; letter-spacing: -0.01em; }
-  .brand .path { color: var(--muted); font-size: 12.5px; }
+
+  /* Keyboard users get the ring; a mouse click leaves nothing behind. */
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+  /* THE micro-label — one uppercase tier, used for every eyebrow + column head. */
+  .micro, .block h3, .hid {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .12em; color: var(--ink-3);
+  }
+
+  /* ---- chrome ---------------------------------------------------------- */
+  header {
+    position: sticky; top: 0; z-index: 5;
+    background: rgba(var(--panel-rgb), .82);
+    -webkit-backdrop-filter: saturate(1.5) blur(12px);
+    backdrop-filter: saturate(1.5) blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    header { background: var(--panel); }
+  }
+  .bar { max-width: var(--shell); margin: 0 auto; padding: 14px 20px 0; }
+  .brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .brand h1 { font-size: 16px; font-weight: 650; margin: 0; letter-spacing: -0.015em; }
+  .brand .path { color: var(--ink-3); font-size: 12px; }
   .brand .ro {
-    margin-left: auto; font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
-    color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 2px 9px;
+    margin-left: auto; font-size: 11px; font-weight: 600; letter-spacing: .12em;
+    text-transform: uppercase; border-radius: var(--r-pill); padding: 3px 10px;
+    color: var(--ink-3);
+    background: rgba(var(--ink-3-rgb), .10);
+    border: 1px solid rgba(var(--ink-3-rgb), var(--tint-line));
   }
-  nav { display: flex; gap: 4px; margin-top: 12px; flex-wrap: wrap; }
+  /* Real pills. The old active tab faked "in front of the page" by dropping
+     its bottom border, and what that read as was a seam. */
+  nav { display: flex; gap: 6px; margin-top: 12px; padding-bottom: 10px; flex-wrap: wrap; }
   nav a {
-    text-decoration: none; padding: 7px 13px; border-radius: 8px 8px 0 0;
-    color: var(--muted); font-size: 14px; border: 1px solid transparent; border-bottom: none;
+    text-decoration: none; padding: 6px 13px; border-radius: var(--r-pill);
+    color: var(--ink-3); font-size: 13.5px; font-weight: 500;
+    border: 1px solid transparent;
+    transition: color .15s ease, background-color .15s ease, border-color .15s ease;
   }
-  nav a:hover { color: var(--ink); background: var(--bg); }
-  nav a[aria-current="page"] { color: var(--ink); background: var(--bg); border-color: var(--line); font-weight: 600; }
-  main { max-width: 1080px; margin: 0 auto; padding: 18px 20px 60px; }
+  nav a:hover { color: var(--ink); background: rgba(var(--ink-3-rgb), .10); }
+  nav a[aria-current="page"] {
+    color: var(--accent); font-weight: 600;
+    background: rgba(var(--accent-rgb), var(--tint));
+    border-color: rgba(var(--accent-rgb), var(--tint-line));
+  }
 
+  main { max-width: var(--shell); margin: 0 auto; padding: 20px 20px 72px; }
+  /* The reading column. Left-aligned, so the facts list, the toolbar, the
+     graph and the health rows all share ONE gutter instead of three. */
+  .measure { max-width: var(--measure); }
+
+  /* ---- the pinned health strip ----------------------------------------- */
+  /*
+     Quiet by default: an inline pill. A full-width bar is a LOUD shape, and it
+     is reserved for the states that earned it — a pale-green wall for the GOOD
+     state was the single loudest element on the page. The strip's TEXT and its
+     state semantics are the server's (§24.1.1); only the shape changes here.
+  */
   #health-strip {
-    display: flex; align-items: center; gap: 10px; margin: 14px 0 4px;
-    padding: 9px 13px; border-radius: var(--radius); font-size: 13.5px;
-    border: 1px solid var(--line); background: var(--panel);
+    display: inline-flex; align-items: center; gap: 8px;
+    margin: 0 0 18px; padding: 5px 13px 5px 11px;
+    border-radius: var(--r-pill); font-size: 12.5px;
+    color: var(--ink-3);
+    background: rgba(var(--ink-3-rgb), .10);
+    border: 1px solid rgba(var(--ink-3-rgb), var(--tint-line));
   }
-  #health-strip[data-state="ok"] { background: var(--ok-soft); border-color: transparent; color: var(--ok); }
-  #health-strip[data-state="warn"] { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
-  #health-strip[data-state="queued"] { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
-  #health-strip[data-state="bad"] { background: var(--bad-soft); border-color: transparent; color: var(--bad); }
-  #health-strip .dot { width: 8px; height: 8px; border-radius: 99px; background: currentColor; flex: none; }
-  #health-strip .fix { margin-left: auto; }
+  #health-strip[data-state="ok"] {
+    color: var(--ok);
+    background: rgba(var(--ok-rgb), var(--tint));
+    border-color: rgba(var(--ok-rgb), var(--tint-line));
+  }
+  /* The bar shape is earned by the rungs of §24.1.1's precedence ladder that
+     mean something is WRONG. `queued` sits one rung above all-clear — pending
+     items are informational — so it stays a pill; giving the second-quietest
+     state the loudest shape would just repeat the bug in a new colour. */
+  #health-strip[data-state="warn"],
+  #health-strip[data-state="bad"] {
+    display: flex; width: 100%;
+    border-radius: var(--r-card); padding: 10px 14px; font-size: 13.5px;
+  }
+  #health-strip[data-state="warn"] {
+    color: var(--warn);
+    background: rgba(var(--warn-rgb), var(--tint));
+    border-color: rgba(var(--warn-rgb), var(--tint-line));
+  }
+  #health-strip[data-state="queued"] {
+    color: var(--accent);
+    background: rgba(var(--accent-rgb), var(--tint));
+    border-color: rgba(var(--accent-rgb), var(--tint-line));
+  }
+  #health-strip[data-state="bad"] {
+    color: var(--bad);
+    background: rgba(var(--bad-rgb), var(--tint));
+    border-color: rgba(var(--bad-rgb), var(--tint-line));
+  }
+  #health-strip .dot { width: 7px; height: 7px; border-radius: var(--r-pill); background: currentColor; flex: none; }
+  #health-strip .fix { margin-left: 10px; opacity: .8; }
+  #health-strip[data-state="warn"] .fix,
+  #health-strip[data-state="bad"] .fix { margin-left: auto; }
 
-  .toolbar { display: flex; gap: 10px; align-items: center; margin: 16px 0 10px; flex-wrap: wrap; }
+  /* ---- controls -------------------------------------------------------- */
+  .toolbar { display: flex; gap: 8px; align-items: center; margin: 0 0 20px; flex-wrap: wrap; }
   input[type="search"], select, button {
     font: inherit; color: inherit; background: var(--panel);
-    border: 1px solid var(--line); border-radius: 8px; padding: 8px 11px;
+    border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 8px 11px;
+    transition: border-color .15s ease;
   }
-  input[type="search"] { flex: 1 1 320px; min-width: 200px; }
-  input[type="search"]:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  button { cursor: pointer; }
-  button:hover { border-color: var(--accent); }
-  #freshness { color: var(--muted); font-size: 12px; margin-left: auto; }
+  input[type="search"] { flex: 1 1 300px; min-width: 180px; }
+  input[type="search"]::placeholder { color: var(--ink-3); }
+  select { max-width: 190px; }
+  button { cursor: pointer; font-weight: 500; }
+  button:hover, input[type="search"]:hover, select:hover { border-color: var(--ink-3); }
+  #freshness {
+    color: var(--ink-3); font-size: 12px; margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
 
+  /* ---- the fact card --------------------------------------------------- */
+  /*
+     Three typographic tiers, top to bottom: title (15/600) · snippet (13.5,
+     second ink) · meta row (12, third ink, tinted badges). ONE undifferentiated
+     15px paragraph at a ~1040px measure was the wall-of-text effect the survey
+     named first, and the biggest single win here.
+  */
   .card {
-    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-    padding: 13px 15px; margin-bottom: 9px;
+    background: var(--panel); border: 1px solid var(--line-soft);
+    border-radius: var(--r-card);
+    padding: var(--pad-card) calc(var(--pad-card) + 4px) calc(var(--pad-card) - 2px);
+    margin-bottom: var(--gap-card);
+    transition: border-color .15s ease, background-color .15s ease;
   }
   a.card { display: block; text-decoration: none; }
-  a.card:hover { border-color: var(--accent); }
-  .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 9px; font-size: 12px; color: var(--muted); }
-  .badge { border-radius: 99px; padding: 1px 8px; font-size: 11px; border: 1px solid var(--line); }
-  .tier-P { color: var(--tier-p); border-color: currentColor; }
-  .tier-L { color: var(--tier-l); border-color: currentColor; }
-  .tier-U { color: var(--tier-u); border-color: currentColor; }
-  .trust-high { color: var(--ok); border-color: currentColor; }
-  .trust-medium { color: var(--warn); border-color: currentColor; }
-  .trust-low { color: var(--muted); border-color: currentColor; }
-  .state { color: var(--bad); border-color: currentColor; }
-  .snippet { white-space: pre-wrap; overflow-wrap: anywhere; }
-  .snippet b { background: var(--accent-soft); border-radius: 3px; padding: 0 2px; font-weight: 600; }
-  .muted { color: var(--muted); }
-  .empty { color: var(--muted); padding: 34px 4px; text-align: center; }
+  a.card:hover { border-color: rgba(var(--accent-rgb), .5); background: var(--panel-hover); }
+  a.card:focus-visible { outline-offset: 3px; }
 
-  h2 { font-size: 16px; margin: 22px 0 8px; }
-  .block { margin: 14px 0; }
-  .block h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin: 0 0 5px; }
-  .body { white-space: pre-wrap; overflow-wrap: anywhere; }
-  .cmd { display: flex; gap: 8px; align-items: center; margin-bottom: 7px; }
-  .cmd code { flex: 1; background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 6px 9px; font-size: 13px; overflow-x: auto; }
+  .fact-title {
+    font-size: 15px; font-weight: 600; line-height: 1.42; letter-spacing: -.006em;
+    color: var(--ink); text-wrap: pretty;
+  }
+  .snippet { margin-top: 5px; font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
+  /* Clamp in CSS rather than with more server-side "…": the whole string stays
+     in the DOM (and in the accessibility tree) and every card is one height. */
+  .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* The detail view is unclamped and must keep the record's own line breaks —
+     a list headline read as one flowed paragraph without this. */
+  .pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .snippet b, .fact-title b {
+    background: rgba(var(--accent-rgb), .22); color: inherit;
+    border-radius: 3px; padding: 0 2px; font-weight: 600;
+  }
+  .snippet code, .body code, .fact-title code {
+    font-size: .92em; background: rgba(var(--ink-3-rgb), .13);
+    border-radius: 4px; padding: .1em .35em;
+  }
+
+  .meta {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    margin-top: 12px; font-size: 12px; color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* THE badge rule — one tint, every pill. A variant sets `--hue`/`--hue-rgb`
+     and nothing else. Five OUTLINED pills per card was visual static; both
+     reference implementations tint. */
+  .badge {
+    --hue: var(--ink-3); --hue-rgb: var(--ink-3-rgb);
+    border-radius: var(--r-pill); padding: 2px 9px; font-size: 11px; font-weight: 600;
+    line-height: 1.55; white-space: nowrap;
+    color: var(--hue);
+    background: rgba(var(--hue-rgb), var(--tint));
+    border: 1px solid rgba(var(--hue-rgb), var(--tint-line));
+  }
+  .tier-P { --hue: var(--tier-p); --hue-rgb: var(--tier-p-rgb); }
+  .tier-L { --hue: var(--tier-l); --hue-rgb: var(--tier-l-rgb); }
+  .tier-U { --hue: var(--tier-u); --hue-rgb: var(--tier-u-rgb); }
+  .trust-high { --hue: var(--ok); --hue-rgb: var(--ok-rgb); }
+  .trust-medium { --hue: var(--warn); --hue-rgb: var(--warn-rgb); }
+  .trust-low { --hue: var(--ink-3); --hue-rgb: var(--ink-3-rgb); }
+  .state, .st-fail { --hue: var(--bad); --hue-rgb: var(--bad-rgb); }
+  .st-pass { --hue: var(--ok); --hue-rgb: var(--ok-rgb); }
+  .st-warn { --hue: var(--warn); --hue-rgb: var(--warn-rgb); }
+  .st-skip { --hue: var(--ink-3); --hue-rgb: var(--ink-3-rgb); }
+
+  .muted { color: var(--ink-3); }
+  .empty { color: var(--ink-3); padding: 48px 4px; text-align: center; }
+
+  /* ---- fact detail ----------------------------------------------------- */
+  .block { margin: 20px 0; }
+  .block h3 { margin: 0 0 8px; }
+  .body { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink-2); font-size: 13.5px; }
+  .fact-title + .body { margin-top: 6px; }
+  .cmd { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .cmd code {
+    flex: 1; background: var(--sunken); border: 1px solid var(--line);
+    border-radius: var(--r-ctl); padding: 7px 10px; font-size: 12.5px; overflow-x: auto;
+  }
+  .cmd button { padding: 7px 12px; font-size: 12.5px; }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-  .chip { font-size: 12px; border: 1px solid var(--line); border-radius: 99px; padding: 2px 9px; text-decoration: none; }
-  .chip:hover { border-color: var(--accent); }
+  .chip {
+    font-size: 12px; border: 1px solid var(--line); border-radius: var(--r-pill);
+    padding: 3px 11px; text-decoration: none; color: var(--ink-2);
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .spaced { margin-top: 12px; }
 
-  table { border-collapse: collapse; width: 100%; font-size: 14px; }
-  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
-  .st { font-weight: 600; }
-  .st-pass { color: var(--ok); } .st-warn { color: var(--warn); }
-  .st-fail { color: var(--bad); } .st-skip { color: var(--muted); }
+  /* ---- health rows ----------------------------------------------------- */
+  /*
+     A row per check, not a three-column table: CHECK used to wrap onto three
+     lines while a third of WHAT-IT-FOUND sat empty.
+  */
+  .hhead { display: flex; justify-content: space-between; gap: 12px; margin: 0 2px 8px; }
+  /* One panel with internal dividers — the same surface language as a card,
+     rather than rows floating on the page ground. */
+  .hlist {
+    background: var(--panel); border: 1px solid var(--line-soft);
+    border-radius: var(--r-card); padding: 2px 18px;
+  }
+  .hrow {
+    display: grid; grid-template-columns: 1fr auto; align-items: baseline;
+    gap: 4px 16px; padding: 13px 0; border-bottom: 1px solid var(--line-soft);
+  }
+  .hrow:last-child { border-bottom: 0; }
+  .hname { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .hid { font-family: var(--mono); margin-left: 8px; }
+  .hmsg { grid-column: 1 / -1; font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+  .hfix { grid-column: 1 / -1; margin-top: 8px; }
+  .hfix .cmd { margin-bottom: 0; }
 
-  .decision { border-left: 3px solid var(--line); padding-left: 13px; margin-bottom: 18px; }
-  .decision.retracted { opacity: .62; }
+  /* ---- decisions ------------------------------------------------------- */
+  .decision { border-left: 2px solid var(--line); padding-left: 16px; margin-bottom: 24px; }
+  .decision.retracted { opacity: .55; }
   .decision.retracted h3 { text-decoration: line-through; }
-  .decision h3 { font-size: 15px; margin: 0 0 3px; text-transform: none; letter-spacing: 0; color: var(--ink); }
+  .decision h3 {
+    font-size: 14.5px; font-weight: 600; margin: 0 0 4px;
+    text-transform: none; letter-spacing: 0; color: var(--ink);
+  }
 
-  #graph-wrap { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow-x: auto; }
+  /* ---- graph ----------------------------------------------------------- */
+  #graph-wrap {
+    border: 1px solid var(--line); border-radius: var(--r-card);
+    background: var(--sunken); overflow-x: auto;
+  }
   #graph { display: block; width: 100%; height: 560px; touch-action: none; }
-  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin: 9px 2px; }
-  .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 99px; background: currentColor; margin-right: 5px; }
+  /* Association is texture; supersession is a claim, and reads at full strength. */
+  #graph .edge { stroke-opacity: 0.3; }
+  #graph .edge-super { stroke-opacity: 0.95; }
+  #graph text {
+    font-size: 10.5px; fill: var(--ink-2); pointer-events: none;
+    /* a halo, so a label survives being drawn over a dot or an edge */
+    paint-order: stroke; stroke: var(--sunken); stroke-width: 3.5px; stroke-linejoin: round;
+  }
+  #graph text.anchor-label { fill: var(--accent); font-weight: 600; }
+  /* Only the nodes that carry the shape keep a standing label; the rest are
+     drawn hidden and revealed on hover/focus, so the canvas reads as a map
+     instead of a hedge of overlapping text. */
+  #graph text.lbl { opacity: 0; transition: opacity .12s ease; }
+  #graph text.lbl-on { opacity: 1; }
+  #graph .node:hover text.lbl { opacity: 1; }
+  #graph a:focus-visible text.lbl { opacity: 1; }
+  .legend { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+  .legend .badge { text-transform: none; letter-spacing: 0; font-weight: 500; }
+  #graph-note { color: var(--ink-3); font-size: 12px; margin: 12px 2px 0; font-variant-numeric: tabular-nums; }
+
   .hidden { display: none !important; }
+
+  @media (max-width: 620px) {
+    :root { --pad-card: 14px; }
+    .bar, main { padding-left: 14px; padding-right: 14px; }
+    #freshness { margin-left: 0; }
+  }
+
+  /* Nothing on this page needs to move for anyone who asked it not to. Every
+     transition above is declared before this rule, and this rule is a `*`
+     rule — so a transition added later cannot escape it either. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -155,33 +433,33 @@
 <main>
   <div id="health-strip" data-state="loading"><span class="dot"></span><span id="health-strip-text">reading health…</span><a class="fix hidden" id="health-strip-fix" href="/health">details</a></div>
 
-  <div class="toolbar">
+  <div class="toolbar measure">
     <input type="search" id="q" placeholder="Search your memory…" aria-label="Search your memory" autocomplete="off" spellcheck="false" />
     <select id="tier" aria-label="Filter by tier" title="Filter by tier. At session start the tiers are injected with local &gt; project &gt; user precedence — the most specific wins and the others are logged as shadowed.">
-      <option value="">all tiers</option>
-      <option value="P">P · project (committed, travels with the repo)</option>
-      <option value="L">L · local (this machine only, gitignored)</option>
-      <option value="U">U · user (you, across every project)</option>
+      <option value="">All tiers</option>
+      <option value="P" title="Project — committed, travels with the repo">P · project</option>
+      <option value="L" title="Local — this machine only, gitignored">L · local</option>
+      <option value="U" title="User — you, across every project">U · user</option>
     </select>
     <button id="refresh" type="button" title="Re-read from disk">Refresh</button>
     <span id="freshness">as of —</span>
   </div>
 
-  <section data-view="facts" class="hidden"><div id="facts-out"></div></section>
-  <section data-view="fact" class="hidden"><div id="fact-out"></div></section>
+  <section data-view="facts" class="hidden"><div id="facts-out" class="measure"></div></section>
+  <section data-view="fact" class="hidden"><div id="fact-out" class="measure"></div></section>
   <section data-view="graph" class="hidden">
     <div class="legend">
-      <span style="color:var(--ok)">high trust</span>
-      <span style="color:var(--warn)">medium</span>
-      <span style="color:var(--muted)">low</span>
-      <span style="color:var(--bad)">superseded (arrow points at the successor)</span>
-      <span style="color:var(--accent)">doc anchor (hub)</span>
+      <span class="badge trust-high">high trust</span>
+      <span class="badge trust-medium">medium</span>
+      <span class="badge trust-low">low</span>
+      <span class="badge state">superseded — arrow points at the successor</span>
+      <span class="badge tier-L">doc anchor (hub)</span>
     </div>
     <div id="graph-wrap"><svg id="graph" role="img" aria-label="memory graph"></svg></div>
-    <p class="muted" id="graph-note"></p>
+    <p id="graph-note"></p>
   </section>
-  <section data-view="health" class="hidden"><div id="health-out"></div></section>
-  <section data-view="decisions" class="hidden"><div id="decisions-out"></div></section>
+  <section data-view="health" class="hidden"><div id="health-out" class="measure"></div></section>
+  <section data-view="decisions" class="hidden"><div id="decisions-out" class="measure"></div></section>
 </main>
 
 <script>
@@ -236,23 +514,186 @@
     return m;
   }
 
-  // FTS returns <b>…</b> around the matched terms. Render those as real marks
-  // WITHOUT letting anything else through as markup: split on the tags and
-  // append text nodes, so a fact whose body contains "<script>" stays text.
-  function snippetNode(text) {
-    const wrap = el('div', { class: 'snippet' });
-    let rest = String(text || '');
+  // ---- rendering untrusted text -----------------------------------------
+  //
+  // NOTHING below parses HTML. The page's XSS defense is that every character
+  // of fact content reaches the DOM as a text node, or as the text of an
+  // element this code created (design §24.1.1 — and a test scans this script
+  // for the parsing sinks). The markdown handling is therefore a TOKENIZER
+  // over plain strings, deliberately: `**Global install**:` rendering
+  // literally was a visible defect, and its fix must not become a parser.
+  //
+  // Segment kinds: 'text' | 'code' | 'strong' | 'hit'. A 'hit' is an FTS match
+  // marker (the search route wraps matches in <b>…</b>); it is re-created as a
+  // real <b> element, never interpolated.
+  // The block between the region markers below is extracted VERBATIM by
+  // tests/cli-viewer.test.js and run against a ~20-line element shim, so the
+  // tokenizer and the title split have real behavioural coverage without a DOM
+  // dependency (§24.1 point 7). It depends on `el` and nothing else; keep it
+  // that way, and keep each marker alone on its line.
+  // #region text-render
+  const MD_INLINE = /`([^`\n]+)`|\*\*([^*\n]+)\*\*|__([^_\n]+)__|\[([^\]\n]+)\]\([^)\n]*\)/g;
+
+  function inlineSegments(text, blocks) {
+    let s = String(text || '');
+    if (blocks) {
+      // A leading list bullet or heading hash is structure a one-line snippet
+      // cannot show anyway: drop the marker, keep the words.
+      s = s.replace(/^[ \t]*(?:[-*+]|\d+[.)])[ \t]+/gm, '').replace(/^[ \t]*#{1,6}[ \t]+/gm, '');
+    }
+    const out = [];
+    let last = 0;
+    let m;
+    MD_INLINE.lastIndex = 0;
+    while ((m = MD_INLINE.exec(s)) !== null) {
+      if (m.index > last) out.push({ kind: 'text', s: s.slice(last, m.index) });
+      if (m[1] !== undefined) out.push({ kind: 'code', s: m[1] });
+      else if (m[2] !== undefined) out.push({ kind: 'strong', s: m[2] });
+      else if (m[3] !== undefined) out.push({ kind: 'strong', s: m[3] });
+      else out.push({ kind: 'text', s: m[4] });
+      last = m.index + m[0].length;
+    }
+    if (last < s.length) out.push({ kind: 'text', s: s.slice(last) });
+    return out;
+  }
+
+  function segmentsOf(raw, blocks) {
+    const out = [];
+    let rest = String(raw || '');
     while (rest.length) {
       const open = rest.indexOf('<b>');
-      if (open === -1) { wrap.append(rest); break; }
-      wrap.append(rest.slice(0, open));
+      if (open === -1) { out.push(...inlineSegments(rest, blocks)); break; }
+      if (open) out.push(...inlineSegments(rest.slice(0, open), blocks));
       const close = rest.indexOf('</b>', open);
-      if (close === -1) { wrap.append(rest.slice(open + 3)); break; }
-      wrap.append(el('b', { text: rest.slice(open + 3, close) }));
+      if (close === -1) { out.push(...inlineSegments(rest.slice(open + 3), blocks)); break; }
+      out.push({ kind: 'hit', s: rest.slice(open + 3, close) });
       rest = rest.slice(close + 4);
     }
-    return wrap;
+    return out;
   }
+
+  function renderSegments(into, segs) {
+    for (const seg of segs) {
+      if (seg.kind === 'code') into.append(el('code', { text: seg.s }));
+      else if (seg.kind === 'strong') into.append(el('strong', { text: seg.s }));
+      else if (seg.kind === 'hit') into.append(el('b', { text: seg.s }));
+      else into.append(seg.s);
+    }
+    return into;
+  }
+
+  const plainOf = (segs) => segs.map((x) => x.s).join('');
+
+  function sliceSegments(segs, from, to) {
+    const out = [];
+    let pos = 0;
+    for (const seg of segs) {
+      const start = pos;
+      pos += seg.s.length;
+      if (pos <= from || start >= to) continue;
+      const s = seg.s.slice(Math.max(0, from - start), Math.min(seg.s.length, to - start));
+      if (s) out.push({ kind: seg.kind, s });
+    }
+    return out;
+  }
+
+  // Where the title ends and the body begins. The server sends ONE flattened
+  // string per fact and its shape is pinned by a route test, so the two
+  // typographic tiers are made HERE rather than by changing the payload.
+  //
+  // Boundaries are looked for in PROSE only: a `.` inside a backticked command
+  // is not the end of a sentence, and cutting there produced titles like
+  // "Running Copy-Item scratchpad\*.md -Destination .".
+  const TITLE_MIN = 14;
+  const TITLE_MAX = 150;
+  const TITLE_WHOLE = 90;    // shorter than this and the fact IS its own title
+  const TITLE_CLAUSE = 160;  // the weaker comma boundary reaches a little further
+  const TITLE_FALLBACK = 110;
+  const BOUNDARY = /([.!?])(?=\s|$)|\s*[—–]\s*|:\s|\n/g;
+  const CLAUSE = /,\s/g;
+
+  /** Scan the PROSE segments only, and report the first boundary in range. */
+  function scanBoundary(segs, rx, min, max, last) {
+    let found = null;
+    let pos = 0;
+    for (const seg of segs) {
+      const start = pos;
+      pos += seg.s.length;
+      if (seg.kind === 'code' || start > max) continue;
+      rx.lastIndex = 0;
+      let m;
+      while ((m = rx.exec(seg.s)) !== null) {
+        const at = start + m.index;
+        if (at < min) continue;
+        if (at > max) break;
+        // Keep sentence-ending punctuation in the title; drop a separator.
+        const hit = { titleTo: at + (m[1] ? m[1].length : 0), restFrom: at + m[0].length };
+        if (!last) return hit;
+        found = hit;
+      }
+    }
+    return found;
+  }
+
+  function titleSplit(segs) {
+    const plain = plainOf(segs);
+    if (plain.length <= TITLE_WHOLE) return { titleTo: plain.length, restFrom: plain.length };
+    // A LINE BREAK outranks everything and ignores TITLE_MIN: a short first line
+    // ("**What changed:**") is a heading, which is precisely what a title is.
+    // Gating it behind the minimum length is what made a 7-line bullet headline
+    // render as "What changed: Card text" — the newline vanished into the title
+    // and the first bullet was decapitated into the body (B1).
+    const nl = plain.indexOf('\n');
+    if (nl > 0 && nl <= TITLE_MAX) return { titleTo: nl, restFrom: nl + 1 };
+    // Otherwise a sentence end / dash / colon, first one wins.
+    const strong = scanBoundary(segs, BOUNDARY, TITLE_MIN, TITLE_MAX, false);
+    if (strong) return strong;
+    // Failing that, the LAST clause break in range — a full clause reads as a
+    // lede where half of one reads as a truncation.
+    const clause = scanBoundary(segs, CLAUSE, TITLE_MIN * 3, TITLE_CLAUSE, true);
+    if (clause) return { titleTo: clause.titleTo + 1, restFrom: clause.restFrom };
+    // And failing THAT, lead with as much as reads as one thought, and let the
+    // body continue it — better than printing one 240-character block.
+    const cut = plain.lastIndexOf(' ', TITLE_FALLBACK);
+    if (cut < TITLE_MIN) return { titleTo: plain.length, restFrom: plain.length };
+    return { titleTo: cut, restFrom: cut + 1 };
+  }
+
+  /**
+   * A card's text tiers.
+   *
+   * `clamp` is the LIST mode: the snippet arrives already flattened to one line
+   * by the server, every card must be one height, and a leading `- ` on a line
+   * that can no longer show a list is noise — so markers are stripped.
+   *
+   * The DETAIL view is the opposite case on every count. It renders the fact's
+   * real multi-line body, nothing is clamped, and the record's own structure is
+   * the point — so it keeps its markers and its line breaks, exactly as
+   * `richBody` does for Why/How two blocks further down the SAME page. Passing
+   * `true` here unconditionally is what made one page strip the bullets in the
+   * head card and print them in the next block (B1).
+   */
+  function factText(raw, clamp) {
+    const segs = segmentsOf(raw, clamp);
+    const { titleTo, restFrom } = titleSplit(segs);
+    const nodes = [];
+    const title = el('div', { class: clamp ? 'fact-title clamp-2' : 'fact-title pre' });
+    renderSegments(title, sliceSegments(segs, 0, titleTo));
+    nodes.push(title);
+    const plain = plainOf(segs);
+    if (restFrom < plain.length) {
+      const body = el('div', { class: clamp ? 'snippet clamp-2' : 'snippet pre' });
+      renderSegments(body, sliceSegments(segs, restFrom, plain.length));
+      nodes.push(body);
+    }
+    return nodes;
+  }
+
+  /** Full prose (Why / How / a decision's rationale): markdown-aware, unclamped. */
+  function richBody(raw) {
+    return renderSegments(el('div', { class: 'body' }), segmentsOf(raw, false));
+  }
+  // #endregion text-render
 
   function copyRow(label, command) {
     const code = el('code', { text: command });
@@ -277,8 +718,8 @@
 
   function errorCard(data) {
     return el('div', { class: 'card' }, [
-      el('strong', { text: 'Could not read this view.' }),
-      el('div', { class: 'muted', text: String(data && data.error || 'unknown error') }),
+      el('div', { class: 'fact-title', text: 'Could not read this view.' }),
+      el('div', { class: 'snippet', text: String(data && data.error || 'unknown error') }),
     ]);
   }
 
@@ -351,7 +792,7 @@
     }
     for (const f of data.facts) {
       const card = el('a', { class: 'card', href: '/fact/' + f.id });
-      card.append(snippetNode(f.snippet));
+      for (const node of factText(f.snippet, true)) card.append(node);
       card.append(factMeta(f));
       out.append(card);
     }
@@ -369,9 +810,10 @@
     }
     stamp(data, 'fact ' + data.fact.id);
     const f = data.fact;
-    out.append(el('a', { class: 'chip', href: '/facts', text: '← all memory' }));
+    out.append(el('div', { class: 'chips', style: 'margin-bottom:14px' },
+      [el('a', { class: 'chip', href: '/facts', text: '← all memory' })]));
     const head = el('div', { class: 'card' });
-    head.append(el('div', { class: 'body', text: f.headline || f.snippet }));
+    for (const node of factText(f.headline || f.snippet, false)) head.append(node);
     head.append(factMeta(f));
     out.append(head);
 
@@ -382,15 +824,15 @@
     if (typeof f.trust_score === 'number') {
       out.append(el('div', { class: 'block' }, [
         el('h3', { text: 'Trust' }),
-        el('div', { class: 'muted', text:
+        el('div', { class: 'body', text:
           'declared ' + f.trust + ' · learned score ' + f.trust_score.toFixed(2) +
           ' from ' + (f.signal_count || 0) + ' outcome signal(s)' +
           ((f.signal_count || 0) < 3 ? ' — not yet enough evidence to move search ranking' : '') }),
       ]));
     }
 
-    if (f.why) out.append(el('div', { class: 'block' }, [el('h3', { text: 'Why' }), el('div', { class: 'body', text: f.why })]));
-    if (f.how) out.append(el('div', { class: 'block' }, [el('h3', { text: 'How to apply' }), el('div', { class: 'body', text: f.how })]));
+    if (f.why) out.append(el('div', { class: 'block' }, [el('h3', { text: 'Why' }), richBody(f.why)]));
+    if (f.how) out.append(el('div', { class: 'block' }, [el('h3', { text: 'How to apply' }), richBody(f.how)]));
 
     if (data.supersession && data.supersession.length > 1) {
       const chips = el('div', { class: 'chips' });
@@ -423,10 +865,12 @@
     // not (I1). Commands render only where they work.
     if (data.state_note) {
       const note = el('div', { class: 'block' }, [el('h3', { text: 'State' })]);
-      const card = el('div', { class: 'card muted' });
-      card.append(el('div', { text: data.state_note.text }));
+      const card = el('div', { class: 'card' });
+      card.append(el('div', { class: 'snippet', text: data.state_note.text }));
       if (data.state_note.superseded_by) {
-        card.append(el('a', { class: 'chip', href: '/fact/' + data.state_note.superseded_by, text: 'open the current version → ' + data.state_note.superseded_by }));
+        card.append(el('div', { class: 'chips spaced' }, [
+          el('a', { class: 'chip', href: '/fact/' + data.state_note.superseded_by, text: 'open the current version → ' + data.state_note.superseded_by }),
+        ]));
       }
       note.append(card);
       out.append(note);
@@ -444,7 +888,7 @@
     // marked and has no copy button, because there is nothing to run.
     const trust = el('div', { class: 'block' }, [
       el('h3', { text: 'Re-rate it' }),
-      el('div', { class: 'muted', text: 'Currently ' + (data.commands.trust_current || 'unrated') + '. Copy the level you want:' }),
+      el('div', { class: 'body', text: 'Currently ' + (data.commands.trust_current || 'unrated') + '. Copy the level you want:' }),
     ]);
     for (const opt of data.commands.trust_options) {
       if (opt.current) {
@@ -472,13 +916,15 @@
       // §24.1 point 8: there is no conflict-queue SCREEN in wave 1, so the
       // count + the verb that resolves it are surfaced rather than hidden.
       const q = el('div', { class: 'card' });
-      q.append(el('strong', { text: 'Waiting on you' }));
-      q.append(el('div', { class: 'muted', text:
+      q.append(el('div', { class: 'fact-title', text: 'Waiting on you' }));
+      q.append(el('div', { class: 'snippet', text:
         [data.queues.conflicts ? data.queues.conflicts + ' conflicting capture(s)' : null,
          data.queues.review ? data.queues.review + ' item(s) awaiting review' : null]
           .filter(Boolean).join(' · ') + ' — resolved from your shell:' }));
-      if (data.queues.conflicts) q.append(copyRow('resolve conflicts', 'cmk queue conflicts'));
-      if (data.queues.review) q.append(copyRow('walk the review queue', 'cmk queue review'));
+      const box = el('div', { class: 'spaced' });
+      if (data.queues.conflicts) box.append(copyRow('resolve conflicts', 'cmk queue conflicts'));
+      if (data.queues.review) box.append(copyRow('walk the review queue', 'cmk queue review'));
+      q.append(box);
       out.append(q);
     }
 
@@ -486,30 +932,39 @@
       const list = el('div', { class: 'block' }, [el('h3', { text: 'Active warnings' })]);
       for (const w of data.active_warnings) {
         const c = el('div', { class: 'card' });
-        c.append(el('strong', { text: w.title }));
+        c.append(el('div', { class: 'fact-title', text: w.title }));
         c.append(el('div', { class: 'meta' }, [
           badge(w.severity, w.severity === 'advisory' ? 'trust-low' : 'state'),
           el('span', { text: w.strikes + ' consecutive failure(s)' }),
           el('span', { text: 'since ' + (w.brokenSince || '—') }),
         ]));
-        c.append(copyRow('the prescribed fix', w.primaryAction));
+        c.append(el('div', { class: 'spaced' }, copyRow('the prescribed fix', w.primaryAction)));
         list.append(c);
       }
       out.append(list);
     }
 
-    const rows = [el('tr', {}, [el('th', { text: 'Check' }), el('th', { text: 'Status' }), el('th', { text: 'What it found' })])];
+    // One ROW per check. The three-column table wrapped the CHECK column onto
+    // three lines while a third of WHAT-IT-FOUND sat empty.
+    const list = el('div', { class: 'hlist' });
     for (const c of data.checks) {
-      const tr = el('tr');
-      tr.append(el('td', {}, [el('div', { text: c.name }), el('div', { class: 'muted mono', text: c.id })]));
-      tr.append(el('td', {}, el('span', { class: 'st st-' + c.status, text: c.status })));
-      const td = el('td');
-      td.append(el('div', { text: c.message || '' }));
-      if (c.recoveryCommand) td.append(copyRow('recovery', c.recoveryCommand));
-      tr.append(td);
-      rows.push(tr);
+      const row = el('div', { class: 'hrow' });
+      row.append(el('div', {}, [
+        el('span', { class: 'hname', text: c.name }),
+        el('span', { class: 'hid', text: c.id }),
+      ]));
+      row.append(el('span', { class: 'badge st-' + c.status, text: c.status }));
+      if (c.message) row.append(el('div', { class: 'hmsg', text: c.message }));
+      if (c.recoveryCommand) row.append(el('div', { class: 'hfix' }, copyRow('recovery', c.recoveryCommand)));
+      list.append(row);
     }
-    out.append(el('table', {}, [el('tbody', {}, rows)]));
+    out.append(el('div', { class: 'block' }, [
+      el('div', { class: 'hhead' }, [
+        el('span', { class: 'micro', text: 'Check' }),
+        el('span', { class: 'micro', text: data.checks.length + ' total · ' + data.fail_count + ' failing' }),
+      ]),
+      list,
+    ]));
   }
 
   async function viewDecisions() {
@@ -530,7 +985,7 @@
       if (d.retracted) meta.append(badge('retracted', 'state'));
       meta.append(el('a', { class: 'chip', href: '/fact/' + d.fact_id, text: d.fact_id }));
       box.append(meta);
-      if (d.why) box.append(el('div', { class: 'body', text: d.why }));
+      if (d.why) box.append(richBody(d.why));
       out.append(box);
     }
   }
@@ -541,7 +996,9 @@
   // the zero-dependency contract for something this simple. Deterministic seed
   // so the same corpus lays out the same way twice — a graph that reshuffles on
   // every refresh is unreadable.
-  const TRUST_COLOR = { high: 'var(--ok)', medium: 'var(--warn)', low: 'var(--muted)' };
+  const TRUST_COLOR = { high: 'var(--ok)', medium: 'var(--warn)', low: 'var(--ink-3)' };
+  const LABEL_AT = 3;      // the degree at which a node earns a STANDING label
+  const LABEL_CHARS = 32;  // a fact slug runs ~60 chars and collides with its neighbour
 
   async function viewGraph() {
     const svg = $('#graph');
@@ -550,20 +1007,37 @@
     clear(svg);
     if (data.error) { note.textContent = data.error; return; }
     stamp(data, data.nodes.length + ' nodes · ' + data.edges.length + ' edges');
+
+    // Drop the unlinked. A degree-0 node carries no relationship, so the force
+    // layout only ever pushed it to the wall — the result was a picture-frame
+    // of orphan dots around the actual shape. They are still COUNTED in the
+    // note below; nothing disappears silently.
+    const degree = new Map();
+    for (const e of data.edges) {
+      degree.set(e.src, (degree.get(e.src) || 0) + 1);
+      degree.set(e.dst, (degree.get(e.dst) || 0) + 1);
+    }
+    const linked = data.nodes.filter((n) => degree.get(n.id));
+    const unlinked = data.nodes.length - linked.length;
+
     note.textContent =
       data.fact_count + ' fact(s)' +
       (data.truncated ? ' — showing the newest ' + data.node_limit : '') +
       (data.anchor_count ? ' · ' + data.anchor_count + ' doc anchor(s)' : '') +
       (data.dangling_count ? ' · ' + data.dangling_count + ' dangling link(s)' : '') +
-      (data.archived_count ? ' · ' + data.archived_count + ' superseded predecessor(s)' : '');
-    if (!data.nodes.length) { note.textContent = 'Nothing to draw yet — the graph fills as facts link to each other.'; return; }
+      (data.archived_count ? ' · ' + data.archived_count + ' superseded predecessor(s)' : '') +
+      (unlinked ? ' · ' + unlinked + ' unlinked, not drawn' : '');
+    if (!linked.length) {
+      note.textContent = 'Nothing to draw yet — the graph fills as facts link to each other.';
+      return;
+    }
 
     const W = svg.clientWidth || 900;
     const H = svg.clientHeight || 560;
     let seed = 42;
     const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
 
-    const nodes = data.nodes.map((n) => ({ ...n, x: rnd() * W, y: rnd() * H, vx: 0, vy: 0 }));
+    const nodes = linked.map((n) => ({ ...n, x: rnd() * W, y: rnd() * H, vx: 0, vy: 0 }));
     const index = new Map(nodes.map((n) => [n.id, n]));
     const edges = data.edges.map((e) => ({ ...e, a: index.get(e.src), b: index.get(e.dst) })).filter((e) => e.a && e.b);
     for (const e of edges) { e.a.deg = (e.a.deg || 0) + 1; e.b.deg = (e.b.deg || 0) + 1; }
@@ -615,8 +1089,9 @@
     for (const e of edges) {
       const superseded = e.type === 'superseded_by';
       const line = svgEl('line', {
+        class: superseded ? 'edge edge-super' : 'edge',
         x1: e.a.x, y1: e.a.y, x2: e.b.x, y2: e.b.y,
-        stroke: superseded ? 'var(--bad)' : 'var(--line)',
+        stroke: superseded ? 'var(--bad)' : 'var(--ink-3)',
         'stroke-width': superseded ? 1.8 : 1,
         'stroke-dasharray': e.resolved ? '' : '3 3',
       });
@@ -631,25 +1106,36 @@
     for (const n of nodes) {
       const anchor = n.kind === 'anchor';
       const r = anchor ? 5 + Math.min(6, (n.deg || 0)) : 5 + Math.min(7, (n.deg || 0) * 1.4);
-      const g = svgEl('g', { transform: 'translate(' + n.x + ',' + n.y + ')' });
+      const g = svgEl('g', { class: 'node', transform: 'translate(' + n.x + ',' + n.y + ')' });
       const dot = svgEl('circle', {
         r,
-        fill: anchor ? 'var(--accent)' : (TRUST_COLOR[n.trust] || 'var(--muted)'),
-        stroke: n.superseded ? 'var(--bad)' : 'var(--panel)',
+        fill: anchor ? 'var(--accent)' : (TRUST_COLOR[n.trust] || 'var(--ink-3)'),
+        stroke: n.superseded ? 'var(--bad)' : 'var(--sunken)',
         'stroke-width': n.superseded ? 2 : 1.5,
-        opacity: n.superseded ? 0.65 : 1,
+        opacity: n.superseded ? 0.7 : 1,
       });
       const title = document.createElementNS(NS, 'title');
       title.textContent = n.label + (n.tier ? ' · ' + n.tier : '') + (n.trust ? ' · ' + n.trust + ' trust' : '') + (n.superseded ? ' · superseded' : '');
       dot.append(title);
       g.append(dot);
-      // Label only the nodes that anchor the shape — labelling everything on a
-      // few-hundred-node canvas is illegible, and the tooltip carries the rest.
-      if ((n.deg || 0) >= 2 || anchor) {
-        const label = svgEl('text', { x: r + 4, y: 4, 'font-size': '10', fill: 'var(--muted)' });
-        label.textContent = anchor ? n.id.replace(/^anchor:/, '') : String(n.label).replace(/\.md.*$/, '');
-        g.append(label);
-      }
+      // Standing labels are earned by degree; every other label is drawn hidden
+      // and revealed on hover/focus by CSS. Labelling all of them at once is
+      // what made the canvas a hedge of overlapping text.
+      const standing = anchor || (n.deg || 0) >= LABEL_AT;
+      let cls = 'lbl';
+      if (standing) cls += ' lbl-on';
+      if (anchor) cls += ' anchor-label';
+      const label = svgEl('text', { class: cls, x: r + 5, y: 4 });
+      // An anchor id is already short (`Task-260`, `D-419`); a fact slug is not,
+      // and two of them side by side is the overlap the halos cannot rescue.
+      // The full string stays in the hover title on the dot.
+      const full = anchor ? n.id.replace(/^anchor:/, '') : String(n.label).replace(/\.md.*$/, '');
+      // Slice CODE POINTS, not UTF-16 units: a label ending on an astral char
+      // (an emoji in a slug) would otherwise be cut mid-surrogate and render as
+      // U+FFFD.
+      const cps = Array.from(full);
+      label.textContent = cps.length > LABEL_CHARS ? cps.slice(0, LABEL_CHARS - 1).join('') + '…' : full;
+      g.append(label);
       if (!anchor) {
         const link = svgEl('a', { href: '/fact/' + n.id });
         link.append(g);

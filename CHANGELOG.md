@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- New user-facing capabilities land here in the same PR that ships them (CLAUDE.md "Document user-facing capabilities" rule). -->
 
+### Changed
+
+- **`cmk view` looks designed now.** The viewer shipped working and plain. Each fact is now a card with a real **title** over its detail, set in a proper reading column instead of one wide undifferentiated paragraph; badges are **tinted** rather than outlined; the page, the panels and the sunken surfaces are three distinct steps of a warm palette in **both light and dark** (dark is its own design, not an inversion); tabs are pills; and numbers line up. The **health strip is a quiet pill when nothing is wrong** — it becomes a full-width bar only when something actually needs you — where the good state used to be the loudest thing on the screen. The **graph** stopped drawing the ~150 facts that link to nothing (they're still counted, and named as not drawn), labels no longer collide into an unreadable hedge, and supersession arrows read at full strength while ordinary links recede. **Markdown in snippets renders** instead of showing you `**its asterisks**`. Reduced-motion and keyboard-focus are both honoured. Same zero dependencies, same fully-offline single file, same read-only server — nothing about how it behaves changed. (Task 260, design §24.1.2, D-420)
+
 ## [0.6.4] — 2026-08-02
 
 ### Added
