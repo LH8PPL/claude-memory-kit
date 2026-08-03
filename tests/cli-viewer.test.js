@@ -1194,8 +1194,15 @@ describe('viewer — the visual pass (260)', () => {
   it('(4) ids, dates and counts are tabular — a column that does not wobble', () => {
     // Each assertion is scoped to the rule that actually needs the property; a
     // sheet-wide `toMatch` passes even if the one element that wobbles lost it.
+    // Escape EVERY regex metacharacter, not just the two a CSS selector
+    // usually carries. The `[.#]`-only form was flagged high by CodeQL
+    // (js/incomplete-sanitization: backslashes survive), and it is the right
+    // call even though every `sel` here is a source literal — a partial
+    // escaper is the shape that becomes a bug the first time someone passes
+    // it something it did not anticipate.
+    const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const rule = (sel) => {
-      const m = css.match(new RegExp(`(?:^|\\n)\\s*${sel.replace(/[.#]/g, '\\$&')}\\s*[^{]*\\{([^}]*)\\}`));
+      const m = css.match(new RegExp(`(?:^|\\n)\\s*${escapeRe(sel)}\\s*[^{]*\\{([^}]*)\\}`));
       expect(m, `no ${sel} rule`).toBeTruthy();
       return m[1];
     };
