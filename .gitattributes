@@ -34,7 +34,7 @@
 # rather than quietly degrading the fixture.
 fixtures/bom/** -text
 
-# core-memory-kit:gitattributes:start v0.6.2
+# core-memory-kit:gitattributes:start v0.6.4
 # core-memory-kit — added by `cmk install`. Do not edit by hand;
 # `cmk install` refreshes these lines idempotently. Remove via
 # `cmk uninstall`.
