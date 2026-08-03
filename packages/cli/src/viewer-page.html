@@ -258,6 +258,9 @@
   /* Clamp in CSS rather than with more server-side "…": the whole string stays
      in the DOM (and in the accessibility tree) and every card is one height. */
   .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* The detail view is unclamped and must keep the record's own line breaks —
+     a list headline read as one flowed paragraph without this. */
+  .pre { white-space: pre-wrap; overflow-wrap: anywhere; }
   .snippet b, .fact-title b {
     background: rgba(var(--accent-rgb), .22); color: inherit;
     border-radius: 3px; padding: 0 2px; font-weight: 600;
@@ -640,7 +643,7 @@
     nodes.push(title);
     const plain = plainOf(segs);
     if (restFrom < plain.length) {
-      const body = el('div', { class: clamp ? 'snippet clamp-2' : 'snippet' });
+      const body = el('div', { class: clamp ? 'snippet clamp-2' : 'snippet pre' });
       renderSegments(body, sliceSegments(segs, restFrom, plain.length));
       nodes.push(body);
     }
