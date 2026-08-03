@@ -497,7 +497,21 @@ function familyReferences() {
     // own anchors. Trade-off, stated rather than left silent (the same one
     // `counts` already accepts for docs/journey/): a typo in a BRAND-NEW log
     // or build-log entry goes unchecked.
-    const checkDnnn = decisionIds !== null && !isFrozenRecord(relPosix(REPO, file));
+    const frozen = isFrozenRecord(relPosix(REPO, file));
+    const checkDnnn = decisionIds !== null && !frozen;
+    // The SAME reasoning, applied to every other identifier family (D-418).
+    // Found by running the suite for real: the kit's own auto-extract captured
+    // a conversational proposal ("file this as Task 260") into a fact file, and
+    // this family failed the build because Task 260 did not exist yet. That is
+    // a category error — a memory fact records what was SAID at a moment, so a
+    // forward reference in it is accurate history, not drift, exactly like the
+    // "v0.3.5 verified all 9 health checks" case that put `context/` on the
+    // frozen list in the first place. `D-nnn` already honored that; Task/FR/
+    // NFR/ADR did not, which made the exemption half-applied and the memory
+    // tier a source of build failures nobody could fix without editing memory
+    // (which the kit forbids). FILE LINKS stay checked everywhere — a moved
+    // file is real drift in any document.
+    const checkIds = !frozen;
     const lines = text.split(/\r?\n/);
 
     // Fence tracking with fence-length semantics (CommonMark: an opening
@@ -556,7 +570,7 @@ function familyReferences() {
       }
 
       ADR_RE.lastIndex = 0;
-      while ((m = ADR_RE.exec(scanLine)) !== null) {
+      while (checkIds && (m = ADR_RE.exec(scanLine)) !== null) {
         if (!adrFiles.has(m[1])) {
           record(file, lineNumber, `ADR-${m[1]} has no file under docs/adr/`);
         }
@@ -574,21 +588,21 @@ function familyReferences() {
       }
 
       FR_RE.lastIndex = 0;
-      while ((m = FR_RE.exec(scanLine)) !== null) {
+      while (checkIds && (m = FR_RE.exec(scanLine)) !== null) {
         if (!frIds.has(m[1])) {
           record(file, lineNumber, `FR-${m[1]} not defined in requirements.md or requirements-revisions-proposed.md`);
         }
       }
 
       NFR_RE.lastIndex = 0;
-      while ((m = NFR_RE.exec(scanLine)) !== null) {
+      while (checkIds && (m = NFR_RE.exec(scanLine)) !== null) {
         if (!nfrIds.has(m[1])) {
           record(file, lineNumber, `NFR-${m[1]} not defined in requirements.md or requirements-revisions-proposed.md`);
         }
       }
 
       TASK_RE.lastIndex = 0;
-      while ((m = TASK_RE.exec(scanLine)) !== null) {
+      while (checkIds && (m = TASK_RE.exec(scanLine)) !== null) {
         if (!taskIds.has(m[1])) {
           record(file, lineNumber, `Task ${m[1]} not defined in tasks.md`);
         }
@@ -1184,6 +1198,62 @@ async function familyCounts() {
 }
 
 // ====================================================================
+// FAMILY: brevity — the README's front door stays scannable
+// ====================================================================
+//
+// The "document user-facing capabilities in the same PR" rule (D-17) is
+// binding and correct, but it only ever said ADD A LINE — so across 19
+// releases the Features section grew by accretion into 19 bullets averaging
+// 85 words (longest: 179), i.e. more prose than the ENTIRE README of every
+// comparable tool measured: datasette 489 words / uv 1,080 / claude-mem
+// 1,691 / turso 2,158, none with a bullet over 22 words. A front door that
+// takes six minutes to read is not a front door.
+//
+// The cap is deliberately generous (25 > the 22-word max of the whole
+// comparison set) so it catches the accretion class, not a well-judged
+// sentence. Detail belongs in docs/FEATURES.md, which this check requires
+// the section to link to — the two halves of the same rule.
+const README_BULLET_MAX_WORDS = 25;
+const FEATURES_DETAIL_DOC = 'docs/FEATURES.md';
+
+function familyBrevity() {
+  const errors = [];
+  const readmePath = join(REPO, 'README.md');
+  const text = readFileSync(readmePath, 'utf8');
+
+  const start = text.indexOf('\n## Features');
+  if (start < 0) {
+    return { errors, summary: 'brevity: no "## Features" section in README.md — nothing to check' };
+  }
+  const rest = text.slice(start + 1);
+  const endRel = rest.indexOf('\n## ');
+  const section = endRel < 0 ? rest : rest.slice(0, endRel);
+
+  const bullets = section.split('\n').filter((l) => /^[-*] /.test(l));
+  for (const b of bullets) {
+    const words = b.replace(/^[-*]\s+/, '').split(/\s+/).filter(Boolean).length;
+    if (words > README_BULLET_MAX_WORDS) {
+      const lead = b.replace(/^[-*]\s+/, '').slice(0, 60);
+      errors.push(
+        `README.md "## Features" bullet runs ${words} words (max ${README_BULLET_MAX_WORDS}): "${lead}…" — ` +
+          `keep the README line short and move the detail to ${FEATURES_DETAIL_DOC}.`,
+      );
+    }
+  }
+  if (!section.includes(FEATURES_DETAIL_DOC)) {
+    errors.push(
+      `README.md "## Features" must link to ${FEATURES_DETAIL_DOC} — the short list is only half the rule; ` +
+        'the detail has to have somewhere to live.',
+    );
+  }
+
+  return {
+    errors,
+    summary: `brevity: ${bullets.length} README feature bullet(s), all within ${README_BULLET_MAX_WORDS} words, detail doc linked`,
+  };
+}
+
+// ====================================================================
 // CLI
 // ====================================================================
 
@@ -1193,6 +1263,7 @@ const FAMILIES = new Map([
   ['catalogs', familyCatalogs],
   ['coverage', familyCoverage],
   ['counts', familyCounts],
+  ['brevity', familyBrevity],
 ]);
 
 async function runCli() {
