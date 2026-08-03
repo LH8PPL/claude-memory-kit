@@ -36,26 +36,34 @@
   :root {
     color-scheme: light dark;
 
-    /* surfaces — page ≠ panel ≠ sunken, a real ladder rather than a 2% delta */
+    /* Surfaces — a real ladder rather than a 2% delta, and ORDERED: in light,
+       elevation is lightness, so panel (raised) > ground > sunken (recessed).
+       `--sunken` shipped LIGHTER than `--ground`, which made the graph canvas
+       and the code chips read as raised (M5). `--panel-hover` is the gentle
+       step a white card takes on hover — sunken is now too dark for that job. */
     --ground: #f2efe9;
     --panel: #ffffff;          --panel-rgb: 255,255,255;
-    --sunken: #f7f5f1;
-    --line: #ddd8ce;
-    --line-soft: #e9e4db;
+    --panel-hover: #f7f5f1;
+    --sunken: #eae4da;
+    --line: #d7d1c5;
+    --line-soft: #e3ddd2;
 
-    /* ink */
+    /* Ink and hue. Every value below is pinned by the contrast test: body text
+       clears WCAG AA 4.5:1 on EVERY surface it can land on, and a badge hue
+       clears 4.5:1 against its own tint composited over BOTH panel and ground
+       (design §24.1.2). Do not lighten one without re-running that test. */
     --ink: #2b2520;
     --ink-2: #5a5248;
-    --ink-3: #8a8176;          --ink-3-rgb: 138,129,118;
+    --ink-3: #676158;          --ink-3-rgb: 103,97,88;
 
-    --accent: #6d4dfa;         --accent-rgb: 109,77,250;
-    --ok: #1a7f37;             --ok-rgb: 26,127,55;
-    --warn: #8a6116;           --warn-rgb: 138,97,22;
-    --bad: #c22a20;            --bad-rgb: 194,42,32;
+    --accent: #6044dd;         --accent-rgb: 96,68,221;
+    --ok: #176f30;             --ok-rgb: 23,111,48;
+    --warn: #805a14;           --warn-rgb: 128,90,20;
+    --bad: #b6271e;            --bad-rgb: 182,39,30;
 
-    --tier-p: #0969da;         --tier-p-rgb: 9,105,218;
+    --tier-p: #085dc2;         --tier-p-rgb: 8,93,194;
     --tier-l: var(--accent);   --tier-l-rgb: var(--accent-rgb);
-    --tier-u: #a2621a;         --tier-u-rgb: 162,98,26;
+    --tier-u: #8b5416;         --tier-u-rgb: 139,84,22;
 
     /* the tint pair — one place, so a badge / tab / pill is one declaration */
     --tint: .13;
@@ -80,20 +88,25 @@
   }
   @media (prefers-color-scheme: dark) {
     :root {
+      /* In dark, elevation runs the other way: ground (deepest) < sunken < panel. */
       --ground: #1a1916;
       --panel: #252320;        --panel-rgb: 37,35,32;
+      --panel-hover: #2d2a26;
       --sunken: #1f1d1a;
       --line: #3a3834;
       --line-soft: #302e2a;
 
       --ink: #dcd6cc;
       --ink-2: #b8b0a4;
-      --ink-3: #938a7e;        --ink-3-rgb: 147,138,126;
+      /* ink-3 and bad are LIFTED from #938a7e / #e7736a: at the dark tint alpha
+         their badge form measured 3.56 and 4.01, under AA. The other four dark
+         hues already cleared and are left exactly as they were. */
+      --ink-3: #aaa399;        --ink-3-rgb: 170,163,153;
 
       --accent: #a993ff;       --accent-rgb: 169,147,255;
       --ok: #4ec97a;           --ok-rgb: 78,201,122;
       --warn: #e0b055;         --warn-rgb: 224,176,85;
-      --bad: #e7736a;          --bad-rgb: 231,115,106;
+      --bad: #ea877f;          --bad-rgb: 234,135,127;
 
       --tier-p: #58a6ff;       --tier-p-rgb: 88,166,255;
       --tier-u: #dda56a;       --tier-u-rgb: 221,165,106;
@@ -247,7 +260,7 @@
     transition: border-color .15s ease, background-color .15s ease;
   }
   a.card { display: block; text-decoration: none; }
-  a.card:hover { border-color: rgba(var(--accent-rgb), .5); background: var(--sunken); }
+  a.card:hover { border-color: rgba(var(--accent-rgb), .5); background: var(--panel-hover); }
   a.card:focus-visible { outline-offset: 3px; }
 
   .fact-title {
@@ -308,7 +321,7 @@
   .fact-title + .body { margin-top: 6px; }
   .cmd { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
   .cmd code {
-    flex: 1; background: var(--sunken); border: 1px solid var(--line-soft);
+    flex: 1; background: var(--sunken); border: 1px solid var(--line);
     border-radius: var(--r-ctl); padding: 7px 10px; font-size: 12.5px; overflow-x: auto;
   }
   .cmd button { padding: 7px 12px; font-size: 12.5px; }
@@ -355,7 +368,7 @@
 
   /* ---- graph ----------------------------------------------------------- */
   #graph-wrap {
-    border: 1px solid var(--line-soft); border-radius: var(--r-card);
+    border: 1px solid var(--line); border-radius: var(--r-card);
     background: var(--sunken); overflow-x: auto;
   }
   #graph { display: block; width: 100%; height: 560px; touch-action: none; }
@@ -513,6 +526,12 @@
   // Segment kinds: 'text' | 'code' | 'strong' | 'hit'. A 'hit' is an FTS match
   // marker (the search route wraps matches in <b>…</b>); it is re-created as a
   // real <b> element, never interpolated.
+  // The block between the region markers below is extracted VERBATIM by
+  // tests/cli-viewer.test.js and run against a ~20-line element shim, so the
+  // tokenizer and the title split have real behavioural coverage without a DOM
+  // dependency (§24.1 point 7). It depends on `el` and nothing else; keep it
+  // that way, and keep each marker alone on its line.
+  // #region text-render
   const MD_INLINE = /`([^`\n]+)`|\*\*([^*\n]+)\*\*|__([^_\n]+)__|\[([^\]\n]+)\]\([^)\n]*\)/g;
 
   function inlineSegments(text, blocks) {
@@ -619,7 +638,14 @@
   function titleSplit(segs) {
     const plain = plainOf(segs);
     if (plain.length <= TITLE_WHOLE) return { titleTo: plain.length, restFrom: plain.length };
-    // A sentence end / dash / colon is the strong boundary and the first one wins.
+    // A LINE BREAK outranks everything and ignores TITLE_MIN: a short first line
+    // ("**What changed:**") is a heading, which is precisely what a title is.
+    // Gating it behind the minimum length is what made a 7-line bullet headline
+    // render as "What changed: Card text" — the newline vanished into the title
+    // and the first bullet was decapitated into the body (B1).
+    const nl = plain.indexOf('\n');
+    if (nl > 0 && nl <= TITLE_MAX) return { titleTo: nl, restFrom: nl + 1 };
+    // Otherwise a sentence end / dash / colon, first one wins.
     const strong = scanBoundary(segs, BOUNDARY, TITLE_MIN, TITLE_MAX, false);
     if (strong) return strong;
     // Failing that, the LAST clause break in range — a full clause reads as a
@@ -633,12 +659,25 @@
     return { titleTo: cut, restFrom: cut + 1 };
   }
 
-  /** A card's text tiers. `clamp` is what keeps every card one height. */
+  /**
+   * A card's text tiers.
+   *
+   * `clamp` is the LIST mode: the snippet arrives already flattened to one line
+   * by the server, every card must be one height, and a leading `- ` on a line
+   * that can no longer show a list is noise — so markers are stripped.
+   *
+   * The DETAIL view is the opposite case on every count. It renders the fact's
+   * real multi-line body, nothing is clamped, and the record's own structure is
+   * the point — so it keeps its markers and its line breaks, exactly as
+   * `richBody` does for Why/How two blocks further down the SAME page. Passing
+   * `true` here unconditionally is what made one page strip the bullets in the
+   * head card and print them in the next block (B1).
+   */
   function factText(raw, clamp) {
-    const segs = segmentsOf(raw, true);
+    const segs = segmentsOf(raw, clamp);
     const { titleTo, restFrom } = titleSplit(segs);
     const nodes = [];
-    const title = el('div', { class: clamp ? 'fact-title clamp-2' : 'fact-title' });
+    const title = el('div', { class: clamp ? 'fact-title clamp-2' : 'fact-title pre' });
     renderSegments(title, sliceSegments(segs, 0, titleTo));
     nodes.push(title);
     const plain = plainOf(segs);
@@ -654,6 +693,7 @@
   function richBody(raw) {
     return renderSegments(el('div', { class: 'body' }), segmentsOf(raw, false));
   }
+  // #endregion text-render
 
   function copyRow(label, command) {
     const code = el('code', { text: command });
@@ -1090,7 +1130,11 @@
       // and two of them side by side is the overlap the halos cannot rescue.
       // The full string stays in the hover title on the dot.
       const full = anchor ? n.id.replace(/^anchor:/, '') : String(n.label).replace(/\.md.*$/, '');
-      label.textContent = full.length > LABEL_CHARS ? full.slice(0, LABEL_CHARS - 1) + '…' : full;
+      // Slice CODE POINTS, not UTF-16 units: a label ending on an astral char
+      // (an emoji in a slug) would otherwise be cut mid-surrogate and render as
+      // U+FFFD.
+      const cps = Array.from(full);
+      label.textContent = cps.length > LABEL_CHARS ? cps.slice(0, LABEL_CHARS - 1).join('') + '…' : full;
       g.append(label);
       if (!anchor) {
         const link = svgEl('a', { href: '/fact/' + n.id });

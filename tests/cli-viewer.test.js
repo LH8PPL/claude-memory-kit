@@ -1000,6 +1000,10 @@ describe('viewer — the HTML page (255.3)', () => {
       'srcdoc',
       'setHTML',
       'createContextualFragment',
+      // `new DOMParser().parseFromString(x, 'text/html')` parses untrusted text
+      // into a live tree just as surely as innerHTML does — the fact that it
+      // lands in a detached document does not make the markup un-parsed.
+      'DOMParser',
     ];
     const found = SINKS.filter((sink) => script.includes(sink));
     expect(
@@ -1077,7 +1081,83 @@ describe('viewer — the visual pass (260)', () => {
       expect(dark[1], `dark theme is missing ${token}`).toContain(token + ':');
     }
     expect(hex(dark[1], '--ground')).not.toBe(hex(dark[1], '--panel'));
-    expect(hex(dark[1], '--ground')).not.toBe(hex(root, '--ground'));
+    // Dark is a DESIGN, not an inversion — so compare the whole ladder, not one
+    // token: every surface and ink must differ from its light counterpart (M4).
+    for (const token of ['--ground', '--panel', '--sunken', '--line', '--ink', '--ink-2', '--ink-3']) {
+      expect(hex(dark[1], token), `${token} is identical in both themes`).not.toBe(hex(root, token));
+    }
+  });
+
+  it('(I1) every text/surface pair clears WCAG AA 4.5:1 — in BOTH themes', () => {
+    // The visual pass first shipped 15 failing pairs in light, the worst at
+    // 2.93:1 — and `--ink-3` alone carries the meta row, .micro, #freshness,
+    // #graph-note, .muted, .empty, inactive nav and the READ-ONLY pill. The
+    // target is written down in design §24.1.2; this computes it, so lightening
+    // a token to taste fails the suite instead of shipping.
+    //
+    // Badge text does NOT sit on a surface: it sits on its own hue at `--tint`
+    // alpha, composited over whichever surface the badge lands on — and a badge
+    // lands on both a card (panel) and the page (ground, e.g. the graph legend
+    // and the health rows). Both are checked.
+    const AA = 4.5;
+    const srgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const chan = (c) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4);
+    const lum = (c) => 0.2126 * chan(c[0]) + 0.7152 * chan(c[1]) + 0.0722 * chan(c[2]);
+    const contrast = (a, b) => {
+      const [hi, lo] = lum(a) > lum(b) ? [lum(a), lum(b)] : [lum(b), lum(a)];
+      return (hi + 0.05) / (lo + 0.05);
+    };
+    const over = (fg, alpha, bg) => fg.map((c, i) => c * alpha + bg[i] * (1 - alpha));
+
+    const themes = {
+      light: css.match(/:root\s*\{([\s\S]*?)\n  \}/)[1],
+      dark: css.match(/@media\s*\(prefers-color-scheme:\s*dark\)[\s\S]*?:root\s*\{([\s\S]*?)\n    \}/)[1],
+    };
+    const failures = [];
+    for (const [theme, block] of Object.entries(themes)) {
+      const tok = (name) => {
+        const m = block.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
+        expect(m, `${theme} theme has no --${name}`).toBeTruthy();
+        return srgb(m[1]);
+      };
+      const tint = Number(block.match(/--tint:\s*(\.?[\d.]+)/)[1]);
+      expect(tint, `${theme} has no --tint`).toBeGreaterThan(0);
+
+      const panel = tok('panel');
+      const ground = tok('ground');
+      const sunken = tok('sunken');
+      const check = (label, fg, bg) => {
+        const r = contrast(fg, bg);
+        if (r < AA) failures.push(`${theme}: ${label} = ${r.toFixed(2)}:1`);
+      };
+      // Plain text on every surface it can land on.
+      for (const ink of ['ink', 'ink-2', 'ink-3']) {
+        for (const [sn, s] of [['panel', panel], ['ground', ground], ['sunken', sunken]]) {
+          check(`${ink} on ${sn}`, tok(ink), s);
+        }
+      }
+      // Badge text on its own tint, over each surface a badge appears on.
+      for (const hue of ['ok', 'warn', 'bad', 'accent', 'tier-p', 'tier-u', 'ink-3']) {
+        for (const [sn, s] of [['panel', panel], ['ground', ground]]) {
+          check(`badge ${hue} on ${sn}`, tok(hue), over(tok(hue), tint, s));
+        }
+      }
+      // The search-hit mark: ink-2 over the accent wash, on a card.
+      check('search hit (ink-2 on accent wash)', tok('ink-2'), over(tok('accent'), 0.22, panel));
+    }
+    expect(failures, `contrast below AA ${AA}:1:\n  ${failures.join('\n  ')}`).toEqual([]);
+
+    // The surface ladder must be ORDERED, not merely distinct: light recedes by
+    // getting darker, dark recedes by getting darker too, so `sunken` is never
+    // between `panel` and nothing. A lighter-than-ground "sunken" made the graph
+    // canvas read as raised (M5).
+    const lightBlock = themes.light;
+    const hexOf = (block, n) => srgb(block.match(new RegExp(`--${n}:\\s*(#[0-9a-fA-F]{6})`))[1]);
+    expect(lum(hexOf(lightBlock, 'sunken'))).toBeLessThan(lum(hexOf(lightBlock, 'ground')));
+    expect(lum(hexOf(lightBlock, 'ground'))).toBeLessThan(lum(hexOf(lightBlock, 'panel')));
+    const darkBlock = themes.dark;
+    expect(lum(hexOf(darkBlock, 'ground'))).toBeLessThan(lum(hexOf(darkBlock, 'sunken')));
+    expect(lum(hexOf(darkBlock, 'sunken'))).toBeLessThan(lum(hexOf(darkBlock, 'panel')));
   });
 
   it('(2) badges are TINTED, not outlined — one rule, literal rgba, no color-mix()', () => {
@@ -1103,15 +1183,30 @@ describe('viewer — the visual pass (260)', () => {
     expect(Number(measure[1])).toBeLessThanOrEqual(820);
     expect(html).toMatch(/id="facts-out"[^>]*class="measure"/);
 
-    // Four sizes + ONE uppercase micro-label.
-    expect(css).toMatch(/\.micro[^{]*\{[\s\S]*?text-transform:\s*uppercase/);
-    expect(css).toMatch(/letter-spacing:\s*\.12em/);
+    // Four sizes + ONE uppercase micro-label — asserted INSIDE the micro rule,
+    // not anywhere in the sheet (M4).
+    const micro = css.match(/\.micro[^{]*\{([^}]*)\}/);
+    expect(micro, 'no .micro rule').toBeTruthy();
+    expect(micro[1]).toMatch(/text-transform:\s*uppercase/);
+    expect(micro[1]).toMatch(/letter-spacing:\s*\.12em/);
   });
 
   it('(4) ids, dates and counts are tabular — a column that does not wobble', () => {
-    expect(css).toMatch(/font-variant-numeric:\s*tabular-nums/);
-    // The mono stack carries slashed-zero for id/hash columns.
-    expect(css).toMatch(/\.mono[^{]*\{[\s\S]*?slashed-zero/);
+    // Each assertion is scoped to the rule that actually needs the property; a
+    // sheet-wide `toMatch` passes even if the one element that wobbles lost it.
+    const rule = (sel) => {
+      const m = css.match(new RegExp(`(?:^|\\n)\\s*${sel.replace(/[.#]/g, '\\$&')}\\s*[^{]*\\{([^}]*)\\}`));
+      expect(m, `no ${sel} rule`).toBeTruthy();
+      return m[1];
+    };
+    expect(rule('.meta')).toMatch(/font-variant-numeric:\s*tabular-nums/);
+    expect(rule('#freshness')).toMatch(/font-variant-numeric:\s*tabular-nums/);
+    expect(rule('#graph-note')).toMatch(/font-variant-numeric:\s*tabular-nums/);
+    // The mono stack carries tabular figures AND slashed-zero for id/hash columns.
+    const mono = css.match(/code,\s*\.mono\s*\{([^}]*)\}/);
+    expect(mono, 'no code/.mono rule').toBeTruthy();
+    expect(mono[1]).toMatch(/tabular-nums/);
+    expect(mono[1]).toMatch(/slashed-zero/);
   });
 
   it('(5) card padding is greater than card gap — the rhythm was inverted', () => {
@@ -1123,8 +1218,12 @@ describe('viewer — the visual pass (260)', () => {
   });
 
   it('(6) the header is sticky + blurred and the tabs are real pills, not a seam trick', () => {
-    expect(css).toMatch(/header\s*\{[\s\S]*?position:\s*sticky/);
-    expect(css).toMatch(/backdrop-filter:/);
+    // Scoped INSIDE the rule: `header {[\s\S]*?position: sticky` would happily
+    // match a `position: sticky` in some later, unrelated rule (M4).
+    const header = css.match(/(?:^|\n)\s*header\s*\{([^}]*)\}/);
+    expect(header, 'no header rule').toBeTruthy();
+    expect(header[1]).toMatch(/position:\s*sticky/);
+    expect(header[1]).toMatch(/backdrop-filter:/);
     // The seam trick: a tab that fakes "in front" with `border-bottom: none`.
     expect(css).not.toMatch(/border-bottom:\s*none/);
     expect(css).toMatch(/nav a\[aria-current="page"\]\s*\{[\s\S]*?background:\s*rgba\(var\(--accent-rgb\)/);
@@ -1146,6 +1245,35 @@ describe('viewer — the visual pass (260)', () => {
     expect(script).toMatch(/severity === 'memory-off' \? 'bad' : 'warn'/);
   });
 
+  it('(I2) `queued` keeps the QUIET shape — the ratified call, pinned structurally', () => {
+    // Ratified 2026-08-03 (D-420): on §24.1.1's precedence ladder `queued` sits
+    // one rung above all-clear, so it stays an inline pill and the bar is
+    // reserved for warn/bad. That decision lived only in prose and a CSS
+    // comment, which is the D-169 gap — a later editor "fixing" the literal
+    // reading of "a bar when not ok" would silently undo it.
+    //
+    // Every rule that grants the bar treatment must be keyed to warn or bad
+    // ONLY; none of them may name `queued`.
+    // Comments are stripped first: the CSS comment ABOVE the bar rule explains
+    // why queued is excluded, and matching selector text against the raw sheet
+    // picks that prose up as if it were a selector.
+    const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    const barRules = [...bare.matchAll(/([^{}]*?)\{([^}]*?)\}/g)]
+      .filter(([, , body]) => /width:\s*100%/.test(body) && /display:\s*flex/.test(body))
+      .map(([, sel]) => sel.trim())
+      .filter((sel) => sel.includes('#health-strip'));
+    expect(barRules.length, 'no bar-shaped #health-strip rule found at all').toBeGreaterThan(0);
+    for (const sel of barRules) {
+      expect(sel, `the bar treatment must not reach queued: ${sel}`).not.toMatch(/queued/);
+      expect(sel).toMatch(/warn|bad/);
+    }
+    // …and `queued` must still be styled (colour), just not shaped like an alarm.
+    const queued = css.match(/#health-strip\[data-state="queued"\]\s*\{([\s\S]*?)\}/);
+    expect(queued, 'queued lost its styling entirely').toBeTruthy();
+    expect(queued[1]).not.toMatch(/width:\s*100%/);
+    expect(queued[1]).toMatch(/background:\s*rgba\(/);
+  });
+
   it('(8) the graph drops unlinked nodes, halos its labels, and lifts supersession', () => {
     // Degree-0 nodes were a picture-frame of orphan dots the layout never
     // relaxed. They are still COUNTED — nothing disappears silently.
@@ -1161,6 +1289,85 @@ describe('viewer — the visual pass (260)', () => {
     const base = Number(css.match(/#graph \.edge\s*\{\s*stroke-opacity:\s*([\d.]+)/)[1]);
     const sup = Number(css.match(/#graph \.edge-super\s*\{\s*stroke-opacity:\s*([\d.]+)/)[1]);
     expect(sup).toBeGreaterThan(base);
+  });
+
+  it('(B1) the DETAIL view keeps its list markers and its line breaks', () => {
+    // The list view flattens to one line and strips markers on purpose; the
+    // DETAIL view renders the record's real multi-line body and must not.
+    // Shipped bug: `factText` hardcoded the strip, so a 7-line bullet headline
+    // rendered as "What changed: Card text" over six UNMARKED lines whose first
+    // was the decapitated tail of item 1 — while `richBody`, two blocks lower
+    // on the SAME page, printed its markers correctly.
+    //
+    // Run the page's own rendering code against a ~20-line element shim: no DOM
+    // dependency (the §24.1 point 7 contract), but real behaviour instead of a
+    // grep. If the region markers ever move, this fails loudly rather than
+    // silently testing nothing.
+    const region = script.match(/\/\/ #region text-render([\s\S]*?)\/\/ #endregion text-render/);
+    expect(region, 'the text-render region markers are gone from viewer-page.html').toBeTruthy();
+
+    const make = (tag) => ({
+      tagName: tag,
+      className: '',
+      childNodes: [],
+      set textContent(v) { this.childNodes = [String(v)]; },
+      get textContent() {
+        return this.childNodes.map((k) => (typeof k === 'string' ? k : k.textContent)).join('');
+      },
+      setAttribute() {},
+      append(...kids) { this.childNodes.push(...kids); },
+    });
+    const el = (tag, props = {}, kids = []) => {
+      const n = make(tag);
+      for (const [k, v] of Object.entries(props)) {
+        if (k === 'class') n.className = v;
+        else if (k === 'text') n.textContent = v;
+      }
+      for (const kid of [kids].flat()) if (kid) n.append(kid);
+      return n;
+    };
+    const factText = new Function('el', `${region[1]}; return factText;`)(el);
+
+    // A real fact shape from the corpus: a bold lead-in, then a bullet list.
+    const headline =
+      '**What changed:**\n' +
+      '- Card text: 15px semibold titles + muted body\n' +
+      '- Badges: tinted fills instead of outlines\n' +
+      '- Graph: 160 orphan nodes removed';
+
+    // clamp=false is the DETAIL view.
+    const [title, body] = factText(headline, false);
+    expect(title.className).toMatch(/fact-title/);
+    // The short first line IS the title — it must not swallow the newline and
+    // annex the head of the first bullet.
+    expect(title.textContent).toBe('What changed:');
+    expect(title.textContent).not.toMatch(/Card text/);
+    // …and the bold marker became a real element, not literal asterisks.
+    expect(title.childNodes.some((k) => k.tagName === 'strong')).toBe(true);
+    expect(title.textContent).not.toContain('*');
+
+    expect(body).toBeTruthy();
+    // Markers preserved, list structure preserved, and the block is pre-wrapped
+    // so the line breaks actually render.
+    expect(body.className).toMatch(/\bpre\b/);
+    expect(body.textContent.split('\n')).toHaveLength(3);
+    for (const line of body.textContent.split('\n')) expect(line).toMatch(/^- /);
+    expect(body.textContent).toContain('- Card text: 15px semibold titles + muted body');
+    expect(body.textContent).toContain('- Graph: 160 orphan nodes removed');
+
+    // The LIST view (clamp=true) keeps the opposite contract on the same input:
+    // one flat line, markers gone, clamped.
+    const [lTitle, lBody] = factText(headline, true);
+    expect(lTitle.className).toMatch(/clamp-2/);
+    expect(lBody.className).toMatch(/clamp-2/);
+    expect(lBody.className).not.toMatch(/\bpre\b/);
+    expect(lBody.textContent).not.toMatch(/^- /m);
+
+    // Over-mutation guard: splitting a title must not drop or duplicate a
+    // single character of the record. Title + separator + body === the input
+    // with only its markdown syntax resolved.
+    const roundTrip = title.textContent + '\n' + body.textContent;
+    expect(roundTrip).toBe(headline.replace(/\*\*/g, ''));
   });
 
   it('markdown in a snippet is TOKENIZED to elements — never parsed as HTML', () => {
@@ -1227,7 +1434,7 @@ describe('viewer — the visual pass (260)', () => {
     expect(script).not.toMatch(/method:\s*['"](?:POST|PUT|PATCH|DELETE)['"]/i);
     expect(script).not.toMatch(/EventSource|new WebSocket/);
     // And no HTML-parsing sink crept in with the new renderer.
-    for (const sink of ['innerHTML', 'outerHTML', 'insertAdjacentHTML', 'document.write', 'srcdoc', 'setHTML', 'createContextualFragment']) {
+    for (const sink of ['innerHTML', 'outerHTML', 'insertAdjacentHTML', 'document.write', 'srcdoc', 'setHTML', 'createContextualFragment', 'DOMParser']) {
       expect(script, `${sink} appeared in the visual pass`).not.toContain(sink);
     }
   });
