@@ -4,7 +4,7 @@
 <!-- Browse this folder as an Obsidian vault. Each [[link]] opens a fact file. -->
 <!-- How to open + the read-vs-write rule: docs/OBSIDIAN.md -->
 
-Facts: 2051
+Facts: 2208
 
 ## feedback
 
@@ -68,6 +68,7 @@ Facts: 2051
 - [[project_cut-gate-pre-release-validation-checklist-g0-g7]] — Cut-Gate Pre-Release Validation Checklist (G0-G7)
 - [[project_backend-scaffolding-preferences-are-stor-2cqgfd5p]] — Backend scaffolding preferences are stored cross-project and automatically recal
 - [[project_memory-kit-validates-itself-as-dogfood-test-subject]] — Memory Kit Validates Itself as Dogfood Test Subject
+- [[project_verification-protocol]] — Verification Protocol
 - [[project_binary-test-outcome-framework-for-feature-validation]] — Binary Test Outcome Framework for Feature Validation
 - [[project_cmk-install-output-is-minimal-shows-only-essential-informati]] — cmk install output is minimal, shows only essential information
 - [[project_task-148-auto-judged-privacy-layered-screen-architecture]] — Task 148 — Auto-Judged Privacy Layered Screen Architecture
@@ -77,12 +78,15 @@ Facts: 2051
 - [[project_gitignore-carve-out-for-claude-agents]] — Gitignore Carve-out for `.claude/agents/`
 - [[project_fact-file-write-constraint-forward-only-no-mass-rewrites]] — Fact-file write constraint: forward-only, no mass rewrites
 - [[project_task-146-concurrent-swarm-support-testing]] — Task 146: Concurrent Swarm Support Testing
+- [[project_durable-state-first-principle]] — Durable-State-First Principle
 - [[project_d-157-rule-version-assignment-at-shipment]] — D-157 Rule — Version Assignment at Shipment
+- [[project_v0-6-3-release-plan-task-queue]] — v0.6.3 Release Plan & Task Queue
 - [[project_user-chose-docs-drift-check-now-not-defe-2mszrdp7]] — User chose docs+drift-check now (not defer) — clear priority decision
 - [[project_context-snapshot-frozen-at-session-start]] — Context Snapshot Frozen at Session Start
 - [[project_full-suite-on-code-review-fix-batch-comp-2phutyn3]] — Full suite on code-review fix batch completed successfully (exit code 0)
 - [[project_five-focus-questions-code-review-framework]] — Five Focus Questions Code Review Framework
 - [[project_fts5-query-sanitization-per-token-quoting-design]] — FTS5 Query Sanitization — Per-Token Quoting Design
+- [[project_health-whisper-structural-dependency-limit]] — Health Whisper — Structural Dependency Limit
 - [[project_cmk-health-check-status-2026-06-20]] — CMK Health Check Status (2026-06-20)
 - [[project_v0-5-1-tasks-filed-for-distill-and-principle]] — v0.5.1 Tasks Filed for Distill and Principle
 - [[project_gate-guides-as-standalone-documentation-siblings]] — Gate Guides as Standalone Documentation Siblings
@@ -92,6 +96,7 @@ Facts: 2051
 - [[project_pai-personal-ai-infrastructure-memory-architecture-convergen]] — PAI (Personal AI Infrastructure) Memory & Architecture Convergence
 - [[project_memory-commits-screened-before-release]] — Memory Commits Screened Before Release
 - [[project_letta-architectural-comparison-to-core-memory-kit]] — Letta – Architectural Comparison to Core-Memory-Kit
+- [[project_gate-verification-system-architecture]] — Gate Verification System Architecture
 - [[project_v0-5-1-cut-gate-includes-six-new-probes-4g]] — v0.5.1 Cut-Gate Includes Six New Probes (§4g)
 - [[project_expressed-concern-about-rebuild-errors-t-2wr6cwjq]] — Expressed concern about rebuild errors ("that is alot of errors") — skeptical of
 - [[project_v0-3-5-release-verified-and-ready]] — v0.3.5 Release Verified and Ready
@@ -102,6 +107,7 @@ Facts: 2051
 - [[project_v0-6-2-published-release-state-and-contents]] — v0.6.2 Published Release State and Contents
 - [[project_letta-precedent-evidence-for-tasks-149-95]] — Letta Precedent – Evidence for Tasks 149 & 95
 - [[project_modular-skill-architecture-read-write-separation]] — Modular Skill Architecture: Read/Write Separation
+- [[project_q1-locked-cmk-view-ephemeral-server-architecture]] — Q1 Locked: cmk view Ephemeral Server Architecture
 - [[project_task-50-n-completion-state-kiro-parity-campaign]] — Task 50.N Completion State — Kiro Parity Campaign
 - [[project_task-batch-v0-5-5-contains-three-sequenc-324uw2up]] — Task batch v0.5.5 contains three sequenced tasks (230 → 96 → 210); previous vers
 - [[project_regenerated-surfaces-vs-append-only-surfaces-digest-vs-decis]] — Regenerated Surfaces vs Append-Only Surfaces (Digest vs DECISIONS.md)
@@ -114,9 +120,11 @@ Facts: 2051
 - [[project_text-substitution-carve-outs-for-rename]] — Text-substitution carve-outs for rename
 - [[project_148-privacy-screen-corpus-triage-workflow]] — 148 Privacy-Screen Corpus Triage Workflow
 - [[project_better-sqlite3-eperm-cleanup-warning]] — better_sqlite3 EPERM Cleanup Warning
+- [[project_release-workflow-tag-driven-automation-via-publish-yml]] — Release Workflow — Tag-Driven Automation via publish.yml
 - [[project_task-236-counts-family-validation]] — Task 236: Counts Family Validation
 - [[project_expectation-resolution-gating]] — Expectation Resolution Gating
 - [[project_codeql-alerts-close-on-main-commit-not-npm-release]] — CodeQL Alerts Close on Main Commit, Not NPM Release
+- [[project_byte-preservation-as-hard-constraint-for-archive-splits]] — Byte-Preservation as Hard Constraint for Archive Splits
 - [[project_local-wiki-is-personal-only-wiki-file-pl-3bhcgqqt]] — local-wiki is personal-only wiki; file placement within project is flexible
 - [[project_task-236-enumeration-anti-pattern-prior-art-finding]] — Task 236: Enumeration Anti-Pattern (Prior-Art Finding)
 - [[project_cursor-agent-backend-doc-confirmed-feasible-not-yet-live-tes]] — Cursor Agent Backend — Doc-Confirmed Feasible, Not Yet Live-Tested
@@ -144,6 +152,7 @@ Facts: 2051
 - [[project_task-248-reframed-the-user-s-design-call-2026-07-22-the-pre]] — Task 248 reframed (the user's design call, 2026-07-22): the pre-existing-orphane
 - [[project_v0-6-2-release-is-gated-on-your-approval-3qukr7hj]] — v0.6.2 release is gated on your approval; carries breaking Node-20-drop; follows
 - [[project_wants-octopoda-os-captured-durably-just-3rqptzet]] — wants Octopoda-OS captured durably ("just so i dont forget")
+- [[project_root-cause-of-visual-plainness]] — Root Cause of Visual Plainness
 - [[project_code-scar-overly-broad-injection-pattern]] — Code Scar: Overly-Broad Injection Pattern
 - [[project_original-task-iterations-preserved-with-3sjhatqg]] — Original task iterations preserved with "decision-trail" markers when tasks rest
 - [[project_task-200-build-phase-implementation-roadmap]] — Task 200 Build Phase — Implementation Roadmap
@@ -168,7 +177,9 @@ Facts: 2051
 - [[project_github-issues-auto-close-when-supply-cha-47rhywda]] — GitHub issues auto-close when supply-chain surface is clean, preventing alert fa
 - [[project_task-176-reference-typed-graph-with-auto-edge-maintenance-on]] — Task 176 Reference — Typed Graph with Auto-Edge Maintenance on File Change
 - [[project_automatic-recall-never-reads-tombstones-recovery-is-human-on]] — Automatic recall never reads tombstones; recovery is human-only opt-in
+- [[project_self-healing-pattern-for-safe-operations]] — Self-Healing Pattern for Safe Operations
 - [[project_test-suite-pattern-buildmcpserver-for-mcp-refresh-not-repeat]] — Test Suite Pattern: buildMcpServer for MCP Refresh (not repeated runMcpServer)
+- [[project_zero-loss-archive-verification-method]] — Zero-Loss Archive Verification Method
 - [[project_tasks-should-be-pinned-to-actual-version-4al3bzxw]] — Tasks should be pinned to actual versions, not left vague or undocumented.
 - [[project_always-verify-installed-files-behavioral-4bbpnlmv]] — Always verify installed files + behavioral tests, not just tarball contents — th
 - [[project_v0-5-2-release-code-complete-awaiting-final-ci]] — v0.5.2 Release — Code-Complete, Awaiting Final CI
@@ -185,12 +196,14 @@ Facts: 2051
 - [[project_doctor-should-only-run-for-specific-cond-4fsypac9]] — doctor should only run for specific conditions (issues in kit/memory/hooks/setti
 - [[project_cmk-remember-needs-project-flag-cwd-unreliable-in-kiro-cli-s]] — cmk-remember-needs-project-flag-cwd-unreliable-in-kiro-cli-shell
   - related: `THE-FIX-use-cmk-remember-cli-not-mk-remember-mcp-in-kiro-cli`, `v0.4.0-decision-remove-mcp-from-kiro-cli-agent-includemcpjson-false-document-gap`
+- [[project_fix-uses-heal-on-rewrite-legitimate-oper-4ghlssh6]] — Fix uses heal-on-rewrite: legitimate operations (cmk trust, redact, merge) drop
 - [[project_proposes-targeted-three-question-triage-4gzgql2g]] — Proposes targeted three-question triage + ~60-day staleness threshold instead of
 - [[project_the-kit-dual-emits-to-support-both-ide-0-4h5wzl6n]] — The kit dual-emits to support both IDE 0.x and 1.0+; either version can run the
 - [[project_complete-design-one-permissionrequest-hook-mcp-cmk-skill-mat]] — COMPLETE design: one PermissionRequest hook (mcp__cmk__.* + Skill matchers) kills both popups, documented mechanism
 - [[project_npm-cleanup-warning-with-d-302-dll-lock-4hurzjlf]] — npm cleanup warning with D-302 DLL-lock is expected during global upgrade; insta
 - [[project_sensitive-content-policy-for-memory-capture-system]] — Sensitive Content Policy for Memory Capture System
 - [[project_backup-strategy-for-kiro-gate-testing]] — Backup Strategy for Kiro Gate Testing
+- [[project_kit-s-differentiator-from-skills-manages-4jeda2ex]] — Kit's differentiator from Skills: manages entire context lifecycle (creation, tr
 - [[project_mcp-server-state-isolation-in-testing]] — MCP Server State Isolation in Testing
 - [[project_cmk-install-with-semantic-command]] — cmk install --with-semantic Command
 - [[project_task-done-goal-explicitness-rule]] — Task Done-Goal Explicitness Rule
@@ -219,6 +232,7 @@ Facts: 2051
 - [[project_memory-kit-hooks-are-project-scoped]] — Memory Kit Hooks Are Project-Scoped
 - [[project_v0-6-2-release-tail-workflow]] — v0.6.2 Release Tail Workflow
 - [[project_sonarcloud-advisory-role-in-ci-gating]] — SonarCloud Advisory Role in CI Gating
+- [[project_viewer-visual-diagnosis-six-design-deficits]] — Viewer Visual Diagnosis: Six Design Deficits
 - [[project_cli-installation-verification-workflow]] — CLI Installation Verification Workflow
 - [[project_stress-flake-self-induced-load-not-regression]] — stress-flake-self-induced-load-not-regression
   - related: [[project_lint-clean-memory-output-plan-and-progress]]
@@ -231,6 +245,7 @@ Facts: 2051
 - [[project_clean-start-procedure-for-session-1-test]] — Clean-Start Procedure for Session 1 Test
 - [[project_user-accepts-technical-divergences-from-4asafl3j]] — User accepts technical divergences from research/design IF they were reasoned ag
 - [[project_pii-handling-non-adoption-of-quarantine]] — PII Handling — Non-Adoption of Quarantine
+- [[project_workflow-file-changes-are-the-user-s-sta-52alhvha]] — Workflow-file changes are the user's standing decision; assistant proposes, user
 - [[project_stop-hook-path-budget-constraint]] — Stop-hook path budget constraint
 - [[project_pr-224-opened-with-guardrail-fix-matcher-53vhe5z6]] — PR #224 opened with guardrail fix (matcher syntax corrected from pipe-alternatio
 - [[project_cmk-compress-session-must-be-invoked-by-54x6d2dm]] — cmk-compress-session must be invoked by Claude Code at session-end, not manually
@@ -249,7 +264,9 @@ Facts: 2051
 - [[project_questioning-whether-their-approach-is-wr-5cxrtfvp]] — Questioning whether their approach is wrong, if there's a bug, or if the system
 - [[project_live-test-workflow-for-kiro-cli-project-fix]] — Live test workflow for kiro-cli --project fix
 - [[project_autonomous-loop-catches-failures-not-successes]] — Autonomous Loop Catches Failures, Not Successes
+- [[project_reference-implementation-alignment-strategy]] — Reference Implementation Alignment Strategy
 - [[project_expects-tool-recommendations-backed-by-v-5gy3kt29]] — Expects tool recommendations backed by verification of actual tool behavior, not
+- [[project_cmk-view-task-255-architecture-and-constraints]] — cmk view (Task 255) architecture and constraints
 - [[project_code-path-divergence-pattern-in-v0-4-0-bug-fixes]] — Code-Path Divergence Pattern in V0.4.0 Bug Fixes
 - [[project_post-d194-artifact-update-workflow-for-kiro-trust-fix-verifi]] — Post-D194 artifact update workflow for Kiro trust fix verification
 - [[project_binding-rule-readme-line-for-user-facing-features]] — Binding Rule – README Line for User-Facing Features
@@ -265,6 +282,7 @@ Facts: 2051
 - [[project_plugin-install-and-bootstrap-are-separate-one-time-steps]] — Plugin Install and Bootstrap Are Separate One-Time Steps
 - [[project_orphaned-memory-tier-at-packages-cli-context-2026-06-18-thro]] — Orphaned memory tier at packages/cli/context/ (2026-06-18 through 2026-07-12)
 - [[project_v0-4-4-release-gate-checks]] — v0.4.4 Release Gate Checks
+- [[project_cmk-view-proposed-wave-1-design]] — cmk view — Proposed Wave-1 Design
 - [[project_d-121-viewer-reconsidered-for-v0-4-design-slot]] — D-121 Viewer — Reconsidered for v0.4 Design Slot
 - [[project_release-workflow-multi-gate-process-0a-0c]] — Release Workflow Multi-Gate Process (§0a → §0c)
 - [[project_platform-specific-cut-gate-structure-and-scope]] — Platform-Specific Cut-Gate Structure and Scope
@@ -297,14 +315,17 @@ Facts: 2051
 - [[project_fresh-cmk-install-health-baseline-cmk-0-4-5-with-semantic]] — Fresh CMK Install Health Baseline (cmk 0.4.5, --with-semantic)
 - [[project_kiro-ide-v1-user-prompt-env-var-broken-read-from-messages-js]] — Kiro IDE v1 USER_PROMPT env var broken; read from messages.jsonl instead
 - [[project_cmk-guard-memory-is-an-internal-hook-bi-65nmvnva]] — `cmk-guard-memory` is an internal hook binary, not a hand-run command (now clari
+- [[project_prefers-checkpoint-based-session-structu-66jsvjuh]] — Prefers checkpoint-based, session-structured work; asks agent to pause at safe s
 - [[project_extend-file-rewrite-rule-to-all-tools]] — Extend File Rewrite Rule to All Tools
 - [[project_benchmark-noise-floor-on-dev-laptop]] — Benchmark Noise Floor on Dev Laptop
 - [[project_changes-since-version-0-2-3-appear-to-ha-674q5d5m]] — Changes since version 0.2.3 appear to have introduced failures in memory kit
 - [[project_kiro-agent-must-be-global-empirically-validated]] — Kiro Agent Must Be Global (Empirically Validated)
 - [[project_kiro-cli-does-not-pass-mcp-environment-variables]] — kiro-cli Does Not Pass MCP Environment Variables
+- [[project_codeql-xss-filter-regex-for-script-tags]] — CodeQL XSS Filter Regex for Script Tags
 - [[project_relevance-threshold-calibration-octopoda-s-0-80-0-45-lesson]] — Relevance Threshold Calibration — Octopoda's 0.80 → 0.45 Lesson
 - [[project_claude-memory-kit-template-file-structure-in-tarball]] — Claude Memory Kit — Template File Structure in Tarball
 - [[project_v0-3-2-release-scope-locked]] — v0.3.2 Release Scope Locked
+- [[project_recursive-improvement-pattern-via-verification-questions]] — Recursive Improvement Pattern via Verification Questions
 - [[project_npm-deprecate-auth-failures-reported-as-e404]] — npm Deprecate Auth Failures Reported as E404
 - [[project_release-cut-workflow-local-isolation-user-tag-push]] — Release Cut Workflow — Local Isolation, User Tag Push
 - [[project_cursor-agent-automation-requires-separate-cursor-api-key-no]] — Cursor Agent Automation Requires Separate CURSOR_API_KEY (No Desktop Login Reuse)
@@ -313,7 +334,6 @@ Facts: 2051
 - [[project_code-review-excellence-is-pre-existing-s-6dnyctb2]] — Code-review-excellence is pre-existing skill, not one of 6 newly adopted; produc
 - [[project_kiro-ide-vs-cli-hooks-verified-quote-from-an-aws-builders-ar]] — Kiro IDE vs CLI hooks (verified quote from an AWS-builders article the user foun
 - [[project_windows-dll-lock-prevents-global-npm-install-during-active-c]] — Windows DLL Lock Prevents Global npm Install During Active Claude Code
-- [[project_task-208-interactive-live-gates-pending-token-refresh]] — Task 208 — Interactive Live-Gates Pending Token Refresh
 - [[project_research-findings-task-filing]] — Research Findings → Task Filing
 - [[project_node-sqlite-migration-decision]] — node:sqlite Migration Decision
 - [[project_cmk-install-scaffolding-and-wiring]] — cmk install: Scaffolding and Wiring
@@ -356,6 +376,7 @@ Facts: 2051
 - [[project_cut-gate-kiro-md-lacks-clear-documentation-of-two-client-tes]] — cut-gate-kiro.md Lacks Clear Documentation of Two-Client Testing Across Sessions
 - [[project_decision-trail-work-a-is-non-negotiable-754hqesg]] — Decision-trail work (A) is non-negotiable priority—"no matter what is a must."
 - [[project_memory-loop-vision-continuous-autonomous-memory-improvement]] — Memory-loop vision — continuous autonomous memory improvement
+- [[project_design-reference-awrshift-claude-memory-kit]] — Design Reference: awrshift/claude-memory-kit
 - [[project_v0-6-3-lane-execution-sequence-next-session-start]] — v0.6.3 Lane Execution Sequence — Next Session Start
 - [[project_kit-identity-a-harness-over-the-harness-the-user-s-framing]] — Kit identity: a harness over the harness - the user's framing
   - related: [[project_episode-based-architecture-principle-refined]], [[project_mcp-tools-under-used-when-harness-defers-them-task-233-fire]], [[project_memory-kit-s-soft-spot-agent-choice-default-over-recall]]
@@ -371,10 +392,12 @@ Facts: 2051
 - [[project_post-compact-session-entry-point]] — Post-Compact Session Entry Point
 - [[project_raptor-hierarchical-summarization-for-multi-hop-reasoning]] — RAPTOR — Hierarchical Summarization for Multi-Hop Reasoning
 - [[project_skill-composition-pattern-scaffold-allow-list-must-be-update]] — Skill composition pattern: scaffold + allow-list must be updated together
+- [[project_sequential-initiative-numbering]] — Sequential Initiative Numbering
 - [[project_npm-v12-script-approval-project-vs-global-configuration-path]] — npm v12 Script Approval: Project vs. Global Configuration Paths
 - [[project_kiro-ide-must-be-restarted-after-hook-mc-7g3ez5hm]] — Kiro IDE must be restarted after hook + MCP write to load them; open `C:\Temp\ki
 - [[project_index-drift-self-heal-architecture]] — INDEX Drift Self-Heal Architecture
 - [[project_updating-cmk-requires-re-running-bootstrap-on-project-files]] — Updating CMK Requires Re-running Bootstrap on Project Files
+- [[project_validate-docs-enforces-catalog-consistency]] — validate-docs enforces catalog consistency
 - [[project_hand-written-research-note-frontmatter-requirements]] — Hand-Written Research Note Frontmatter Requirements
 - [[project_automatic-oracle-free-quadrant-is-the-real-design-target]] — Automatic-Oracle-Free Quadrant Is the Real Design Target
 - [[project_user-uses-uv-for-python-project-initiali-7he9bczw]] — User uses uv for Python project initialization and dependency management
@@ -384,6 +407,7 @@ Facts: 2051
 - [[project_compression-retry-strategy-for-claude-memory-kit]] — Compression Retry Strategy for claude-memory-kit
 - [[project_memory-kit-validation-gates-d1-w4-dj4-live-gate]] — Memory Kit Validation Gates (D1–W4 + DJ4 Live Gate)
 - [[project_prefers-comprehensive-full-end-to-end-te-7l3ftz3y]] — Prefers comprehensive, full end-to-end test coverage. Concerned that changes shi
+- [[project_health-log-system-architecture-ratified]] — Health-Log System Architecture (Ratified)
 - [[project_user-reviews-multiple-adjacent-competing-7mxbhawu]] — User reviews multiple adjacent/competing projects to extract design patterns and
 - [[project_1-gate-run-verification-expected-health-checks-and-session]] — §1 Gate Run Verification — Expected Health Checks and Session 1 Handoff
 - [[project_claude-memory-kit-supports-3-ide-tool-agents]] — Claude-memory-kit supports 3 IDE/tool agents
@@ -405,6 +429,7 @@ Facts: 2051
 - [[project_5-concurrency-stress-gate-as-pre-pr-verification]] — 5× Concurrency Stress Gate as Pre-PR Verification
 - [[project_will-not-ship-a-version-with-bugs-a-stat-7tcun4g4]] — Will not ship a version with bugs — a stated quality mandate
 - [[project_orphaned-memory-tier-bug-246-and-recovery-strategy]] — Orphaned Memory Tier Bug (246) and Recovery Strategy
+- [[project_task-260-viewer-visual-redesign-completed-verified]] — Task 260 Viewer Visual Redesign — Completed & Verified
 - [[project_user-is-not-on-kiro-cli-v3-user-is-on-ki-7tmexma3]] — User is not on Kiro CLI V3; user is on kiro-cli 2.8.1 (the V3 banner was just an
 - [[project_failure-signal-asymmetry-in-oracle-free-contexts]] — Failure Signal Asymmetry in Oracle-Free Contexts
 - [[project_kiro-ide-1-0-52-agent-hooks-v2-format-verification-gate]] — Kiro IDE 1.0.52 Agent Hooks v2 Format Verification Gate
@@ -420,6 +445,7 @@ Facts: 2051
 - [[project_fixes-must-be-automatic-in-install-upgrade-flow-not-diagnost]] — Fixes Must Be Automatic in Install/Upgrade Flow, Not Diagnostic-Tool-Based
 - [[project_secret-leakage-defense-in-depth-model]] — Secret Leakage Defense-in-Depth Model
 - [[project_concurrent-write-race-task-146-severity-tied-to-agent-multip]] — Concurrent-Write Race (Task 146) Severity Tied to Agent Multiplicity
+- [[project_diagnose-ci-failures-before-rerunning]] — Diagnose CI Failures Before Rerunning
 - [[project_prefer-a-skill-not-hook-so-the-ai-unders-7z2anuqx]] — prefer a skill (not hook) so the AI understands why/how to invoke doctor for kit
 - [[project_multi-layer-gating-before-main-merge]] — Multi-layer gating before main merge
 - [[project_requires-design-decisions-to-be-grounded-7zmv7dys]] — Requires design decisions to be grounded in research; pushes back on assumptions
@@ -432,6 +458,7 @@ Facts: 2051
 - [[project_release-cut-gate-validation-pattern]] — Release Cut Gate Validation Pattern
 - [[project_kiro-cli-memory-integration-test-procedure]] — Kiro-CLI Memory Integration — Test Procedure
 - [[project_vitest-output-buffering-and-process-verification]] — Vitest Output Buffering and Process Verification
+- [[project_threshold-based-infrastructure-improvement-occasional-vs-rec]] — Threshold-Based Infrastructure Improvement: Occasional vs. Recurring
 - [[project_memory-tiers-contain-only-mission-context]] — Memory Tiers Contain Only Mission Context
 - [[project_research-inclusion-bar-for-sources-artifact]] — Research Inclusion Bar for SOURCES Artifact
 - [[project_silent-failures-require-automatic-user-facing-surfaces]] — Silent Failures Require Automatic User-Facing Surfaces
@@ -452,6 +479,7 @@ Facts: 2051
 - [[project_agentspawn-hook-verified-firing-d-198-co-9hax6lax]] — agentSpawn hook verified firing; D-198 configuration fix confirmed working; Kiro
 - [[project_release-validation-gate-structure]] — Release Validation Gate Structure
 - [[project_recall-skill-validation-contract]] — Recall Skill Validation Contract
+- [[project_viewer-delivery-shape-candidates-and-recommendation]] — Viewer Delivery Shape — Candidates and Recommendation
 - [[project_youtube-to-slide-fully-migrated-onto-the-9jaffkdh]] — youtube-to-slide fully migrated onto the kit; trust-dialog step completed.
 - [[project_release-workflow-after-fix-merge]] — Release Workflow After Fix Merge
 - [[project_cursor-hook-probes-auto-reload-without-restart]] — Cursor Hook Probes Auto-Reload Without Restart
@@ -472,6 +500,7 @@ Facts: 2051
 - [[project_npm-uninstall-eperm-error-with-sqlite-vec-dll-on-windows]] — npm Uninstall EPERM Error with sqlite-vec DLL on Windows
 - [[project_corrected-that-claim-wasn-t-empirically-9s7badnx]] — corrected that claim wasn't empirically tested; prefers verification by testing
 - [[project_for-v0-3-2-only-proceed-with-node-sqlite-9sn5dhqt]] — For v0.3.2, only proceed with node:sqlite migration (141b) if perf tests show p9
+- [[project_review-assessment-core-security-posture-9sy6cchc]] — Review assessment: "core security posture is genuinely solid" despite issues fou
 - [[project_chose-option-a-proceed-with-merge-and-do-9tbj9j5p]] — chose option A — proceed with merge and documentation of the Kiro CLI limitation
 - [[project_gate-testing-decision-quick-vs-comprehensive-path]] — Gate Testing Decision — Quick vs. Comprehensive Path
 - [[project_scratchpad-inline-html-provenance-is-the-lint-outlier]] — scratchpad-inline-html-provenance-is-the-lint-outlier
@@ -502,11 +531,16 @@ Facts: 2051
 - [[project_five-point-stress-gate-and-auto-launch-pr-workflow]] — Five-Point Stress Gate and Auto-Launch PR Workflow
 - [[project_agent-definitions-load-at-session-start-not-invokable-in-tha]] — Agent Definitions Load at Session Start, Not Invokable in That Session
 - [[project_task-167-shipped-live-test-overturned-the-grilled-q4-sync-dr]] — Task 167 shipped — live test overturned the grilled Q4 sync-drain (D-208)
+- [[project_task-255-review-found-1-blocking-3-impor-a6nahhzh]] — Task 255 review found 1 Blocking, 3 Important, 7 Minor issues; security testing
 - [[project_user-confirms-v0-4-3-task-151-persona-pr-a6rzgswp]] — User confirms v0.4.3 (Task 151 persona-promotion redesign) as next release targe
 - [[project_kit-feature-gap-chronological-decision-rendering]] — Kit Feature Gap — Chronological Decision Rendering
 - [[project_only-mk-remember-mcp-tool-calls-are-affe-a79kmp6l]] — Only mk_remember MCP-tool calls are affected; CLI hooks (agentSpawn inject + sto
+- [[project_documentation-pattern-features-need-read-a7awbvrj]] — Documentation pattern — features need README note + link to fuller explanation f
 - [[project_release-workflow-npm-script-git]] — Release Workflow (npm script + git)
 - [[project_test-gate-folders-use-numbered-sequence]] — Test Gate Folders Use Numbered Sequence
+- [[project_doc-update-release-boundary-rule]] — Doc Update & Release Boundary Rule
+- [[project_user-challenges-deferring-finished-work-a7vlxswr]] — User challenges deferring finished work to next version when it could be done no
+- [[project_v0-6-4-release-workflow-and-task-ownership]] — v0.6.4 release workflow and task ownership
 - [[project_external-source-ingestion-and-task-triage-workflow]] — External Source Ingestion and Task Triage Workflow
 - [[project_task-210-deletion-propagation-guarantee-in-flight-code-done]] — Task 210 — Deletion-propagation guarantee, in-flight (code done, docs/review pending)
 - [[project_l3-promote-20s-judge-timeout-starves-the-committed-transcrip]] — L3 promote 20s judge timeout starves the committed transcript on slow-Haiku (same class as D-179)
@@ -531,6 +565,7 @@ Facts: 2051
 - [[project_documentation-drifts-at-event-boundaries-not-pr-moments]] — Documentation Drifts at Event Boundaries, Not PR Moments
 - [[project_tool-execution-in-kiro-cli-requires-tools-config]] — Tool Execution in kiro-cli Requires `tools: ['*']` Config
 - [[project_confirmed-layered-fastapi-in-memory-repo-alauzfkj]] — Confirmed layered FastAPI + in-memory repositories as the backend architecture
+- [[project_cmk-install-auto-updates-managed-block-version-stamps]] — cmk install Auto-Updates Managed Block Version Stamps
 - [[project_live-test-harness-cannot-detect-missing-cli-dependency]] — Live-test Harness Cannot Detect Missing CLI Dependency
 - [[project_release-workflow-tag-timing-after-gates]] — Release Workflow: Tag Timing (After Gates)
 - [[project_connectionmanager-class-with-broadcast-p-anj3mxfk]] — ConnectionManager class with broadcast pattern for WebSocket message distributio
@@ -538,12 +573,14 @@ Facts: 2051
 - [[project_p-res031cg-malformed-file-recovery-plan]] — P-RES031CG Malformed File Recovery Plan
 - [[project_md007-is-model-output-indent-not-provenance-format]] — md007-is-model-output-indent-not-provenance-format
   - related: [[project_scratchpad-provenance-format-resolved-keep-inline]], `real-markdownlint-output-on-memory-MD007-not-MD013`
+- [[project_cmk-view-purpose-and-headline-use-cases]] — cmk view purpose and headline use cases
 - [[project_design-assets-in-assets-directory]] — Design Assets in assets/ Directory
 - [[project_claude-memory-kit-core-patent-novelty-research-queries]] — Claude-Memory-Kit: Core Patent Novelty Research Queries
 - [[project_sonarcloud-typescript-analyzer-exit-code-quirk]] — SonarCloud TypeScript Analyzer Exit Code Quirk
 - [[project_kiro-cli-fully-functional-state-commit-a60b11a]] — Kiro-CLI Fully Functional State (Commit a60b11a)
 - [[project_kiro-ide-hooks-live-test-wins-2026-06-21-the-user-ran-it-in]] — Kiro IDE hooks live-test WINS (2026-06-21, the user ran it in C:\Projects\Spec-D
 - [[project_doctor-health-check-baseline-fresh-install]] — Doctor Health Check Baseline (Fresh Install)
+- [[project_test-environment-throwaway-tree-with-con-aun5d2nz]] — Test environment (throwaway tree with context/) left at C:\tmp\rev255 for inspec
 - [[project_user-proactively-checked-whether-newly-c-av4f6sa9]] — User proactively checked whether newly-created checklist duplicates the authorit
 - [[project_task-240-node-version-pinning-across-workflows]] — Task 240 — Node Version Pinning Across Workflows
 - [[project_live-cut-gate-requirement-unit-green-works-on-real-input]] — Live Cut-Gate Requirement — Unit-Green ≠ Works-on-Real-Input
@@ -568,7 +605,9 @@ Facts: 2051
 - [[project_mcp-prompt-two-gate-model-gate-1-server-approval-is-the-unte]] — MCP prompt = two-gate model; Gate 1 (server approval) is the untested fix
 - [[project_release-process-discipline-standard-ceremony-applied]] — Release Process Discipline — Standard Ceremony Applied
 - [[project_cross-machine-file-sorting-must-be-byte-deterministic]] — Cross-Machine File Sorting Must Be Byte-Deterministic
+- [[project_git-hooks-resolve-to-global-cmk-via-path]] — Git Hooks Resolve to Global CMK via PATH
 - [[project_tasks-must-have-explicit-done-criteria-a-b7ahubr5]] — Tasks must have explicit done-criteria as checkboxes defined at task START befor
+- [[project_memory-tier-active-writes-block-git-operations]] — Memory Tier Active Writes Block Git Operations
 - [[project_v0-3-2-published-to-npm-with-provenance]] — v0.3.2 published to npm with provenance
 - [[project_dogfood-proof-fact-path-needs-the-privacy-screen-too]] — Dogfood proof: fact-path needs the privacy screen too
   - related: [[project_cut-gate-v050-transcript-privacy-is-task-148-trigger-fired]], [[project_task-148-auto-judged-privacy-layered-screen-architecture]]
@@ -577,6 +616,8 @@ Facts: 2051
 - [[project_task-246-phase-2-redirect-capture-hook-bins-to-root-resolver]] — Task 246 Phase 2: Redirect Capture-Hook Bins to Root Resolver
 - [[project_prefers-direct-action-oriented-responses-bcfl24pc]] — Prefers direct, action-oriented responses; dislikes verbose context re-hashing—w
 - [[project_validate-spawn-discipline-tool]] — validate-spawn-discipline Tool
+- [[project_d-408-housekeeping-supersedes-d-395]] — D-408 Housekeeping Supersedes D-395
+- [[project_scheduled-tasks-use-absolute-paths-renaming-requires-re-regi]] — Scheduled Tasks Use Absolute Paths; Renaming Requires Re-registration
 - [[project_install-time-consent-for-better-sqlite3-binding-replaces-err]] — Install-time consent for better-sqlite3 binding (replaces error → doctor round-trip)
 - [[project_merge-approved-and-completed-main-green-bdhnxtna]] — Merge approved and completed; main green (all CI checks, SonarCloud A/A restored
 - [[project_changelog-script-assertion-non-unique-anchor-gotcha]] — CHANGELOG Script Assertion — Non-Unique Anchor Gotcha
@@ -594,9 +635,11 @@ Facts: 2051
 - [[project_task-233-adr-0024-memory-search-fix-via-evidence-bearing-hin]] — Task 233 (ADR-0024): Memory-search fix via evidence-bearing hints
 - [[project_youtube-to-slide-foreign-format-fact-file-pre-existing-not-r]] — youtube-to-slide foreign-format fact file — pre-existing, not rename-related
 - [[project_squad-sweep-complete-seven-tasks-slotted-141-147]] — Squad Sweep Complete — Seven Tasks Slotted (141–147)
+- [[project_release-philosophy-ship-finished-work-don-t-hold-for-version]] — Release Philosophy — Ship Finished Work, Don't Hold for Versions
 - [[project_iterative-thorough-research-approach-add-bjqagq6h]] — Iterative, thorough research approach—adds items even near session end rather th
 - [[project_check-broader-product-research-corpus-do-bk5h9tp6]] — Check broader product research corpus; don't rely on 2 cherry-picked exemplars
 - [[project_cron-job-registration-feature-hc-5]] — Cron Job Registration Feature (HC-5)
+- [[project_memory-flush-consistency-unit]] — Memory Flush Consistency Unit
 - [[project_d198-proven-agentspawn-fires-but-pretooluse-not-on-2-9-0-exe]] — d198-proven-agentspawn-fires-but-pretooluse-not-on-2.9.0-execute-command-rename
   - related: `d198-fix-built-kiro-dir-location-open-file-uri-resolution-question`, `kiro-cli-rejects-bom-in-agent-config-ps-convertto-json-adds-it`
 - [[project_auto-load-of-kiro-hooks-cmk-kiro-hook-js-blsbxkgl]] — Auto-load of .kiro/hooks/cmk.kiro.hook.json hooks is the critical verification p
@@ -614,7 +657,9 @@ Facts: 2051
 - [[project_hermes-is-skill-library-curation-not-memory-self-improvement]] — Hermes Is Skill-Library Curation, Not Memory Self-Improvement
 - [[project_link-out-convention-for-design-md-evidence]] — Link-Out Convention for Design.md Evidence
 - [[project_claude-code-2-1-x-needs-skill-name-wildcard-to-suppress-skil]] — Claude Code 2.1.x needs Skill(name:*) wildcard to suppress skill prompts
+- [[project_invisible-character-hazard-in-documentation]] — Invisible Character Hazard in Documentation
 - [[project_per-session-temporal-sweep-timing-v0-4-5]] — Per-Session Temporal Sweep Timing (v0.4.5+)
+- [[project_bom-prefixed-files-and-id-generation]] — BOM-Prefixed Files and ID Generation
 - [[project_obsidian-folder-gitignore-at-any-depth]] — .obsidian Folder Gitignore at Any Depth
 - [[project_user-set-aside-memory-fragments-across-m-bwhekq2d]] — User set aside memory fragments across multiple test/check/version cycles and lo
 - [[project_workspace-trust-requirement-for-claude-skills]] — Workspace Trust Requirement for `.claude/skills/`
@@ -648,7 +693,9 @@ Facts: 2051
 - [[project_sub-agent-confabulation-detection-in-verification]] — Sub-Agent Confabulation Detection in Verification
 - [[project_user-validates-pragmatic-retry-with-wait-cbdn7kxq]] — User validates pragmatic retry-with-wait approach for transient failures ("maybe
 - [[project_multi-project-survey-6-external-links-1-revisit-yields-10-re]] — Multi-Project Survey: 6 External Links + 1 Revisit Yields 10 Revisit-Notes
+- [[project_v0-6-4-and-follow-up-work]] — v0.6.4 and Follow-Up Work
 - [[project_20-3-import-pin-constraint-for-task-233]] — §20.3 Import-Pin Constraint for Task 233
+- [[project_release-workflow-structured-gate-based-process]] — Release Workflow: Structured Gate-Based Process
 - [[project_claude-code-hook-activation-requires-restart]] — Claude Code Hook Activation Requires Restart
 - [[project_claude-code-v2-1-195-changed-matcher-eva-cev2w6aa]] — Claude Code v2.1.195 changed matcher evaluation; v2.1.198 broke PermissionReques
 - [[project_kit-must-work-for-users-with-only-cursor-cf74l2xa]] — Kit must work for users with ONLY Cursor or ONLY Kiro installed, without Claude
@@ -657,6 +704,7 @@ Facts: 2051
 - [[project_og-image-svg-is-fully-vectorized-with-no-source-template]] — og-image.svg is fully-vectorized with no source template
 - [[project_kiro-cli-popup-real-cause-cmk-is-npm-shim-not-exe-mcp-and-ho]] — kiro-cli-popup-real-cause-cmk-is-npm-shim-not-exe-mcp-and-hook-spawns-flash
   - related: [[project_d198-shipped-pr225-kiro-cli-capture-inject-proven-live]], [[project_kiro-cli-hook-cmd-exe-popup-window-flash-ux-bug]]
+- [[project_claude-code-mcp-server-overhead-per-instance]] — Claude Code MCP Server Overhead Per Instance
 - [[project_memory-persistence-validation-workflow-end-to-end]] — Memory Persistence Validation Workflow (End-to-End)
 - [[project_gate-project-ready-for-khv1-load-validation]] — Gate Project Ready for KHv1-load Validation
 - [[project_testing-and-review-discipline]] — Testing and Review Discipline
@@ -669,12 +717,14 @@ Facts: 2051
 - [[project_stub-command-removal-five-piece-pattern]] — Stub Command Removal — Five-Piece Pattern
 - [[project_mcp-prompt-gate-only-appears-in-non-default-agent-scenario]] — MCP prompt gate only appears in non-default agent scenario
 - [[project_memory-routing-gap-caught-i-was-writing-cltknava]] — Memory routing gap caught — I was writing to harness slug path instead of kit's
+- [[project_task-247-review-checklist]] — Task 247 Review Checklist
 - [[project_release-plan-v0-6-0-day-one-memory-v0-7-0-team-layer]] — Release Plan: v0.6.0 (Day-One Memory) & v0.7.0 (Team Layer)
 - [[project_three-tier-model-delegation-pattern]] — Three-Tier Model Delegation Pattern
 - [[project_avoid-duplicating-authoritative-docs-in-temp-locations]] — Avoid Duplicating Authoritative Docs in Temp Locations
 - [[project_before-closing-vs-code-to-reopen-user-wa-crufqect]] — Before closing VS Code to reopen, user wants everything documented in RESUME-HER
 - [[project_user-wants-direct-hands-on-verification-csjnfqak]] — User wants direct, hands-on verification before accepting completion — "i didnt
 - [[project_claude-md-ci-watch-rule-updated-to-speci-cspf4gad]] — CLAUDE.md CI watch rule updated to specify ci.yml by name, not relying on CodeQL
+- [[project_readme-structure-targets-field-standard]] — README Structure Targets Field Standard
 - [[project_kiro-cli-mcp-trust-model-and-kit-s-workaround]] — Kiro CLI MCP Trust Model and Kit's Workaround
 - [[project_v0-4-4-published-and-checkpoint-closed]] — v0.4.4 Published and Checkpoint Closed
 - [[project_system-written-grants-file-as-specification]] — System-Written Grants File as Specification
@@ -687,6 +737,7 @@ Facts: 2051
 - [[project_capture-hook-bins-create-orphaned-memory-tiers-due-to-missin]] — Capture-hook bins create orphaned memory tiers due to missing root discovery
 - [[project_cursor-hook-debugging-via-environment-probe]] — Cursor hook debugging via environment probe
 - [[project_field-survey-zero-multi-cli-routing-32-projects]] — Field Survey: Zero Multi-CLI Routing (32 projects)
+- [[project_q3-wave-1-viewer-five-views-locked]] — Q3 Wave 1 Viewer: Five Views Locked
 - [[project_user-chose-rest-api-backend-with-fastapi-cxc5jjhu]] — User chose REST API backend with FastAPI and no database for new project
 - [[project_standing-autopilot-handles-merges-when-gates-pass]] — Standing Autopilot Handles Merges When Gates Pass
 - [[project_after-rename-guide-s-0-backup-step-can-b-cy2dg5zs]] — after rename, guide's §0 backup step can be skipped—tier setup already complete
@@ -697,12 +748,15 @@ Facts: 2051
 - [[project_memory-learn-loop-as-converged-system]] — Memory Learn-Loop as Converged System
 - [[project_read-code-and-secondary-docs-architectur-d3aljf4t]] — Read code and secondary docs (architecture, ADRs, design notes), not just README
 - [[project_mcp-activation-restart-behavior]] — MCP Activation Restart Behavior
+- [[project_core-memory-kit-stores-all-state-as-on-disk-markdown]] — Core-Memory-Kit Stores All State As On-Disk Markdown
 - [[project_task-256-design-constraints-and-incorporated-rules]] — Task 256 Design Constraints and Incorporated Rules
+- [[project_validation-gate-chain-and-stages]] — Validation gate chain and stages
 - [[project_npm-v12-install-scripts-breaking-change-july-2026-deadline]] — npm v12 Install-Scripts Breaking Change (July 2026 Deadline)
 - [[project_kiro-4579-workaround-replace-cd-with-project-flag]] — Kiro #4579 Workaround: Replace `cd` with `--project` Flag
 - [[project_injection-seam-pattern-for-timeout-critical-tests]] — Injection-Seam Pattern for Timeout-Critical Tests
 - [[project_compression-retry-mechanism]] — Compression Retry Mechanism
 - [[project_if-problematic-pattern-exists-must-deal-d6yjmv2s]] — If problematic pattern exists, must deal with it comprehensively across all affe
+- [[project_awrshift-claude-memory-kit-is-the-predec-d7x2fl6f]] — awrshift/claude-memory-kit is the predecessor project that prompted renaming of
 - [[project_v0-3-1-release-final-workflow]] — v0.3.1 Release: Final Workflow
 - [[project_fts5-parser-crash-history-and-current-injection-surface]] — FTS5 Parser Crash History and Current Injection Surface
 - [[project_user-tested-kiro-cli-headless-mode-with-dahsh4g9]] — User tested kiro-cli headless mode with --trust-all-tools and confirmed hooks ex
@@ -731,6 +785,7 @@ Facts: 2051
 - [[project_capture-completeness-vs-capture-perception-gap-persona-queue]] — Capture-completeness vs capture-perception gap (persona-queue delay)
 - [[project_restart-claude-code-after-install-is-no-dpuljz33]] — "Restart Claude Code after install" is NOT a blanket rule; only applies to a nar
 - [[project_session-1-ready-to-begin-in-c-temp-cut-g-dpzan24u]] — Session 1 ready to begin in C:\Temp\cut-gate-v041 after Claude Code restart; gat
+- [[project_codeql-and-sonarcloud-only-report-on-remote-prs]] — CodeQL and SonarCloud Only Report on Remote PRs
 - [[project_decide-cron-reliability-backstop-strategy]] — Decide Cron-Reliability Backstop Strategy
 - [[project_v0-5-0-sprint-locked-to-fable-model-availability-window]] — v0.5.0 Sprint Locked to Fable Model Availability Window
 - [[project_v0-4-0-decision-remove-mcp-from-kiro-cli-agent-includemcpjso]] — v0.4.0-decision-remove-mcp-from-kiro-cli-agent-includemcpjson-false-document-gap
@@ -741,6 +796,8 @@ Facts: 2051
 - [[project_hook-inject-capture-tests-faked-dependencies-masking-bugs]] — Hook/Inject/Capture Tests Faked Dependencies, Masking Bugs
 - [[project_wants-research-re-visited-before-final-c-dts22l9d]] — Wants research re-visited before final commit — pick direction, validate sources
 - [[project_precise-domain-aware-validators-over-generic-tools]] — Precise, Domain-Aware Validators Over Generic Tools
+- [[project_troubleshooting-skill-architecture-shape-b-confirmed]] — Troubleshooting Skill Architecture — Shape (b) Confirmed
+- [[project_one-strip-everywhere-implementation-pattern]] — One-Strip-Everywhere Implementation Pattern
 - [[project_article-verdict-pattern-for-task-ingestion]] — Article Verdict Pattern for Task Ingestion
 - [[project_v0-3-0-published-2026-06-11-npm-github-r-duzyece4]] — v0.3.0 PUBLISHED 2026-06-11 (npm + GitHub Release) after the gate day: 8 bugs fo
 - [[project_d6-now-today-roll-fail-safe-behavior-con-dv52lvvn]] — D6 (now→today roll) fail-safe behavior confirmed: timeout logs cleanly, now.md i
@@ -774,6 +831,7 @@ Facts: 2051
 - [[project_github-scheduled-workflows-can-miss-runs]] — GitHub Scheduled Workflows Can Miss Runs
 - [[project_v0-4-3-cut-gate-multi-phase-validation-structure]] — v0.4.3 Cut-Gate Multi-Phase Validation Structure
 - [[project_hook-architecture-differs-across-claude-ai-products]] — Hook Architecture Differs Across Claude AI Products
+- [[project_task-257-bom-blindness-is-complete-root-e5haw2f6]] — Task 257 (BOM blindness) is complete; root cause was data-destruction path in co
 - [[project_skill-review-imported-facts-staleness-bug-fixed]] — skill-review Imported-Facts Staleness Bug Fixed
 - [[project_two-tier-backend-architecture-for-headless-llm-invocation]] — Two-Tier Backend Architecture for Headless LLM Invocation
 - [[project_d-293-with-semantic-on-large-corpora-cau-e6txlfhn]] — D-293: --with-semantic on large corpora caused 8.8GB memory freeze; now fixed; w
@@ -789,11 +847,13 @@ Facts: 2051
 - [[project_async-ifying-a-cli-action-races-its-synchronous-in-process-t]] — async-ifying a CLI action races its synchronous in-process test callers
   - related: [[project_autopilot-grant-v0-3-x-queue-2026-06-12]]
 - [[project_release-gate-status-claude-kiro-cursor-i-eby9zhyv]] — Release gate status: Claude ✓, Kiro ✓; Cursor is the final/pending gate before v
+- [[project_work-items-require-task-entry-before-implementation]] — Work Items Require Task Entry Before Implementation
 - [[project_d198-fix-built-kiro-dir-location-open-file-uri-resolution-qu]] — d198-fix-built-kiro-dir-location-open-file-uri-resolution-question
   - related: `TRUE-root-cause-kiro-cli-agent-config-wrong-location-no-hooks-fire`, `kg-guard-still-fails-with-star-matcher-hook-not-firing-or-env-payload`
 - [[project_kiro-hook-trust-quirks-design-lessons-d-194]] — Kiro Hook Trust Quirks & Design Lessons (D-194)
 - [[project_multi-run-ci-diagnostics-separate-code-from-infrastructure-f]] — Multi-Run CI Diagnostics Separate Code from Infrastructure Failures
 - [[project_markdown-yaml-spell-linting-disabled-in-ci-by-design]] — Markdown/YAML/Spell Linting Disabled in CI by Design
+- [[project_q1-refined-auto-fix-vs-whisper-boundary-cmk-doctor]] — Q1 Refined: Auto-fix vs Whisper Boundary (cmk doctor)
 - [[project_user-s-standing-directive-document-all-m-edxcny3l]] — User's standing directive — document all major decisions/workflow in the Spine (
 - [[project_kiro-v0-4-0-multi-surface-trust-mechanism-architecture]] — Kiro v0.4.0 Multi-Surface Trust Mechanism Architecture
 - [[project_cmk-install-with-semantic-trusts-npm-exit-code-not-the-actua]] — cmk install --with-semantic trusts npm exit code not the actual embedder import (Task 170)
@@ -810,6 +870,7 @@ Facts: 2051
 - [[project_main-ci-green-after-d-306-merge-exit-cod-ekwh25s2]] — Main CI green after D-306 merge (exit code 0); all code work verified and staged
 - [[project_prefers-to-limit-research-scope-and-skip-em6g7q53]] — Prefers to limit research scope and skip deep-reading when signal-to-noise is lo
 - [[project_windows-sqlite-dll-lock-from-running-mcp-server]] — Windows SQLite DLL Lock from Running MCP Server
+- [[project_cross-implementation-divergence-found-no-enahcwy5]] — Cross-implementation divergence found: Node and Python generated different IDs f
 - [[project_memory-auto-injection-on-session-start]] — Memory Auto-Injection on Session Start
 - [[project_claude-code-2-1-198-permission-hook-regression]] — Claude Code 2.1.198 Permission Hook Regression
 - [[project_sonarcloud-zero-coverage-from-missing-cache-step]] — SonarCloud Zero-Coverage From Missing Cache Step
@@ -823,6 +884,7 @@ Facts: 2051
 - [[project_kit-is-live-c-projects-claude-memory-kit-esxeglax]] — Kit is live (`C:\Projects\claude-memory-kit`) with active MCP servers and auto-e
 - [[project_uncommitted-change-in-docs-process-cut-gate-md]] — Uncommitted Change in docs/process/cut-gate.md
 - [[project_npm-install-works-with-claude-code-open-in-this-repo]] — npm install works with Claude Code open in this repo
+- [[project_feature-section-brevity-enforcement]] — Feature Section Brevity Enforcement
 - [[project_two-phase-release-commit-gate-then-tag-publish]] — Two-Phase Release: Commit/Gate, Then Tag/Publish
 - [[project_sonarcloud-server-side-analysis-scope-cannot-be-overridden-r]] — SonarCloud Server-Side Analysis Scope Cannot Be Overridden Repo-Side
 - [[project_okf-v0-1-googlecloudplatform-knowledge-catalog-is-a-vendor-n]] — OKF v0.1 (GoogleCloudPlatform/knowledge-catalog) is a vendor-neutral spec: markd
@@ -843,6 +905,7 @@ Facts: 2051
 - [[project_never-hand-edit-memory-rule]] — Never-Hand-Edit-Memory Rule
 - [[project_vs-code-windows-are-independent-claude-code-sessions]] — VS Code Windows Are Independent Claude Code Sessions
 - [[project_always-monitor-ci-without-asking-for-per-f94zjmyv]] — Always monitor CI without asking for permission or pausing to confirm; this is t
+- [[project_fable-5-dual-use-safety-flagging-behavior]] — Fable 5 Dual-Use Safety Flagging Behavior
 - [[project_session-state-at-pause-2026-07-20-pre-compact-v0-6-0-shipped]] — SESSION STATE at pause (2026-07-20, pre-compact): v0.6.0 SHIPPED - published to
 - [[project_prefers-option-2-bound-inside-compressor-f9sud9eg]] — Prefers option 2 (bound inside CompressorBackend.compress implementation, not a
 - [[project_e1-cold-open-test-persona-wedge-successful]] — E1 Cold-Open Test — Persona Wedge Successful
@@ -907,6 +970,7 @@ Facts: 2051
 - [[project_cmk-disable-semantic-environment-variable]] — CMK_DISABLE_SEMANTIC Environment Variable
 - [[project_v0-3-2-scope-correction-dedup]] — v0.3.2 Scope Correction Dedup
 - [[project_d-390-multi-agent-architecture-active-configuration]] — D-390 Multi-Agent Architecture (Active Configuration)
+- [[project_post-merge-ship-workflow-sequence]] — Post-Merge Ship Workflow Sequence
 - [[project_advisory-acceptance-policy-dead-code-exception-class]] — Advisory Acceptance Policy — Dead-Code Exception Class
 - [[project_d-144-housekeeping-is-the-post-task-129-fams2ltw]] — D-144 (housekeeping) is the post-Task-129 step in the remaining v0.3.x queue
 - [[project_kg-guard-retest-failed-was-stale-artifact-not-fix]] — kg-guard-retest-failed-was-stale-artifact-not-fix
@@ -967,10 +1031,14 @@ Facts: 2051
   - related: [[project_l3-promote-20s-judge-timeout-starves-the-committed-transcrip]], `ceiling-free-compress-callers-used-hook-sized-timeout-d-179`
 - [[project_kg-guard-kiro-cli-two-gates-rm-rewritten-to-removeitem]] — kg-guard-kiro-cli-two-gates-rm-rewritten-to-removeitem
   - related: [[project_kiro-cli-allowedtools-doc-correct-but-still-prompts]], [[project_kiro-session1-complete-wedge-proven-live]]
+- [[project_health-state-tracking-via-append-only-event-log]] — Health State Tracking via Append-Only Event Log
+- [[project_whole-tier-flush-rule-for-context-directory]] — Whole-Tier Flush Rule for Context Directory
+- [[project_powershell-copy-item-wildcard-risk-in-repo]] — PowerShell Copy-Item Wildcard Risk in Repo
 - [[project_cut-blocker-closed-kiro-cli-explicit-memory-works-tools-star]] — CUT-BLOCKER-CLOSED-kiro-cli-explicit-memory-works-tools-star-fix-proven
   - related: `THE-ACTUAL-BUG-missing-tools-field-agent-had-no-shell-tool-enabled`, `v0.4.0-decision-remove-mcp-from-kiro-cli-agent-includemcpjson-false-document-gap`
 - [[project_task-95-research-review-design-synthesis-status]] — Task 95 Research Review — Design Synthesis Status
 - [[project_git-as-sole-evidence-in-gap-cases]] — Git as Sole Evidence in Gap Cases
+- [[project_whispers-must-clear-when-their-prescribed-fix-runs]] — Whispers Must Clear When Their Prescribed Fix Runs
 - [[project_cut-blocker-mcp-mk-remember-silent-dataloss-kiro-cli-claude]] — CUT-BLOCKER-mcp-mk-remember-silent-dataloss-kiro-cli-claude-project-dir-only
   - related: [[project_d198-shipped-pr225-kiro-cli-capture-inject-proven-live]], `FINAL-mcp-popup-is-kiro-cli-wraps-all-mcp-in-cmd-exe-not-kit-bug`
 - [[project_memory-kit-workflows-integration-surface]] — Memory Kit + Workflows Integration Surface
@@ -981,6 +1049,7 @@ Facts: 2051
 - [[project_two-bugs-fixed-validation-points-for-session-1-2]] — Two Bugs Fixed—Validation Points for Session 1 & 2
 - [[project_research-corpus-structure-and-cloning-strategy]] — Research Corpus Structure and Cloning Strategy
 - [[project_claude-code-vs-kiro-hook-and-integration-differences]] — Claude Code vs Kiro Hook and Integration Differences
+- [[project_false-green-health-strip-pattern]] — False-Green Health Strip Pattern
 - [[project_test-gate-protocol-backup-real-paths-instead-of-env-var-sand]] — Test-Gate Protocol — Backup Real Paths Instead of Env-Var Sandbox
 - [[project_skill-permission-wildcard-syntax]] — Skill Permission Wildcard Syntax
 - [[project_planning-docs-as-standalone-commits-on-main]] — Planning Docs as Standalone Commits on Main
@@ -1001,6 +1070,7 @@ Facts: 2051
   - related: [[project_scratchpad-inline-html-provenance-is-the-lint-outlier]], [[project_user-ci-lints-memory-files-gap]]
 - [[project_rebuild-reinstall-before-session-2-release-cut-workflow]] — Rebuild+Reinstall Before Session 2 (Release Cut Workflow)
 - [[project_readme-structure-for-v0-4-1]] — README Structure for v0.4.1
+- [[project_team-rule-stated-explicitly-diagnose-fro-h3yqsc9u]] — Team rule stated explicitly—"diagnose from logs before rerunning, so a real fail
 - [[project_disable-mcp-in-ide-wrappers-with-includemcpjson-false]] — Disable MCP in IDE Wrappers With includeMcpJson: false
 - [[project_cross-project-rules-auto-promote-at-session-end-stop-hook]] — Cross-Project Rules Auto-Promote at Session End (Stop Hook)
 - [[project_documentation-artifacts-and-structure]] — Documentation Artifacts and Structure
@@ -1015,14 +1085,18 @@ Facts: 2051
 - [[project_shared-core-thin-adapter-architecture-pattern]] — Shared Core + Thin Adapter Architecture Pattern
 - [[project_6-mattpocock-skills-tdd-grilling-diagnos-hgahkl9h]] — 6 mattpocock skills (tdd, grilling, diagnosing-bugs, codebase-design, domain-mod
 - [[project_session-checkpoint-v0-4-1-cut-gate-3-fixes-merged-awaiting-c]] — SESSION CHECKPOINT v0.4.1 cut-gate — 3 fixes merged, awaiting CC update retest
+- [[project_versioning-policy-d-24-differentiators-per-release-level]] — Versioning Policy (D-24): Differentiators per Release Level
 - [[project_market-finding-git-native-markdown-memory-space-is-now-crowd]] — Market Finding — Git-Native Markdown Memory Space is Now Crowded
 - [[project_youtube-to-slide-migration-to-core-memory-kit-complete]] — youtube-to-slide Migration to core-memory-kit Complete
+- [[project_utf-8-bom-injection-from-powershell-round-trips]] — UTF-8 BOM Injection from PowerShell Round-Trips
 - [[project_sonarcloud-exit-3-crash-resolved-2026-07-18-d-350-overturnin]] — SonarCloud exit-3 crash RESOLVED 2026-07-18 (D-350, overturning D-341): the trig
 - [[project_sonarcloud-misconfiguration-scans-memory-fact-prose-as-code]] — SonarCloud Misconfiguration — Scans Memory Fact Prose as Code
 - [[project_claude-memory-kit-fix-verification-protocol-v0-4-3]] — claude-memory-kit Fix Verification Protocol (v0.4.3)
+- [[project_archive-registration-in-documentation-map-md]] — Archive Registration in DOCUMENTATION-MAP.md
 - [[project_cleanup-discipline-no-debugging-artifacts-in-repo]] — Cleanup Discipline: No Debugging Artifacts in Repo
 - [[project_don-t-do-v0-3-5-down-payment-full-work-t-hp6uts9x]] — Don't do v0.3.5 down-payment (full work/tests, no kit payoff); do full 151 redes
 - [[project_v0-7-0-assignment-fork-at-v0-6-0-cut]] — v0.7.0 Assignment Fork at v0.6.0 Cut
+- [[project_archived-facts-with-failing-commands]] — Archived Facts With Failing Commands
 - [[project_release-script-correctly-bumps-version-0-hrfkjppc]] — Release script correctly bumps version (0.3.5 → 0.4.0), updates CHANGELOG.md wit
 - [[project_validation-by-independent-test-reproduction]] — Validation by Independent Test Reproduction
 - [[project_task-240-resolution-bench-storage-allowlist-entry]] — Task 240 Resolution – Bench-Storage Allowlist Entry
@@ -1063,6 +1137,7 @@ Facts: 2051
 - [[project_corpus-re-read-decision-audit]] — Corpus Re-Read Decision Audit
 - [[project_three-options-for-v0-4-5-breadth-lane-decides-at-v0-4-4-cut]] — Three Options for v0.4.5+ (Breadth Lane Decides at v0.4.4 Cut)
 - [[project_diagnostic-test-allow-list-vs-workspace-trust]] — Diagnostic Test: `:*` Allow-List vs Workspace-Trust
+- [[project_three-file-archive-structure]] — Three-File Archive Structure
 - [[project_distinction-between-deferred-and-committed-work]] — Distinction Between Deferred and Committed Work
 - [[project_embedding-model-trade-off-bge-base-vs-bge-m3-benchmarked-cho]] — Embedding Model Trade-off: bge-base vs bge-m3 (Benchmarked Choice)
 - [[project_manual-verification-gates-for-tasks-74-and-151]] — Manual Verification Gates for Tasks 74 and 151
@@ -1077,6 +1152,7 @@ Facts: 2051
 - [[project_confirmed-enabledmcpjsonservers-cmk-narrow-form-prompt-free]] — CONFIRMED: enabledMcpjsonServers:["cmk"] narrow form = prompt-free + safer
 - [[project_deep-read-process-for-evaluating-competing-projects]] — Deep-Read Process for Evaluating Competing Projects
 - [[project_verification-sequence-for-task-169-170-fresh-folder-gate]] — Verification Sequence for Task 169 & 170 (Fresh Folder Gate)
+- [[project_mcp-configuration-includes-redundant-memory-server]] — MCP Configuration Includes Redundant Memory Server
 - [[project_v0-5-2-code-complete-three-prs-284-285-2-jlpxjpzf]] — v0.5.2 code-complete; three PRs (#284, #285, #286) merged to main
 - [[project_kiro-auto-extract-trigger-works-write-unproven]] — Kiro Auto-Extract: Trigger Works, Write Unproven
 - [[project_when-asked-for-a-review-opinion-provide-jn3byxjn]] — When asked for a review/opinion, provide that analysis only—don't autonomously w
@@ -1095,6 +1171,7 @@ Facts: 2051
 - [[project_strict-yaml-validation-validate-skill-sources-mjs-enhancemen]] — Strict YAML Validation — validate-skill-sources.mjs Enhancement
 - [[project_cursor-hooks-json-mid-session-edits-risk-file-watcher-desync]] — Cursor hooks.json Mid-Session Edits Risk File Watcher Desync
 - [[project_proposed-task-research-triage-system]] — Proposed Task Research Triage System
+- [[project_v0-6-3-published-to-npm-with-provenance-jwj53bsf]] — v0.6.3 published to npm with provenance; GitHub Release created; sprint board cl
 - [[project_project-enforces-never-hand-edit-memory-jx6vemjm]] — Project enforces "never-hand-edit-memory" principle to preserve auto-capture int
 - [[project_v0-3-2-scope-locked-strict-task-order-discipline]] — v0.3.2 Scope Locked; Strict Task-Order Discipline
 - [[project_three-session-release-validation-methodology]] — Three-Session Release Validation Methodology
@@ -1102,6 +1179,7 @@ Facts: 2051
 - [[project_decisions-md-is-write-only-for-ai-recall-not-in-any-recall-d]] — DECISIONS.md is write-only for AI recall — not in any recall directive or test
 - [[project_windows-ebusy-when-updating-cmk-during-claude-code-runtime]] — Windows EBUSY When Updating CMK During Claude Code Runtime
 - [[project_prefers-logical-line-breaks-in-markdown-jz4wajfa]] — Prefers logical line breaks in markdown for readability; dislikes mid-phrase tex
+- [[project_archive-eligibility-criterion-for-task-parents]] — Archive Eligibility Criterion for Task Parents
 - [[project_rebuilding-the-global-cmk-binary-after-code-changes]] — Rebuilding the Global CMK Binary After Code Changes
 - [[project_standing-osv-advisory-surveillance-task-237-lane]] — Standing OSV Advisory Surveillance (Task 237 Lane)
 - [[project_windows-short-name-path-canonicalization-in-discovery]] — Windows Short-Name Path Canonicalization in Discovery
@@ -1119,21 +1197,26 @@ Facts: 2051
 - [[project_pre-session-1-gate-procedure-v0-4-1]] — Pre-Session-1 Gate Procedure (v0.4.1)
 - [[project_three-security-bugs-fixed-with-tests]] — Three Security Bugs Fixed with Tests
 - [[project_resume-v0-4-5-main-is-green-with-the-v0-k9jexew6]] — RESUME v0.4.5: main is GREEN with the v0.4.5 release commit (82a0baf, package.js
+- [[project_reference-design-system-location-and-access]] — Reference Design System Location and Access
 - [[project_js-yaml-critical-path-in-memory-system]] — js-yaml Critical Path in Memory System
 - [[project_cut-gate-workflow-order-cut-locally-test-tag]] — Cut-Gate Workflow Order: Cut Locally → Test → Tag
 - [[project_relevance-floor-calibration-for-fts5-backends]] — Relevance-Floor Calibration for FTS5 Backends
 - [[project_pr-310-shipped-3196-3196-tests-green-188-kba273up]] — PR #310 shipped; 3196/3196 tests green, 188 files, zero test edits beyond repoin
+- [[project_architecture-decisions-via-adr-references]] — Architecture Decisions via ADR References
 - [[project_sessionstart-lazy-fallback-shadowed-by-cascade-starvation]] — SessionStart Lazy Fallback Shadowed By Cascade-Starvation
 - [[project_resume-fact-convention-capturing-uncommitted-code-intent]] — Resume Fact Convention: Capturing Uncommitted Code Intent
 - [[project_repack-requires-cmk-mcp-process-cleanup]] — Repack Requires cmk mcp Process Cleanup
+- [[project_sequence-engage-first-on-thinking-let-us-kf6frb9u]] — Sequence: engage first on thinking → let user react → execute on clear signal. D
 - [[project_three-corpus-gaps-identified-in-d-374-sweep]] — Three Corpus Gaps Identified in D-374 Sweep
 - [[project_cursor-gate-test-path-procedure-v0-5-0-release]] — Cursor Gate Test Path & Procedure (v0.5.0 Release)
 - [[project_dj4-live-gate-test-passed-v0-3-3-headline-feature]] — DJ4 Live-Gate Test Passed (v0.3.3 Headline Feature)
+- [[project_file-pointer-format-and-interpretation]] — File Pointer Format and Interpretation
 - [[project_v0-6-0-upgrade-verification-matrix]] — v0.6.0+ Upgrade Verification Matrix
 - [[project_the-fact-store-walk-is-duplicated-across-10-modules-with-no]] — The fact-store walk is duplicated across 10 modules with NO shared walker: the s
 - [[project_only-2-of-19-systems-memsearch-letta-cle-kkalezcp]] — Only 2 of 19 systems (memsearch, Letta) cleanly implement A+B+C (buffer cap + de
 - [[project_plain-html-js-no-framework-for-chat-ui-kkknst9l]] — plain HTML/JS, no framework for chat UI
 - [[project_outcome-learning-for-memory-systems-shou-kkqa4akv]] — Outcome learning for memory systems should not be failure-only; both success and
+- [[project_v0-6-3-released]] — v0.6.3 Released
 - [[project_harness-support-roadmap-task-196-and-versioning-policy]] — Harness Support Roadmap (Task 196) and Versioning Policy
 - [[project_node-sqlite-migration-rejected-clean-ci-kkys67aq]] — node:sqlite migration rejected—clean CI perf data showed 10% slower search perfo
 - [[project_4-stage-fastapi-build-plan-with-embedded-rules]] — 4-Stage FastAPI Build Plan with Embedded Rules
@@ -1141,15 +1224,18 @@ Facts: 2051
 - [[project_verified-codebase-consumers-of-hook-snapshot-fields]] — Verified Codebase Consumers of Hook/Snapshot Fields
 - [[project_version-roadmap-v0-6-1-through-v0-6-2]] — Version Roadmap: v0.6.1 through v0.6.2
 - [[project_supply-chain-watch-issue-filing-fixed-task-237]] — Supply-Chain Watch Issue-Filing Fixed (Task 237)
+- [[project_core-memory-kit-dogfoods-its-own-memory-system]] — core-memory-kit Dogfoods Its Own Memory System
 - [[project_validates-deliberate-deferral-of-decisio-knwjbuza]] — Validates deliberate deferral of decisions when supported by research; does not
 - [[project_v0-3-3-release-staging-state]] — v0.3.3 Release Staging State
 - [[project_user-reconsidering-whether-task-151-pers-kqgkwqut]] — User reconsidering whether Task 151 (persona-redesign) should enter v0.4.0 despi
 - [[project_decisions-scope-semantic-fallback-warning-task-156-bug]] — Decisions Scope Semantic Fallback Warning (Task 156 Bug)
 - [[project_v0-4-5-release-gate-test-suite]] — v0.4.5 Release Gate Test Suite
+- [[project_q3-wave-1-four-views-confirmed]] — Q3 Wave-1 — Four Views Confirmed
 - [[project_release-workflow-with-cut-gate-testing]] — Release Workflow with cut-gate Testing
 - [[project_counts-validator-scope-and-intentional-exclusions]] — Counts Validator Scope and Intentional Exclusions
 - [[project_successfully-re-ran-github-actions-run-2-kvcqkbyc]] — Successfully re-ran GitHub Actions run 29412885758 with `gh run rerun` to retry
 - [[project_harness-args-parameter-format-and-normalization]] — Harness Args Parameter Format and Normalization
+- [[project_task-entry-boundary-definition-specs-tasks-md]] — Task Entry Boundary Definition (specs/tasks.md)
 - [[project_hc-10-reports-success-while-cron-fails]] — HC-10 Reports Success While Cron Fails
 - [[project_frozen-decision-log-philosophy]] — Frozen Decision Log Philosophy
 - [[project_cmk-install-kiro-setup-commands]] — CMK Install + Kiro Setup Commands
@@ -1166,9 +1252,11 @@ Facts: 2051
 - [[project_wants-readme-structured-like-sinedied-to-l3eathk7]] — Wants README structured like sinedied/tool-README repos (Azure serverless, run-o
 - [[project_misplaced-memory-files-recovered-to-root-context]] — Misplaced Memory Files Recovered to Root Context
 - [[project_npm-run-stress-transient-flake-and-fresh-run-workaround]] — npm run stress — Transient Flake and Fresh-Run Workaround
+- [[project_release-workflow-250-disposition-grill-gate]] — Release Workflow: 250-Disposition Grill-Gate
 - [[project_user-tier-backup-completed-for-cut-gate-1-prep]] — User-Tier Backup Completed for Cut-Gate §1 Prep
 - [[project_memory-md-scratchpad-still-contains-only-l4q72b3y]] — MEMORY.md scratchpad still contains only example bullets instead of populating w
 - [[project_claude-code-2-1-191-requires-both-skill-forms-in-allow-list]] — Claude Code 2.1.191 Requires Both Skill() Forms in Allow-list
+- [[project_byte-preservation-verification-workflow-for-archive-splits]] — Byte-Preservation Verification Workflow for Archive Splits
 - [[project_v0-3-2-release-scope-expanded]] — v0.3.2 Release Scope Expanded
 - [[project_cc-2-1-x-mcp-server-wildcard-does-not-auto-approve-mcp-tools]] — CC 2.1.x mcp__server__* wildcard does not auto-approve MCP tools — need specific tool names
 - [[project_post-215-merge-workflow-gate-continuation]] — Post-#215 merge workflow (gate continuation)
@@ -1176,6 +1264,7 @@ Facts: 2051
 - [[project_gate-restore-logic-q-cli-default-json-presence-determines-be]] — Gate/Restore Logic: q_cli_default.json Presence Determines Behavior
 - [[project_user-wants-super-linter-run-on-claude-me-l6wgwp39]] — User wants Super-Linter run on claude-memory-kit repo with all rules ON, no supp
 - [[project_resume-task-148-build-paused-at-sessionend-wiring]] — resume-task-148-build-paused-at-sessionend-wiring
+- [[project_build-pipeline-time-constraint]] — Build Pipeline Time Constraint
 - [[project_recurrence-roi-is-an-internal-signal-for-laak3qe2]] — Recurrence-ROI is an internal signal for kit processes (to learn from), not a us
 - [[project_two-pass-pr-discipline]] — Two-Pass PR Discipline
 - [[project_cmk-search-scope-limitation-with-decision-queries]] — CMK search scope limitation with decision queries
@@ -1197,6 +1286,7 @@ Facts: 2051
 - [[project_release-workflow-and-commands-for-production]] — Release Workflow and Commands for Production
 - [[project_v0-4-1-all-pre-session-1-gates-pass-head-lmnrqw2e]] — v0.4.1 all pre-Session-1 gates PASS; headline features (now-roll self-heal, HC-1
 - [[project_dogfood-facts-generated-after-commits]] — Dogfood Facts Generated After Commits
+- [[project_release-workflow-tag-and-automated-publishing]] — Release Workflow — Tag and Automated Publishing
 - [[project_post-v0-5-2-roadmap-decision-v0-5-3-or-v0-6-0]] — Post-v0.5.2 Roadmap Decision: v0.5.3 or v0.6.0
 - [[project_will-run-section-1-scaffold-read-every-f-lnma4g5t]] — will run section "1. Scaffold + read every file" next for cut-gate
 - [[project_transformers-js-embeddings-empty-input-edge-case]] — Transformers.js Embeddings: Empty Input Edge Case
@@ -1214,6 +1304,7 @@ Facts: 2051
 - [[project_skill-prompt-model-auto-invoke-confirmation-not-allow-list-g]] — SKILL prompt = model-auto-invoke confirmation, not allow-list-governed; auto-extract hook path is already prompt-free
 - [[project_task-95-dream-re-curation-path-settled-2026-07-17-ship-v0-5]] — Task 95 (dream re-curation) path settled 2026-07-17: ship v0.5.5 without it; the
 - [[project_established-testing-path-in-cut-gate-md-lsjg9nck]] — Established testing path in cut-gate.md (local tarball pack → install → verify)
+- [[project_silent-failure-fixes-vs-whisper-policy]] — Silent Failure Fixes vs Whisper Policy
 - [[project_research-cycle-workflow-enumerate-triage-deep-read-synthesiz]] — Research Cycle Workflow: Enumerate → Triage → Deep-Read → Synthesize
 - [[project_journal-staleness-detection-uses-separate-boolean-not-verdic]] — Journal Staleness Detection Uses Separate Boolean, Not Verdict
 - [[project_kg-guard-kiro-cli-failure-diagnosis-plan-d-197-incomplete]] — KG-guard kiro-cli failure — diagnosis plan (D-197 incomplete)
@@ -1226,6 +1317,7 @@ Facts: 2051
 - [[project_layered-backend-architecture-in-live-persona]] — Layered Backend Architecture in Live Persona
 - [[project_stress-tests-skipped-for-pure-file-mutation-in-process-ops]] — Stress Tests Skipped for Pure File-Mutation + In-Process Ops
 - [[project_cutgate-fresh-install-test-sequence]] — Cutgate Fresh Install Test Sequence
+- [[project_prefers-to-pause-work-at-safe-checkpoint-lwrpvyqf]] — Prefers to pause work at safe checkpoints ("pause when you can"), not mid-flight
 - [[project_cursor-agent-cli-quirks-and-latency-profile]] — cursor-agent CLI Quirks and Latency Profile
 - [[project_for-multi-surface-builds-like-kiro-ide-c-lzeddb4w]] — For multi-surface builds (like Kiro IDE/CLI): prefers sub-tasks, start with IDE
 - [[project_kiro-cli-agent-config-reads-from-kiro-agents-not-aws-amazonq]] — kiro-cli agent config reads from ~/.kiro/agents/ (not ~/.aws/amazonq/cli-agents/)
@@ -1257,8 +1349,10 @@ Facts: 2051
 - [[project_task-159-multi-stage-verification-gate]] — Task 159 Multi-Stage Verification Gate
 - [[project_do-not-ship-fixes-mid-diagnosis-without-mbkf3zvk]] — Do not ship fixes mid-diagnosis without consulting first — explore alternative s
 - [[project_shouldautoselectxsidecar-selector-function-pattern]] — shouldAutoSelectXSidecar() Selector Function Pattern
+- [[project_claude-code-window-close-leaves-zombie-claude-exe-processes]] — Claude Code Window-Close Leaves Zombie claude.exe Processes
 - [[project_user-defers-specification-decisions-to-a-mc6m67al]] — User defers specification decisions to assistant expertise, asking "you think we
 - [[project_d-364-discipline-for-external-source-claims]] — D-364 Discipline for External Source Claims
+- [[project_release-and-version-binding-workflow]] — Release and Version-Binding Workflow
 - [[project_tombstone-data-lifecycle-forget-vs-purge]] — Tombstone Data Lifecycle — Forget vs. Purge
 - [[project_two-host-kit-architecture-proposed]] — Two-Host Kit Architecture (Proposed)
 - [[project_user-created-core-memory-kit-github-com-mgc6megj]] — User created core-memory-kit (github.com/LH8PPL/core-memory-kit) after discoveri
@@ -1266,12 +1360,14 @@ Facts: 2051
 - [[project_four-tier-rename-execution-structure]] — Four-tier rename execution structure
 - [[project_npm-pack-global-install-for-artifact-testing-0b]] — npm pack + Global Install for Artifact Testing (§0b)
 - [[project_cut-gate-testing-guide-manual-release-qa]] — Cut-Gate Testing Guide (Manual Release QA)
+- [[project_v0-6-3-feature-and-fix-summary]] — v0.6.3 Feature and Fix Summary
 - [[project_sessionstart-hook-ceiling-constrains-synchronous-operations]] — SessionStart Hook Ceiling Constrains Synchronous Operations
 - [[project_public-repo-memory-policy]] — public-repo memory policy
 - [[project_commit-guardrail-blocks-ambiguous-include-exclude-instructio]] — Commit Guardrail Blocks Ambiguous Include/Exclude Instructions
 - [[project_guardrail-review-process-two-pass-primary-source-verificatio]] — Guardrail Review Process: Two-Pass + Primary-Source Verification
 - [[project_proceeding-with-full-patent-installation-mjw2tbyq]] — Proceeding with full `patent` installation over manual registry sweep option (in
 - [[project_verify-check-run-agent-liveness-before-status-reports]] — Verify Check-Run Agent Liveness Before Status Reports
+- [[project_research-methodology-targeted-file-level-reads]] — Research Methodology - Targeted File-Level Reads
 - [[project_poison-guard-mjs-specific-provider-patterns-are-by-design]] — poison-guard.mjs: Specific Provider Patterns Are By Design
 - [[project_release-laning-and-task-dependencies-v0-4-4-v0-5]] — Release Laning and Task Dependencies (v0.4.4 + v0.5)
 - [[project_project-versioning-should-use-concrete-n-mph9nrwj]] — Project versioning should use concrete numbers, not vague placeholders like "v0.
@@ -1344,6 +1440,7 @@ Facts: 2051
 - [[project_youtube-to-slide-uses-core-memory-kit-scheduling]] — youtube-to-slide Uses Core-Memory-Kit Scheduling
 - [[project_post-release-documentation-reconciliation-workflow]] — Post-Release Documentation Reconciliation Workflow
 - [[project_canonical-agent-support-list]] — Canonical Agent Support List
+- [[project_memory-viewer-design-ephemeral-localhost-server]] — Memory Viewer Design: Ephemeral Localhost Server
 - [[project_qa-verification-discipline-before-release]] — QA Verification Discipline Before Release
 - [[project_why-llm-driven-gates-are-live-test-flags-not-assertions]] — Why LLM-Driven Gates Are Live-Test Flags, Not Assertions
 - [[project_confirms-preference-for-2-pr-approach-pr-njw35eeg]] — Confirms preference for 2-PR approach (PR-1 IDE surfaces, then PR-2 CLI hooks se
@@ -1387,6 +1484,7 @@ Facts: 2051
 - [[project_resolved-from-file-gives-shell-proof-and-popup-free-capture]] — RESOLVED: --from-file gives shell-proof AND popup-free capture — no MCP-vs-Bash trade-off
 - [[project_node-version-floor-bumped-to-22-in-v0-6-2]] — Node Version Floor Bumped to 22 in v0.6.2
 - [[project_before-after-config-diff-to-reveal-tool-behavior]] — Before/After Config Diff to Reveal Tool Behavior
+- [[project_graph-feature-purpose-is-memory-visualiz-p4aek7ex]] — Graph feature purpose is memory **visualization and understanding** to improve A
 - [[project_link-and-reference-triage-workflow]] — Link and Reference Triage Workflow
 - [[project_kiro-install-path-settled-d-182-2026-06-21-from-a-14-real-pr]] — Kiro install path SETTLED (D-182, 2026-06-21, from a 14-real-project survey + th
 - [[project_30s-hook-ceiling-constraint-real-haiku-roll-timing]] — 30s Hook Ceiling Constraint & Real Haiku Roll Timing
@@ -1405,17 +1503,20 @@ Facts: 2051
 - [[project_validator-gap-d-nnn-decision-log-citations-not-enforced]] — Validator Gap — D-nnn (Decision-Log) Citations Not Enforced
 - [[project_use-deterministic-comparators-for-sorting-committed-files]] — Use Deterministic Comparators for Sorting Committed Files
 - [[project_install-system-dual-agent-workflows-cases-a-d]] — Install System Dual-Agent Workflows (Cases A–D)
+- [[project_two-pass-review-process-with-b-i-m-categorization]] — Two-pass review process with B/I/M categorization
 - [[project_release-plan-md-authoritative-task-to-lane-map]] — RELEASE-PLAN.md: Authoritative Task-to-Lane Map
 - [[project_resume-point-task-151-13-last-151-sub-task]] — Resume point Task 151.13 (last 151 sub-task)
 - [[project_solved-the-windows-kiro-hook-command-form-live-verified-2026]] — SOLVED — the Windows Kiro-hook command form (LIVE-VERIFIED 2026-06-21): 'cmd.exe
 - [[project_sqlite-vec-incompatibility-between-better-sqlite3-and-node-s]] — sqlite-vec Incompatibility Between better-sqlite3 and node:sqlite
 - [[project_signal-portfolio-for-learning-loop-in-claude-code-ide]] — Signal Portfolio for Learning Loop in Claude-Code IDE
 - [[project_four-flavors-of-memory-improvement-systems]] — Four Flavors of Memory-Improvement Systems
+- [[project_prefers-work-to-continue-incrementally-w-pnx2k5us]] — Prefers work to continue incrementally with natural pause/checkpoint points rath
 - [[project_expects-github-ci-automation-to-run-on-p-prcxc9eq]] — expects GitHub CI automation to run on PR/merge
 - [[project_documentation-structure-tradeoff-in-claude-memory-kit]] — Documentation Structure & Tradeoff in claude-memory-kit
 - [[project_discovery-kiro-ide-exposes-10-available-prhd66cf]] — Discovery: Kiro IDE exposes 10 available hooks (Pre Tool Use, File Save, + 8 oth
 - [[project_v0-3-x-release-lane-tasks-142-145-priority-order]] — v0.3.x Release Lane — Tasks 142–145 Priority Order
 - [[project_windows-eperm-spawn-concurrency-flake-class-and-fix-pattern]] — Windows EPERM/Spawn-Concurrency Flake Class and Fix Pattern
+- [[project_health-strip-displays-actionable-messages]] — Health Strip Displays Actionable Messages
 - [[project_e1-test-scoring-criteria-backend-code-generation]] — E1 Test Scoring Criteria (Backend Code Generation)
 - [[project_hardening-patch-release-may-skip-full-cut-gate]] — Hardening Patch Release May Skip Full Cut-Gate
 - [[project_cmk-agent-config-missing-allowedtools-field]] — cmk Agent Config — Missing allowedTools Field
@@ -1458,8 +1559,11 @@ Facts: 2051
 - [[project_vitest-coverage-plugin-peer-versioning]] — Vitest + Coverage Plugin Peer Versioning
 - [[project_breadth-lane-stall-root-cause-four-consecutive-displacements]] — Breadth Lane Stall Root Cause (Four Consecutive Displacements)
 - [[project_versioning-rule-d-24-minor-carries-one-differentiator]] — Versioning Rule D-24 — MINOR Carries One Differentiator
+- [[project_npm-lock-only-dependency-bump-technique]] — npm Lock-Only Dependency Bump Technique
 - [[project_pre-commit-pii-validator-on-context-commits]] — Pre-commit PII validator on context/ commits
 - [[project_dogfood-repopulates-user-tier-during-active-sessions]] — Dogfood Repopulates User Tier During Active Sessions
+- [[project_viewer-visual-pass-color-tokens]] — Viewer Visual Pass Color Tokens
+- [[project_one-line-pointer-design-for-numbering-validator-consistency]] — One-Line-Pointer Design for Numbering Validator Consistency
 - [[project_memory-routes-by-execution-surface]] — Memory Routes by Execution Surface
 - [[project_vbs-launcher-quirk-for-hidden-scheduled-task-windows]] — VBS Launcher Quirk for Hidden Scheduled Task Windows
 - [[project_next-151-5-sweep-order-low-trust-and-sta-qlcrtnwp]] — Next: 151.5 (sweep order — low-trust-AND-stale first, high-trust persona never s
@@ -1470,6 +1574,7 @@ Facts: 2051
 - [[project_research-synthesis-workflow-for-product-improvement]] — Research-Synthesis Workflow for Product Improvement
 - [[project_github-actions-username-privacy-mask-collision]] — GitHub Actions Username Privacy-Mask Collision
 - [[project_skill-adoption-verification-standard]] — Skill Adoption Verification Standard
+- [[project_project-philosophy-best-at-what-it-does-qrlnjbk4]] — Project philosophy — "best at what it does" in its niche, not broad appeal; acce
 - [[project_plural-citation-extraction-gap-in-corpus]] — Plural Citation Extraction Gap in Corpus
 - [[project_resume-v031-cutgate-near-complete]] — RESUME — v0.3.1 cut-gate near-complete; PR
 - [[project_confirmed-preference-for-2-button-design-qud4mmj7]] — Confirmed preference for 2-button design (richer return value) over 3-button app
@@ -1480,6 +1585,7 @@ Facts: 2051
 - [[project_separate-gate-files-per-ide-to-avoid-con-qxmkjzgd]] — Separate gate files per IDE to avoid conditionals (cut-gate.md for Claude Code,
 - [[project_commit-message-guard-rejects-literal-rm-rf-context-memory-st]] — Commit-message guard rejects literal "rm -rf context/memory" strings
 - [[project_cmk-install-skips-existing-files-cannot-repair-stale-skills]] — `cmk install` Skips Existing Files, Cannot Repair Stale Skills
+- [[project_three-archive-splits-at-v0-5-release-boundary]] — Three Archive Splits at v0.5 Release Boundary
 - [[project_memory-search-skill-trigger-is-phrasing-sensitive]] — Memory-search skill trigger is phrasing-sensitive
 - [[project_fable-5-classifier-flags-defensive-security-work]] — Fable 5 classifier flags defensive security work
 - [[project_wave-based-agent-research-for-cursor-windows-invocation]] — Wave-Based Agent Research for Cursor-Windows Invocation
@@ -1526,11 +1632,13 @@ Facts: 2051
 - [[project_kiro-cli-env-only-flows-for-registry-type-not-stdio-mcp-feed]] — kiro-cli-env-only-flows-for-registry-type-not-stdio-mcp-feed-json-proof
   - related: `DEFINITIVE-kiro-cli-does-not-pass-mcp-json-env-to-stdio-server`, `mk-remember-fix-self-review-agent-config-inline-mcp-composition-risk`
 - [[project_quality-gate-failed-on-3-new-code-issues-rplgfun5]] — Quality Gate failed on 3 new-code issues: (1) bidirectional character in securit
+- [[project_recurring-npm-registry-timeouts-in-ci-workflows]] — Recurring npm-registry Timeouts in CI Workflows
 - [[project_cmk-version-bumping-convention]] — CMK Version Bumping Convention
 - [[project_testing-verification-levels]] — Testing Verification Levels
 - [[project_health-check-hc-12-deletion-cascade-verification]] — Health Check HC-12 — Deletion cascade verification
 - [[project_fix-for-scope-decisions-warning-bug-in-memory-search]] — Fix for `--scope decisions` Warning Bug in Memory Search
 - [[project_i-dont-know-if-any-of-this-will-have-it-rrnksrgd]] — i dont know if any of this will have it, but we need to think about adding graph
+- [[project_core-memory-kit-v0-6-4-installed-dual-memory-layers-active]] — core-memory-kit v0.6.4 Installed; Dual Memory Layers Active
 - [[project_kiro-global-agent-config-documented-decision-d-283]] — Kiro Global Agent Config Documented (Decision D-283)
 - [[project_d-292-resolved-all-three-agent-gates-block-the-v0-5-0-tag-co]] — D-292 resolved: all-three-agent gates block the v0.5.0 tag (compatibility claim = truth, not ceremony)
   - related: [[project_cut-gate-guide-should-have-been-run-for-wrf66bay]], [[project_v0-5-0-release-tag-is-on-hold-until-cut-smmggxqw]]
@@ -1540,9 +1648,11 @@ Facts: 2051
 - [[project_catches-when-their-own-systems-violate-t-rvcayphc]] — Catches when their own systems violate their stated design principles; treats do
 - [[project_hook-payload-delivery-stdin-not-environment]] — Hook Payload Delivery — stdin, Not Environment
 - [[project_windows-rmsync-cleanup-flake-workaround]] — Windows rmSync Cleanup Flake Workaround
+- [[project_task-252-maskpii-completed-five-sonar-smells-fixed]] — Task 252 (maskPii) Completed — Five Sonar Smells Fixed
 - [[project_minor-boundary-backlog-sweep-d-248-convention]] — Minor-Boundary Backlog Sweep (D-248) Convention
 - [[project_episode-based-architecture-principle-refined]] — Episode-Based Architecture Principle (Refined)
 - [[project_system-touching-features-are-skipped-in-automated-verificati]] — System-touching features are skipped in automated verification runs
+- [[project_git-fixture-byte-normalization-verification]] — Git Fixture Byte Normalization Verification
 - [[project_allow-list-entries-centralized-in-settings-hooks-mjs]] — Allow-list Entries Centralized in settings-hooks.mjs
 - [[project_wants-composite-representations-diagrams-rxrzf6s9]] — Wants composite representations (diagrams, graphs, anatomical models) that hold
 - [[project_cmk-gate-test-is-structured-in-phases-0-ryb7vedm]] — CMK gate test is structured in phases (§0–§1 pre-Session 1, §2 Session 1, §5 Ses
@@ -1553,6 +1663,7 @@ Facts: 2051
 - [[project_research-faithful-design-in-sweep-order-implementation]] — Research-Faithful Design in Sweep Order Implementation
 - [[project_expects-claims-substantiated-through-sou-s43cb7un]] — Expects claims substantiated through source inspection (code, configs, memory fi
 - [[project_claude-code-mcp-deferred-tool-race-issue-42148]] — Claude Code MCP Deferred-Tool Race (Issue #42148)
+- [[project_research-note-parking-workflow-during-ci]] — Research note parking workflow during CI
 - [[project_doc-review-is-pr-body-based-direct-merges-bypass-it]] — Doc Review is PR-Body-Based; Direct Merges Bypass It
 - [[project_best-fix-permissionrequest-hook-auto-approving-mcp-cmk-keeps]] — BEST FIX: PermissionRequest hook auto-approving mcp__cmk__* (keeps MCP path, narrow scope, matches existing hook pattern)
 - [[project_user-approves-trigger-walk-forcing-funct-s99futtw]] — User approves trigger-walk forcing function process ("do it, sounds like a good
@@ -1564,6 +1675,7 @@ Facts: 2051
 - [[project_test-seam-pattern-for-timing-configs]] — Test Seam Pattern for Timing Configs
 - [[project_hook-boundary-implementation-gap-privacy-strip-example]] — Hook-Boundary Implementation Gap (Privacy-Strip Example)
 - [[project_cursor-agent-windows-native-support-live-validation]] — Cursor Agent Windows Native Support — Live Validation
+- [[project_claude-memory-kit-captures-dogfood-facts-about-its-own-debug]] — Claude-Memory-Kit Captures Dogfood Facts About Its Own Debugging
 - [[project_extract-shared-discovery-logic-to-prevent-drift]] — Extract Shared Discovery Logic to Prevent Drift
 - [[project_will-not-skim-the-front-page-will-check-sf3flwm2]] — Will not skim the front page; will check primary sources (code/docs) before clai
 - [[project_search-must-find-the-persona-is-a-kit-l-sfnssgf5]] — "Search must find the persona" is a kit-level promise, not v0.4.3-specific — ref
@@ -1578,6 +1690,7 @@ Facts: 2051
 - [[project_cut-gate-v0-4-3-verification-checks]] — Cut-gate v0.4.3 Verification Checks
 - [[project_project-flag-is-supposed-to-run-outside-sla3tb2r]] — --project flag is supposed to run outside the chat context, not within it
 - [[project_v0-5-0-release-tag-is-on-hold-until-cut-smmggxqw]] — v0.5.0 release tag is ON HOLD until cut-gate guide passes; corrects earlier stat
+- [[project_glob-fix-enables-archive-anchor-supply-from-day-one]] — Glob Fix Enables Archive Anchor Supply from Day One
 - [[project_d-343-kit-lacks-mechanism-to-repair-stale-scaffolded-skills]] — D-343 — Kit Lacks Mechanism to Repair Stale Scaffolded Skills After Update
 - [[project_the-kit-exists-because-you-were-repeatin-sny69cbr]] — The kit exists because you were repeating yourself across sessions/projects — no
 - [[project_hc-9-drift-after-claude-code-update-v0-3-4]] — HC-9 Drift After Claude Code Update (v0.3.4)
@@ -1594,6 +1707,7 @@ Facts: 2051
 - [[project_test-artifacts-can-contaminate-fresh-install-testing]] — Test artifacts can contaminate fresh-install testing
 - [[project_test-pattern-dependency-injection-to-avoid-model-load]] — Test Pattern: Dependency Injection to Avoid Model Load
 - [[project_kiro-cli-agent-tools-field-configuration-fix]] — Kiro-CLI Agent `tools` Field Configuration Fix
+- [[project_powershell-silently-corrupts-utf-8-in-file-edits]] — PowerShell Silently Corrupts UTF-8 in File Edits
 - [[project_cli-fallback-for-mcp-tool-resolution-failures]] — CLI Fallback for MCP Tool Resolution Failures
 - [[project_workflow-green-commit-green]] — Workflow Green ≠ Commit Green
 - [[project_task-141b-node-sqlite-migration-rejected-in-d-162]] — Task 141b (node:sqlite Migration) Rejected in D-162
@@ -1604,9 +1718,12 @@ Facts: 2051
 - [[project_stress-test-configuration-constraints]] — Stress Test Configuration & Constraints
 - [[project_global-cmk-is-broken-windows-sqlite-dll-sam22r7b]] — Global cmk is broken; Windows sqlite DLL lock held by active MCP server prevents
 - [[project_actionable-failure-threshold-for-whisper-triggers]] — Actionable-Failure Threshold for Whisper Triggers
+- [[project_full-gate-re-run-on-final-code-after-code-review]] — Full Gate Re-Run on Final Code After Code Review
+- [[project_memory-tier-flushing-rules]] — Memory Tier Flushing Rules
 - [[project_version-0-5-4-tarball-ready-for-gate-testing]] — Version 0.5.4 Tarball Ready for Gate Testing
 - [[project_hook-ceiling-enforces-operation-time-caps]] — Hook Ceiling Enforces Operation Time Caps
 - [[project_task-141b-spike-results-node-sqlite-migration]] — Task 141b spike results node:sqlite migration
+- [[project_task-252-review-completed-six-bugs-fixed-via-multi-round-fix]] — Task 252 review completed — six bugs fixed via multi-round fixes
 - [[project_lazy-on-sessionstart-roll-doesn-t-fire-on-size-bloated-now-m]] — Lazy-on-SessionStart Roll Doesn't Fire on Size-Bloated now.md
 - [[project_values-research-grounded-recommendations-t4auhmxa]] — Values research-grounded recommendations with clear, honest attribution of sourc
 - [[project_crlf-line-ending-quirk-in-removekitonlyinstructionresidue]] — CRLF Line-Ending Quirk in removeKitOnlyInstructionResidue
@@ -1633,7 +1750,9 @@ Facts: 2051
 - [[project_pre-commit-hook-sanitizes-fact-files-for-security]] — Pre-commit Hook Sanitizes Fact Files for Security
 - [[project_you-re-challenging-a-silent-drift-v0-4-x-te9svr6n]] — You're challenging a silent drift: v0.4.x was supposed to be the breadth lane (a
 - [[project_global-cmk-artifact-version-and-template-sync]] — Global `cmk` Artifact Version and Template Sync
+- [[project_task-257-data-durability-commitments]] — Task 257 Data-Durability Commitments
 - [[project_prefers-actual-version-lanes-v0-6-0-v0-7-tev46ca9]] — Prefers actual version lanes (v0.6.0, v0.7.0, etc.) over "future 0.5.x" placehol
+- [[project_d-388-project-discipline-document-unreachable-code]] — D-388 Project Discipline: Document Unreachable Code
 - [[project_field-wide-headless-llm-pattern-confirme-th4arbra]] — Field-wide headless-LLM pattern confirmed across 15 projects: 4 per-agent-CLI, 2
 - [[project_ebusy-lock-on-better-sqlite3-node-during-global-install]] — EBUSY Lock on better_sqlite3.node During Global Install
 - [[project_task-66-subtask-dependencies-and-next-gate]] — Task 66 Subtask Dependencies and Next Gate
@@ -1642,6 +1761,7 @@ Facts: 2051
 - [[project_tdd-like-working-pattern-stated-once-at-tlkqmluy]] — TDD-like working pattern—stated once at start, never repeated; boundary test fir
 - [[project_design-goal-is-automatic-background-sign-tllh95bt]] — Design goal is automatic background signals that don't depend on human feedback
 - [[project_recurrence-mechanism-increments-only-whe-tlnyhyaq]] — Recurrence mechanism increments only when same canonical fact (content-hash matc
+- [[project_q1-viewer-runtime-model-ephemeral-localhost-pending-ratifica]] — Q1: Viewer Runtime Model — Ephemeral Localhost (Pending Ratification)
 - [[project_start-v0-3-2-now-and-include-task-153-ft-tlturyf7]] — Start v0.3.2 now and include Task 153 (FTS5 parse fix) in this release
 - [[project_research-finding-no-prior-art-for-session-memory-reconstruct]] — Research Finding — No Prior Art for Session Memory Reconstruction from Git
 - [[project_ui-viewer-design-awaits-v0-4-scope-decision]] — UI Viewer Design Awaits v0.4 Scope Decision
@@ -1662,16 +1782,19 @@ Facts: 2051
 - [[project_non-destructive-flagging-with-blocked-placeholders]] — Non-Destructive Flagging with `[BLOCKED]` Placeholders
 - [[project_unverified-auto-extract-has-never-automatically-written-a-fa]] — UNVERIFIED: auto-extract has never automatically WRITTEN a fact on Kiro (0 auto-extract-sourced facts)
   - related: [[project_auto-extract-works-on-kiro-confirmed-by-direct-probe-the-not]], [[project_kiro-gate-v0-5-0-complete-all-3-sessions-pass-kit-works-end]]
+- [[project_core-threat-model-xss-through-memory-facts]] — Core Threat Model: XSS Through Memory Facts
 - [[project_multi-layer-security-screening-on-writes]] — Multi-Layer Security Screening on Writes
 - [[project_kiro-cli-backend-live-probe-confirmed-working]] — Kiro CLI Backend — Live Probe Confirmed Working
 - [[project_tag-and-publish-v0-3-5-release]] — Tag and Publish v0.3.5 Release
 - [[project_skills-don-t-trigger-from-claude-md-or-hooks]] — Skills Don't Trigger From CLAUDE.md or Hooks
 - [[project_b5-b7-probe-footgun-settings-json-wholesale-overwrite]] — B5/B7 Probe Footgun — settings.json Wholesale Overwrite
 - [[project_super-linter-ground-truth-validation]] — Super-Linter Ground-Truth Validation
+- [[project_user-authorizes-autopilot-through-remain-u2t3ma6s]] — User authorizes autopilot through remaining v0.6.3 riders and cut prep; activate
 - [[project_peer-systems-synchronize-consolidation-on-stop-hook-session]] — Peer Systems Synchronize Consolidation on Stop Hook (Session END)
 - [[project_cheap-proxy-anti-pattern]] — Cheap-Proxy Anti-Pattern
 - [[project_memory-commit-workflow-hygiene-privacy-validation]] — Memory Commit Workflow — Hygiene & Privacy Validation
 - [[project_three-tier-research-evaluation-system]] — Three-Tier Research Evaluation System
+- [[project_wave-1-instrumentation-scope]] — Wave 1 Instrumentation Scope
 - [[project_i-wanted-the-research-so-the-decisions-u4xx9sep]] — "i wanted the research so the decisions will write them self" — research-first m
 - [[project_release-ownership-role-boundary]] — Release Ownership Role Boundary
 - [[project_auto-extract-degrades-to-zero-captures-under-heavy-concurren]] — Auto-extract degrades to ZERO captures under heavy concurrent load in the same s
@@ -1686,6 +1809,7 @@ Facts: 2051
 - [[project_gate-check-g0-cli-version-verification]] — Gate Check G0: CLI Version Verification
 - [[project_yaml-parsing-uses-core-schema-for-stable-explicit-coercion-b]] — YAML parsing uses CORE_SCHEMA for stable, explicit coercion behavior
 - [[project_kiro-cli-mcp-registration-configuration-gap]] — Kiro-CLI MCP Registration Configuration Gap
+- [[project_powershell-utf-8-corruption-in-changelog-handling]] — PowerShell UTF-8 Corruption in CHANGELOG Handling
 - [[project_kiro-cli-custom-agent-tool-limitation]] — Kiro-cli custom agent tool limitation
 - [[project_kiro-cli-popup-fix-is-task81-node-direct-windowshide-pattern]] — kiro-cli-popup-fix-is-task81-node-direct-windowshide-pattern-already-in-kit
   - related: [[project_kiro-cli-hook-cmd-exe-popup-window-flash-ux-bug]], `kiro-cli-popup-real-cause-cmk-is-npm-shim-not-exe-mcp-and-hook-spawns-flash`
@@ -1700,6 +1824,7 @@ Facts: 2051
 - [[project_no-gitignore-changes-for-memory-system]] — No Gitignore Changes for Memory System
 - [[project_version-stamping-and-scaffold-isolation]] — Version Stamping and Scaffold Isolation
 - [[project_core-task-is-superimposing-u-mem-s-feedb-ugk5btbf]] — Core task is superimposing U-Mem's feedback loop onto the kit, making it our own
+- [[project_confirmed-shape-b-per-code-repair-book-w-ujhvcxhs]] — Confirmed shape (b)—per-code repair book with confirm-first discipline—for troub
 - [[project_raw-research-evidence-preservation-vs-synthesis-only-boundar]] — Raw Research Evidence: Preservation vs. Synthesis-Only Boundary
 - [[project_v0-3-1-will-release-the-current-feature-ukxw3fn9]] — v0.3.1 will release the current feature batch (live-tested first); v0.3.2 will i
 - [[project_canonical-registry-for-persona-search]] — Canonical Registry for Persona Search
@@ -1710,6 +1835,7 @@ Facts: 2051
 - [[project_memory-system-deduplication-design]] — Memory System Deduplication Design
 - [[project_task-167-cooldown-success-only-touch-sync-drain-bypasses-it]] — Task 167 cooldown — success-only touch + sync-drain bypasses it
 - [[project_memory-safety-guard-prevents-agent-bypass-attempts]] — Memory Safety Guard Prevents Agent Bypass Attempts
+- [[project_v0-6-4-release-cmk-view-health-signals-live]] — v0.6.4 Release: cmk view + Health Signals Live
 - [[project_faithful-relocation-for-memory-migration-in-core-memory-kit]] — Faithful Relocation for Memory Migration in Core-Memory-Kit
 - [[project_always-deploy-venv-and-install-all-pytho-urjav36k]] — always deploy .venv and install all python packages in it
 - [[project_release-roadmap-v0-5-1-v0-5-4]] — Release Roadmap v0.5.1–v0.5.4
@@ -1719,8 +1845,10 @@ Facts: 2051
 - [[project_stress-gate-process-for-pr-merge]] — Stress Gate Process for PR Merge
 - [[project_changelog-unreleased-auto-reset-during-release]] — CHANGELOG [Unreleased] Auto-Reset During Release
 - [[project_recurrence-roi-advantage-update-is-internal-learning-signal]] — Recurrence-ROI (Advantage-Update) Is Internal Learning Signal
+- [[project_task-258-kept-separate-from-task-250-approved]] — Task 258 Kept Separate from Task 250 (Approved)
 - [[project_contradiction-detection-design-d-259]] — Contradiction Detection Design (D-259)
 - [[project_expects-implementation-choices-to-be-tra-uy6xtetk]] — Expects implementation choices to be traceable to (or explicitly justified again
+- [[project_core-memory-kit-gate-chain-and-post-merge-workflow]] — Core-memory-kit gate chain and post-merge workflow
 - [[project_markdown-link-case-sensitivity-issue]] — Markdown Link Case Sensitivity Issue
 - [[project_missing-tools-field-was-the-shell-blocker]] — Missing `tools: ['*']` Field Was the Shell Blocker
 - [[project_final-mcp-popup-is-kiro-cli-wraps-all-mcp-in-cmd-exe-not-kit]] — FINAL-mcp-popup-is-kiro-cli-wraps-all-mcp-in-cmd-exe-not-kit-bug
@@ -1730,13 +1858,18 @@ Facts: 2051
 - [[project_npm-11-x-deprecate-command-with-version-ranges-fails-with-sp]] — npm 11.x `deprecate` command with version ranges fails with spurious 404
 - [[project_kiro-session1-complete-wedge-proven-live]] — kiro-session1-complete-wedge-proven-live
   - related: [[project_kiro-live-test-session1-d194-d196-proven]], `resume-v0-4-0-kiro-gate-8-fixes-shipped`
+- [[project_npm-registry-instability-and-v0-6-4-workflow-hardening]] — npm Registry Instability and v0.6.4 Workflow Hardening
+- [[project_gh-run-list-misses-sonarcloud-gate-must-v6cwvjtw]] — `gh run list` misses SonarCloud gate; must monitor CI separately for SonarCloud
 - [[project_live-validation-must-happen-before-commi-v77jztjr]] — Live validation must happen before committing major dependency migrations; don't
 - [[project_fact-currency-and-auto-supersession-not-yet-implemented]] — Fact Currency and Auto-Supersession Not Yet Implemented
 - [[project_user-checks-project-memory-conventions-b-v9vd962l]] — User checks project memory/conventions before starting new work (ran memory-sear
 - [[project_task-250-failure-driven-nudge-implementation]] — Task 250 — Failure-Driven Nudge Implementation
+- [[project_memory-fact-validation-task-reference-exemption]] — Memory Fact Validation — Task Reference Exemption
 - [[project_memory-system-now-obsidian-browsable]] — Memory System Now Obsidian-Browsable
 - [[project_research-files-are-saved-to-core-memory-vbvymwy9]] — research files are saved to core-memory-kit/docs/research/, not local-wiki/raw/
 - [[project_does-not-want-claude-to-automatically-ex-vc4ugjtp]] — Does not want Claude to automatically execute git commands; prefers explicit use
+- [[project_skill-allowed-tools-must-be-narrow-and-boundary-tested]] — Skill Allowed-Tools Must Be Narrow and Boundary-Tested
+- [[project_cmk-view-integrates-with-core-memory-subsystems]] — cmk view integrates with core memory subsystems
 - [[project_manual-live-test-required-before-releasi-vdng6qtr]] — Manual live-test required before releasing — stated as "do the manual check when
 - [[project_lint-exemption-for-committed-memory-files]] — Lint Exemption for Committed Memory Files
 - [[project_exit-doors-gate-performs-task-137-validation]] — exit-doors gate performs Task-137 validation
@@ -1745,6 +1878,7 @@ Facts: 2051
 - [[project_node-sqlite-extension-loading-requires-22-13-0-23-5-0]] — Node-sqlite Extension Loading Requires 22.13.0/23.5.0
 - [[project_the-kit-never-runs-git-on-the-user-s-behalf-settled-product]] — The kit NEVER runs git on the user's behalf — settled product position, user-con
 - [[project_ebusy-workaround-for-global-package-reinstalls-native-bindin]] — EBUSY Workaround for Global Package Reinstalls (Native Bindings)
+- [[project_version-cut-workflow-pattern]] — Version Cut Workflow Pattern
 - [[project_kiro-ide-1-0-52-is-available-for-windows-vk9wuzx6]] — Kiro IDE 1.0.52 is available for Windows download (user discovered on download p
 - [[project_mcp-logs-show-cmk-connected-successfully-vkkkk7b6]] — MCP logs show cmk connected successfully (925ms, hasTools:true) at session start
 - [[project_deferred-task-trigger-convention]] — Deferred Task Trigger Convention
@@ -1753,6 +1887,7 @@ Facts: 2051
 - [[project_hc-2-distill-freshness-fail-self-clears]] — HC-2 Distill Freshness FAIL Self-Clears
 - [[project_adr-0009-inline-provenance-was-deliberate-but-lint-cost-unwe]] — adr-0009-inline-provenance-was-deliberate-but-lint-cost-unweighed
   - related: [[project_memory-lint-portability-research-28-projects]], [[project_scratchpad-inline-html-provenance-is-the-lint-outlier]]
+- [[project_read-only-guard-switched-to-content-hash-comparison]] — Read-Only Guard Switched to Content Hash Comparison
 - [[project_release-gate-criterion-dogfooding-signal-validation]] — Release Gate Criterion: Dogfooding Signal Validation
 - [[project_task-124-auto-reindex-for-cmk-forget-command]] — Task 124 — Auto-Reindex for cmk forget Command
 - [[project_use-gfm-github-admonition-syntax-for-for-vphzmr4x]] — Use GFM + GitHub admonition syntax for formatting
@@ -1777,6 +1912,7 @@ Facts: 2051
 - [[project_task-179-umbrella-task-for-memory-improvement-sequencing]] — Task 179 — Umbrella Task for Memory-Improvement Sequencing
 - [[project_cut-gate-backup-convention]] — cut-gate-backup-convention
 - [[project_kit-install-should-pre-allow-memory-writ-w4ymbj5z]] — Kit install should pre-allow memory-write skill; appearance of permission prompt
+- [[project_log-flooding-from-high-cadence-operations-masks-real-failure]] — Log Flooding From High-Cadence Operations Masks Real Failures
 - [[project_self-review-finding-now-md-unbounded-read]] — Self-Review Finding — now.md Unbounded Read
 - [[project_idiomatic-timeout-composition-pattern-50s-120s]] — Idiomatic Timeout Composition Pattern (50s/120s)
 - [[project_design-md-as-canonical-spine-d-228]] — design.md as Canonical Spine (D-228)
@@ -1804,11 +1940,14 @@ Facts: 2051
 - [[project_v0-5-2-code-complete-pr-286-pending-ci-merge]] — v0.5.2 code-complete; PR #286 pending CI merge
 - [[project_d-386-documents-known-sonarcloud-server-side-failure]] — D-386 Documents Known SonarCloud Server-Side Failure
 - [[project_kiro-cli-mcp-server-env-passing-limitation]] — kiro-cli MCP server env passing limitation
+- [[project_viewer-page-visual-design-constraints]] — Viewer Page Visual Design Constraints
+- [[project_bash-prefix-cannot-safely-express-git-index-only-operations]] — Bash() prefix cannot safely express git --index-only operations
 - [[project_kiro-ide-kiro-hook-on-disk-format-verified-from-a-real-hook]] — Kiro IDE .kiro.hook on-disk format VERIFIED from a real hook created in the Kiro
 - [[project_post-research-ultracode-off-workflows-of-wk2y9grs]] — Post-research: ultracode OFF, workflows OFF; model tier high (extra-high optiona
 - [[project_carefully-reviews-changes-for-unintended-wk53sjz5]] — Carefully reviews changes for unintended scope loss. This scrutiny identified a
 - [[project_memory-measurement-is-part-of-learn-loop]] — Memory Measurement Is Part of Learn-Loop
 - [[project_chose-two-fields-for-persona-promotion-r-wkc2njct]] — chose "two fields" for persona promotion (recurrence-heat for promotion, outcome
+- [[project_line-breaking-rule-for-fact-titles]] — Line-Breaking Rule for Fact Titles
 - [[project_prebuild-install-deprecation-causing-npm-ci-failures]] — prebuild-install Deprecation Causing npm ci Failures
 - [[project_kiro-cli-integration-test-gate-and-reinstall]] — kiro-cli Integration Test Gate and Reinstall
 - [[project_user-fact-checks-vague-claims-and-expect-wl292xab]] — User fact-checks vague claims and expects precise, detailed accounting of what c
@@ -1819,6 +1958,7 @@ Facts: 2051
 - [[project_prefer-using-recorded-memory-lookups-and-wmn3hfpf]] — Prefer using recorded memory lookups and CLI tools (cmk search) instead of manua
 - [[project_post-merge-workflow-sequence]] — Post-Merge Workflow Sequence
 - [[project_linting-memory-files-produces-excessive-noise]] — Linting Memory Files Produces Excessive Noise
+- [[project_user-verdict-is-final-done-criterion-for-visual-work]] — User Verdict is Final Done-Criterion for Visual Work
 - [[project_cursor-native-windows-powershell-support-confirmed]] — Cursor Native Windows PowerShell Support Confirmed
 - [[project_gate-verification-system-cut-gate20]] — Gate Verification System (cut-gate20)
 - [[project_expect-explicit-flagging-and-justificati-wq3xtvz7]] — Expect explicit flagging and justification when assistant changes plans; silent
@@ -1830,6 +1970,7 @@ Facts: 2051
   - related: `TRUE-root-cause-kiro-cli-agent-config-wrong-location-no-hooks-fire`, `d198-proven-agentspawn-fires-but-pretooluse-not-on-2.9.0-execute-command-rename`
 - [[project_powershell-glob-behavior-explicit-filename-required-for-tgz]] — PowerShell Glob Behavior: Explicit Filename Required for .tgz
 - [[project_skills-installation-complete-user-ran-np-wsd3weuy]] — Skills installation complete — user ran `npx skills@latest add mattpocock/skills
+- [[project_q2-landing-design-search-first-locked]] — Q2 Landing Design — Search-First (Locked)
 - [[project_test-was-flaky-under-stress-5-5-failures-wuafjwa7]] — Test was flaky under stress (5/5 failures full suite, isolation pass); robustifi
 - [[project_memory-systems-failure-learning-survey-9-systems]] — Memory Systems Failure-Learning Survey (9 Systems)
 - [[project_cmk-compress-session-requires-sessionend-hook-invocation-man]] — cmk-compress-session requires SessionEnd hook invocation; manual terminal runs hang
@@ -1864,11 +2005,13 @@ Facts: 2051
 - [[project_skill-gate-clicking-allow-persists-nothing-workspace-trust-i]] — SKILL gate: clicking allow persists nothing → workspace-trust is the suspect, not syntax
 - [[project_over-generalized-instructions-will-be-fl-x6maz45e]] — Over-generalized instructions will be flagged as nonsensical rather than followe
 - [[project_always-deploy-venv-and-install-all-pytho-x7esvwdl]] — Always deploy .venv and install all Python packages into it
+- [[project_research-complete-self-healing-cli-repair-ux-task-250]] — Research Complete: Self-healing CLI Repair UX (Task 250)
 - [[project_user-doesn-t-recall-adr-0016-specifics-g-x95hb2bq]] — User doesn't recall ADR-0016 specifics; gap in persistent context around gate/LL
 - [[project_kiro-has-four-install-surfaces-not-three-the-user-s-correcti]] — Kiro has FOUR install surfaces, not three (the user's correction 2026-06-21): HO
 - [[project_handleunlink-crash-guard-fixed-forget-te-x9p559yz]] — handleUnlink crash-guard fixed (forget test validates); re-stress verdict determ
 - [[project_stress-runner-and-incremental-json-handling]] — Stress runner and incremental JSON handling
 - [[project_cut-blocker-fix-project-routing-and-claude-memory-kit-approv]] — Cut-Blocker Fix: --project Routing and @claude-memory-kit Approval
+- [[project_design-spec-24-1-2-muted-text-contrast-target]] — Design Spec §24.1.2: Muted-Text Contrast Target
 - [[project_production-code-must-go-through-pr-ci]] — Production Code Must Go Through PR/CI
 - [[project_dependabot-cannot-approve-allowscripts-in-strict-repos]] — Dependabot Cannot Approve allowScripts in Strict Repos
 - [[project_dj4-live-test-prerequisites]] — DJ4-Live Test Prerequisites
@@ -1899,6 +2042,7 @@ Facts: 2051
   - related: [[project_kiro-mcp-autoapprove-missing-cut-blocker]], [[project_kiro-session1-complete-wedge-proven-live]]
 - [[project_two-pass-review-discipline-validated-on-critical-bugs]] — Two-Pass Review Discipline Validated on Critical Bugs
 - [[project_backlog-for-v0-3-x-and-v0-4]] — Backlog for v0.3.x and v0.4
+- [[project_fix-round-dispatched-with-nine-findings-xqcmxu6r]] — Fix round dispatched with nine findings; glob fix pre-solves Task 249 and applie
 - [[project_you-successfully-challenged-my-nobody-sh-xqjtlwch]] — You successfully challenged my "nobody ships outcome/failure signals" claim — th
 - [[project_cut-gate11-memory-system-three-tier-architecture]] — cut-gate11 Memory System Three-Tier Architecture
 - [[project_sessionstart-hook-re-injection-accidental-mechanic-untested]] — SessionStart Hook Re-Injection (Accidental Mechanic, Untested)
@@ -1907,6 +2051,7 @@ Facts: 2051
 - [[project_two-pass-fix-discipline]] — Two-Pass Fix Discipline
 - [[project_kiro-v0-4-0-release-code-complete-pre-release-checkpoints]] — Kiro v0.4.0 Release — Code Complete, Pre-Release Checkpoints
 - [[project_decision-journal-view-gap-now-task-147]] — Decision-Journal View Gap — Now Task 147
+- [[project_stress-flake-root-cause-hook-timeout-config-gap]] — Stress-flake root cause — hook-timeout config gap
 - [[project_raw-research-data-preservation-decision-pending]] — Raw Research Data Preservation Decision Pending
 - [[project_publish-trigger-is-git-tag-push-not-branch-commit]] — Publish Trigger is Git Tag Push, Not Branch Commit
 - [[project_post-merge-checkout-race-condition-kit-memory-writes]] — Post-Merge Checkout Race Condition (Kit Memory Writes)
@@ -1914,6 +2059,7 @@ Facts: 2051
 - [[project_renamed-claude-memory-kit-to-claude-memo-xvfct3ug]] — renamed .claude-memory-kit to .claude-memory-kit.backup for release cut
 - [[project_name-guard-flags-templated-patterns-in-frontmatter-metadata]] — Name-Guard Flags Templated Patterns in Frontmatter Metadata
 - [[project_approves-adopting-ideas-from-octopoda-on-xwp6xllg]] — Approves adopting ideas from Octopoda on loop detection
+- [[project_opened-entire-repo-root-as-obsidian-vaul-xxgtvh6k]] — Opened entire repo root as Obsidian vault to visually explore memory system
 - [[project_aws-guardrail-sample-repo-as-reference-for-task-166-investig]] — AWS guardrail sample repo as reference for task 166 investigation
 - [[project_v0-3-5-patch-vs-v0-4-0-versioning-logic]] — v0.3.5 patch vs v0.4.0 versioning logic
 - [[project_major-dependency-bump-verification-strategy]] — Major Dependency Bump Verification Strategy
@@ -1921,6 +2067,7 @@ Facts: 2051
 - [[project_decision-trail-recording-convention-for-divergences]] — Decision-Trail Recording Convention for Divergences
 - [[project_auto-recall-agents-are-blind-to-tombstoned-facts]] — Auto-recall agents are blind to tombstoned facts
 - [[project_kiro-gate-testing-workflow]] — Kiro Gate Testing Workflow
+- [[project_doc-validation-system-metrics]] — Doc Validation System Metrics
 - [[project_kiro-hook-authoritative-confirmations-2026-06-21-from-the-aw]] — Kiro hook AUTHORITATIVE confirmations (2026-06-21, from the AWS builder article
 - [[project_batch-git-commits-across-multiple-projec-y3b322dw]] — Batch git commits across multiple projects/articles; wait until finishing at lea
 - [[project_definitive-kiro-cli-does-not-pass-mcp-json-env-to-stdio-serv]] — DEFINITIVE-kiro-cli-does-not-pass-mcp-json-env-to-stdio-server
@@ -1945,7 +2092,9 @@ Facts: 2051
 - [[project_memory-kit-architecture-complementary-kit-and-claude-md]] — Memory Kit Architecture — Complementary Kit and CLAUDE.md
 - [[project_back-compat-legacy-validate-references-i-ycrxh9hd]] — Back-compat: legacy `<!-- validate-references: ignore -->` markers honored forev
 - [[project_windows-npm-eperm-warning-on-better-sqlite3-node-is-benign]] — Windows npm `EPERM` Warning on better_sqlite3.node Is Benign
+- [[project_pointer-format-for-archived-task-entries]] — Pointer Format for Archived Task Entries
 - [[project_kiro-gate-0c-backup-recovery-procedure]] — Kiro Gate §0c — Backup & Recovery Procedure
+- [[project_memory-system-captures-work-in-real-time]] — Memory System Captures Work in Real Time
 - [[project_node-sqlite-fts5-module-availability-gate-for-task-141b-migr]] — Node:sqlite FTS5 Module Availability Gate for Task 141b Migration
 - [[project_session-2-recall-passed-broken-install-root-caused-recovered]] — Session 2 recall passed; broken install root-caused + recovered
 - [[project_v0-6-2-release-staging-task-248-timing-decision]] — v0.6.2 Release Staging & Task 248 Timing Decision
@@ -1964,6 +2113,8 @@ Facts: 2051
 - [[project_hc-1-false-fail-on-kiro-recursive-agent-awareness-bug]] — HC-1 False-FAIL on Kiro (Recursive Agent-Awareness Bug)
 - [[project_adr-0012-deferred-product-rename-cross-agent-trigger]] — ADR-0012: Deferred Product Rename (Cross-Agent Trigger)
 - [[project_shipping-principle-fix-core-promise-gaps-before-release]] — Shipping Principle: Fix Core-Promise Gaps Before Release
+- [[project_claude-md-rule-amended-to-prevent-readme-bloat-recurrence]] — CLAUDE.md Rule Amended to Prevent README Bloat Recurrence
+- [[project_hooktimeout-identified-as-root-cause-of-d-406]] — hookTimeout Identified as Root-Cause of D-406
 - [[project_global-cli-rebuild-and-reinstall-workflow]] — Global CLI Rebuild and Reinstall Workflow
 - [[project_v0-6-2-release-approved-before-auto-recovery]] — v0.6.2 Release Approved Before Auto-Recovery
 - [[project_open-cmk-mcp-per-tool-prompt-systematic-investigation-pendin]] — OPEN: cmk MCP per-tool prompt — systematic investigation pending
@@ -1988,6 +2139,7 @@ Facts: 2051
 - [[project_task-167-compaction-state-module-interface-two-methods-rich]] — Task 167 compaction-state module interface — two methods rich return
 - [[project_memory-tier-system-project-to-cross-project-promotion]] — Memory Tier System: Project-to-Cross-Project Promotion
 - [[project_renamed-env-userprofile-claude-memory-ki-yzzwtmep]] — Renamed `$env:USERPROFILE\.claude-memory-kit` as backup before running destructi
+- [[project_archive-naming-and-directory-placement-convention]] — Archive Naming and Directory Placement Convention
 - [[project_0-4-1-release-gate-workflow-is-0a-commit-push-then-0b-pack-i]] — 0.4.1 release gate workflow is: 0a (commit/push) then 0b (pack/install) then bac
 - [[project_cmake-cmk-doctor-validation-passed-all-1-z27ps9pp]] — cmake/cmk doctor validation passed all 11 file/config checks; ready for Session
 - [[project_user-identified-genuine-cost-lint-portab-z3bu5t69]] — User identified genuine cost (lint-portability) not originally weighed in inline
@@ -2008,6 +2160,7 @@ Facts: 2051
 - [[project_token-cost-lesson-reading-vs-thinking-efficiency]] — Token Cost Lesson: Reading vs. Thinking Efficiency
 - [[project_accepts-one-time-install-ux-friction-bin-zcrt7n2h]] — Accepts one-time install UX friction (binding prompt); will not sacrifice perman
 - [[project_cold-open-replay-test-for-pii-screening]] — Cold-Open-Replay Test for PII Screening
+- [[project_markdown-tokenizer-is-security-critical-in-viewer]] — Markdown Tokenizer is Security-Critical in Viewer
 - [[project_kiro-cli-wraps-mcp-servers-in-cmd-exe-undocumented-platform]] — kiro-cli wraps MCP servers in cmd.exe (undocumented platform behavior)
 - [[project_v0-4-x-versioning-roadmap]] — v0.4.x Versioning Roadmap
 - [[project_chose-option-a-prioritize-cursor-and-cod-zdx4qfaf]] — Chose Option A — prioritize Cursor and Codex adapters (breadth-first) before rec
@@ -2017,8 +2170,9 @@ Facts: 2051
 - [[project_skill-fix-works-allowed-tools-removed-now-mcp-cold-start-rac]] — Skill fix works (allowed-tools removed); now MCP cold-start race on first call
 - [[project_v0-4-0-cut-gate-structure-and-coverage]] — v0.4.0 cut-gate structure and coverage
 - [[project_release-gating-workflow-for-version-cuts]] — Release Gating Workflow for Version Cuts
-- [[project_task-235-live-validation]] — Task 235 Live Validation
 - [[project_task-240-node-pinning-across-8-workflows-zhv3v3us]] — Task 240 (Node pinning across 8 workflows) shipped successfully, fixing silent d
+- [[project_prior-art-research-discipline-and-filing]] — Prior-Art Research Discipline and Filing
+- [[project_health-monitoring-error-notification-routing]] — Health Monitoring — Error Notification Routing
 - [[project_timing-assertion-flakiness-in-concurrent-test-environments]] — Timing Assertion Flakiness in Concurrent Test Environments
 - [[project_checks-for-comprehensive-documentation-a-zjzykx6f]] — Checks for comprehensive documentation as a quality gate (research, decisions, d
 - [[project_known-quirks-and-solutions]] — Known Quirks and Solutions
@@ -2043,6 +2197,7 @@ Facts: 2051
 - [[project_kit-needs-decisions-md-feature-zrqra277]] — kit needs decisions.md feature
 - [[project_copy-paste-errors-persist-in-headers-across-months]] — Copy-Paste Errors Persist in Headers Across Months
 - [[project_research-verification-process-uses-paral-zsfnnkgq]] — Research verification process uses parallel background agents with line-item spe
+- [[project_release-workflow-sequence]] — Release Workflow Sequence
 - [[project_100-sessions-200-line-index-four-named-zsardqaa]] — "100 sessions / 200-line index / four named phases" originates from community re
 - [[project_no-gitignore-or-transcript-commit-change-ztpyajgj]] — No gitignore or transcript-commit changes to the memory system going forward.
 - [[project_kit-name-change-task-195-timeline-and-decision-point]] — Kit Name Change (Task 195) — Timeline and Decision Point
@@ -2080,6 +2235,7 @@ Facts: 2051
 - [[project_correction-consult-primary-evidence-logs-aatcmbpd]] — Correction—consult primary evidence (logs, error output) before diagnosing; user
 - [[project_cursor-gate-v0-5-0-test-procedure]] — Cursor Gate v0.5.0 Test Procedure
 - [[project_github-social-preview-upload-manual-web-ui-only]] — GitHub Social Preview Upload (Manual Web UI Only)
+- [[project_brainapi2-code-dive-assessment-and-findings]] — brainapi2 Code-Dive Assessment and Findings
 - [[project_don-t-assume-execution-scope-without-exp-acav54fe]] — Don't assume execution scope without explicit permission; user corrected "i didn
 - [[project_5-security-reliability-tasks-filed-216-2-acbyakxu]] — 5 security/reliability tasks filed (216–220): unscreened-writes helper, delete g
 - [[project_journaledids-regex-incompleteness-unbounded-decisions-md-gro]] — journaledIds Regex Incompleteness — Unbounded DECISIONS.md Growth (DJ2)
@@ -2096,6 +2252,7 @@ Facts: 2051
 - [[project_cmk-install-breaks-itself-on-its-own-running-mcp-server-dll]] — cmk install breaks itself on its own running MCP server DLL lock (Windows) — a real bug, never code-fixed
   - related: [[project_global-cmk-is-broken-windows-sqlite-dll-sam22r7b]], [[project_windows-dll-lock-blocks-npm-reinstall]], [[project_windows-sqlite-dll-lock-from-running-mcp-server]]
 - [[project_separate-memory-captures-from-release-commits]] — Separate Memory Captures from Release Commits
+- [[project_design-token-system-and-card-identity-pattern]] — Design Token System and Card Identity Pattern
 - [[project_openwolf-independently-built-the-exact-h-am5znhve]] — OpenWolf independently built the exact heartbeat fix (last_heartbeat via mtimeMs
 - [[project_design-system-color-palette]] — Design System Color Palette
 - [[project_pre-roll-now-md-excluded-from-commit-offers-to-prevent-unscr]] — Pre-roll now.md excluded from commit offers to prevent unscreened-name shipping
@@ -2160,24 +2317,24 @@ Facts: 2051
 
 ## Cited anchors
 
-- **ADR-0002** ← [[project_core-system-concepts]], [[project_derive-vs-stamp-design-rule]], [[project_everos-comparison-same-thesis-opposite-architecture-not-bett]], [[project_fts5-and-sqlite-vec-are-chosen-by-design-per-adr-0002-and-ad]], [[project_long-jobs-incremental-resumable-from-artifacts-never-all-or]], [[project_qdrant-vector-database-re-rejected-adr-0015-reaffirmed]]
+- **ADR-0002** ← [[project_architecture-decisions-via-adr-references]], [[project_core-system-concepts]], [[project_derive-vs-stamp-design-rule]], [[project_everos-comparison-same-thesis-opposite-architecture-not-bett]], [[project_fts5-and-sqlite-vec-are-chosen-by-design-per-adr-0002-and-ad]], [[project_health-state-tracking-via-append-only-event-log]], [[project_long-jobs-incremental-resumable-from-artifacts-never-all-or]], [[project_qdrant-vector-database-re-rejected-adr-0015-reaffirmed]]
 - **ADR-0005** ← [[project_kit-s-haiku-backend-has-undeclared-claude-cli-dependency]], [[project_plugin-install-and-bootstrap-are-separate-one-time-steps]]
 - **ADR-0009** ← [[project_adr-0009-inline-provenance-was-deliberate-but-lint-cost-unwe]], [[project_memory-format-linting-fix-md007]], [[project_scratchpad-provenance-format-resolved-keep-inline]]
 - **ADR-0012** ← [[project_adr-0012-deferred-product-rename-cross-agent-trigger]], [[project_agent-neutral-names-persist-across-any-rename]], [[project_cmk-search-scope-limitation-with-decision-queries]], [[project_kit-name-change-task-195-timeline-and-decision-point]], [[project_no-naming-collision-with-awrshift-claude-b46y2m6s]], [[project_project-governance-adrs-frozen-records-and-two-phase-rename]]
 - **ADR-0016** ← [[project_documentation-architecture-authoritative-files-and-verificat]], [[project_resume-point-task-151-4-move-2-demote-not-evict]], [[project_retrieval-ranking-strategy-avoid-score-based-hot-path-rankin]], [[project_user-doesn-t-recall-adr-0016-specifics-g-x95hb2bq]]
 - **ADR-0017** ← [[project_2026-07-01-arc-complete-output-inventory-and-at-risk-layer]], [[project_adr-0017-finalization-agenda]], [[project_adr-0017-ready-for-adoption-decision]], [[project_adr-provisional-decision-pattern]], [[project_automatic-oracle-free-quadrant-is-the-real-design-target]], [[project_claude-memory-kit-judge-as-the-per-host-adapter]], [[project_high-impact-signals-to-prioritize-for-implementation]], [[project_kit-design-methodology-current-state]], [[project_kit-dogfooding-the-arc-that-redefined-memory-capture-was-its]], [[project_memory-kit-loop-system-tasks-190-193]], [[project_memory-systems-failure-learning-survey-9-systems]], [[project_memory-verification-spans-session-boundaries]], [[project_research-scope-outcome-signals-in-memory-systems]], [[project_seven-novel-signal-types-for-memory-learning-27-system-surve]], [[project_signal-portfolio-for-learning-loop-in-claude-code-ide]], [[project_task-95-design-forks-settled-2026-07-18-d-352-f1-op-class-sp]], [[project_task-95-research-review-design-synthesis-status]], [[project_v0-4-4-and-v0-5-0-build-phases]], [[project_v0-5-3-learn-loop-phase-2-the-user-chose-queue-order-over-v0]], [[project_v0-5-3-roadmap-learn-loop-phase-2-confidence-gated-search-bl]] … and 5 more
-- **ADR-0018** ← [[project_kiro-gate-v0-5-0-complete-all-3-sessions-pass-kit-works-end]], [[project_kiro-gate-v0-5-0-session-1-privacy-screen-all-core-surfaces]], [[project_memory-commits-screened-before-release]], [[project_task-248-reframed-the-user-s-design-call-2026-07-22-the-pre]], [[project_v0-4-4-release-gate-checks]]
+- **ADR-0018** ← [[project_architecture-decisions-via-adr-references]], [[project_health-log-system-architecture-ratified]], [[project_kiro-gate-v0-5-0-complete-all-3-sessions-pass-kit-works-end]], [[project_kiro-gate-v0-5-0-session-1-privacy-screen-all-core-surfaces]], [[project_memory-commits-screened-before-release]], [[project_memory-viewer-design-ephemeral-localhost-server]], [[project_self-healing-pattern-for-safe-operations]], [[project_task-248-reframed-the-user-s-design-call-2026-07-22-the-pre]], [[project_v0-4-4-release-gate-checks]]
 - **ADR-0019** ← [[project_resume-fix-l3-promote-timeout-wip-at-4e33935-then-v0-5-0-tag]], [[project_resume-task-148-build-paused-at-sessionend-wiring]]
 - **ADR-0020** ← [[feedback_when-an-automatic-path-fails-build-a-fallback-mechanic-that]], [[project_release-plan-v0-6-0-day-one-memory-v0-7-0-team-layer]], [[project_v0-5-1-autopilot-resume-point-after-task-206-checkpoint]]
 - **ADR-0022** ← [[project_task-96-cmk-redact-purge-hard-merged-pr-295]], [[project_v0-5-5-published-2026-07-18-lh8ppl-core-memory-kit-0-5-5-on]]
 - **ADR-0023** ← [[project_graph-database-rejected-empirical-basis-and-defer-gate]], [[project_graph-visualization-feedback-edge-density-is-the-limiting-fa]], [[project_multi-step-research-ingestion-integration-workflow]], [[project_task-232-rebuild-edge-table-from-markdown]]
-- **D-1** ← [[project_decision-journal-view-gap-now-task-147]], [[project_kit-s-decision-log-manual-maintenance-pattern]]
+- **D-1** ← [[project_decision-journal-view-gap-now-task-147]], [[project_kit-s-decision-log-manual-maintenance-pattern]], [[project_three-archive-splits-at-v0-5-release-boundary]]
 - **D-105** ← [[project_daily-distill-starvation-cron-killed-at-23-00-both-safety-ne]], [[project_embedder-ladder-policy]], [[project_sessionstart-lazy-fallback-shadowed-by-cascade-starvation]], [[reference_memweave-reference-patterns]]
 - **D-108** ← [[feedback_use-mcp-mk-remember-not-bash-cli]], [[project_cut-gate-v050-scaffold-gitignore-transcript-leak]], [[project_cut-gate-v050-transcript-privacy-is-task-148-trigger-fired]], [[project_public-repo-memory-policy]]
 - **D-109** ← [[project_conditional-tech-adoption-discipline]], [[project_embedding-model-trade-off-bge-base-vs-bge-m3-benchmarked-cho]], [[project_perf-gate-principle-search-speed-non-negotiable]]
 - **D-111** ← [[project_d-111-design-as-bridge-position]], [[project_semantic-search-vs-grep-trade-off-d-111-design-rationale]]
 - **D-120** ← [[project_design-lesson-numbering-system-d-in-claude-memory-kit]], [[project_pr-168-cmk-import-claude-md-command-complete]], [[project_stress-testing-omitted-for-pure-read-cli-changes]]
-- **D-121** ← [[feedback_anti-stalling-directive-the-user-2026-07-23-we-had-it-for-6]], [[project_d-121-viewer-reconsidered-for-v0-4-design-slot]], [[project_task-255-design-grill-questions-queued]], [[project_two-phase-viewer-rollout-obsidian-v0-6-3-kit-viewer-v0-6-4]], [[project_ui-viewer-design-awaits-v0-4-scope-decision]]
+- **D-121** ← [[feedback_anti-stalling-directive-the-user-2026-07-23-we-had-it-for-6]], [[project_cmk-view-purpose-and-headline-use-cases]], [[project_d-121-viewer-reconsidered-for-v0-4-design-slot]], [[project_task-255-design-grill-questions-queued]], [[project_two-phase-viewer-rollout-obsidian-v0-6-3-kit-viewer-v0-6-4]], [[project_ui-viewer-design-awaits-v0-4-scope-decision]], [[project_viewer-delivery-shape-candidates-and-recommendation]]
 - **D-122** ← [[project_composition-bug-pattern-in-claude-memory-kit]], [[project_kit-identity-a-harness-over-the-harness-the-user-s-framing]], [[project_kit-lacks-skill-fire-telemetry-for-measuring-recall-improvem]], [[project_mcp-tools-under-used-when-harness-defers-them-task-233-fire]], [[project_v0-3-0-published-2026-06-11-npm-github-r-duzyece4]]
 - **D-125** ← [[project_design-lesson-numbering-system-d-in-claude-memory-kit]], [[project_pr-168-cmk-import-claude-md-command-complete]]
 - **D-126** ← [[feedback_production-code-changes-need-a-pr-never-direct-to-main]], [[project_d-126-gitattributes-crlf-prevention-foll-yl3lwc69]], [[project_release-gate-workflow-and-final-user-control]], [[project_task-gating-criteria-decision-blockers-and-gates]], [[project_task-queue-organization-naming-convention]], [[project_v0-3-0-published-2026-06-11-npm-github-r-duzyece4]], [[project_v0-3-2-scope-correction-dedup]]
@@ -2186,7 +2343,7 @@ Facts: 2051
 - **D-131** ← [[project_decision-journal-view-gap-now-task-147]], [[project_kit-s-decision-log-manual-maintenance-pattern]]
 - **D-145** ← [[project_v0-3-1-cut-gate-checklist-additive-testing-plan]], [[project_v0-3-2-scope-correction-dedup]]
 - **D-147** ← [[project_141b-is-rejected-decision-rationale]], [[project_benchmark-noise-floor-on-dev-laptop]], [[project_cmk-install-breaks-itself-on-its-own-running-mcp-server-dll]], [[project_conditional-tech-adoption-discipline]], [[project_resume-v0-3-1-cut-gate-2-bugs-found-fixed-pr-179-in-flight]], [[project_task-141b-node-sqlite-migration-rejected-on-perf]]
-- **D-153** ← [[project_d-153-research-quality-discipline-for-agent-reading-tasks]], [[project_doctor-as-a-skill-design-2026-07-22-discussion-prior-art-ver]], [[project_doctor-health-nudge-corrected-design-2026-07-22-supersedes-t]], [[project_mcp-tools-under-used-when-harness-defers-them-task-233-fire]], [[project_memory-recall-fix-incomplete-structure-questions-still-code]], [[project_research-pass-methodology-proven-workflow]], [[project_resume-v031-cutgate-near-complete]]
+- **D-153** ← [[project_d-153-research-quality-discipline-for-agent-reading-tasks]], [[project_doctor-as-a-skill-design-2026-07-22-discussion-prior-art-ver]], [[project_doctor-health-nudge-corrected-design-2026-07-22-supersedes-t]], [[project_mcp-tools-under-used-when-harness-defers-them-task-233-fire]], [[project_memory-recall-fix-incomplete-structure-questions-still-code]], [[project_research-methodology-targeted-file-level-reads]], [[project_research-pass-methodology-proven-workflow]], [[project_resume-v031-cutgate-near-complete]]
 - **D-154** ← [[project_capture-completeness-vs-capture-perception-gap-persona-queue]], [[project_resume-v031-cutgate-near-complete]]
 - **D-157** ← [[project_release-version-queue-d-309]], [[project_task-tracking-versions-trigger-gated-system]]
 - **D-161** ← [[project_automatic-recall-never-reads-tombstones-recovery-is-human-on]], [[project_decisions-md-is-append-only-permanent-journal-not-regenerate]]
@@ -2253,7 +2410,7 @@ Facts: 2051
 - **D-302** ← [[project_claude-memory-kit-dogfooding-setup-and-conflict-surface]], [[project_d-303-fixed-kiro-auto-extract-user-prompt-empty-recovered-fr]], [[project_npm-cleanup-warning-with-d-302-dll-lock-4hurzjlf]], [[project_task-205-preflight-fires-on-wrong-trigger-design-flaw]], [[project_windows-dll-locking-during-cmk-reinstall]]
 - **D-303** ← [[project_cmk-install-kiro-setup-commands]], [[project_d-303-blocker-closing-via-live-kiro-re-test]], [[project_d-303-fixed-kiro-auto-extract-user-prompt-empty-recovered-fr]], [[project_d-303-test-environment-confirmed-ready]]
 - **D-305** ← [[project_cursor-gate-test-path-procedure-v0-5-0-release]], [[project_cursor-gate-v0-5-0-test-procedure]], [[project_v0-5-0-shipped-2026-07-10-npm-lh8ppl-cla-pyra4u7u]]
-- **D-306** ← [[project_cursor-gate-test-path-procedure-v0-5-0-release]], [[project_d-306-fix-utf-8-bom-breaks-json-parse-in-cursor]], [[project_main-ci-green-after-d-306-merge-exit-cod-ekwh25s2]], [[project_v0-5-0-shipped-2026-07-10-npm-lh8ppl-cla-pyra4u7u]]
+- **D-306** ← [[project_cursor-gate-test-path-procedure-v0-5-0-release]], [[project_d-306-fix-utf-8-bom-breaks-json-parse-in-cursor]], [[project_main-ci-green-after-d-306-merge-exit-cod-ekwh25s2]], [[project_three-archive-splits-at-v0-5-release-boundary]], [[project_v0-5-0-shipped-2026-07-10-npm-lh8ppl-cla-pyra4u7u]]
 - **D-308** ← [[project_documentation-artifacts-and-structure]], [[project_v0-5-3-learn-loop-phase-2-the-user-chose-queue-order-over-v0]]
 - **D-309** ← [[project_post-v0-5-2-roadmap-decision-v0-5-3-or-v0-6-0]], [[project_release-plan-v0-6-0-day-one-memory-v0-7-0-team-layer]], [[project_release-version-queue-d-309]], [[project_v0-5-3-learn-loop-phase-2-the-user-chose-queue-order-over-v0]]
 - **D-310** ← [[project_ci-watch-rule-specify-ci-yml-by-name]], [[project_name-guard-flags-templated-patterns-in-frontmatter-metadata]], [[project_name-guard-validator-skips-untracked-files]]
@@ -2269,7 +2426,11 @@ Facts: 2051
 - **D-384** ← [[project_copy-paste-errors-persist-in-headers-across-months]], [[project_d-384-regression-test-uses-conditional-composition-invariant]], [[project_task-240-resolution-bench-storage-allowlist-entry]], [[project_task-243-2026-07-21-superseded-the-bench-storage-allowlist-c]]
 - **D-386** ← [[project_d-386-documents-known-sonarcloud-server-side-failure]], [[project_decision-log-validation-gap-d-nnn-ids]], [[project_multi-run-ci-diagnostics-separate-code-from-infrastructure-f]]
 - **D-387** ← [[project_decision-log-validation-gap-d-nnn-ids]], [[project_stale-memory-entries-tombstoned-via-cmk-remember]]
+- **D-388** ← [[project_d-388-project-discipline-document-unreachable-code]], [[project_decision-log-validation-gap-d-nnn-ids]]
+- **D-395** ← [[project_d-408-housekeeping-supersedes-d-395]], [[project_task-252-review-completed-six-bugs-fixed-via-multi-round-fix]]
 - **D-40** ← [[project_doctor-as-a-skill-design-2026-07-22-discussion-prior-art-ver]], [[project_doctor-health-nudge-corrected-design-2026-07-22-supersedes-t]], [[project_mcp-tools-under-used-when-harness-defers-them-task-233-fire]]
+- **D-406** ← [[project_hooktimeout-identified-as-root-cause-of-d-406]], [[project_stress-flake-root-cause-hook-timeout-config-gap]], [[project_task-252-review-completed-six-bugs-fixed-via-multi-round-fix]]
+- **D-408** ← [[project_d-408-housekeeping-supersedes-d-395]], [[project_hooktimeout-identified-as-root-cause-of-d-406]], [[project_task-252-review-completed-six-bugs-fixed-via-multi-round-fix]]
 - **D-51** ← [[project_design-lesson-numbering-system-d-in-claude-memory-kit]], [[project_pr-168-cmk-import-claude-md-command-complete]]
 - **D-75** ← [[project_cascade-starvation-lazy-distill-limitation-on-busy-repos]], [[project_cmk-health-check-status-2026-06-20]], [[project_daily-distill-starvation-cron-killed-at-23-00-both-safety-ne]]
 - **D-80** ← [[project_claude-code-cd-compound-command-prompting-edge]], [[project_dj4-live-gate-test-passed-v0-3-3-headline-feature]], [[project_windows-dll-lock-prevents-global-npm-install-during-active-c]], [[reference_cmk-permission-prompt-only-on-cd-compound-d-80-edge]]
@@ -2336,7 +2497,7 @@ Facts: 2051
 - **Task-209** ← [[project_v0-5-3-release-complete-ready-for-publication]], [[project_v0-5-3-roadmap-learn-loop-phase-2-confidence-gated-search-bl]]
 - **Task-210** ← [[project_backlog-disposition-audit-results-2026-07-18]], [[project_health-check-hc-12-deletion-cascade-verification]], [[project_task-210-completion-autopilot-chain]], [[project_task-95-design-forks-settled-2026-07-18-d-352-f1-op-class-sp]]
 - **Task-211** ← [[project_v0-5-3-release-complete-ready-for-publication]], [[project_v0-5-3-roadmap-learn-loop-phase-2-confidence-gated-search-bl]]
-- **Task-212** ← [[project_core-system-concepts]], [[project_kit-missing-tool-call-log-for-full-loop-detection-coverage]], [[project_loop-detection-research-feeds-task-250-and-task-212]], [[project_octopoda-loop-detection-code-verified-findings]], [[project_octopoda-os-github-com-ryjoxtechnologies-octopoda-os-open-so]], [[project_v0-5-3-release-complete-ready-for-publication]], [[project_v0-5-3-roadmap-learn-loop-phase-2-confidence-gated-search-bl]]
+- **Task-212** ← [[project_brainapi2-code-dive-assessment-and-findings]], [[project_core-system-concepts]], [[project_kit-missing-tool-call-log-for-full-loop-detection-coverage]], [[project_loop-detection-research-feeds-task-250-and-task-212]], [[project_octopoda-loop-detection-code-verified-findings]], [[project_octopoda-os-github-com-ryjoxtechnologies-octopoda-os-open-so]], [[project_v0-5-3-release-complete-ready-for-publication]], [[project_v0-5-3-roadmap-learn-loop-phase-2-confidence-gated-search-bl]]
 - **Task-214** ← [[project_name-guard-validator-skips-untracked-files]], [[project_stress-tests-skipped-for-pure-file-mutation-in-process-ops]], [[project_three-security-bugs-fixed-with-tests]]
 - **Task-215** ← [[project_cmk-daily-distill-scheduled-task-console-popup-issue]], [[project_cmk-daily-distill-scheduled-task-window-popup-at-23-00]], [[project_session-state-2026-07-18-pre-compact-checkpoint-v0-5-5-publi]], [[project_the-nightly-distill-schtask-can-be-triggered-on-demand-schta]]
 - **Task-216** ← [[project_fable-5-classifier-flags-defensive-security-work]], [[project_release-roadmap-v0-5-1-v0-5-4]], [[project_screened-writes-pattern]], [[project_task-95-design-forks-settled-2026-07-18-d-352-f1-op-class-sp]], [[project_three-security-bugs-fixed-with-tests]]
@@ -2346,10 +2507,10 @@ Facts: 2051
 - **Task-223** ← [[project_v0-5-1-release-ready-to-tag-and-publish]], [[project_v0-5-2-release-scope-and-workflow]]
 - **Task-224** ← [[project_sonarcloud-advisory-role-in-ci-gating]], [[project_task-classification-and-audit-system]], [[project_v0-5-2-release-scope-and-workflow]]
 - **Task-225** ← [[project_post-compact-session-entry-point]], [[project_session-state-2026-07-18-pre-compact-checkpoint-v0-5-5-publi]], [[project_v0-5-5-published-2026-07-18-lh8ppl-core-memory-kit-0-5-5-on]]
-- **Task-23** ← [[project_memory-learn-loop-as-converged-system]], [[project_u-mem-describes-one-unified-loop-not-nine-separate-features]]
-- **Task-230** ← [[project_d-343-disposition-cmk-install-scaffold-refresh-bug-task-230]], [[project_memory-kit-s-soft-spot-agent-choice-default-over-recall]], [[project_stress-tests-skipped-for-pure-file-mutation-in-process-ops]]
-- **Task-232** ← [[project_graph-database-rejected-empirical-basis-and-defer-gate]], [[project_p-res031cg-malformed-file-recovery-plan]], [[project_task-232-rebuild-edge-table-from-markdown]], [[project_task-256-design-constraints-and-incorporated-rules]], [[project_two-pass-review-discipline-validated-on-critical-bugs]]
-- **Task-233** ← [[project_fts5-parser-crash-history-and-current-injection-surface]], [[project_hot-path-hook-latency-anti-pattern]], [[project_kit-identity-a-harness-over-the-harness-the-user-s-framing]], [[project_mcp-tools-under-used-when-harness-defers-them-task-233-fire]], [[project_octopoda-loop-detection-code-verified-findings]], [[project_privacy-sanitization-pattern-for-all-prompt-handling]], [[project_relevance-floor-calibration-for-fts5-backends]], [[project_relevance-threshold-calibration-octopoda-s-0-80-0-45-lesson]], [[project_task-232-rebuild-edge-table-from-markdown]], [[project_task-233-now-dispatched-to-opus-implemen-rluyazd2]], [[project_task-255-design-grill-questions-queued]], [[project_three-tier-agent-split-trial-on-task-233]], [[project_three-tier-model-delegation-pattern]], [[project_two-pass-review-discipline-validated-on-critical-bugs]], [[project_vitest-workers-spawned-from-the-claude-code-bash-tool-inside]]
+- **Task-23** ← [[project_memory-learn-loop-as-converged-system]], [[project_task-entry-boundary-definition-specs-tasks-md]], [[project_u-mem-describes-one-unified-loop-not-nine-separate-features]]
+- **Task-230** ← [[project_cmk-install-auto-updates-managed-block-version-stamps]], [[project_d-343-disposition-cmk-install-scaffold-refresh-bug-task-230]], [[project_memory-kit-s-soft-spot-agent-choice-default-over-recall]], [[project_stress-tests-skipped-for-pure-file-mutation-in-process-ops]]
+- **Task-232** ← [[project_cmk-view-integrates-with-core-memory-subsystems]], [[project_graph-database-rejected-empirical-basis-and-defer-gate]], [[project_p-res031cg-malformed-file-recovery-plan]], [[project_task-232-rebuild-edge-table-from-markdown]], [[project_task-256-design-constraints-and-incorporated-rules]], [[project_two-pass-review-discipline-validated-on-critical-bugs]]
+- **Task-233** ← [[project_cmk-view-integrates-with-core-memory-subsystems]], [[project_fts5-parser-crash-history-and-current-injection-surface]], [[project_hot-path-hook-latency-anti-pattern]], [[project_kit-identity-a-harness-over-the-harness-the-user-s-framing]], [[project_mcp-tools-under-used-when-harness-defers-them-task-233-fire]], [[project_octopoda-loop-detection-code-verified-findings]], [[project_privacy-sanitization-pattern-for-all-prompt-handling]], [[project_relevance-floor-calibration-for-fts5-backends]], [[project_relevance-threshold-calibration-octopoda-s-0-80-0-45-lesson]], [[project_task-232-rebuild-edge-table-from-markdown]], [[project_task-233-now-dispatched-to-opus-implemen-rluyazd2]], [[project_task-255-design-grill-questions-queued]], [[project_three-tier-agent-split-trial-on-task-233]], [[project_three-tier-model-delegation-pattern]], [[project_two-pass-review-discipline-validated-on-critical-bugs]], [[project_vitest-workers-spawned-from-the-claude-code-bash-tool-inside]]
 - **Task-234** ← [[project_stale-replay-guard-partial-coverage-identified]], [[project_v0-6-0-release-contents]]
 - **Task-235** ← [[feedback_a-background-job-s-completion-notification-cannot-survive-th]], [[project_self-review-finding-now-md-unbounded-read]], [[project_session-state-at-pause-2026-07-20-pre-compact-v0-6-0-shipped]], [[project_task-236-counts-family-validation]], [[project_v0-6-0-installed-precompact-task-235-waiting-for-release]]
 - **Task-236** ← [[project_fixture-time-bomb-in-cli-backfill-test-2026-07-21]], [[project_prior-art-finding-ecc-gate-enumeration-vs-generic-scan]], [[project_session-state-at-pause-2026-07-20-pre-compact-v0-6-0-shipped]], [[project_task-236-counts-family-validation]], [[project_task-236-enumeration-anti-pattern-prior-art-finding]], [[project_version-roadmap-v0-6-1-through-v0-6-2]]
@@ -2359,15 +2520,21 @@ Facts: 2051
 - **Task-242** ← [[feedback_a-health-check-behind-a-command-does-not-surface-a-silent-fa]], [[feedback_when-an-automatic-path-fails-build-a-fallback-mechanic-that]], [[project_code-audit-baseline-memory-tiers-clean]], [[project_task-242-solution-self-heal-first-determ-5tpjf3rj]], [[project_v0-6-0-release-contents]]
 - **Task-243** ← [[project_task-243-2026-07-21-superseded-the-bench-storage-allowlist-c]], [[project_task-243-better-sqlite3-v12-v13-must-not-nlabq5kp]]
 - **Task-246** ← [[project_doc-archiving-task-recommendation-post-task-246]], [[project_misplaced-memory-files-recovered-to-root-context]], [[project_task-246-orphaned-tier-recovery-7-strand-day9b4qa]], [[project_task-246-phase-2-redirect-capture-hook-bins-to-root-resolver]], [[project_task-248-reframed-the-user-s-design-call-2026-07-22-the-pre]]
+- **Task-247** ← [[project_glob-fix-enables-archive-anchor-supply-from-day-one]], [[project_v0-6-2-release-approved-before-auto-recovery]]
 - **Task-248** ← [[project_bom-d-fact-files-are-invisible-to-scanning]], [[project_doctor-as-a-skill-design-2026-07-22-discussion-prior-art-ver]], [[project_doctor-health-nudge-corrected-design-2026-07-22-supersedes-t]], [[project_failure-driven-whisper-skill-architecture-with-required-amen]], [[project_orphaned-memory-tier-bug-246-and-recovery-strategy]], [[project_p-res031cg-malformed-file-recovery-plan]], [[project_post-fix-integration-workflow]], [[project_rejects-doctor-based-detection-for-task-mubq32a9]], [[project_task-248-reframed-the-user-s-design-call-2026-07-22-the-pre]], [[project_v0-6-2-release-approved-before-auto-recovery]], [[project_v0-6-2-release-staging-task-248-timing-decision]]
-- **Task-250** ← [[project_failure-driven-whisper-skill-architecture-with-required-amen]], [[project_kit-missing-tool-call-log-for-full-loop-detection-coverage]], [[project_loop-detection-research-feeds-task-250-and-task-212]], [[project_octopoda-loop-detection-code-verified-findings]], [[project_task-250-failure-driven-nudge-implementation]], [[reference_octopoda-os-loop-detection-and-observability-for-ai-agents]]
+- **Task-249** ← [[project_fix-round-dispatched-with-nine-findings-xqcmxu6r]], [[project_glob-fix-enables-archive-anchor-supply-from-day-one]]
+- **Task-250** ← [[project_cmk-view-integrates-with-core-memory-subsystems]], [[project_failure-driven-whisper-skill-architecture-with-required-amen]], [[project_kit-missing-tool-call-log-for-full-loop-detection-coverage]], [[project_loop-detection-research-feeds-task-250-and-task-212]], [[project_octopoda-loop-detection-code-verified-findings]], [[project_q1-refined-auto-fix-vs-whisper-boundary-cmk-doctor]], [[project_task-250-failure-driven-nudge-implementation]], [[project_task-258-kept-separate-from-task-250-approved]], [[project_v0-6-4-release-cmk-view-health-signals-live]], [[reference_octopoda-os-loop-detection-and-observability-for-ai-agents]]
+- **Task-252** ← [[project_task-252-maskpii-completed-five-sonar-smells-fixed]], [[project_task-252-review-completed-six-bugs-fixed-via-multi-round-fix]]
 - **Task-254** ← [[project_fact-file-write-constraint-forward-only-no-mass-rewrites]], [[project_task-256-design-constraints-and-incorporated-rules]], [[project_two-phase-viewer-rollout-obsidian-v0-6-3-kit-viewer-v0-6-4]], [[project_ui-viewer-design-awaits-v0-4-scope-decision]]
-- **Task-255** ← [[project_post-fix-integration-workflow]], [[project_task-255-design-grill-questions-queued]], [[project_task-255-viewer-design-grill]], [[project_two-phase-viewer-rollout-obsidian-v0-6-3-kit-viewer-v0-6-4]]
+- **Task-255** ← [[project_post-fix-integration-workflow]], [[project_prior-art-research-discipline-and-filing]], [[project_task-255-design-grill-questions-queued]], [[project_task-255-review-found-1-blocking-3-impor-a6nahhzh]], [[project_task-255-viewer-design-grill]], [[project_two-phase-viewer-rollout-obsidian-v0-6-3-kit-viewer-v0-6-4]], [[project_v0-6-4-release-cmk-view-health-signals-live]]
 - **Task-256** ← [[project_post-fix-integration-workflow]], [[project_task-255-viewer-design-grill]], [[project_task-256-design-constraints-and-incorporated-rules]], [[project_validation-by-independent-test-reproduction]]
+- **Task-257** ← [[project_brainapi2-code-dive-assessment-and-findings]], [[project_d-388-project-discipline-document-unreachable-code]], [[project_task-257-bom-blindness-is-complete-root-e5haw2f6]], [[project_v0-6-3-release-plan-task-queue]]
+- **Task-258** ← [[project_health-log-system-architecture-ratified]], [[project_task-258-kept-separate-from-task-250-approved]], [[project_v0-6-4-release-cmk-view-health-signals-live]], [[project_v0-6-4-release-workflow-and-task-ownership]]
+- **Task-260** ← [[project_memory-fact-validation-task-reference-exemption]], [[project_root-cause-of-visual-plainness]], [[project_versioning-policy-d-24-differentiators-per-release-level]], [[project_viewer-page-visual-design-constraints]], [[project_viewer-visual-diagnosis-six-design-deficits]]
 - **Task-50** ← [[project_architectural-thesis-session-runtime-learning-judge]], [[project_claude-memory-kit-judge-as-the-per-host-adapter]], [[project_concurrent-write-race-task-146-severity-tied-to-agent-multip]], [[project_correction-kiro-capture-prompt-wiring-is-present-not-missing]], [[project_kiro-transcript-format-resolved-verified-on-a-real-kiro-inst]], [[project_open-knowledge-format-okf-design-validation-and-interchange]], [[project_related-projects-mimir-memex-mcp-only-memory-integrations]], [[project_section-5-1-binding-rule-convergence-verification]], [[project_task-50-adapter-architecture-do-not-build-a-uniform-installe]], [[project_task-50-cross-agent-seam-target-kiro-cli-agent-hooks-agentsp]], [[project_task-50-highest-unverified-risk-kiro-transcript-format-is-un]], [[project_task-50-research-revisit-gate-and-multi-agent-pattern]], [[project_three-borrowed-ideas-laned-to-tasks-versions]], [[project_v0-4-x-versioning-roadmap]], [[project_v0-5-2-release-scope-and-workflow]]
 - **Task-55** ← [[project_2026-07-01-arc-complete-output-inventory-and-at-risk-layer]], [[project_four-flavors-of-memory-improvement-systems]], [[project_memory-learn-loop-as-converged-system]], [[project_pai-personal-ai-infrastructure-memory-architecture-convergen]], [[project_task-55-enrichment-relationship-memory-learn-phase]]
 - **Task-65** ← [[project_everos-comparison-same-thesis-opposite-architecture-not-bett]], [[project_post-retrieval-filtering-query-expansion-hyde]], [[reference_memweave-reference-patterns]]
-- **Task-66** ← [[project_breadth-lane-stall-root-cause-four-consecutive-displacements]], [[project_committed-roadmap-v0-4-4-v0-5-0]], [[project_fact-currency-and-auto-supersession-not-yet-implemented]], [[project_release-laning-and-task-dependencies-v0-4-4-v0-5]], [[project_resume-point-v0-4-3-pre-merge-code-complete]], [[project_task-66-subtask-dependencies-and-next-gate]], [[project_v0-4-4-release-gate-checks]]
+- **Task-66** ← [[project_brainapi2-code-dive-assessment-and-findings]], [[project_breadth-lane-stall-root-cause-four-consecutive-displacements]], [[project_committed-roadmap-v0-4-4-v0-5-0]], [[project_fact-currency-and-auto-supersession-not-yet-implemented]], [[project_release-laning-and-task-dependencies-v0-4-4-v0-5]], [[project_resume-point-v0-4-3-pre-merge-code-complete]], [[project_task-66-subtask-dependencies-and-next-gate]], [[project_v0-4-4-release-gate-checks]]
 - **Task-69** ← [[project_allowed-tools-history-task-108-introduced-the-mcp-popup-task]], [[project_external-proof-allowed-tools-for-mcp-tools-is-a-known-unreso]]
 - **Task-70** ← [[project_release-lane-independence-pattern]], [[project_release-laning-and-task-dependencies-v0-4-4-v0-5]], [[project_resume-point-v0-4-3-pre-merge-code-complete]]
 - **Task-71** ← [[project_claude-md-checkpoint-4-pre-commit-screening-rule]], [[project_task-71-pre-commit-hook-backlog]]
