@@ -283,6 +283,98 @@ describe('Task 261 — the vec index stays mapped to its own facts across rebuil
   });
 });
 
+describe('Task 261 — the TRANSCRIPTS scope carries the same hazard and the same guard', () => {
+  // `transcript_chunks` is DROPped and re-chunked by every full reindex, so its
+  // rowids are reassigned exactly like `observations` — the identical bug, one
+  // table over, and its join changed in the same commit. Its stable key is the
+  // table's real primary key, `(source_file, chunk_idx)`.
+  const CHUNKS = [
+    { file: 'context/transcripts/2026-06-10.md', idx: 0, line: 7, body: 'We fixed the login failure by rotating the expired API credential.' },
+    { file: 'context/transcripts/2026-06-10.md', idx: 1, line: 21, body: 'Then we bumped the session timeout from 30 to 90 minutes.' },
+    { file: 'context/transcripts/2026-06-09.md', idx: 0, line: 3, body: 'Refactored the CSS grid layout for the dashboard header.' },
+    { file: 'context/transcripts/2026-06-08.md', idx: 0, line: 5, body: 'Migrated the primary database to CockroachDB over the weekend.' },
+  ];
+
+  function seedChunks(db, chunks) {
+    const ins = db.prepare(
+      'INSERT INTO transcript_chunks (source_file, chunk_idx, source_line, heading, body) VALUES (?, ?, ?, ?, ?)',
+    );
+    for (const c of chunks) ins.run(c.file, c.idx, c.line, `## ${c.file} — assistant`, c.body);
+  }
+
+  async function expectEveryChunkRecallsItself(db, chunks) {
+    const wrong = [];
+    for (const c of chunks) {
+      const prep = await prepareSemanticBackend({
+        db, query: c.body, modelId: MODEL, dims: DIMS, scope: 'transcripts',
+        extractorImpl: makeFakeExtractor(),
+      });
+      expect(prep.ok).toBe(true);
+      const top = prep.backend({ limit: 3 })[0];
+      const wantId = `T:${c.file}:${c.line}`;
+      if (!top || top.id !== wantId || top.score < 0.999) {
+        wrong.push({ want: wantId, got: top?.id ?? '(no hit)', gotSnippet: (top?.snippet ?? '').slice(0, 40) });
+      }
+    }
+    expect(wrong).toEqual([]);
+  }
+
+  it('re-chunking (which reassigns transcript_chunks rowids) keeps every chunk on its own vector', async () => {
+    const db = new Database(':memory:');
+    db.exec(INDEX_DB_SCHEMA);
+    await loadSqliteVec(db);
+    try {
+      seedChunks(db, CHUNKS);
+      const s1 = await syncSemanticIndex({
+        db, modelId: MODEL, dims: DIMS, scope: 'transcripts', extractorImpl: makeFakeExtractor(),
+      });
+      expect(s1.ok).toBe(true);
+      expect(s1.embedded).toBe(CHUNKS.length);
+      await expectEveryChunkRecallsItself(db, CHUNKS);
+
+      // What a full reindex does to this table: wipe it and re-chunk. The
+      // re-chunk walks files in a different order than the first pass did.
+      db.prepare('DELETE FROM transcript_chunks').run();
+      seedChunks(db, [...CHUNKS].reverse());
+
+      const fake2 = makeFakeExtractor();
+      const s2 = await syncSemanticIndex({
+        db, modelId: MODEL, dims: DIMS, scope: 'transcripts', extractorImpl: fake2,
+      });
+      expect(s2.ok).toBe(true);
+      expect(fake2.embedCount()).toBe(0); // same content, same cache, no model call
+      await expectEveryChunkRecallsItself(db, CHUNKS);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('a removed transcript file reclaims its slots without disturbing the survivors', async () => {
+    const db = new Database(':memory:');
+    db.exec(INDEX_DB_SCHEMA);
+    await loadSqliteVec(db);
+    try {
+      seedChunks(db, CHUNKS);
+      await syncSemanticIndex({
+        db, modelId: MODEL, dims: DIMS, scope: 'transcripts', extractorImpl: makeFakeExtractor(),
+      });
+      const gone = CHUNKS.filter((c) => c.file === 'context/transcripts/2026-06-10.md');
+      db.prepare('DELETE FROM transcript_chunks WHERE source_file = ?').run(gone[0].file);
+      const s = await syncSemanticIndex({
+        db, modelId: MODEL, dims: DIMS, scope: 'transcripts', extractorImpl: makeFakeExtractor(),
+      });
+      expect(s.dropped).toBe(gone.length);
+      expect(db.prepare('SELECT COUNT(*) AS n FROM vec_transcripts').get().n).toBe(CHUNKS.length - gone.length);
+      // Over-mutation guard: the survivors are untouched AND still their own.
+      await expectEveryChunkRecallsItself(db, CHUNKS.filter((c) => c.file !== gone[0].file));
+      const v = await verifyVectorMapping({ db, modelId: MODEL, scope: 'transcripts', sample: 100 });
+      expect(v).toMatchObject({ ok: true, checked: CHUNKS.length - gone.length });
+    } finally {
+      db.close();
+    }
+  });
+});
+
 describe('Task 261 — verifyVectorMapping, the detection half (Door 2: the tables themselves)', () => {
   it('reports every slot verified on a healthy index, and no vectors are unverifiable', async () => {
     const db = makeDb();
