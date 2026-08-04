@@ -666,7 +666,7 @@ describe('viewer — JSON API routes (255.2)', () => {
     const { status, body } = await getJson(base, '/api/health');
     expect(status).toBe(200);
     expect(body.view).toBe('health');
-    expect(body.checks.length).toBe(14);
+    expect(body.checks.length).toBe(15);
     for (const c of body.checks) {
       expect(c).toHaveProperty('id');
       expect(c).toHaveProperty('name');
