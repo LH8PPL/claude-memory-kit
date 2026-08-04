@@ -10,10 +10,31 @@
 //     always-available default (claude-mem precedent, §9.3.1).
 //   - Embeddings are CONTENT-ADDRESSED (memweave pattern): sha256(model +
 //     body) → vector in `embedding_cache`; re-syncs embed only new/changed
-//     observations. The vec table mirrors `observations` rowids, so the
-//     §9.2.1 mutation propagation (reindexBoot before every search) flows
-//     straight into `syncSemanticIndex` — changed rows re-embed, deleted/
-//     tombstoned rows drop out of the vec table.
+//     observations. The §9.2.1 mutation propagation (reindexBoot before every
+//     search) flows straight into `syncSemanticIndex` — changed rows re-embed,
+//     deleted/tombstoned rows drop out of the vec table.
+//   - THE KEYING CONTRACT (Task 261 / D-421 — design §9.3.2). A vec0 row is
+//     addressed by its rowid and nothing else, so SOMETHING has to say which
+//     fact a given vec rowid belongs to. That something is `vec_map`, keyed by
+//     the content table's own STABLE primary key (`observations.id`, which is
+//     content-addressed and survives every rebuild; `(source_file, chunk_idx)`
+//     for transcript chunks) — never by the content table's auto-assigned
+//     rowid.
+//
+//     The comment that used to sit here said "the vec table mirrors
+//     `observations` rowids", and stating that assumption did not make it true:
+//     `reindexFull` DROPs and recreates `observations`, SQLite re-assigns every
+//     rowid from 1, and the vec table kept the OLD mapping. 15.4% of the
+//     dogfood corpus ended up holding an unrelated fact's embedding, and
+//     `cmk reindex --full` — the repair the docs prescribe — was the cause.
+//     `vec_map` removes the coupling entirely: a rebuild cannot move a fact's
+//     vec rowid, because the key it is looked up by never changes.
+//
+//     `vec_map` also records the `content_sha` of the vector actually stored in
+//     each slot, which is what makes the skip-if-unchanged guard SOUND. The old
+//     guard skipped on "the row is present AND this content is in the cache" —
+//     which does not imply "this row holds this content" (a body edited to text
+//     some other fact already embedded kept its stale vector forever).
 //
 // Async boundary (deliberate): `search()` is synchronous and its
 // `semanticBackend` DI seam is a SYNC function (Task 120 kept it that way on
@@ -112,21 +133,86 @@ function toBlob(floatArray) {
   return Buffer.from(new Float32Array(floatArray).buffer);
 }
 
-// Task 104.2 (D-117) — semantic scopes. Each scope pairs a vec table with
-// the content table its rowids reference. The embedding_cache is SHARED
-// (content-addressed: sha256(model+body) — the same text embeds once no
-// matter which scope holds it).
+// Task 104.2 (D-117) — semantic scopes. Each scope pairs a vec table with the
+// content table it describes and, since Task 261, with that table's STABLE key
+// (see the keying contract at the top of this file):
+//   - `liveSql` selects (key1, key2, body) for every row that should carry a
+//     vector. key1/key2 are the content table's own primary key, NOT its rowid.
+//   - `joinSql` maps a KNN hit's vec rowid back to its content row THROUGH
+//     `vec_map`. `idx_vec_map_rowid` serves the first join; the content table's
+//     own PRIMARY KEY serves the second.
+// The embedding_cache is SHARED across scopes (content-addressed:
+// sha256(model+body) — the same text embeds once no matter which scope holds it).
 const SEMANTIC_SCOPES = Object.freeze({
   facts: {
     vecTable: 'vec_observations',
     liveSql:
-      'SELECT rowid, body FROM observations WHERE deleted_at IS NULL AND superseded_by IS NULL',
+      'SELECT id AS key1, 0 AS key2, body FROM observations WHERE deleted_at IS NULL AND superseded_by IS NULL',
+    joinSql:
+      `JOIN vec_map vm ON vm.scope = 'facts' AND vm.vec_rowid = m.rowid
+       JOIN observations o ON o.id = vm.key1`,
+    sampleSql:
+      `SELECT vm.key1 AS key1, vm.key2 AS key2, vm.vec_rowid AS vec_rowid, o.body AS body
+         FROM vec_map vm JOIN observations o ON o.id = vm.key1
+        WHERE vm.scope = 'facts' AND o.deleted_at IS NULL AND o.superseded_by IS NULL
+        ORDER BY RANDOM() LIMIT ?`,
   },
   transcripts: {
     vecTable: 'vec_transcripts',
-    liveSql: 'SELECT rowid, body FROM transcript_chunks',
+    liveSql: 'SELECT source_file AS key1, chunk_idx AS key2, body FROM transcript_chunks',
+    joinSql:
+      `JOIN vec_map vm ON vm.scope = 'transcripts' AND vm.vec_rowid = m.rowid
+       JOIN transcript_chunks t ON t.source_file = vm.key1 AND t.chunk_idx = vm.key2`,
+    sampleSql:
+      `SELECT vm.key1 AS key1, vm.key2 AS key2, vm.vec_rowid AS vec_rowid, t.body AS body
+         FROM vec_map vm
+         JOIN transcript_chunks t ON t.source_file = vm.key1 AND t.chunk_idx = vm.key2
+        WHERE vm.scope = 'transcripts'
+        ORDER BY RANDOM() LIMIT ?`,
   },
 });
+
+// Task 261: bumped when the vec tables' KEYING changes. A stored value that
+// isn't this one means the vec rows were written under a keying this build no
+// longer understands, so they are reset wholesale on the next sync. Version 1
+// (implicit — the marker did not exist) is the pre-261 observations.rowid
+// keying: its rows CANNOT be migrated, because the rowid they were filed under
+// no longer identifies anything. Resetting is cheap: `embedding_cache` is
+// content-addressed and is NOT touched, so every vector comes straight back
+// with zero model calls.
+export const VEC_MAP_VERSION = '2';
+
+// The vec→content mapping. Plain SQL — deliberately NOT a vec0 virtual table —
+// so it can be created and read on a connection that has never loaded the
+// sqlite-vec extension.
+//
+//   scope       'facts' | 'transcripts'
+//   key1/key2   the CONTENT table's stable primary key (observations.id with a
+//               constant 0 for key2; source_file + chunk_idx for transcripts)
+//   vec_rowid   the vec0 rowid this content occupies — allocated monotonically
+//               per scope, written EXPLICITLY, never auto-assigned
+//   content_sha the sha256(model\nbody) of the vector actually stored there —
+//               the only sound basis for "this slot is already up to date"
+const VEC_MAP_SCHEMA = `
+  CREATE TABLE IF NOT EXISTS vec_map (
+    scope TEXT NOT NULL,
+    key1 TEXT NOT NULL,
+    key2 INTEGER NOT NULL DEFAULT 0,
+    vec_rowid INTEGER NOT NULL,
+    content_sha TEXT NOT NULL,
+    PRIMARY KEY (scope, key1, key2)
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_vec_map_rowid ON vec_map(scope, vec_rowid);
+`;
+
+/**
+ * Create the vec→content mapping table. Separate from ensureSemanticSchema
+ * because it needs no vec0 module: any caller that only READS the mapping (or
+ * runs before the extension is loaded) can call this alone.
+ */
+export function ensureVecMapSchema(db) {
+  db.exec(VEC_MAP_SCHEMA);
+}
 
 export function ensureSemanticSchema(db, { dims = DEFAULT_DIMS } = {}) {
   // sqlite-vec is a tiny prebuilt extension (regular dependency).
@@ -153,6 +239,7 @@ export function ensureSemanticSchema(db, { dims = DEFAULT_DIMS } = {}) {
       value TEXT NOT NULL
     );
   `);
+  ensureVecMapSchema(db);
 }
 
 export class SqliteVecNotLoadedError extends Error {
@@ -219,8 +306,24 @@ export async function syncSemanticIndex({
   // Model/dims change invalidates BOTH scopes' vec tables (different space).
   const meta = db.prepare("SELECT value FROM vec_meta WHERE key = 'model'").get();
   const dimsMeta = db.prepare("SELECT value FROM vec_meta WHERE key = 'dims'").get();
-  if ((meta && meta.value !== modelId) || (dimsMeta && Number(dimsMeta.value) !== dims)) {
+  const mapVersion = db.prepare("SELECT value FROM vec_meta WHERE key = 'map_version'").get();
+  // Task 261 (D-421): reset the vec layer when the vector SPACE changes (model
+  // / dims, as before) OR when the stored rows were written under a different
+  // KEYING. The second case covers two paths that must both self-heal without
+  // the user knowing anything happened:
+  //   - an index built before Task 261 (no marker → the broken rowid keying);
+  //   - `cmk reindex --full` / `cmk repair --index`, which CLEAR the marker on
+  //     purpose so the documented repair genuinely repairs.
+  // Both are cheap: `embedding_cache` is content-addressed and untouched, so
+  // the rebuild below re-inserts every vector with zero model calls.
+  const spaceChanged =
+    (meta && meta.value !== modelId) || (dimsMeta && Number(dimsMeta.value) !== dims);
+  const keyingStale = !mapVersion || mapVersion.value !== VEC_MAP_VERSION;
+  if (spaceChanged || keyingStale) {
     db.exec('DROP TABLE IF EXISTS vec_observations; DROP TABLE IF EXISTS vec_transcripts;');
+    // The map describes rows that no longer exist — clear it in the SAME step,
+    // or the next allocation would hand out rowids the map already claims.
+    db.exec('DELETE FROM vec_map');
     ensureSemanticSchema(db, { dims });
   }
   const putMeta = db.prepare(
@@ -228,23 +331,10 @@ export async function syncSemanticIndex({
   );
   putMeta.run('model', modelId);
   putMeta.run('dims', String(dims));
+  putMeta.run('map_version', VEC_MAP_VERSION);
 
   const live = db.prepare(scopeDef.liveSql).all();
 
-  // Drop vec rows that no longer correspond to live content rows.
-  const liveRowids = new Set(live.map((r) => BigInt(r.rowid)));
-  const vecRows = db.prepare(`SELECT rowid FROM ${scopeDef.vecTable}`).all();
-  const dropStmt = db.prepare(`DELETE FROM ${scopeDef.vecTable} WHERE rowid = ?`);
-  let dropped = 0;
-  for (const r of vecRows) {
-    if (!liveRowids.has(BigInt(r.rowid))) {
-      dropStmt.run(BigInt(r.rowid));
-      dropped += 1;
-    }
-  }
-
-  // Content-addressed embed: only rows whose (model+body) hash is uncached
-  // OR whose vec row is missing/stale get (re)embedded/(re)inserted.
   const cacheGet = db.prepare('SELECT vector FROM embedding_cache WHERE content_sha = ?');
   const cachePut = db.prepare(
     'INSERT OR REPLACE INTO embedding_cache(content_sha, model, vector) VALUES (?, ?, ?)',
@@ -252,20 +342,77 @@ export async function syncSemanticIndex({
   const vecGet = db.prepare(`SELECT rowid FROM ${scopeDef.vecTable} WHERE rowid = ?`);
   const vecDel = db.prepare(`DELETE FROM ${scopeDef.vecTable} WHERE rowid = ?`);
   const vecPut = db.prepare(`INSERT INTO ${scopeDef.vecTable}(rowid, embedding) VALUES (?, ?)`);
+  const mapGet = db.prepare(
+    'SELECT vec_rowid, content_sha FROM vec_map WHERE scope = ? AND key1 = ? AND key2 = ?',
+  );
+  const mapPut = db.prepare(
+    `INSERT INTO vec_map(scope, key1, key2, vec_rowid, content_sha) VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(scope, key1, key2) DO UPDATE SET
+       vec_rowid = excluded.vec_rowid, content_sha = excluded.content_sha`,
+  );
+  const mapDel = db.prepare('DELETE FROM vec_map WHERE scope = ? AND key1 = ? AND key2 = ?');
 
+  // Content-addressed embed: only rows whose (model+body) hash is uncached get
+  // embedded; the vec write below is decided separately, per slot.
   const toEmbed = [];
-  const plans = []; // {rowid, sha, cached?, body}
+  const plans = []; // {key1, key2, sha, cached?, body}
   for (const row of live) {
     // Skip empty/whitespace-only bodies (skill-review M2): mean-pooling an
     // empty sequence yields a NaN/degenerate vector, and an empty fact can
     // never be a useful semantic match. Excluded from BOTH the embed input and
     // the plans walk below, so the vecList↔plans order-mapping stays exact.
+    // They are also excluded from the live-key set below, so a fact whose body
+    // is emptied has its slot RECLAIMED rather than left holding old content.
     if (!row.body || !String(row.body).trim()) continue;
     const sha = sha256(`${modelId}\n${row.body}`);
     const cached = cacheGet.get(sha);
-    plans.push({ rowid: BigInt(row.rowid), sha, cached: cached?.vector ?? null, body: row.body });
+    plans.push({
+      key1: String(row.key1),
+      key2: Number(row.key2 ?? 0),
+      sha,
+      cached: cached?.vector ?? null,
+      body: row.body,
+    });
     if (!cached) toEmbed.push(row.body);
   }
+
+  // Reclaim slots whose content is gone (deleted / tombstoned / superseded /
+  // emptied). Both halves of the slot go together — the vec row AND its map
+  // entry — so a freed vec_rowid can never be handed out while its old vector
+  // is still sitting there (the D-421 failure, one level down).
+  const liveKeys = new Set(plans.map((p) => `${p.key1} ${p.key2}`));
+  const mapRows = db
+    .prepare('SELECT key1, key2, vec_rowid FROM vec_map WHERE scope = ?')
+    .all(scope);
+  let dropped = 0;
+  const mappedRowids = new Set();
+  for (const m of mapRows) {
+    if (liveKeys.has(`${m.key1} ${m.key2}`)) {
+      mappedRowids.add(BigInt(m.vec_rowid));
+      continue;
+    }
+    vecDel.run(BigInt(m.vec_rowid));
+    mapDel.run(scope, m.key1, m.key2);
+    dropped += 1;
+  }
+  // ORPHAN SWEEP — a vec row the map does not claim is unattributable by
+  // construction, so it can only produce a wrong answer. This is what lets a
+  // torn state (a crash between the two writes; a hand-edited db) heal itself
+  // instead of quietly returning someone else's fact.
+  for (const r of db.prepare(`SELECT rowid FROM ${scopeDef.vecTable}`).all()) {
+    if (!mappedRowids.has(BigInt(r.rowid))) {
+      vecDel.run(BigInt(r.rowid));
+      dropped += 1;
+    }
+  }
+
+  // Monotonic per-scope allocation. Safe to derive from MAX because a freed
+  // rowid is only ever freed together with its vec row (above), so reuse always
+  // lands on an empty slot.
+  let nextRowid = BigInt(
+    db.prepare('SELECT COALESCE(MAX(vec_rowid), 0) AS m FROM vec_map WHERE scope = ?').get(scope)
+      ?.m ?? 0,
+  );
 
   let embedded = 0;
   let vectorsBySha = new Map();
@@ -311,19 +458,99 @@ export async function syncSemanticIndex({
   for (const plan of plans) {
     const blob = plan.cached ?? vectorsBySha.get(plan.sha);
     if (!blob) continue;
-    // vec0 has no UPSERT; delete+insert only when absent or content changed.
-    // Cheap presence probe; content change implies a NEW sha (content-
-    // addressed), which implies the row was just embedded → refresh it.
-    const present = vecGet.get(plan.rowid);
-    if (present && plan.cached) {
-      continue; // unchanged + already in the vec table
+    const mapped = mapGet.get(scope, plan.key1, plan.key2);
+    let rowid;
+    if (mapped) {
+      rowid = BigInt(mapped.vec_rowid);
+      const present = vecGet.get(rowid);
+      // THE SOUND SKIP (Task 261): skip only when this slot is recorded as
+      // holding exactly THIS content. The pre-261 guard skipped on "the row
+      // exists AND this content is cached", which says nothing about what the
+      // row actually contains — a body edited to text another fact had already
+      // embedded kept its stale vector forever.
+      if (present && mapped.content_sha === plan.sha) continue;
+      if (present) vecDel.run(rowid);
+    } else {
+      nextRowid += 1n;
+      rowid = nextRowid;
     }
-    if (present) vecDel.run(plan.rowid);
-    vecPut.run(plan.rowid, blob);
+    // vec0 has no UPSERT; the delete above plus this insert is the write.
+    vecPut.run(rowid, blob);
+    mapPut.run(scope, plan.key1, plan.key2, rowid, plan.sha);
     upserted += 1;
   }
 
   return { ok: true, embedded, upserted, dropped, total: live.length };
+}
+
+/**
+ * Task 261 (D-421) — the DETECTION half: does each fact's slot actually hold
+ * that fact's vector?
+ *
+ * The check is deliberately independent of what `vec_map.content_sha` CLAIMS.
+ * For a sample of live rows it re-derives sha256(model\nbody) from the body on
+ * record, looks that sha up in the content-addressed `embedding_cache`, and
+ * compares the cached bytes against the bytes actually stored in the vec slot.
+ * A bookkeeping error that corrupted the map as well as the table would still
+ * be caught, because the body — not the map — is the reference.
+ *
+ * Cheap by design (this runs inside `cmk doctor`): one indexed lookup and one
+ * blob compare per sampled row, no embedder, no model load.
+ *
+ * A row whose content is not in the cache is `unverifiable`, NOT a mismatch —
+ * it means the sync has not embedded that body under this model yet, which is a
+ * normal transient state and must never be reported as corruption.
+ *
+ * @returns {Promise<{ok: boolean, reason?: string, checked: number,
+ *   mismatches: Array<{key1: string, key2: number, reason: string}>,
+ *   unverifiable: number}>}
+ */
+export async function verifyVectorMapping({
+  db,
+  modelId = DEFAULT_MODEL_ID,
+  scope = 'facts',
+  sample = 50,
+} = {}) {
+  const scopeDef = SEMANTIC_SCOPES[scope];
+  const empty = { checked: 0, mismatches: [], unverifiable: 0 };
+  if (!scopeDef) return { ok: false, reason: `unknown-scope:${scope}`, ...empty };
+  if (!(await loadSqliteVec(db))) {
+    return { ok: false, reason: 'sqlite-vec-unavailable', ...empty };
+  }
+  const tableExists = (name) =>
+    !!db
+      .prepare("SELECT 1 AS x FROM sqlite_master WHERE name = ? AND type IN ('table','view')")
+      .get(name);
+  // A pre-Task-261 index has no `vec_map` at all; so does an index whose owner
+  // never installed the optional embedder. Both are "nothing to verify", not a
+  // failure — and the pre-261 one self-heals on its next sync regardless.
+  if (!tableExists('vec_map') || !tableExists(scopeDef.vecTable) || !tableExists('embedding_cache')) {
+    return { ok: false, reason: 'semantic-index-absent', ...empty };
+  }
+  const rows = db.prepare(scopeDef.sampleSql).all(Math.max(1, sample));
+  if (rows.length === 0) return { ok: true, reason: 'nothing-mapped', ...empty };
+
+  const cacheGet = db.prepare('SELECT vector FROM embedding_cache WHERE content_sha = ?');
+  const vecGet = db.prepare(`SELECT embedding FROM ${scopeDef.vecTable} WHERE rowid = ?`);
+  const mismatches = [];
+  let unverifiable = 0;
+  let checked = 0;
+  for (const r of rows) {
+    if (!r.body || !String(r.body).trim()) continue;
+    const cached = cacheGet.get(sha256(`${modelId}\n${r.body}`))?.vector;
+    if (!cached) {
+      unverifiable += 1;
+      continue;
+    }
+    checked += 1;
+    const stored = vecGet.get(BigInt(r.vec_rowid))?.embedding;
+    if (!stored) {
+      mismatches.push({ key1: r.key1, key2: r.key2, reason: 'slot-empty' });
+    } else if (!Buffer.from(stored).equals(Buffer.from(cached))) {
+      mismatches.push({ key1: r.key1, key2: r.key2, reason: 'foreign-vector' });
+    }
+  }
+  return { ok: mismatches.length === 0, checked, mismatches, unverifiable };
 }
 
 /**
@@ -407,6 +634,10 @@ export async function prepareSemanticBackend({
     ? await syncSemanticIndex({ db, modelId, dims, scope, extractorImpl })
     : { ok: true, skipped: true };
   if (!sync.ok) return { ok: false, reason: sync.reason };
+  // syncIndex:false skips the path that creates vec_map, and the KNN join below
+  // reads it — so make sure it exists. Plain SQL, no vec0 module needed; a
+  // no-op on every synced index.
+  ensureVecMapSchema(db);
 
   const qOut = await extractor(query, { pooling: 'mean', normalize: true });
   const qBlob = toBlob(qOut.tolist()[0]);
@@ -423,7 +654,7 @@ export async function prepareSemanticBackend({
                       t.source_file, t.source_line, t.heading, t.body
                  FROM (SELECT rowid, distance FROM vec_transcripts
                         WHERE embedding MATCH ? ORDER BY distance LIMIT ?) m
-                 JOIN transcript_chunks t ON t.rowid = m.rowid
+                 ${SEMANTIC_SCOPES.transcripts.joinSql}
                 ORDER BY m.distance`,
             )
             .all(qBlob, limit);
@@ -449,7 +680,8 @@ export async function prepareSemanticBackend({
           // starve the result list.
           const k = Math.max(limit * overFetch, limit);
           // KNN subquery FIRST (sqlite-vec needs MATCH + LIMIT pushed into the
-          // virtual-table scan), then join observation metadata.
+          // virtual-table scan), then map the hit back to its fact THROUGH
+          // vec_map — the stable-key join, never `o.rowid = m.rowid` (D-421).
           const rows = db
             .prepare(
               `SELECT m.rowid AS rowid, m.distance AS distance,
@@ -457,7 +689,7 @@ export async function prepareSemanticBackend({
                       o.created_at, o.deleted_at, o.expires_at
                  FROM (SELECT rowid, distance FROM vec_observations
                         WHERE embedding MATCH ? ORDER BY distance LIMIT ?) m
-                 JOIN observations o ON o.rowid = m.rowid
+                 ${SEMANTIC_SCOPES.facts.joinSql}
                 ORDER BY m.distance`,
             )
             .all(qBlob, k);

@@ -666,6 +666,31 @@ export function reindexBoot({ projectRoot, userDir, db, now }) {
   };
 }
 
+// Task 261 (D-421) — the REPAIR half. Since Task 261 the semantic vec tables
+// are keyed by `vec_map` (the fact's stable id), not by `observations.rowid`,
+// so a full rebuild no longer desyncs them and this is not needed for
+// correctness. It is here because `cmk reindex --full` — and `cmk repair
+// --index`, which calls it — is the command the docs and the troubleshooting
+// skill prescribe when search looks wrong. Before Task 261 that command was the
+// CAUSE of the corruption; it must now be the cure, without asking the user to
+// know anything happened. Clearing the version marker makes the next
+// `syncSemanticIndex` rebuild the vec layer from scratch (free: the
+// content-addressed `embedding_cache` is deliberately NOT touched, so no model
+// call is needed for a single vector).
+//
+// Done by marker rather than by DROPping the tables here, because dropping a
+// vec0 virtual table requires the sqlite-vec extension to be loaded on this
+// connection — a plain reindex has no reason to load it, and the sync path
+// always has. The catch covers an index whose semantic layer was never
+// initialised (no `vec_meta` table): nothing to invalidate.
+function invalidateSemanticKeying(db) {
+  try {
+    db.exec("DELETE FROM vec_meta WHERE key = 'map_version'");
+  } catch {
+    /* no semantic layer on this index — nothing to invalidate */
+  }
+}
+
 /**
  * Full reindex: drop observations + observations_fts + files tables,
  * re-apply the schema, then walk + reindex every source.
@@ -694,6 +719,7 @@ export function reindexFull({ projectRoot, userDir, db, now }) {
     DROP TABLE IF EXISTS edges;
   `);
   db.exec(INDEX_DB_SCHEMA);
+  invalidateSemanticKeying(db);
 
   const sources = listObservationSources({ projectRoot, userDir });
   const skipped = [];

@@ -38,7 +38,10 @@ import { join } from 'node:path';
 import {
   syncSemanticIndex,
   prepareSemanticBackend,
+  verifyVectorMapping,
   loadSqliteVec,
+  ensureSemanticSchema,
+  VEC_MAP_VERSION,
 } from '../packages/cli/src/semantic-backend.mjs';
 import { INDEX_DB_SCHEMA } from '../packages/cli/src/index-db.mjs';
 
@@ -271,6 +274,127 @@ describe('Task 261 — the vec index stays mapped to its own facts across rebuil
         db, query: FACTS[2].body, modelId: MODEL, dims: DIMS, extractorImpl: makeFakeExtractor(),
       });
       expect(prep.backend({ limit: 6 }).map((h) => h.id)).not.toContain(FACTS[2].id);
+    } finally {
+      db.close();
+    }
+  });
+});
+
+describe('Task 261 — verifyVectorMapping, the detection half (Door 2: the tables themselves)', () => {
+  it('reports every slot verified on a healthy index, and no vectors are unverifiable', async () => {
+    const db = makeDb();
+    await loadSqliteVec(db);
+    try {
+      await syncSemanticIndex({ db, modelId: MODEL, dims: DIMS, extractorImpl: makeFakeExtractor() });
+      const v = await verifyVectorMapping({ db, modelId: MODEL, sample: 100 });
+      expect(v).toMatchObject({ ok: true, checked: FACTS.length, unverifiable: 0 });
+      expect(v.mismatches).toEqual([]);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('DETECTS a hand-corrupted slot — the guard that makes this non-silent', async () => {
+    const db = makeDb();
+    await loadSqliteVec(db);
+    try {
+      await syncSemanticIndex({ db, modelId: MODEL, dims: DIMS, extractorImpl: makeFakeExtractor() });
+      // Swap two facts' vectors behind the sync's back — precisely the state
+      // D-421 produced 360 times on the real corpus.
+      const [a, b] = db
+        .prepare("SELECT key1, vec_rowid FROM vec_map WHERE scope = 'facts' ORDER BY vec_rowid LIMIT 2")
+        .all();
+      const va = db.prepare('SELECT embedding FROM vec_observations WHERE rowid = ?').get(BigInt(a.vec_rowid)).embedding;
+      const vb = db.prepare('SELECT embedding FROM vec_observations WHERE rowid = ?').get(BigInt(b.vec_rowid)).embedding;
+      db.prepare('DELETE FROM vec_observations WHERE rowid = ?').run(BigInt(a.vec_rowid));
+      db.prepare('DELETE FROM vec_observations WHERE rowid = ?').run(BigInt(b.vec_rowid));
+      db.prepare('INSERT INTO vec_observations(rowid, embedding) VALUES (?, ?)').run(BigInt(a.vec_rowid), vb);
+      db.prepare('INSERT INTO vec_observations(rowid, embedding) VALUES (?, ?)').run(BigInt(b.vec_rowid), va);
+
+      const v = await verifyVectorMapping({ db, modelId: MODEL, sample: 100 });
+      expect(v.ok).toBe(false);
+      expect(v.mismatches).toHaveLength(2);
+      expect(v.mismatches.map((m) => m.reason)).toEqual(['foreign-vector', 'foreign-vector']);
+      expect(v.mismatches.map((m) => m.key1).sort()).toEqual([a.key1, b.key1].sort());
+    } finally {
+      db.close();
+    }
+  });
+
+  it('an index with no semantic layer is `semantic-index-absent`, never a false FAIL', async () => {
+    const db = makeDb();
+    try {
+      const v = await verifyVectorMapping({ db, modelId: MODEL });
+      expect(v).toMatchObject({ ok: false, reason: 'semantic-index-absent', checked: 0 });
+    } finally {
+      db.close();
+    }
+  });
+});
+
+describe('Task 261 — an ALREADY-CORRUPTED install heals itself (the D-421 repair path)', () => {
+  it('a pre-261 index (vec rows keyed by observations.rowid) is reset on the next sync, for free', async () => {
+    const db = makeDb();
+    await loadSqliteVec(db);
+    try {
+      // Reconstruct the pre-261 on-disk state by hand: vec rows filed under the
+      // CONTENT table's rowid, no vec_map, no map_version marker — plus the
+      // rowid shuffle a rebuild caused. This is what every existing install's
+      // index looks like right now.
+      ensureSemanticSchema(db, { dims: DIMS });
+      const cachePut = db.prepare(
+        'INSERT OR REPLACE INTO embedding_cache(content_sha, model, vector) VALUES (?, ?, ?)',
+      );
+      const toBlob = (v) => Buffer.from(new Float32Array(v).buffer);
+      FACTS.forEach((f, i) => {
+        cachePut.run(
+          createHash('sha256').update(`${MODEL}\n${f.body}`, 'utf8').digest('hex'),
+          MODEL,
+          toBlob(fakeVector(f.body)),
+        );
+        // The off-by-one shuffle: fact i's slot holds fact i+1's vector.
+        const foreign = FACTS[(i + 1) % FACTS.length];
+        db.prepare('INSERT INTO vec_observations(rowid, embedding) VALUES (?, ?)').run(
+          BigInt(i + 1),
+          toBlob(fakeVector(foreign.body)),
+        );
+      });
+      db.prepare("INSERT INTO vec_meta(key, value) VALUES ('model', ?)").run(MODEL);
+      db.prepare("INSERT INTO vec_meta(key, value) VALUES ('dims', ?)").run(String(DIMS));
+      db.exec('DELETE FROM vec_map'); // pre-261: the table did not exist at all
+      expect(db.prepare("SELECT COUNT(*) c FROM vec_meta WHERE key = 'map_version'").get().c).toBe(0);
+
+      // The healing sync — no model calls, because every vector is cached.
+      const fake = makeFakeExtractor();
+      const s = await syncSemanticIndex({ db, modelId: MODEL, dims: DIMS, extractorImpl: fake });
+      expect(s.ok).toBe(true);
+      expect(fake.embedCount()).toBe(0); // FREE: the content-addressed cache survives
+      expect(db.prepare("SELECT value FROM vec_meta WHERE key = 'map_version'").get().value)
+        .toBe(VEC_MAP_VERSION);
+
+      const v = await verifyVectorMapping({ db, modelId: MODEL, sample: 100 });
+      expect(v).toMatchObject({ ok: true, checked: FACTS.length });
+      await expectEveryFactRecallsItself(db, FACTS);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('`reindexFull` invalidates the keying marker, so the documented repair repairs', async () => {
+    const { openIndexDb } = await import('../packages/cli/src/index-db.mjs');
+    const { reindexFull } = await import('../packages/cli/src/index-rebuild.mjs');
+    const sandbox = mkdtempSync(join(tmpdir(), 'cmk-261-repair-'));
+    sandboxes.push(sandbox);
+    const projectRoot = join(sandbox, 'proj');
+    mkdirSync(join(projectRoot, 'context'), { recursive: true });
+    const db = openIndexDb({ projectRoot });
+    try {
+      await loadSqliteVec(db);
+      ensureSemanticSchema(db, { dims: DIMS });
+      db.prepare("INSERT INTO vec_meta(key, value) VALUES ('map_version', ?)").run(VEC_MAP_VERSION);
+      reindexFull({ projectRoot, userDir: join(sandbox, 'user'), db });
+      // The marker is gone → the next sync rebuilds the vec layer from scratch.
+      expect(db.prepare("SELECT COUNT(*) c FROM vec_meta WHERE key = 'map_version'").get().c).toBe(0);
     } finally {
       db.close();
     }
