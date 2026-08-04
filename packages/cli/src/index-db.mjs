@@ -290,6 +290,33 @@ function configureIndexDb(db) {
   // cross-process test — rather than leaving it to a driver default a future
   // major (or a `timeout: 0` option) could silently change.
   db.pragma('busy_timeout = 5000');
+  // Task 261 (D-422) — FK enforcement OFF, deliberately, on the DERIVED cache.
+  //
+  // better-sqlite3 turns `foreign_keys` ON by default (raw SQLite defaults it
+  // off), and this schema's one foreign key is
+  // `observations.superseded_by REFERENCES observations(id)`. The indexer
+  // inserts ONE SOURCE FILE per transaction, so a fact whose `superseded_by`
+  // points at a fact walked LATER violates the constraint at insert time and
+  // the whole reindex aborts with an unhandled SqliteError — leaving the index
+  // half-built, on BOTH the full and the incremental path.
+  //
+  // Two legal corpus shapes hit it, and neither is a user error:
+  //   - a FORWARD reference — pure walk order, decided by filename sort;
+  //   - a DANGLING reference — the successor was later forgotten, so the
+  //     markdown legitimately points at a fact that no longer has a row.
+  //
+  // The constraint was also buying nothing. Referential integrity here is owned
+  // by the MARKDOWN (ADR-0002: the index is rebuildable derived state, the files
+  // are the source of truth), the FK has no ON DELETE action, and every reader
+  // already handles an unresolvable target — graph-index marks it
+  // `dst_resolved = 0`, and `cmk get` prints the id as written. So its only
+  // observable effect was converting a legitimate corpus into a crash of
+  // `cmk reindex --full`, the command the docs prescribe as the repair.
+  //
+  // Found by the Task 261 aged-corpus harness on its first real run. It had
+  // never fired in the dogfood repo for one reason: that corpus happens to have
+  // ZERO supersessions, so the question had never been asked.
+  db.pragma('foreign_keys = OFF');
   // Task 256: the edges CHECK constraint gained 'cites'. CREATE TABLE IF NOT
   // EXISTS does NOT alter an existing table's CHECK, so a pre-256 index would
   // reject `cites` inserts. edges is a fully rebuildable structural table (drop

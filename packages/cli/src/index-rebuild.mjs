@@ -720,6 +720,22 @@ export function reindexFull({ projectRoot, userDir, db, now }) {
   `);
   db.exec(INDEX_DB_SCHEMA);
   invalidateSemanticKeying(db);
+  // Task 261 (D-422) — the SAME class as D-421, one table over. `edges` was
+  // just dropped, but `meta` was not, and the schema re-applies with CREATE IF
+  // NOT EXISTS — so `meta.edges_built_at` survives, still claiming a build that
+  // no longer exists. The rebuild below is best-effort inside a try/catch, so a
+  // throw leaves an EMPTY edges table beside a sentinel that says it is built,
+  // and `reindexBoot`'s cold-edge path (`!edgesBuilt(db)`) then never rebuilds
+  // it — `cmk links` and every backlink answer quietly return nothing until an
+  // unrelated file happens to change. `migrateEdgesSchema` in index-db.mjs
+  // already pairs these two operations for exactly this reason; pair them here
+  // too. Cleared BEFORE the rebuild, so the sentinel is only ever re-written by
+  // a rebuild that actually succeeded.
+  try {
+    db.exec("DELETE FROM meta WHERE key = 'edges_built_at'");
+  } catch {
+    /* very old index with no meta table — the schema above just created it */
+  }
 
   const sources = listObservationSources({ projectRoot, userDir });
   const skipped = [];

@@ -11,7 +11,7 @@
 //   - Test `--full`: drops DB; walks all markdown; row count == markdown fact count
 //   - Test concurrent writers (one `--boot` + one runtime): no errors, no duplicate rows
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   mkdtempSync,
   rmSync,
@@ -30,6 +30,8 @@ import {
   reindexFull,
   startRuntimeWatcher,
 } from '../packages/cli/src/index-rebuild.mjs';
+import * as graphIndex from '../packages/cli/src/graph-index.mjs';
+import { edgesBuilt } from '../packages/cli/src/graph-index.mjs';
 import { writeBullet } from '../packages/cli/src/provenance.mjs';
 import { writeFact } from '../packages/cli/src/write-fact.mjs';
 import { overrideTrust } from '../packages/cli/src/trust.mjs';
@@ -1015,5 +1017,164 @@ describe('Task 139 - CRLF-converted memory files still index', () => {
     const lf = readFileSync(memPath, 'utf8');
     writeFileSync(memPath, lf.replace(/\n/g, '\r\n'), 'utf8');
     expect(() => reindexFull({ projectRoot, userDir, db })).not.toThrow();
+  });
+});
+
+// Task 261 (D-421 / D-422) — found by the AGED-CORPUS harness on its first real
+// run, and previously unhit only by luck.
+//
+// `observations.superseded_by` is declared `REFERENCES observations(id)`, and
+// better-sqlite3 turns FK enforcement ON by default. `reindexFull` inserts one
+// SOURCE FILE per transaction, so a fact whose `superseded_by` points at a fact
+// walked LATER hits the constraint at insert time — and the whole rebuild
+// aborts with an unhandled SqliteError, leaving the index half-built. The same
+// happens when the successor was later forgotten, which leaves a legitimately
+// DANGLING pointer in the markdown.
+//
+// Both shapes are legal: the markdown is the source of truth (ADR-0002), the
+// index is a rebuildable cache, and neither walk order nor a forgotten
+// successor is something a user did wrong. The dogfood corpus simply had zero
+// supersessions, so `cmk reindex --full` had never been asked the question.
+describe('Task 261 — supersession must not abort a full rebuild (D-422)', () => {
+  beforeEach(makeFixture);
+  afterEach(() => {
+    db?.close();
+    rmSync(sandbox, { recursive: true });
+  });
+
+  it('a FORWARD supersession reference (successor walked later) rebuilds cleanly', () => {
+    // 'aaa-old' sorts before 'zzz-new', so the walk reaches the superseded fact
+    // FIRST and its target does not exist in the table yet.
+    seedFactFile(projectRoot, {
+      id: 'P-NEWFACT2', type: 'project', title: 'The replacement', slug: 'zzz-new',
+      body: 'The deploy target is Fly.io.', write_source: 'user-explicit', trust: 'high',
+      at: '2026-06-20T10:00:00Z',
+    });
+    const oldPath = seedFactFile(projectRoot, {
+      id: 'P-PRVFACT3', type: 'project', title: 'The replaced', slug: 'aaa-old',
+      body: 'The deploy target is Render.', write_source: 'user-explicit', trust: 'high',
+      at: '2026-06-10T10:00:00Z',
+    });
+    const raw = readFileSync(oldPath, 'utf8');
+    writeFileSync(oldPath, raw.replace(/^id: .*$/m, (m) => `${m}\nsuperseded_by: P-NEWFACT2`), 'utf8');
+
+    expect(() => reindexFull({ projectRoot, userDir, db })).not.toThrow();
+    const rows = db
+      .prepare("SELECT id, superseded_by FROM observations WHERE id IN ('P-PRVFACT3','P-NEWFACT2') ORDER BY id")
+      .all();
+    expect(rows).toEqual([
+      { id: 'P-NEWFACT2', superseded_by: null },
+      { id: 'P-PRVFACT3', superseded_by: 'P-NEWFACT2' },
+    ]);
+  });
+
+  it('a DANGLING supersession reference (successor forgotten) rebuilds cleanly too', () => {
+    const p = seedFactFile(projectRoot, {
+      id: 'P-DANGRPT4', type: 'project', title: 'Points at a ghost', slug: 'dangler',
+      body: 'This fact was replaced by one that has since been forgotten.',
+      write_source: 'user-explicit', trust: 'high', at: '2026-06-10T10:00:00Z',
+    });
+    const raw = readFileSync(p, 'utf8');
+    writeFileSync(p, raw.replace(/^id: .*$/m, (m) => `${m}\nsuperseded_by: P-GHSTFAC5`), 'utf8');
+
+    expect(() => reindexFull({ projectRoot, userDir, db })).not.toThrow();
+    const row = db.prepare("SELECT superseded_by FROM observations WHERE id = 'P-DANGRPT4'").get();
+    // The pointer is PRESERVED, not silently dropped — readers already handle an
+    // unresolvable target (graph-index marks it dst_resolved=0).
+    expect(row.superseded_by).toBe('P-GHSTFAC5');
+  });
+
+  it('the incremental boot path tolerates the same shapes', () => {
+    const p = seedFactFile(projectRoot, {
+      id: 'P-BTSUPRC6', type: 'project', title: 'Boot-path supersession', slug: 'boot-sup',
+      body: 'Indexed by the incremental path with a forward reference.',
+      write_source: 'user-explicit', trust: 'high', at: '2026-06-10T10:00:00Z',
+    });
+    const raw = readFileSync(p, 'utf8');
+    writeFileSync(p, raw.replace(/^id: .*$/m, (m) => `${m}\nsuperseded_by: P-NTYETXX7`), 'utf8');
+    expect(() => reindexBoot({ projectRoot, userDir, db })).not.toThrow();
+    expect(
+      db.prepare("SELECT superseded_by FROM observations WHERE id = 'P-BTSUPRC6'").get().superseded_by,
+    ).toBe('P-NTYETXX7');
+  });
+});
+
+// Task 261 (D-422) — the SAME hazard class as D-421, one table over: derived
+// state that outlives the table it describes, with "rebuild everything" as the
+// trigger.
+//
+// `reindexFull` DROPs `edges` but not `meta`, and re-applies the schema with
+// `CREATE TABLE IF NOT EXISTS` — so `meta.edges_built_at` survives, still
+// claiming a build that no longer exists. The rebuild that follows is
+// best-effort inside a try/catch, so if it throws (a malformed fact mid-walk,
+// an EPERM, an unreadable archive entry) the outcome is an EMPTY edges table
+// beside a sentinel that says it was built. `reindexBoot` then never self-heals
+// it — `coldEdges = !edgesBuilt(db) && …` reads exactly that stale sentinel —
+// so `cmk links`, backlinks and supersession chains return empty, confidently,
+// until some unrelated file happens to change.
+//
+// `migrateEdgesSchema` (index-db.mjs) already drops the table and clears the
+// sentinel TOGETHER, and says why in its own comment. `reindexFull` was
+// violating the invariant its sibling was written to maintain.
+describe('Task 261 — the edges sentinel never outlives the edges table (D-422)', () => {
+  beforeEach(makeFixture);
+  afterEach(() => {
+    db?.close();
+    rmSync(sandbox, { recursive: true });
+  });
+
+  it('a FAILED edge rebuild during reindexFull leaves no sentinel claiming a build', () => {
+    seedFactFile(projectRoot, {
+      id: 'P-EDGESRC2', type: 'project', title: 'Has a link', slug: 'edge-src',
+      body: 'This relates to [[project_edge-dst]].',
+      write_source: 'user-explicit', trust: 'high', at: '2026-06-10T10:00:00Z',
+    });
+    // A first, healthy full reindex writes the sentinel.
+    reindexFull({ projectRoot, userDir, db });
+    expect(edgesBuilt(db)).toBe(true);
+
+    // Now make the edge rebuild throw, exactly where it can in production: the
+    // fact walk, before the atomic write. `reindexFull` swallows it by design.
+    const spy = vi.spyOn(graphIndex, 'rebuildEdges').mockImplementation(() => {
+      throw new Error('simulated: unreadable fact mid-walk');
+    });
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    try {
+      reindexFull({ projectRoot, userDir, db });
+    } finally {
+      spy.mockRestore();
+      stderr.mockRestore();
+    }
+
+    // The table is empty (dropped, never repopulated) — so the sentinel MUST
+    // NOT claim otherwise, or the boot path will never rebuild it.
+    expect(db.prepare('SELECT COUNT(*) AS n FROM edges').get().n).toBe(0);
+    expect(edgesBuilt(db)).toBe(false);
+  });
+
+  it('and the next boot reindex therefore self-heals the graph', () => {
+    seedFactFile(projectRoot, {
+      id: 'P-EDGESRC3', type: 'project', title: 'Has a link', slug: 'edge-src2',
+      body: 'This relates to [[project_edge-dst]].',
+      write_source: 'user-explicit', trust: 'high', at: '2026-06-10T10:00:00Z',
+    });
+    reindexFull({ projectRoot, userDir, db });
+    const spy = vi.spyOn(graphIndex, 'rebuildEdges').mockImplementation(() => {
+      throw new Error('simulated failure');
+    });
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    try {
+      reindexFull({ projectRoot, userDir, db });
+    } finally {
+      spy.mockRestore();
+      stderr.mockRestore();
+    }
+    expect(db.prepare('SELECT COUNT(*) AS n FROM edges').get().n).toBe(0);
+
+    // No file changed — the ONLY thing that can trigger the rebuild is the
+    // cold-edge path, and that reads the sentinel.
+    reindexBoot({ projectRoot, userDir, db });
+    expect(db.prepare('SELECT COUNT(*) AS n FROM edges').get().n).toBeGreaterThan(0);
+    expect(edgesBuilt(db)).toBe(true);
   });
 });
