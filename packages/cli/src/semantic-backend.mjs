@@ -24,8 +24,9 @@
 //     The comment that used to sit here said "the vec table mirrors
 //     `observations` rowids", and stating that assumption did not make it true:
 //     `reindexFull` DROPs and recreates `observations`, SQLite re-assigns every
-//     rowid from 1, and the vec table kept the OLD mapping. 15.4% of the
-//     dogfood corpus ended up holding an unrelated fact's embedding, and
+//     rowid from 1, and the vec table kept the OLD mapping. MEASURED on the
+//     dogfood corpus at the moment of the fix: 2,012 of 2,321 live facts
+//     (86.7%) held an unrelated fact's embedding, and
 //     `cmk reindex --full` — the repair the docs prescribe — was the cause.
 //     `vec_map` removes the coupling entirely: a rebuild cannot move a fact's
 //     vec rowid, because the key it is looked up by never changes.
@@ -319,7 +320,11 @@ export async function syncSemanticIndex({
   const spaceChanged =
     (meta && meta.value !== modelId) || (dimsMeta && Number(dimsMeta.value) !== dims);
   const keyingStale = !mapVersion || mapVersion.value !== VEC_MAP_VERSION;
-  if (spaceChanged || keyingStale) {
+  // Door 1: a wholesale reset is a real event with a real cost, so it is
+  // REPORTED in the return shape rather than happening invisibly — a caller (or
+  // a test) can tell "rebuilt from scratch" from "incremental no-op".
+  const reset = Boolean(spaceChanged || keyingStale);
+  if (reset) {
     db.exec('DROP TABLE IF EXISTS vec_observations; DROP TABLE IF EXISTS vec_transcripts;');
     // The map describes rows that no longer exist — clear it in the SAME step,
     // or the next allocation would hand out rowids the map already claims.
@@ -380,14 +385,19 @@ export async function syncSemanticIndex({
   // emptied). Both halves of the slot go together — the vec row AND its map
   // entry — so a freed vec_rowid can never be handed out while its old vector
   // is still sitting there (the D-421 failure, one level down).
-  const liveKeys = new Set(plans.map((p) => `${p.key1} ${p.key2}`));
+  //
+  // NUL joins the two key parts, written as an ESCAPE and never as a raw byte
+  // (a literal NUL in source is invisible and makes the file read as binary to
+  // grep and every reviewer): a `source_file` may contain spaces, so the
+  // separator has to be a character no key component can hold.
+  const liveKeys = new Set(plans.map((p) => `${p.key1}\u0000${p.key2}`));
   const mapRows = db
     .prepare('SELECT key1, key2, vec_rowid FROM vec_map WHERE scope = ?')
     .all(scope);
   let dropped = 0;
   const mappedRowids = new Set();
   for (const m of mapRows) {
-    if (liveKeys.has(`${m.key1} ${m.key2}`)) {
+    if (liveKeys.has(`${m.key1}\u0000${m.key2}`)) {
       mappedRowids.add(BigInt(m.vec_rowid));
       continue;
     }
@@ -480,7 +490,7 @@ export async function syncSemanticIndex({
     upserted += 1;
   }
 
-  return { ok: true, embedded, upserted, dropped, total: live.length };
+  return { ok: true, embedded, upserted, dropped, total: live.length, reset };
 }
 
 /**

@@ -2031,7 +2031,7 @@ vec_map(scope, key1, key2, vec_rowid, content_sha)   PRIMARY KEY (scope, key1, k
 comment, that "the vec table mirrors `observations` rowids" — and writing that down did not make it
 true. `reindexFull` DROPs and recreates `observations`; SQLite re-assigns every rowid from 1; the
 vec table kept the old mapping; and the sync's skip guard (`present && plan.cached → continue`)
-read the stale foreign vector as correct. **15.4% of the dogfood corpus (360 of 2,332 rows) ended up
+read the stale foreign vector as correct. **2,012 of the dogfood corpus's 2,321 live facts (86.7%) ended up
 holding an unrelated fact's embedding**, and `cmk reindex --full` — the repair the docs and the
 `troubleshooting` skill prescribe — was the *cause*. Nothing failed loudly: search returned five
 confident, well-scored, completely unrelated facts. Keying by a value the rebuild owns was the whole

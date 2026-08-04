@@ -10,7 +10,7 @@
 //
 // WHY THIS CHECK EXISTS: a vec-mapping desync is invisible by construction.
 // Search keeps working, results keep scoring 0.85+, nothing errors — the facts
-// are simply the wrong ones. The pre-261 bug had 15.4% of the dogfood corpus
+// are simply the wrong ones. The pre-261 bug had 86.7% of the dogfood corpus
 // holding an unrelated fact's embedding while the whole suite was green, and it
 // was found by a human spot-checking neighbours, not by any gate. Every other
 // check in the doctor probes CONFIGURATION or FRESHNESS; this one probes whether
@@ -128,7 +128,7 @@ describe('HC-15 — semantic vectors match their own facts', () => {
 
   it('FAILs with a count and a working repair when slots hold foreign vectors', async () => {
     const db = await seedSemanticIndex();
-    // Swap two facts' vectors — the exact shape D-421 produced 360 times.
+    // Swap two facts' vectors — the exact shape D-421 produced 2,012 times.
     const [a, b] = db
       .prepare("SELECT key1, vec_rowid FROM vec_map WHERE scope = 'facts' ORDER BY vec_rowid LIMIT 2")
       .all();

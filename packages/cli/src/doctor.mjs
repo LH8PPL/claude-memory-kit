@@ -1084,7 +1084,7 @@ function hc13StrayTiers({ projectRoot }) {
 // Task 261 (D-421). The vec index is keyed by `vec_map`, and a desync there is
 // INVISIBLE by construction: every query returns confident, well-scored,
 // plausible-looking results — they are simply the wrong facts. The pre-261 bug
-// had 15.4% of the dogfood corpus holding an unrelated fact's embedding while
+// had 86.7% of the dogfood corpus holding an unrelated fact's embedding while
 // the whole suite was green and `cmk search` looked like it worked.
 //
 // So the guard is a cheap sampled audit rather than a heartbeat: take N live

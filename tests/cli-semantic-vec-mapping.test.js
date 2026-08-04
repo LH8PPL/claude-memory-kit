@@ -13,7 +13,7 @@
 // reassigns every rowid (it DROPs + recreates `observations`) but never dropped
 // the vec table, and the sync's skip guard (`present && plan.cached → continue`)
 // then read the stale foreign vector as correct. Result on the real dogfood
-// corpus: 360 of 2,332 vec rows (15.4%) held an UNRELATED fact's embedding, and
+// corpus: 2,012 of 2,321 live facts (86.7%) held an UNRELATED fact's embedding, and
 // `cmk search --mode semantic` returned five facts none of which matched the
 // query. `cmk reindex --full` — the documented repair — was the CAUSE.
 //
@@ -208,6 +208,9 @@ describe('Task 261 — the vec index stays mapped to its own facts across rebuil
       const fake2 = makeFakeExtractor();
       const s2 = await syncSemanticIndex({ db, modelId: MODEL, dims: DIMS, extractorImpl: fake2 });
       expect(s2.ok).toBe(true);
+      // No RESET on an ordinary re-sync — the stable key made the rebuild a
+      // no-op, which is the whole point of keying by the fact's own id.
+      expect(s2.reset).toBe(false);
       // Re-population after a rebuild is FREE: the cache is content-addressed,
       // so zero model calls (Task 261's cost claim, asserted rather than trusted).
       expect(s2.embedded).toBe(0);
@@ -368,6 +371,7 @@ describe('Task 261 — an ALREADY-CORRUPTED install heals itself (the D-421 repa
       const fake = makeFakeExtractor();
       const s = await syncSemanticIndex({ db, modelId: MODEL, dims: DIMS, extractorImpl: fake });
       expect(s.ok).toBe(true);
+      expect(s.reset).toBe(true); // Door 1: the wholesale rebuild is REPORTED, not silent
       expect(fake.embedCount()).toBe(0); // FREE: the content-addressed cache survives
       expect(db.prepare("SELECT value FROM vec_meta WHERE key = 'map_version'").get().value)
         .toBe(VEC_MAP_VERSION);
