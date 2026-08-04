@@ -361,6 +361,12 @@ export async function prepareSemanticBackend({
   dims = null,
   overFetch = 3,
   scope = 'facts',
+  // DI seam, parity with syncSemanticIndex (Task 261): inject a fake extractor
+  // so the FULL semantic path — sync + query + the vec→content join — is
+  // exercisable without the ~110MB ONNX model. The vec-rowid corruption class
+  // (D-421) lives in that join, so its regression test must be a deterministic
+  // always-on gate, not one that skips whenever the optional embedder is absent.
+  extractorImpl = null,
   // Leak guard (P-5VJJUEES): syncSemanticIndex re-scans + re-embeds the WHOLE
   // corpus, allocating large off-heap ONNX buffers. A hot loop that calls this
   // per item (temporalSweep's per-fact finder) must sync ONCE, then pass
@@ -385,7 +391,7 @@ export async function prepareSemanticBackend({
   if (!vecLoaded) {
     return { ok: false, reason: 'sqlite-vec-unavailable' };
   }
-  const extractor = await loadExtractor(modelId);
+  const extractor = extractorImpl ?? (await loadExtractor(modelId));
   if (!extractor) {
     return {
       ok: false,
@@ -398,7 +404,7 @@ export async function prepareSemanticBackend({
   // syncIndex:false skips the full-corpus re-embed (the caller synced already
   // and only wants a query embed against the live vec table) — P-5VJJUEES.
   const sync = syncIndex
-    ? await syncSemanticIndex({ db, modelId, dims, scope })
+    ? await syncSemanticIndex({ db, modelId, dims, scope, extractorImpl })
     : { ok: true, skipped: true };
   if (!sync.ok) return { ok: false, reason: sync.reason };
 
