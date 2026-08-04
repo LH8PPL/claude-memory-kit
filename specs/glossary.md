@@ -574,7 +574,7 @@ A reconstructed `sessions/today-{date}.md` for a day that has **git commits but 
 
 ### `cmk doctor`
 
-The diagnostic command that runs all 14 health checks (HC-1..HC-14) and prints a structured report with documented self-repair commands for any failures.
+The diagnostic command that runs all 15 health checks (HC-1..HC-15) and prints a structured report with documented self-repair commands for any failures.
 
 Cross-refs: [[Health check]]. Spec: design §14; T-031.
 
@@ -598,7 +598,7 @@ Spec: design §10.
 
 ### Health check (HC)
 
-One of 14 yes/no diagnostics run by [[`cmk doctor`]]. Each has a documented self-repair path. HC-1..HC-14 cover hooks/distill/transcripts/INDEX/cron; HC-6 detects whether Anthropic's native Auto Memory is active; HC-7 checks for stale lock files; HC-13 is the advisory [[Stray tier]] backstop; HC-14 is the advisory active-kit-health-warnings backstop. (The two memsearch checks were removed in Task 120.)
+One of 15 yes/no diagnostics run by [[`cmk doctor`]]. Each has a documented self-repair path. HC-1..HC-15 cover hooks/distill/transcripts/INDEX/cron; HC-6 detects whether Anthropic's native Auto Memory is active; HC-7 checks for stale lock files; HC-13 is the advisory [[Stray tier]] backstop; HC-14 is the advisory active-kit-health-warnings backstop; HC-15 audits that each fact's semantic vector really is its own (design §9.3.2). (The two memsearch checks were removed in Task 120.)
 
 Spec: design §14.
 

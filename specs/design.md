@@ -2003,6 +2003,60 @@ Returns: `[{id, snippet, source_file, source_line, tier, trust, date, heading, s
 >
 > **Decision deferred to Layer-5b build (post-v0.2, post-friend-validation).** Recommended evaluation: a **bake-off** — ~30–50 memory-shaped facts + ~10 queries (incl. synonym/paraphrase queries where keyword *should* miss and semantic *should* hit), indexed into FTS5 + sqlite-vec + qmd + Chroma; compare recall@5 + latency. The kit already exposes the `semanticBackend` DI seam + `reciprocalRankFusion`, so any winner drops in without re-plumbing. See DECISION-LOG (2026-05-31 search thread).
 
+#### 9.3.2 The vec-index keying contract — `vec_map`, not `observations.rowid` (Task 261, D-421)
+
+A `sqlite-vec` `vec0` row is addressed by its **rowid and nothing else** — the table holds vectors,
+not identities. So something has to record which fact each vec rowid belongs to, and **that
+something is [`vec_map`](../packages/cli/src/semantic-backend.mjs), never the content table's own
+rowid.**
+
+```
+vec_map(scope, key1, key2, vec_rowid, content_sha)   PRIMARY KEY (scope, key1, key2)
+                                                     UNIQUE      (scope, vec_rowid)
+```
+
+- **`key1`/`key2` are the content table's STABLE primary key** — `observations.id` for the `facts`
+  scope (content-addressed, so it survives every rebuild), `(source_file, chunk_idx)` for
+  `transcripts`. Never the auto-assigned rowid.
+- **`vec_rowid` is allocated monotonically per scope and written EXPLICITLY.** A vec row is never
+  inserted without one.
+- **`content_sha` records which body's vector is physically in that slot.** It is the only sound
+  basis for "this slot is already up to date".
+- **A slot is freed as a unit**: the vec row and its map entry are deleted together, so a recycled
+  `vec_rowid` can never be handed out while the previous vector is still sitting in it. An
+  **orphan sweep** each sync drops any vec row the map does not claim — a vec row nobody can
+  attribute is only capable of producing a wrong answer.
+
+**Why this is a contract and not an implementation detail.** Until Task 261 the code asserted, in a
+comment, that "the vec table mirrors `observations` rowids" — and writing that down did not make it
+true. `reindexFull` DROPs and recreates `observations`; SQLite re-assigns every rowid from 1; the
+vec table kept the old mapping; and the sync's skip guard (`present && plan.cached → continue`)
+read the stale foreign vector as correct. **15.4% of the dogfood corpus (360 of 2,332 rows) ended up
+holding an unrelated fact's embedding**, and `cmk reindex --full` — the repair the docs and the
+`troubleshooting` skill prescribe — was the *cause*. Nothing failed loudly: search returned five
+confident, well-scored, completely unrelated facts. Keying by a value the rebuild owns was the whole
+bug; keying by the fact's own id removes the coupling rather than patching its symptom.
+
+**The same guard-soundness point, restated:** "this content is in the cache" never implied "this
+slot holds this content." A body edited to text some other fact had already embedded kept its stale
+vector indefinitely under the old guard. The guard now compares `vec_map.content_sha` to the plan's
+sha — an equality that means what it says.
+
+**Migration + repair (both automatic).** `vec_meta.map_version` records the keying generation. Any
+index written under a generation this build does not recognise — every pre-261 index — has its vec
+tables reset **once**, on the next sync, with no user action and **no model calls**: `embedding_cache`
+is content-addressed and deliberately untouched, so every vector comes straight back. `reindexFull`
+CLEARS that marker on purpose, which is what makes `cmk reindex --full` and `cmk repair --index`
+genuinely repair this class instead of causing it. (By marker rather than `DROP TABLE`: dropping a
+`vec0` virtual table requires the sqlite-vec extension to be loaded on that connection, which a
+plain reindex has no reason to do; the sync path always has it.)
+
+**Detection.** `verifyVectorMapping()` backs **HC-15** (§14): it samples live mapped rows,
+re-derives `sha256(model\nbody)` from the body on record, and byte-compares the cached vector
+against what is physically in the slot — deliberately independent of what `vec_map` claims, so a
+bookkeeping error is caught too. No embedder, no model load; one indexed lookup and one blob compare
+per sampled row.
+
 ---
 
 ### 9.4 The recall ladder + the expand rung (`cmk expand` / `mk_expand` — Task 226, D-326; shipped v0.6.0)
@@ -2312,7 +2366,7 @@ Single Node binary, ships with the kit. Subcommands:
 | `cmk init-user-tier` | Scaffold `~/.core-memory-kit/` once per machine |
 | `cmk search "<query>" [flags]` | Per §9.3 — hybrid keyword + semantic |
 | `cmk reindex [--boot \| --full]` | Rebuild SQLite cache from markdown |
-| `cmk doctor` | Run HC-1..HC-14 health checks; route to self-repair |
+| `cmk doctor` | Run HC-1..HC-15 health checks; route to self-repair |
 | `cmk config <get\|set\|--show-origin> <key>` | Settings access (§7.2) |
 | `cmk view [--port N]` | Local markdown viewer at `127.0.0.1:37778` |
 | `cmk import-anthropic-memory [--dry-run]` | Per §11.2 |
@@ -2405,7 +2459,7 @@ Implementation: [`packages/cli/src/memory-recovery.mjs`](../packages/cli/src/mem
 
 ## 14. Failure modes + health checks
 
-Fourteen yes/no checks, run on demand by `cmk doctor`. Each has a documented self-repair path; the authoritative per-check table is [HEALTH-CHECKS.md](../HEALTH-CHECKS.md) — the rows below cover HC-1..HC-9 and are kept for their design rationale, while HC-10 (compaction liveness, Task 167), HC-11 (backend CLI, Task 200), HC-12 (deletion propagation, Task 210), HC-13 (stray tiers, Task 248) and HC-14 (active kit health warnings, Task 250) live there. (The two memsearch checks — formerly HC-1 "installed" + HC-7 "reachable" — were **removed in Task 120**; the remaining five from requirements.md renumbered to HC-1..HC-5, plus HC-6 native-memory detection per ADR-0011, HC-7 stale-lock detection per PR-B's class-2 lock audit, and HC-8 native-binding health per Task 141a / D-129. The cross-platform-emission audit lives in `validate-platform-commands.mjs`, not a runtime doctor check.)
+Fifteen yes/no checks, run on demand by `cmk doctor`. Each has a documented self-repair path; the authoritative per-check table is [HEALTH-CHECKS.md](../HEALTH-CHECKS.md) — the rows below cover HC-1..HC-9 and are kept for their design rationale, while HC-10 (compaction liveness, Task 167), HC-11 (backend CLI, Task 200), HC-12 (deletion propagation, Task 210), HC-13 (stray tiers, Task 248), HC-14 (active kit health warnings, Task 250) and HC-15 (semantic vector mapping, Task 261 — §9.3.2) live there. (The two memsearch checks — formerly HC-1 "installed" + HC-7 "reachable" — were **removed in Task 120**; the remaining five from requirements.md renumbered to HC-1..HC-5, plus HC-6 native-memory detection per ADR-0011, HC-7 stale-lock detection per PR-B's class-2 lock audit, and HC-8 native-binding health per Task 141a / D-129. The cross-platform-emission audit lives in `validate-platform-commands.mjs`, not a runtime doctor check.)
 
 | ID | Check | Repair if failed |
 | --- | --- | --- |
