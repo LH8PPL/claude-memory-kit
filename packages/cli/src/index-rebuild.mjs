@@ -720,7 +720,7 @@ export function reindexFull({ projectRoot, userDir, db, now }) {
   `);
   db.exec(INDEX_DB_SCHEMA);
   invalidateSemanticKeying(db);
-  // Task 261 (D-422) — the SAME class as D-421, one table over. `edges` was
+  // Task 261 (D-423) — the SAME class as D-421, one table over. `edges` was
   // just dropped, but `meta` was not, and the schema re-applies with CREATE IF
   // NOT EXISTS — so `meta.edges_built_at` survives, still claiming a build that
   // no longer exists. The rebuild below is best-effort inside a try/catch, so a

@@ -12,7 +12,9 @@
 
 > **Older entries live in the archive.** **D-1 … D-306** — every decision made BEFORE the v0.5.0 cut — were relocated to [`DECISION-LOG-archive-pre-v0.5.md`](DECISION-LOG-archive-pre-v0.5.md) on 2026-07-28 (Task 249), byte-identical and in the same newest-at-top order. **This file holds D-307 onward** (D-307 IS the "tag v0.5.0 now" decision). Both files are `D-nnn` anchor sources for `validate-docs`'s `references` family — it globs `docs/journey/DECISION-LOG*.md` — so a citation to any entry, archived or live, still resolves.
 
-## 2026-08-04 — D-422 · FIX + DECISION — Task 261 built: the vec index is keyed by the fact's own id, the repair command now cures what it caused, and a SECOND bug fell out of the red test
+## 2026-08-04 — D-423 · FIX + DECISION — Task 261 built: the vec index is keyed by the fact's own id, the repair command now cures what it caused, and a SECOND bug fell out of the red test
+
+**Numbering note.** This entry was written as D-422 and RENUMBERED to D-423 on landing: the lead filed their own D-422 (the fresh-vs-aged live-test audit + Task 263) concurrently on the same branch while this work was in flight. Theirs landed first and is already cited by Task 263, so it keeps the number. Commit messages from this task's build cite `D-422` for content that now lives here — recorded rather than rewritten, since the commits are already made and the trail should show what happened.
 
 **The diagnosis in D-421 held exactly, and the red test proved it before a line of the fix was written.** Querying with a fact's own body returned a *neighbour's* fact at score **1.0** — the corruption is not degraded ranking, it is a clean, confident, wrong answer, which is why nothing ever noticed it. Three reds: the rowid reassignment, a real `reindexFull` over a real project tier, and one the filing did not predict.
 

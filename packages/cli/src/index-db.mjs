@@ -290,7 +290,7 @@ function configureIndexDb(db) {
   // cross-process test — rather than leaving it to a driver default a future
   // major (or a `timeout: 0` option) could silently change.
   db.pragma('busy_timeout = 5000');
-  // Task 261 (D-422) — FK enforcement OFF, deliberately, on the DERIVED cache.
+  // Task 261 (D-423) — FK enforcement OFF, deliberately, on the DERIVED cache.
   //
   // better-sqlite3 turns `foreign_keys` ON by default (raw SQLite defaults it
   // off), and this schema's one foreign key is

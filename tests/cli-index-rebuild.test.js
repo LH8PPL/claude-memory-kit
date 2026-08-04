@@ -1020,7 +1020,7 @@ describe('Task 139 - CRLF-converted memory files still index', () => {
   });
 });
 
-// Task 261 (D-421 / D-422) — found by the AGED-CORPUS harness on its first real
+// Task 261 (D-421 / D-423) — found by the AGED-CORPUS harness on its first real
 // run, and previously unhit only by luck.
 //
 // `observations.superseded_by` is declared `REFERENCES observations(id)`, and
@@ -1035,7 +1035,7 @@ describe('Task 139 - CRLF-converted memory files still index', () => {
 // index is a rebuildable cache, and neither walk order nor a forgotten
 // successor is something a user did wrong. The dogfood corpus simply had zero
 // supersessions, so `cmk reindex --full` had never been asked the question.
-describe('Task 261 — supersession must not abort a full rebuild (D-422)', () => {
+describe('Task 261 — supersession must not abort a full rebuild (D-423)', () => {
   beforeEach(makeFixture);
   afterEach(() => {
     db?.close();
@@ -1099,7 +1099,7 @@ describe('Task 261 — supersession must not abort a full rebuild (D-422)', () =
   });
 });
 
-// Task 261 (D-422) — the SAME hazard class as D-421, one table over: derived
+// Task 261 (D-423) — the SAME hazard class as D-421, one table over: derived
 // state that outlives the table it describes, with "rebuild everything" as the
 // trigger.
 //
@@ -1116,7 +1116,7 @@ describe('Task 261 — supersession must not abort a full rebuild (D-422)', () =
 // `migrateEdgesSchema` (index-db.mjs) already drops the table and clears the
 // sentinel TOGETHER, and says why in its own comment. `reindexFull` was
 // violating the invariant its sibling was written to maintain.
-describe('Task 261 — the edges sentinel never outlives the edges table (D-422)', () => {
+describe('Task 261 — the edges sentinel never outlives the edges table (D-423)', () => {
   beforeEach(makeFixture);
   afterEach(() => {
     db?.close();

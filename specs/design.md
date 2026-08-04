@@ -3777,7 +3777,7 @@ The test file declares the discipline with a `// @door-3.5: prompt-assertion —
 
 **Cross-references:** §17.7 (the validator-modes family this joins), the CLAUDE.md validators table, D-249 (the ONE doc-drift rule this makes structural for numbers), D-377 (the scan-vs-enumerate decision + the prior-art counter-example). _Implements: Task 236._
 
-### 17.14 Aged-corpus verification — the fresh/aged gap (Task 261, D-421/D-422)
+### 17.14 Aged-corpus verification — the fresh/aged gap (Task 261, D-421/D-423)
 
 **The gap, stated plainly: every automated live check in this repo verified FRESH state and none verified AGED state.** All four live-verify scripts and the cut-gate's semantic-recall stage share one shape — `mkdtemp` → `cmk install` → write a handful of facts → build the index ONCE → assert. On a first build every derived table is assigned in insert order and therefore agrees with its source **by luck rather than by contract**. The cut-gate's semantic stage was passing legitimately, with real paraphrase queries and zero keyword overlap, while 86.7% of the real dogfood corpus held the wrong fact's vector (D-421). This is the "unit-green ≠ works-on-real-input" rule applied one level up: green-on-fresh ≠ correct-on-aged, and a corpus only ever ages in production.
 
@@ -3793,7 +3793,7 @@ The test file declares the discipline with a `// @door-3.5: prompt-assertion —
 
 **Where it runs.** `tests/cli-aged-corpus.test.js` puts 2 cycles in the ALWAYS-ON suite (~10 s), so the class cannot regress silently; [`scripts/live-verify-semantic.mjs`](../scripts/live-verify-semantic.mjs) (`npm run live-verify:semantic`) runs 3 cycles plus the fresh baseline and the opt-in real-model pass. The script also closes a second gap: **semantic search had no automated live coverage at all** before this — the only semantic live-testing was manual, in the cut-gate.
 
-**It found two more bugs on its first real run**, both the same family as D-421 (derived state that outlives, or forward-references, the table it describes) — the `superseded_by` FK aborting a full rebuild, and `meta.edges_built_at` surviving the `edges` DROP. Both are recorded in D-422. That is the harness paying for itself before it was even wired in.
+**It found two more bugs on its first real run**, both the same family as D-421 (derived state that outlives, or forward-references, the table it describes) — the `superseded_by` FK aborting a full rebuild, and `meta.edges_built_at` surviving the `edges` DROP. Both are recorded in D-423. That is the harness paying for itself before it was even wired in.
 
 **Adopt it rather than fork it.** When a future task's surface has a "this is only true because the index was just built" assumption, add an `afterCycle` assertion here instead of writing another fresh-corpus script.
 

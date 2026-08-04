@@ -8,7 +8,7 @@
 //   result rows (Door 1); the doctor-facing observability of a desync is
 //   asserted in cli-doctor-hc15.test.js.
 //
-// Task 261 (D-421/D-422) — THE AGED-CORPUS GATE.
+// Task 261 (D-421/D-423) — THE AGED-CORPUS GATE.
 //
 // Why this file exists, and why it is in the always-on suite rather than only
 // in a live-verify script: the bug it guards against shipped past a suite that
