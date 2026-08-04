@@ -1,4 +1,4 @@
-// `cmk doctor` — health checks HC-1..HC-14 (Task 37, T-031; memsearch HC-1/HC-7 removed in Task 120; HC-8 native bindings added in Task 141a; HC-9 version-drift/update-path added in Task 162 / D-176; HC-13 stray-tier backstop added in Task 248; HC-14 active health warnings added in Task 250 / D-412).
+// `cmk doctor` — health checks HC-1..HC-15 (Task 37, T-031; memsearch HC-1/HC-7 removed in Task 120; HC-8 native bindings added in Task 141a; HC-9 version-drift/update-path added in Task 162 / D-176; HC-13 stray-tier backstop added in Task 248; HC-14 active health warnings added in Task 250 / D-412; HC-15 semantic vector-mapping audit added in Task 261 / D-421).
 //
 // Public boundary:
 //   async runDoctor({projectRoot, userDir, now, promptUser?, ...overrides})
@@ -6,7 +6,7 @@
 //
 // HCResult shape:
 //   {
-//     id: 'HC-1' | ... | 'HC-14',
+//     id: 'HC-1' | ... | 'HC-15',
 //     name: string,
 //     status: 'pass' | 'warn' | 'fail' | 'skip',   // `warn` = advisory (Task 245)
 //     message: string,
@@ -49,7 +49,7 @@ import { cronSentinelPath } from './lazy-compress.mjs';
 import { isCompactionNeeded } from './compaction-state.mjs';
 import { getNativeAutoMemoryState } from './native-memory.mjs';
 import { checkKitBinding, checkEmbedderBinding } from './native-binding.mjs';
-import { resolveDefaultSearchMode } from './semantic-backend.mjs';
+import { resolveDefaultSearchMode, verifyVectorMapping, DEFAULT_MODEL_ID } from './semantic-backend.mjs';
 // Task 250 (D-412) — HC-14 reads the SAME active-warning computation the
 // per-prompt whisper reads, so the two surfaces can never disagree.
 import { activeWarnings, healthLogPath } from './health-log.mjs';
@@ -705,7 +705,7 @@ async function hc8NativeBindings({ projectRoot, kitBindingProbe, embedderBinding
 }
 
 /**
- * Run the full health audit (HC-1..HC-14).
+ * Run the full health audit (HC-1..HC-15).
  *
  * @param {object} opts
  * @param {string} opts.projectRoot
@@ -1080,6 +1080,104 @@ function hc13StrayTiers({ projectRoot }) {
   };
 }
 
+// --- HC-15: semantic vectors belong to the facts they are filed under -------
+// Task 261 (D-421). The vec index is keyed by `vec_map`, and a desync there is
+// INVISIBLE by construction: every query returns confident, well-scored,
+// plausible-looking results — they are simply the wrong facts. The pre-261 bug
+// had 15.4% of the dogfood corpus holding an unrelated fact's embedding while
+// the whole suite was green and `cmk search` looked like it worked.
+//
+// So the guard is a cheap sampled audit rather than a heartbeat: take N live
+// mapped rows, re-derive each body's content hash, and byte-compare the cached
+// vector against what is actually in that row's vec slot. No embedder is
+// loaded, no model call is made — the check is one indexed lookup and one blob
+// compare per sampled row.
+//
+// SKIP, never FAIL, when there is nothing to audit: no index, no semantic layer
+// (the embedder is optional), or nothing mapped yet. `unverifiable` rows —
+// bodies not yet embedded under the current model — are reported, never counted
+// as corruption; that is a normal transient state between a write and a sync.
+const HC15_SAMPLE = 50;
+async function hc15VectorMapping({ projectRoot, sample = HC15_SAMPLE }) {
+  const name = 'Semantic vectors match their own facts';
+  let openIndexDb;
+  let getIndexDbPath;
+  try {
+    ({ openIndexDb, getIndexDbPath } = await import('./index-db.mjs'));
+  } catch (err) {
+    return { id: 'HC-15', name, status: 'skip', message: `index unavailable: ${err?.message ?? err}` };
+  }
+  if (!existsSync(getIndexDbPath(projectRoot))) {
+    return { id: 'HC-15', name, status: 'skip', message: 'no search index yet — nothing to verify' };
+  }
+  let db;
+  try {
+    db = openIndexDb({ projectRoot });
+  } catch (err) {
+    return { id: 'HC-15', name, status: 'skip', message: `index not readable: ${err?.message ?? err}` };
+  }
+  try {
+    // Audit against the model the index was BUILT with, not this build's
+    // default — a user on a different model would otherwise show every row as
+    // unverifiable and the check would say nothing at all.
+    let modelId = DEFAULT_MODEL_ID;
+    try {
+      modelId = db.prepare("SELECT value FROM vec_meta WHERE key = 'model'").get()?.value ?? modelId;
+    } catch {
+      /* no vec_meta → semantic never used; verifyVectorMapping reports it */
+    }
+    const r = await verifyVectorMapping({ db, modelId, scope: 'facts', sample });
+    if (r.reason === 'semantic-index-absent' || r.reason === 'nothing-mapped') {
+      return {
+        id: 'HC-15',
+        name,
+        status: 'skip',
+        message: 'semantic search is not in use on this project — no vectors to verify',
+      };
+    }
+    if (r.reason === 'sqlite-vec-unavailable') {
+      return {
+        id: 'HC-15',
+        name,
+        status: 'skip',
+        message: 'sqlite-vec is not loadable on this machine — semantic search is already degraded to keyword (see HC-8)',
+      };
+    }
+    if (r.mismatches.length > 0) {
+      const shown = r.mismatches.slice(0, 5).map((m) => `${m.key1} (${m.reason})`).join('; ');
+      const more = r.mismatches.length > 5 ? ` (+${r.mismatches.length - 5} more)` : '';
+      return {
+        id: 'HC-15',
+        name,
+        status: 'fail',
+        message:
+          `${r.mismatches.length} of ${r.checked} sampled facts hold the WRONG vector: ${shown}${more} — ` +
+          'semantic search is returning confident answers about the wrong facts. ' +
+          '`cmk reindex --full` rebuilds the vector mapping (no re-embedding: the cache is content-addressed, so it is fast and offline).',
+        recoveryCommand: 'cmk reindex --full',
+      };
+    }
+    return {
+      id: 'HC-15',
+      name,
+      status: 'pass',
+      message:
+        `${r.checked} sampled fact(s) verified against their own cached vectors` +
+        (r.unverifiable > 0
+          ? `; ${r.unverifiable} not yet embedded under the current model (they embed on the next search)`
+          : ''),
+    };
+  } catch (err) {
+    return { id: 'HC-15', name, status: 'skip', message: `verification unavailable: ${err?.message ?? err}` };
+  } finally {
+    try {
+      db.close();
+    } catch {
+      /* best-effort */
+    }
+  }
+}
+
 export async function runDoctor({
   projectRoot,
   userDir,
@@ -1090,6 +1188,7 @@ export async function runDoctor({
   backendCliProbe, // injectable: HC-11 backend-CLI probe (tests avoid a real spawn)
   awsDir, // injectable: sandboxes the HC-1 Kiro CLI-agent (~/.aws) probe in tests
   registryFetcher, // injectable: Task 245 stale-global check (tests avoid a real registry GET)
+  vectorSample, // injectable: HC-15 sample size (tests audit the whole fixture)
 } = {}) {
   const t0 = Date.now();
   if (!projectRoot) {
@@ -1160,10 +1259,11 @@ export async function runDoctor({
   const c11 = hc11BackendCli({ projectRoot, userDir: resolvedUserDir, backendCliProbe });
   const c12 = hc12DeletionPropagation({ projectRoot });
   const c13 = hc13StrayTiers({ projectRoot });
+  const c15 = await hc15VectorMapping({ projectRoot, sample: vectorSample });
 
   return {
     action: 'completed',
-    checks: [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14],
+    checks: [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15],
     duration_ms: Date.now() - t0,
   };
 }

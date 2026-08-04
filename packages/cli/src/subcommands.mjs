@@ -2297,7 +2297,7 @@ function runRegisterCrons(options /* , command */) {
  * Humans normally don't invoke this directly.
  */
 /**
- * `cmk doctor` (Task 37) — runs the 14 health checks and prints a
+ * `cmk doctor` (Task 37) — runs the 15 health checks and prints a
  * structured report with repair commands. Per design §14 + tasks.md 37.3.
  *
  * Per NFR-9 + tasks.md 37.5: any recoveryCommand whose underlying
@@ -3612,7 +3612,7 @@ export const subcommands = [
   },
   {
     name: 'doctor',
-    description: 'run health checks HC-1..HC-14; print structured report with self-repair commands',
+    description: 'run health checks HC-1..HC-15; print structured report with self-repair commands',
     milestone: 37,
     action: runDoctorCli,
   },
