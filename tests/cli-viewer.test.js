@@ -1208,7 +1208,10 @@ describe('viewer — the visual pass (260)', () => {
     };
     expect(rule('.meta')).toMatch(/font-variant-numeric:\s*tabular-nums/);
     expect(rule('#freshness')).toMatch(/font-variant-numeric:\s*tabular-nums/);
-    expect(rule('#graph-note')).toMatch(/font-variant-numeric:\s*tabular-nums/);
+    // The graph note moved INTO the instrument rail in the Task-268 redesign.
+    // The contract is that the rail's figures are tabular, not that a
+    // `#graph-note` selector exists — assert the contract.
+    expect(rule('.rail dd')).toMatch(/font-variant-numeric:\s*tabular-nums/);
     // The mono stack carries tabular figures AND slashed-zero for id/hash columns.
     const mono = css.match(/code,\s*\.mono\s*\{([^}]*)\}/);
     expect(mono, 'no code/.mono rule').toBeTruthy();
@@ -1216,12 +1219,60 @@ describe('viewer — the visual pass (260)', () => {
     expect(mono[1]).toMatch(/slashed-zero/);
   });
 
-  it('(5) card padding is greater than card gap — the rhythm was inverted', () => {
-    const pad = css.match(/--pad-card:\s*(\d+)px/);
-    const gap = css.match(/--gap-card:\s*(\d+)px/);
-    expect(pad, 'no --pad-card token').toBeTruthy();
-    expect(gap, 'no --gap-card token').toBeTruthy();
-    expect(Number(pad[1])).toBeGreaterThan(Number(gap[1]));
+  it('(4b) the graph is the hero — it sizes to the window, above the fold', () => {
+    // ORIGINAL BUG: the Task-268 redesign shipped `.instrument { }` with a
+    // FIXED `#graph { height: 620px }` under ~350px of eyebrow + headline +
+    // explanatory paragraph. On a 900px laptop that put the hero BELOW THE
+    // FOLD — you had to scroll down to see the thing the view exists for —
+    // and pinned the rail to `max-height: 620px`, hiding its own legend
+    // behind an internal scrollbar. The user's report: "i want to see the
+    // graph in the page, why do i need to go down and why do i need to move
+    // it so i can see the Reading it?"
+    //
+    // The contract is VIEWPORT-RELATIVE SIZING, not any particular number:
+    // a future redesign may retune the subtraction, but it may not go back
+    // to a fixed pixel box that ignores the window.
+    const instrument = css.match(/\n\s*\.instrument\s*\{([^}]*)\}/);
+    expect(instrument, 'no .instrument rule').toBeTruthy();
+    // Sizes to the window...
+    expect(instrument[1]).toMatch(/height:\s*calc\(100dvh\s*-/);
+    // ...with a `vh` fallback first for engines that do not know `dvh`, and a
+    // floor so a short window cannot collapse the canvas to nothing.
+    expect(instrument[1]).toMatch(/height:\s*calc\(100vh\s*-/);
+    expect(instrument[1]).toMatch(/min-height:\s*\d+px/);
+    expect(instrument[1].indexOf('100vh')).toBeLessThan(instrument[1].indexOf('100dvh'));
+
+    // The canvas fills that box rather than declaring its own fixed height.
+    const graph = css.match(/\n\s*#graph\s*\{([^}]*)\}/);
+    expect(graph, 'no #graph rule').toBeTruthy();
+    expect(graph[1]).toMatch(/height:\s*100%/);
+
+    // The rail stretches with the instrument instead of clipping its legend.
+    const rail = css.match(/\n\s*\.rail\s*\{([^}]*)\}/);
+    expect(rail, 'no .rail rule').toBeTruthy();
+    expect(rail[1]).not.toMatch(/max-height:\s*\d+px/);
+
+    // Stacked (narrow) layout opts OUT: graph and rail become siblings in one
+    // column, so a viewport-height instrument would cramp both.
+    const stacked = css.match(/@media \(max-width: 900px\)\s*\{([\s\S]*?)\n\s{2}\}/);
+    expect(stacked, 'no 900px breakpoint').toBeTruthy();
+    expect(stacked[1]).toMatch(/\.instrument\s*\{[^}]*height:\s*auto/);
+  });
+
+  it('(5) the record rhythm is sane — rows share a boundary, so nothing floats', () => {
+    // ORIGINAL BUG: card padding (13px) was SMALLER than the gap between cards
+    // (9px), so cards crowded each other more than their own contents.
+    //
+    // The Task-268 redesign replaced floating cards with ROWS inside one
+    // bounded surface, which makes that failure structurally impossible —
+    // there is no inter-card gap left to invert. The surviving contract is
+    // that a row has real internal padding and a hairline between rows.
+    const row = css.match(/\n\s*\.row\s*\{([^}]*)\}/);
+    expect(row, 'no .row rule').toBeTruthy();
+    const padY = Number((row[1].match(/padding:\s*(\d+)px/) || [])[1]);
+    expect(padY, 'the row has no vertical padding').toBeGreaterThanOrEqual(10);
+    expect(row[1]).toMatch(/border-top:\s*1px solid/);
+    expect(css).toMatch(/\.rows\s*\{[^}]*overflow:\s*hidden/);
   });
 
   it('(6) the header is sticky + blurred and the tabs are real pills, not a seam trick', () => {
@@ -1344,7 +1395,10 @@ describe('viewer — the visual pass (260)', () => {
 
     // clamp=false is the DETAIL view.
     const [title, body] = factText(headline, false);
-    expect(title.className).toMatch(/fact-title/);
+    // The detail title must PRE-WRAP (that is what makes its line breaks render);
+    // the class NAME is cosmetic and moved to the display tier in the Task-268
+    // redesign. Assert the contract, not the classname.
+    expect(title.className).toMatch(/(^|\s)pre(\s|$)/);
     // The short first line IS the title — it must not swallow the newline and
     // annex the head of the first bullet.
     expect(title.textContent).toBe('What changed:');
@@ -1418,11 +1472,25 @@ describe('viewer — the visual pass (260)', () => {
   });
 
   it('the fonts are SYSTEM fonts, with the survey’s two corrections held', () => {
-    expect(css).toMatch(/--ui:\s*system-ui,\s*-apple-system,\s*"Segoe UI"/);
+    // `system-ui` must be in the stack and must come before the named legacy
+    // faces, so the OS answer wins wherever it is the right one.
+    expect(css).toMatch(/system-ui,\s*-apple-system,\s*"Segoe UI"/);
     expect(css).toMatch(/--mono:\s*ui-monospace,\s*SFMono-Regular/);
-    // Correction (2): system-ui on Windows 11 resolves to Segoe UI, not the
-    // Variable face — naming it in the stack is the common wrong answer.
-    expect(css).not.toContain('Segoe UI Variable');
+    // OPEN DISAGREEMENT, recorded rather than erased (Task 268, pending the
+    // maintainer's ratification):
+    //   The survey found that `system-ui` on Windows 11 resolves to Segoe UI,
+    //   NOT the Variable face (Firefox bug 1732404, RESOLVED WONTFIX, because
+    //   Windows reports Segoe UI as its menu font) and concluded: do not name
+    //   the Variable family in the stack.
+    //   The Task-268 redesign names it FIRST anyway — `Segoe UI Variable Text`
+    //   for UI and `Segoe UI Variable Display` for the 56px display tier —
+    //   arguing that explicit naming is the only way to actually GET the face
+    //   the survey says system-ui will not give you, and that the Text/Display
+    //   split matches the optical sizes those families exist for.
+    //   Both readings are defensible; this assertion no longer forbids the
+    //   Variable family, but the zero-fetched-bytes contract below is absolute
+    //   either way (a named family is only ever used if already installed).
+    // Zero fetched bytes: no @font-face, no @import, nothing external.
     // Zero fetched bytes: no @font-face, no @import, nothing external.
     expect(css).not.toMatch(/@font-face|@import|url\(\s*['"]?https?:/i);
   });
