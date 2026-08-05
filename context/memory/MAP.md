@@ -4,7 +4,7 @@
 <!-- Browse this folder as an Obsidian vault. Each [[link]] opens a fact file. -->
 <!-- How to open + the read-vs-write rule: docs/OBSIDIAN.md -->
 
-Facts: 2209
+Facts: 2213
 
 ## feedback
 
@@ -1369,6 +1369,7 @@ Facts: 2209
 - [[project_proceeding-with-full-patent-installation-mjw2tbyq]] — Proceeding with full `patent` installation over manual registry sweep option (in
 - [[project_verify-check-run-agent-liveness-before-status-reports]] — Verify Check-Run Agent Liveness Before Status Reports
 - [[project_research-methodology-targeted-file-level-reads]] — Research Methodology - Targeted File-Level Reads
+- [[project_task-260-viewer-awaits-user-final-verdict]] — Task 260 (Viewer) Awaits User Final Verdict
 - [[project_poison-guard-mjs-specific-provider-patterns-are-by-design]] — poison-guard.mjs: Specific Provider Patterns Are By Design
 - [[project_release-laning-and-task-dependencies-v0-4-4-v0-5]] — Release Laning and Task Dependencies (v0.4.4 + v0.5)
 - [[project_project-versioning-should-use-concrete-n-mph9nrwj]] — Project versioning should use concrete numbers, not vague placeholders like "v0.
@@ -1661,6 +1662,7 @@ Facts: 2209
 - [[project_kiro-hook-activation-and-git-commit-cycle]] — Kiro Hook Activation and Git Commit Cycle
 - [[project_actual-linter-output-is-md007-not-assume-ra5d4f96]] — Actual linter output is MD007 (not assumed MD013/MD033/MD041); fix: committed co
 - [[project_v0-5-3-roadmap-learn-loop-phase-2-confidence-gated-search-bl]] — v0.5.3 Roadmap — Learn-loop Phase 2, Confidence-Gated Search Blend First
+- [[project_merge-gate-sequence-stress-test-must-pas-s2enbvcj]] — Merge gate sequence: stress test (must pass 5/5) → live-verify (final validation
 - [[project_research-faithful-design-in-sweep-order-implementation]] — Research-Faithful Design in Sweep Order Implementation
 - [[project_expects-claims-substantiated-through-sou-s43cb7un]] — Expects claims substantiated through source inspection (code, configs, memory fi
 - [[project_claude-code-mcp-deferred-tool-race-issue-42148]] — Claude Code MCP Deferred-Tool Race (Issue #42148)
@@ -1928,6 +1930,7 @@ Facts: 2209
 - [[project_skills-available-but-not-invoked-despite-wcbpvnea]] — Skills available but not invoked despite matching work; violates Skill agency ru
 - [[project_kit-design-methodology-current-state]] — Kit Design Methodology & Current State
 - [[project_wants-to-work-in-batches-with-cost-repor-wcljevk6]] — Wants to work in batches with cost reporting before each wave to manage budget
+- [[project_semantic-recall-corruption-discovered-aged-corpus-harness-bu]] — Semantic Recall Corruption Discovered; Aged-Corpus Harness Built
 - [[project_cut-gate-v050-transcript-privacy-is-task-148-trigger-fired]] — cut-gate-v050-transcript-privacy-is-task-148-trigger-fired
   - related: [[project_cut-gate-v050-scaffold-gitignore-transcript-leak]]
 - [[project_memory-kit-loop-system-tasks-190-193]] — Memory-Kit Loop System (Tasks 190–193)
@@ -2315,6 +2318,8 @@ Facts: 2209
   - related: [[project_adopt-third-party-skills-via-installer-personal-tier]]
 - [[user_global-mcp-tool-prompts-suppressed-via-settings-allow-list]] — Global MCP Tool Prompts Suppressed via Settings Allow-List
 - [[user_user-is-on-claude-subscription-not-api-token-billing]] — user is on Claude subscription not API token billing
+- [[user_user-runs-full-stack-semantic-and-crons]] — user-runs-full-stack-semantic-and-crons
+  - related: [[user_user-runs-full-stack-semantic-always]]
 
 ## Cited anchors
 
@@ -2531,7 +2536,7 @@ Facts: 2209
 - **Task-256** ← [[project_post-fix-integration-workflow]], [[project_task-255-viewer-design-grill]], [[project_task-256-design-constraints-and-incorporated-rules]], [[project_validation-by-independent-test-reproduction]]
 - **Task-257** ← [[project_brainapi2-code-dive-assessment-and-findings]], [[project_d-388-project-discipline-document-unreachable-code]], [[project_task-257-bom-blindness-is-complete-root-e5haw2f6]], [[project_v0-6-3-release-plan-task-queue]]
 - **Task-258** ← [[project_health-log-system-architecture-ratified]], [[project_task-258-kept-separate-from-task-250-approved]], [[project_v0-6-4-release-cmk-view-health-signals-live]], [[project_v0-6-4-release-workflow-and-task-ownership]]
-- **Task-260** ← [[project_memory-fact-validation-task-reference-exemption]], [[project_root-cause-of-visual-plainness]], [[project_versioning-policy-d-24-differentiators-per-release-level]], [[project_viewer-page-visual-design-constraints]], [[project_viewer-visual-diagnosis-six-design-deficits]]
+- **Task-260** ← [[project_memory-fact-validation-task-reference-exemption]], [[project_root-cause-of-visual-plainness]], [[project_task-260-viewer-awaits-user-final-verdict]], [[project_versioning-policy-d-24-differentiators-per-release-level]], [[project_viewer-page-visual-design-constraints]], [[project_viewer-visual-diagnosis-six-design-deficits]]
 - **Task-50** ← [[project_architectural-thesis-session-runtime-learning-judge]], [[project_claude-memory-kit-judge-as-the-per-host-adapter]], [[project_concurrent-write-race-task-146-severity-tied-to-agent-multip]], [[project_correction-kiro-capture-prompt-wiring-is-present-not-missing]], [[project_kiro-transcript-format-resolved-verified-on-a-real-kiro-inst]], [[project_open-knowledge-format-okf-design-validation-and-interchange]], [[project_related-projects-mimir-memex-mcp-only-memory-integrations]], [[project_section-5-1-binding-rule-convergence-verification]], [[project_task-50-adapter-architecture-do-not-build-a-uniform-installe]], [[project_task-50-cross-agent-seam-target-kiro-cli-agent-hooks-agentsp]], [[project_task-50-highest-unverified-risk-kiro-transcript-format-is-un]], [[project_task-50-research-revisit-gate-and-multi-agent-pattern]], [[project_three-borrowed-ideas-laned-to-tasks-versions]], [[project_v0-4-x-versioning-roadmap]], [[project_v0-5-2-release-scope-and-workflow]]
 - **Task-55** ← [[project_2026-07-01-arc-complete-output-inventory-and-at-risk-layer]], [[project_four-flavors-of-memory-improvement-systems]], [[project_memory-learn-loop-as-converged-system]], [[project_pai-personal-ai-infrastructure-memory-architecture-convergen]], [[project_task-55-enrichment-relationship-memory-learn-phase]]
 - **Task-65** ← [[project_everos-comparison-same-thesis-opposite-architecture-not-bett]], [[project_post-retrieval-filtering-query-expansion-hyde]], [[reference_memweave-reference-patterns]]
