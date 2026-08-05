@@ -261,8 +261,17 @@ async function main() {
 
     const health = await http(`${base}/api/health`);
     check(
-      '/api/health runs the REAL doctor (14 checks) and pins a health strip',
-      health.status === 200 && health.json.checks.length === 14 && ['ok', 'warn'].includes(health.json.strip.state),
+      // Do NOT hardcode the check count. This asserted 14 and went stale the
+      // day Task 261 added HC-15 — and it went UNNOTICED because that task
+      // explicitly did not re-run this script. The contract is "the route runs
+      // the REAL doctor and pins a strip", so assert the SHAPE (a plausible
+      // number of well-formed checks), not a number that every new HC breaks.
+      `/api/health runs the REAL doctor (${health.json?.checks?.length ?? '?'} checks) and pins a health strip`,
+      health.status === 200 &&
+        Array.isArray(health.json.checks) &&
+        health.json.checks.length >= 10 &&
+        health.json.checks.every((c) => c.id && c.status) &&
+        ['ok', 'warn'].includes(health.json.strip.state),
       `checks=${health.json?.checks?.length} strip=${health.json?.strip?.state}`,
     );
     // M7 was tautological: it compared the strip against a doctor line on a
