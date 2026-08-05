@@ -944,7 +944,7 @@ describe('HC-13 — the stray-tier backstop', () => {
   it('PASSes on a clean project, and doctor now runs 14 checks', async () => {
     seedRootTier();
     const r = await runDoctor({ projectRoot, userDir, registryFetcher: async () => null });
-    expect(r.checks).toHaveLength(14);
+    expect(r.checks).toHaveLength(15);
     expect(r.checks.find((c) => c.id === 'HC-13').status).toBe('pass');
   });
 });

@@ -2003,6 +2003,60 @@ Returns: `[{id, snippet, source_file, source_line, tier, trust, date, heading, s
 >
 > **Decision deferred to Layer-5b build (post-v0.2, post-friend-validation).** Recommended evaluation: a **bake-off** — ~30–50 memory-shaped facts + ~10 queries (incl. synonym/paraphrase queries where keyword *should* miss and semantic *should* hit), indexed into FTS5 + sqlite-vec + qmd + Chroma; compare recall@5 + latency. The kit already exposes the `semanticBackend` DI seam + `reciprocalRankFusion`, so any winner drops in without re-plumbing. See DECISION-LOG (2026-05-31 search thread).
 
+#### 9.3.2 The vec-index keying contract — `vec_map`, not `observations.rowid` (Task 261, D-421)
+
+A `sqlite-vec` `vec0` row is addressed by its **rowid and nothing else** — the table holds vectors,
+not identities. So something has to record which fact each vec rowid belongs to, and **that
+something is [`vec_map`](../packages/cli/src/semantic-backend.mjs), never the content table's own
+rowid.**
+
+```
+vec_map(scope, key1, key2, vec_rowid, content_sha)   PRIMARY KEY (scope, key1, key2)
+                                                     UNIQUE      (scope, vec_rowid)
+```
+
+- **`key1`/`key2` are the content table's STABLE primary key** — `observations.id` for the `facts`
+  scope (content-addressed, so it survives every rebuild), `(source_file, chunk_idx)` for
+  `transcripts`. Never the auto-assigned rowid.
+- **`vec_rowid` is allocated monotonically per scope and written EXPLICITLY.** A vec row is never
+  inserted without one.
+- **`content_sha` records which body's vector is physically in that slot.** It is the only sound
+  basis for "this slot is already up to date".
+- **A slot is freed as a unit**: the vec row and its map entry are deleted together, so a recycled
+  `vec_rowid` can never be handed out while the previous vector is still sitting in it. An
+  **orphan sweep** each sync drops any vec row the map does not claim — a vec row nobody can
+  attribute is only capable of producing a wrong answer.
+
+**Why this is a contract and not an implementation detail.** Until Task 261 the code asserted, in a
+comment, that "the vec table mirrors `observations` rowids" — and writing that down did not make it
+true. `reindexFull` DROPs and recreates `observations`; SQLite re-assigns every rowid from 1; the
+vec table kept the old mapping; and the sync's skip guard (`present && plan.cached → continue`)
+read the stale foreign vector as correct. **2,012 of the dogfood corpus's 2,321 live facts (86.7%) ended up
+holding an unrelated fact's embedding**, and `cmk reindex --full` — the repair the docs and the
+`troubleshooting` skill prescribe — was the *cause*. Nothing failed loudly: search returned five
+confident, well-scored, completely unrelated facts. Keying by a value the rebuild owns was the whole
+bug; keying by the fact's own id removes the coupling rather than patching its symptom.
+
+**The same guard-soundness point, restated:** "this content is in the cache" never implied "this
+slot holds this content." A body edited to text some other fact had already embedded kept its stale
+vector indefinitely under the old guard. The guard now compares `vec_map.content_sha` to the plan's
+sha — an equality that means what it says.
+
+**Migration + repair (both automatic).** `vec_meta.map_version` records the keying generation. Any
+index written under a generation this build does not recognise — every pre-261 index — has its vec
+tables reset **once**, on the next sync, with no user action and **no model calls**: `embedding_cache`
+is content-addressed and deliberately untouched, so every vector comes straight back. `reindexFull`
+CLEARS that marker on purpose, which is what makes `cmk reindex --full` and `cmk repair --index`
+genuinely repair this class instead of causing it. (By marker rather than `DROP TABLE`: dropping a
+`vec0` virtual table requires the sqlite-vec extension to be loaded on that connection, which a
+plain reindex has no reason to do; the sync path always has it.)
+
+**Detection.** `verifyVectorMapping()` backs **HC-15** (§14): it samples live mapped rows,
+re-derives `sha256(model\nbody)` from the body on record, and byte-compares the cached vector
+against what is physically in the slot — deliberately independent of what `vec_map` claims, so a
+bookkeeping error is caught too. No embedder, no model load; one indexed lookup and one blob compare
+per sampled row.
+
 ---
 
 ### 9.4 The recall ladder + the expand rung (`cmk expand` / `mk_expand` — Task 226, D-326; shipped v0.6.0)
@@ -2312,7 +2366,7 @@ Single Node binary, ships with the kit. Subcommands:
 | `cmk init-user-tier` | Scaffold `~/.core-memory-kit/` once per machine |
 | `cmk search "<query>" [flags]` | Per §9.3 — hybrid keyword + semantic |
 | `cmk reindex [--boot \| --full]` | Rebuild SQLite cache from markdown |
-| `cmk doctor` | Run HC-1..HC-14 health checks; route to self-repair |
+| `cmk doctor` | Run HC-1..HC-15 health checks; route to self-repair |
 | `cmk config <get\|set\|--show-origin> <key>` | Settings access (§7.2) |
 | `cmk view [--port N]` | Local markdown viewer at `127.0.0.1:37778` |
 | `cmk import-anthropic-memory [--dry-run]` | Per §11.2 |
@@ -2405,7 +2459,7 @@ Implementation: [`packages/cli/src/memory-recovery.mjs`](../packages/cli/src/mem
 
 ## 14. Failure modes + health checks
 
-Fourteen yes/no checks, run on demand by `cmk doctor`. Each has a documented self-repair path; the authoritative per-check table is [HEALTH-CHECKS.md](../HEALTH-CHECKS.md) — the rows below cover HC-1..HC-9 and are kept for their design rationale, while HC-10 (compaction liveness, Task 167), HC-11 (backend CLI, Task 200), HC-12 (deletion propagation, Task 210), HC-13 (stray tiers, Task 248) and HC-14 (active kit health warnings, Task 250) live there. (The two memsearch checks — formerly HC-1 "installed" + HC-7 "reachable" — were **removed in Task 120**; the remaining five from requirements.md renumbered to HC-1..HC-5, plus HC-6 native-memory detection per ADR-0011, HC-7 stale-lock detection per PR-B's class-2 lock audit, and HC-8 native-binding health per Task 141a / D-129. The cross-platform-emission audit lives in `validate-platform-commands.mjs`, not a runtime doctor check.)
+Fifteen yes/no checks, run on demand by `cmk doctor`. Each has a documented self-repair path; the authoritative per-check table is [HEALTH-CHECKS.md](../HEALTH-CHECKS.md) — the rows below cover HC-1..HC-9 and are kept for their design rationale, while HC-10 (compaction liveness, Task 167), HC-11 (backend CLI, Task 200), HC-12 (deletion propagation, Task 210), HC-13 (stray tiers, Task 248), HC-14 (active kit health warnings, Task 250) and HC-15 (semantic vector mapping, Task 261 — §9.3.2) live there. (The two memsearch checks — formerly HC-1 "installed" + HC-7 "reachable" — were **removed in Task 120**; the remaining five from requirements.md renumbered to HC-1..HC-5, plus HC-6 native-memory detection per ADR-0011, HC-7 stale-lock detection per PR-B's class-2 lock audit, and HC-8 native-binding health per Task 141a / D-129. The cross-platform-emission audit lives in `validate-platform-commands.mjs`, not a runtime doctor check.)
 
 | ID | Check | Repair if failed |
 | --- | --- | --- |
@@ -3722,6 +3776,26 @@ The test file declares the discipline with a `// @door-3.5: prompt-assertion —
 **What it caught on its first real runs — 30 stale claims:** `specs/glossary.md` described `cmk doctor` as running "all 7 health checks (HC-1..HC-7)"; a LIVE cut-gate checklist still said "11 MCP tools" / "11 checks now"; and the range rule then found 26 more across **the npm README, QUICKSTART (still on `HC-1..HC-9`), RELEASE-PLAN, both READMEs and every cut-gate guide**. Several had survived five minor releases and every prior doc review. One more turned up inside a TEST — `docs-structure.test.js` pinned `HC-1..HC-11` with a growing list of `not.toMatch` lines enumerating previously-stale values; the same losing game, now replaced by a shape assertion with the value resolved against the live registry. <!-- validate-docs: ignore -->
 
 **Cross-references:** §17.7 (the validator-modes family this joins), the CLAUDE.md validators table, D-249 (the ONE doc-drift rule this makes structural for numbers), D-377 (the scan-vs-enumerate decision + the prior-art counter-example). _Implements: Task 236._
+
+### 17.14 Aged-corpus verification — the fresh/aged gap (Task 261, D-421/D-423)
+
+**The gap, stated plainly: every automated live check in this repo verified FRESH state and none verified AGED state.** All four live-verify scripts and the cut-gate's semantic-recall stage share one shape — `mkdtemp` → `cmk install` → write a handful of facts → build the index ONCE → assert. On a first build every derived table is assigned in insert order and therefore agrees with its source **by luck rather than by contract**. The cut-gate's semantic stage was passing legitimately, with real paraphrase queries and zero keyword overlap, while 86.7% of the real dogfood corpus held the wrong fact's vector (D-421). This is the "unit-green ≠ works-on-real-input" rule applied one level up: green-on-fresh ≠ correct-on-aged, and a corpus only ever ages in production.
+
+**The harness.** [`scripts/lib/aged-corpus.mjs`](../scripts/lib/aged-corpus.mjs) is a reusable seam, deliberately not a Task-261 one-off — nothing in it is about vectors:
+
+- `createAgedSandbox()` — throwaway project + isolated user tier (`MEMORY_KIT_USER_DIR`) + PATH shims onto THIS checkout's bins.
+- `ageCorpus({sandbox, cycles, afterCycle})` — the **build → mutate → rebuild → assert** loop. Each cycle drives the REAL `cmk` bin through the operations that reassign row numbers or move rows between surfaces in a real corpus's life: **write** (`remember`), **expire** (`--expires` in the past), **forget** (`forget --yes` → the tombstone surface), **supersede** (`superseded_by` in frontmatter — the shape the temporal sweep writes; there is no user-facing verb), **unlink** (a fact file removed outright, the hand-`rm`), then **`reindex --boot`** and **`reindex --full`**. `afterCycle` fires after BOTH reindex passes, because the incremental and full routes reach different code.
+- `verifyVectorInvariant()` — Task 261's assertion, and the model for others: the caller supplies what to assert rather than forking the harness.
+
+**Several cycles, not one — with evidence.** Against the pre-fix build the aged path survived cycle 1 and failed on **cycle 2's full rebuild**. A single-cycle harness would have reported green. The defect needs a rebuild over an already-populated index, which is exactly what one cycle cannot produce.
+
+**What is real and what is stubbed, and why.** The AGING is entirely real (real bins, real subprocesses, real files) — that is the half where row numbers get reassigned, so it must not be simulated. The EMBEDDING is stubbed through the existing `extractorImpl` DI seam, because the invariant under test is a MAPPING property (does slot X hold fact X's vector?) that is true or false independent of what the vectors mean; gating it on a 110 MB ONNX model would make the check skippable, which is how the class shipped green in the first place. **There is deliberately no production env-var that swaps in a fake embedder** — a flag that writes meaningless vectors into a content-addressed, durable cache is a footgun aimed at real memory. Semantic MEANING does need the real model, so that is a separate opt-in pass (`CMK_LIVE_EMBEDDER=1`) driving the real `cmk search --mode semantic` with a paraphrase query.
+
+**Where it runs.** `tests/cli-aged-corpus.test.js` puts 2 cycles in the ALWAYS-ON suite (~10 s), so the class cannot regress silently; [`scripts/live-verify-semantic.mjs`](../scripts/live-verify-semantic.mjs) (`npm run live-verify:semantic`) runs 3 cycles plus the fresh baseline and the opt-in real-model pass. The script also closes a second gap: **semantic search had no automated live coverage at all** before this — the only semantic live-testing was manual, in the cut-gate.
+
+**It found two more bugs on its first real run**, both the same family as D-421 (derived state that outlives, or forward-references, the table it describes) — the `superseded_by` FK aborting a full rebuild, and `meta.edges_built_at` surviving the `edges` DROP. Both are recorded in D-423. That is the harness paying for itself before it was even wired in.
+
+**Adopt it rather than fork it.** When a future task's surface has a "this is only true because the index was just built" assumption, add an `afterCycle` assertion here instead of writing another fresh-corpus script.
 
 ### 17.13 Decision-log citations — the `dnnn` sub-check (Task 247)
 
