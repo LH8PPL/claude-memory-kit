@@ -4,7 +4,7 @@
 <!-- Browse this folder as an Obsidian vault. Each [[link]] opens a fact file. -->
 <!-- How to open + the read-vs-write rule: docs/OBSIDIAN.md -->
 
-Facts: 2208
+Facts: 2209
 
 ## feedback
 
@@ -966,6 +966,7 @@ Facts: 2208
 - [[project_cmk-forget-as-safe-fact-removal-method]] — cmk forget as Safe Fact Removal Method
 - [[project_documentation-map-spine-drifts-while-decision-log-stays-curr]] — Documentation-map Spine drifts while DECISION-LOG stays current
 - [[project_two-pass-review-catches-concurrency-bugs]] — Two-Pass Review Catches Concurrency Bugs
+- [[project_recurring-dependency-advisory-maintenance-gap]] — Recurring Dependency Advisory Maintenance Gap
 - [[project_install-agent-mjs-non-global-regex-allows-duplicated-managed]] — install-agent.mjs Non-Global Regex Allows Duplicated Managed Blocks
 - [[project_cmk-disable-semantic-environment-variable]] — CMK_DISABLE_SEMANTIC Environment Variable
 - [[project_v0-3-2-scope-correction-dedup]] — v0.3.2 Scope Correction Dedup
