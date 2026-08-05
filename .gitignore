@@ -61,7 +61,7 @@ context/.index/
 *.tgz
 .bench-logs/
 
-# core-memory-kit:gitignore:start v0.6.4
+# core-memory-kit:gitignore:start v0.6.5
 # core-memory-kit — added by `cmk install`. Do not edit by hand;
 # `cmk install` refreshes these lines idempotently. Remove via
 # `cmk uninstall`.

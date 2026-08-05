@@ -394,7 +394,7 @@ The kit doesn't become usable until **Task 23** (auto-extract subagent + memory-
 ## When in doubt
 
 Re-read the journey log. If still in doubt, ask the user with one specific question — not four bullet-pointed options.
-<!-- core-memory-kit:start v0.6.4 -->
+<!-- core-memory-kit:start v0.6.5 -->
 ## Memory System — core-memory-kit
 
 This project uses **core-memory-kit** for per-project, in-repo memory that survives session boundaries. Memory lives in `context/` (committed) and `context.local/` (gitignored). Cross-project memory lives at `~/.core-memory-kit/` (or `$MEMORY_KIT_USER_DIR`).

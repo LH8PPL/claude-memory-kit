@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- New user-facing capabilities land here in the same PR that ships them (CLAUDE.md "Document user-facing capabilities" rule). -->
 
-## [0.6.5] — 2026-08-03
+## [0.6.5] — 2026-08-05
 
 ### Fixed
 
