@@ -19,8 +19,10 @@ import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import Database from 'better-sqlite3';
 import {
   search,
+  countKeywordMatches,
   reciprocalRankFusion,
   prepareFtsQuery,
   SEARCH_MODES,
@@ -971,6 +973,64 @@ describe('Task 30 — cmk search', () => {
       expect(r.action).toBe('error');
       expect(r.errorCategory).toBe('schema');
       expect(r.errors.join(' ')).toMatch(/decisions scope/);
+    });
+  });
+
+  describe('countKeywordMatches (268/269 — the honest denominator)', () => {
+    it('counts the WHOLE match set where search() returns only a page of it', () => {
+      // Letters only: the base32 alphabet excludes 0/O/1/l/I/8, and writeFact
+      // would happily orphan an id that uses them (Task 270).
+      for (const c of ['A', 'B', 'C', 'D', 'E', 'F', 'G']) {
+        seedObservation(db, { id: `P-DENAA${c}AA`, body: `denominator probe fact ${c}` });
+      }
+      const page = search({ db, query: 'denominator', limit: 3 });
+      expect(page.results).toHaveLength(3);
+      const total = countKeywordMatches({ db, query: 'denominator' });
+      expect(total).toBe(7);
+      // The invariant the viewer prints: the page is a window onto the count.
+      expect(total).toBeGreaterThanOrEqual(page.results.length);
+    });
+
+    it('applies the same filters as the page — expired rows are not counted', () => {
+      seedObservation(db, { id: 'P-LVEAAAAA', body: 'filtered corpus probe' });
+      seedObservation(db, {
+        id: 'P-DEADAAAA', body: 'filtered corpus probe',
+        expires_at: Date.parse('2026-01-01T00:00:00Z'),
+      });
+      expect(countKeywordMatches({ db, query: 'filtered corpus' })).toBe(1);
+      expect(countKeywordMatches({ db, query: 'filtered corpus', includeExpired: true })).toBe(2);
+    });
+
+    // The catch is DEFENSE IN DEPTH: prepareFtsQuery quotes every hostile
+    // token shape we could construct, so a grammar error can't be provoked
+    // through the public query surface. The contract still matters for other
+    // callers: SQLite-level errors wrap as FTS5ParseError (mirroring the
+    // identical catch in search()), everything else passes through untouched.
+    it('wraps a SQLite-level error as FTS5ParseError — same contract as search()', () => {
+      const bare = new Database(':memory:'); // no observations_fts at all
+      try {
+        expect(() => countKeywordMatches({ db: bare, query: 'anything' }))
+          .toThrow(/FTS5|query/i);
+        try {
+          countKeywordMatches({ db: bare, query: 'anything' });
+        } catch (e) {
+          expect(e.name).toBe('FTS5ParseError');
+        }
+      } finally {
+        bare.close();
+      }
+    });
+
+    it('lets a NON-SQLite error pass through unwrapped', () => {
+      const boom = new TypeError('not a database at all');
+      const fake = { prepare() { throw boom; } };
+      try {
+        countKeywordMatches({ db: fake, query: 'anything' });
+        expect.unreachable('should have thrown');
+      } catch (e) {
+        expect(e).toBe(boom);
+        expect(e.name).toBe('TypeError');
+      }
     });
   });
 });
