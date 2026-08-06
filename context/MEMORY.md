@@ -8,18 +8,18 @@
 
 <!-- Current work in progress. Drop bullets as work resolves. -->
 
-- (P-M5D4HQFB) v0.6.4 release cut complete; all work on main (viewer, health nudge, CI retry, memory flush), CHANGELOG finalized to v0.6.4 dated 2026-08-02, suite green at 3903, ready for tag push.
-  <!-- source: review-promote, source_line: 1, sha1: 5cb81c2418b576c18ec3e5513129be9bd483f897b984c4aa2e68555886abf0f2, write: user-explicit, trust: high, at: 2026-08-02T20:00:11Z -->
-- (P-APAWB5FF) User found UI "ugly"; wants to research reference designs before finalizing design direction
-  <!-- source: auto-extract-session, source_line: 1, sha1: 738773b207335280f0a931136c85fc970bf8b7df999cdabb8996adbe342e4937, write: auto-extract, trust: high, at: 2026-08-03T13:10:38Z -->
-- (P-GCKYSG6J) User is actively working on visual design improvements for claude-memory-kit viewer, addressing flatness and visual hierarchy.
-  <!-- source: auto-extract-session, source_line: 1, sha1: 0fde0baa6d970742952e0d0bbc71f1ff82104963417fea9a338adc3eecb6e06e, write: auto-extract, trust: high, at: 2026-08-03T13:31:04Z -->
-- (P-FALJVHYa) Task 259 (live refresh via SSE) should ship in v0.6.6, not deferred to v0.7.0.
-  <!-- source: auto-extract-session, source_line: 1, sha1: b39974a1df059e0afe467393e008154ef77a4a5348129c244a637304fc6c7895, write: auto-extract, trust: high, at: 2026-08-03T13:58:31Z -->
-- (P-FYWRD52W) User's verdict on visual quality (reviewing screenshots) is the final done-criterion, not assistant judgment.
-  <!-- source: auto-extract-session, source_line: 1, sha1: 151dc9e5537068208258306374e77b79adb7728ae0993255efe751b404a2d182, write: auto-extract, trust: high, at: 2026-08-03T17:29:09Z -->
-- (P-ZMDZYUYK) User ran both `--with-semantic` and `register-crons` flags on this project
-  <!-- source: auto-extract-session, source_line: 1, sha1: 228b8ea398594f2076deaf37fd63e5dc94813d7c6d4ba375eb1544dd8ae7ae3c, write: auto-extract, trust: high, at: 2026-08-05T12:50:17Z -->
+- (P-3AT2GaSE) Research phase 2 ongoing—fetching PAI/Pulse tokens and screenshots as secondary visual references
+  <!-- source: review-promote, source_line: 1, sha1: 13258b2f8db4250ee7b8a3ce436473d59b9e82f6140f580fdc5e8249687a529c, write: user-explicit, trust: high, at: 2026-08-05T20:05:35Z -->
+- (P-TETWUFPS) Task 260 visual pass completed with all gates passing: 3916 full suite green, 5/5 stress first invocation, 25/25 live-verify unchanged; zero new dependencies.
+  <!-- source: review-promote, source_line: 1, sha1: 35891cf124087024a3562e67dc5d42369b1e8be39e167958ef127ee6af19d978, write: user-explicit, trust: high, at: 2026-08-05T20:05:37Z -->
+- (P-N4K4NVA6) Markdown tokenizer is security-critical component (XSS threat on untrusted fact bodies); reviewer pass includes tokenizer + accessibility + behavioral verification.
+  <!-- source: review-promote, source_line: 1, sha1: 3ab939da6bc7ed65294c0fa8751953e75b99792aa3712dcd85532513a017c8fa, write: user-explicit, trust: high, at: 2026-08-05T20:05:38Z -->
+- (P-BFW296WG) PR #338 open with CodeQL/Sonar checks active; v0.6.5 release pending on green
+  <!-- source: review-promote, source_line: 1, sha1: 979c6731d620d5ecd0cf781a14af1699dd3705162b70c0ef63aad34bc47b54d0, write: user-explicit, trust: high, at: 2026-08-05T20:05:40Z -->
+- (P-R9QN2J4G) PowerShell silently parses `stash@{0}` as hashtable literal when unquoted; quoting fixes it — discovered during memory stash
+  <!-- source: review-promote, source_line: 1, sha1: 0a4aa3844989d4914a8784b6cf05702dccca3f58db001fc0835afefe6b0f9fab, write: user-explicit, trust: high, at: 2026-08-05T20:05:42Z -->
+- (P-UZ9BHS27) When design direction is ratified in advance, work within it rather than proposing alternatives
+  <!-- source: auto-extract-session, source_line: 1, sha1: b4caf350ba5187edd71990ae099e5e42b6bc2fec40fab0a8e6d16b51216923f5, write: auto-extract, trust: high, at: 2026-08-05T20:39:17Z -->
 
 ## Environment Notes
 
