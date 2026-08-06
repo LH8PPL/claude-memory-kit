@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- New user-facing capabilities land here in the same PR that ships them (CLAUDE.md "Document user-facing capabilities" rule). -->
 
+### Changed
+
+- **`cmk view` reads like an instrument over an archive.** The fact list is now **rows sharing one bounded surface** instead of fifty floating cards, so the eye has a rail to run down. There is a real **display type tier** above the UI text — the corpus figure, the view title, the record title — and the landing page leads with **how many facts you actually have**, with the fraction currently listed stated underneath rather than left to be discovered. The **graph is the hero**: one permanently dark instrument that sizes to your window instead of a fixed box below the fold, with its counts, its click-to-isolate cluster legend and a "what am I pointing at" peek in a rail alongside it. Hovering a node fills that peek; the legend explains what the rim arcs, the diamonds and the arrows mean. (Task 268, design §24.1.2)
+- **The number over your memory is the real one.** The facts route (`/api/facts`, and `/facts.json`) now states a **`total`** beside `count`: `count` is the rows in this response, `total` is how many facts exist — matching the *same* filters, tier included. Searching says how many facts matched, not how many fit on the page, and the list says "showing the first 50 of N" when there are more. (Task 268)
+
 ## [0.6.5] — 2026-08-05
 
 ### Fixed
