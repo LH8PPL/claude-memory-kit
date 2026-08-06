@@ -389,7 +389,16 @@ JOIN observations o ON o.rowid = observations_fts.rowid
 WHERE observations_fts MATCH @query
 `;
 
-function buildKeywordSql(opts) {
+/**
+ * The row filters every keyword read shares — the WHERE past `MATCH`, and the
+ * bound params that go with it.
+ *
+ * ONE owner on purpose: `buildKeywordSql` (the ranked page) and
+ * `countKeywordMatches` (the unlimited denominator) must apply the same tier /
+ * trust / age / tombstone / expiry rules, or a UI ends up printing "showing 50
+ * of N" where N counts a different population than the 50.
+ */
+function keywordFilters(opts) {
   const clauses = [];
   const params = { query: prepareFtsQuery(opts.query) };
   if (opts.tier !== undefined) {
@@ -424,6 +433,11 @@ function buildKeywordSql(opts) {
     clauses.push('(o.expires_at IS NULL OR o.expires_at > @now_ms)');
     params.now_ms = opts.now ? Date.parse(opts.now) : Date.now();
   }
+  return { clauses, params };
+}
+
+function buildKeywordSql(opts) {
+  const { clauses, params } = keywordFilters(opts);
   const where = clauses.length > 0 ? ' AND ' + clauses.join(' AND ') : '';
   const sql =
     KEYWORD_BASE_SQL + where + ' ORDER BY observations_fts.rank LIMIT @limit';
@@ -432,6 +446,45 @@ function buildKeywordSql(opts) {
   const requested = opts.limit ?? DEFAULT_LIMIT;
   params.limit = Math.min(requested * BLEND_OVERSAMPLE, MAX_LIMIT);
   return { sql, params, requested };
+}
+
+/**
+ * How many facts the keyword search MATCHES, with no limit and no oversample —
+ * the honest denominator behind a "showing the first N of M" line.
+ *
+ * It lives here, next to the query it counts, because it must stay identical to
+ * what `search()` would have returned unlimited: the same FTS expression
+ * (`prepareFtsQuery`), the same filters (`keywordFilters`), and the same Task-211
+ * state-view rewrite (`applyStateView` — a historical query strips its hint
+ * words and includes expired rows, so a caller-side COUNT of the RAW query can
+ * legitimately come out SMALLER than the page it is meant to be the total of).
+ *
+ * Ranking is irrelevant to a count, so the trust blend and the enrichment do
+ * not run — this is one aggregate query, not a second search.
+ *
+ * @param {object} opts `{db, query, scope?, tier?, minTrust?, since?, includeTombstoned?, includeExpired?, stateView?, now?}`
+ * @returns {number} matching rows across the whole corpus
+ */
+export function countKeywordMatches(opts = {}) {
+  const { opts: effective } = applyStateView(opts, opts.scope ?? SEARCH_SCOPES.FACTS);
+  const { clauses, params } = keywordFilters(effective);
+  const where = clauses.length > 0 ? ' AND ' + clauses.join(' AND ') : '';
+  const sql =
+    `SELECT COUNT(*) AS n
+     FROM observations_fts
+     JOIN observations o ON o.rowid = observations_fts.rowid
+     WHERE observations_fts MATCH @query` + where;
+  try {
+    return opts.db.prepare(sql).get(params).n;
+  } catch (err) {
+    if (
+      err?.code === 'SQLITE_ERROR' ||
+      /fts5:|no such column:/i.test(err?.message ?? '')
+    ) {
+      throw new FTS5ParseError(err, opts.query);
+    }
+    throw err;
+  }
 }
 
 // FTS5 parse errors aren't validation errors — they're query-syntax
@@ -699,6 +752,35 @@ export function reciprocalRankFusion({
   return fused;
 }
 
+/**
+ * Task 211: the query STATE-VIEW gate (facts scope only).
+ *
+ * Classify what temporal view the query asks for (rule-based, zero-LLM —
+ * query-state-view.mjs); an explicit `opts.stateView` override wins. On a
+ * historical/transition view, expired rows are auto-included (the whole point:
+ * a history question must reach the history — no manual flag), and Task 209's
+ * projection labels them. The hint words are view METADATA the classifier
+ * consumed — they are stripped from the FTS query, because implicit-AND would
+ * otherwise demand the literal hint appear in fact bodies. current/neutral
+ * leave EVERYTHING byte-identical to the pre-211 pipeline, including a caller's
+ * explicit `includeExpired` opt-in.
+ *
+ * Extracted so `search()` and `countKeywordMatches()` cannot disagree about
+ * which query was actually run.
+ */
+function applyStateView(opts, scope) {
+  if (scope !== SEARCH_SCOPES.FACTS) return { stateView: null, opts };
+  const classified = classifyQueryStateView(opts.query);
+  const stateView = opts.stateView ?? classified.view;
+  if (stateView === STATE_VIEWS.HISTORICAL || stateView === STATE_VIEWS.TRANSITION) {
+    return {
+      stateView,
+      opts: { ...opts, includeExpired: true, query: classified.contentQuery },
+    };
+  }
+  return { stateView, opts };
+}
+
 // --- Public boundary --------------------------------------------------
 
 export function search(opts = {}) {
@@ -730,26 +812,10 @@ export function search(opts = {}) {
   }
 
   // ── Task 211: the query STATE-VIEW gate (facts scope only) ─────────────
-  // Classify what temporal view the query asks for (rule-based, zero-LLM —
-  // query-state-view.mjs); an explicit opts.stateView override wins. On a
-  // historical/transition view, expired rows are auto-included (the whole
-  // point: a history question must reach the history — no manual flag), and
-  // Task 209's projection labels them. current/neutral leave EVERYTHING
-  // byte-identical to the pre-211 pipeline, including a caller's explicit
-  // includeExpired opt-in.
-  let stateView = null;
-  let effectiveOpts = opts;
-  if (scope === SEARCH_SCOPES.FACTS) {
-    const classified = classifyQueryStateView(opts.query);
-    stateView = opts.stateView ?? classified.view;
-    if (stateView === STATE_VIEWS.HISTORICAL || stateView === STATE_VIEWS.TRANSITION) {
-      // The hint words are view METADATA the classifier consumed — strip them
-      // from the FTS query (implicit-AND would otherwise demand the literal
-      // hint appear in fact bodies). Only on the stateful views: current/
-      // neutral keep the exact input (the byte-identical contract).
-      effectiveOpts = { ...opts, includeExpired: true, query: classified.contentQuery };
-    }
-  }
+  // The rule, and why it only touches the stateful views, is on applyStateView
+  // — which `countKeywordMatches` shares, so the count and the page can never
+  // be answering two different queries.
+  const { stateView, opts: effectiveOpts } = applyStateView(opts, scope);
 
   let results;
   try {

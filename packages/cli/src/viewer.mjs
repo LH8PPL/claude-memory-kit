@@ -62,7 +62,7 @@ import { errorResult, ERROR_CATEGORIES } from './result-shapes.mjs';
 import { openBrowserCommand } from './platform-commands.mjs';
 import { openIndexDb } from './index-db.mjs';
 import { reindexBoot } from './index-rebuild.mjs';
-import { search as searchAction, SEARCH_MODES } from './search.mjs';
+import { search as searchAction, countKeywordMatches, SEARCH_MODES } from './search.mjs';
 import { ID_PATTERN, VALID_TIERS } from './tier-paths.mjs';
 import { eachSupersededFact } from './fact-store.mjs';
 import { parseRichFactBody } from './rich-fact.mjs';
@@ -520,6 +520,12 @@ const API = {
     return withDb(ctx, (db) => {
       let rows;
       let mode;
+      // The DENOMINATOR, on the same payload as the rows (§24.1.1). It counts
+      // the population the rows were drawn from — same filters, no LIMIT — so
+      // the page can say "the first 50 of N" without asking a second route for
+      // a number that was never quite the same number.
+      let total;
+      const now = Date.now();
       if (q) {
         mode = 'search';
         const r = searchAction({
@@ -537,6 +543,15 @@ const API = {
         rows = r.results
           .filter((h) => byId.has(h.id))
           .map((h) => toFactRow(byId.get(h.id), { snippet: flatten(h.snippet, 240) }));
+        // The whole match set, not the page of it: `count` is what the search
+        // returned, `total` is what it matched. The search ran first, so any
+        // FTS grammar error has already surfaced as a 400 by this point.
+        total = countKeywordMatches({
+          db,
+          query: q,
+          scope: 'facts',
+          ...(tier ? { tier } : {}),
+        });
       } else {
         mode = 'recent';
         rows = db
@@ -548,12 +563,32 @@ const API = {
              ORDER BY created_at DESC, id ASC
              LIMIT @limit`,
           )
-          .all({ now: Date.now(), limit, ...(tier ? { tier } : {}) })
+          .all({ now, limit, ...(tier ? { tier } : {}) })
           .map((row) => toFactRow(row));
+        // The SAME filters as the row query — deleted, expired and the active
+        // tier — off the same `now`, so the count can never describe a corpus
+        // the list is not a window onto.
+        total = db
+          .prepare(
+            `SELECT COUNT(*) AS n FROM observations
+             WHERE deleted_at IS NULL
+               AND (expires_at IS NULL OR expires_at > @now)
+               ${tier ? 'AND tier = @tier' : ''}`,
+          )
+          .get({ now, ...(tier ? { tier } : {}) }).n;
       }
       return {
         status: 200,
-        payload: { mode, query: q || null, tier, limit, clamped, count: rows.length, facts: rows },
+        payload: {
+          mode,
+          query: q || null,
+          tier,
+          limit,
+          clamped,
+          count: rows.length,
+          total,
+          facts: rows,
+        },
       };
     });
   },
