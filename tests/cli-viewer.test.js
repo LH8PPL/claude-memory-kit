@@ -402,6 +402,12 @@ describe('viewer — JSON API routes (255.2)', () => {
     expect(body.query).toBeNull();
     expect(typeof body.generated_at).toBe('string');
     expect(body.count).toBe(body.facts.length);
+    // The corpus denominator rides on the SAME payload as the rows (I3/I4):
+    // the page's 56px hero used to come from `/api/graph`'s `fact_count`, which
+    // counts a DIFFERENT population (no expiry filter) and cost a whole second
+    // route — COUNT + edges + an archive walk — to paint one headline.
+    expect(typeof body.total).toBe('number');
+    expect(body.total).toBeGreaterThanOrEqual(body.count);
 
     const byId = new Map(body.facts.map((f) => [f.id, f]));
     expect(byId.get(P_ALPHA).tier).toBe('P');
@@ -426,9 +432,46 @@ describe('viewer — JSON API routes (255.2)', () => {
     expect(body.facts.map((f) => f.id)).toContain(P_ALPHA);
     expect(body.facts.map((f) => f.id)).not.toContain(L_LOCAL);
 
+    expect(body.total).toBeGreaterThanOrEqual(body.count);
+
     const none = await getJson(base, '/api/facts?q=zzzznotpresent');
     expect(none.body.count).toBe(0);
     expect(none.body.facts).toEqual([]);
+    expect(none.body.total).toBe(0);
+  });
+
+  it('I3/I4 — `total` is the FULL population in both modes, so the hero is honest', async () => {
+    // The redesign promoted a number to 56px type, and it was the wrong one:
+    // browse read `/api/graph`'s `fact_count` (a different filter set, a whole
+    // extra route per page-load) and SEARCH showed `count` — the rows returned
+    // — so a 500-hit query rendered "50 matches" as the biggest thing on
+    // screen. `total` counts the same population the rows come from, unlimited;
+    // `count` stays the rows on the wire.
+    const browse = await getJson(base, '/api/facts?limit=2');
+    expect(browse.body.count).toBe(2);
+    expect(browse.body.total).toBeGreaterThan(browse.body.count);
+    // …and it is the whole live corpus, not the page.
+    const all = await getJson(base, '/api/facts');
+    expect(browse.body.total).toBe(all.body.count);
+
+    // The tier filter narrows the denominator too — a filtered list under an
+    // unfiltered headline is the same lie one level down.
+    const tiered = await getJson(base, '/api/facts?tier=P&limit=1');
+    const tieredAll = await getJson(base, '/api/facts?tier=P');
+    expect(tiered.body.count).toBe(1);
+    expect(tiered.body.total).toBe(tieredAll.body.count);
+    expect(tiered.body.total).toBeLessThan(all.body.count);
+
+    // SEARCH: seed more matches than the limit asks for, and the total must
+    // reach past the limit rather than reporting the page size.
+    for (const [i, id] of ['P-2FGHJKMN', 'P-3PQRSTVW', 'P-4XYZ2345', 'P-5679ABCD'].entries()) {
+      seedFact({ id, tier: 'P', slug: `zebrafish-${i}`, body: `A zebrafish note number ${i}.` });
+    }
+    const hits = await getJson(base, '/api/facts?q=zebrafish&limit=2');
+    expect(hits.body.mode).toBe('search');
+    expect(hits.body.count).toBe(2);
+    expect(hits.body.total).toBe(4);
+    expect(hits.body.total).toBeGreaterThan(hits.body.count);
   });
 
   it('/api/facts?tier= filters to one tier, in both modes', async () => {
@@ -746,9 +789,9 @@ describe('viewer — JSON API routes (255.2)', () => {
   });
 
   it('/api/health?strip=1 answers the pinned line WITHOUT running the doctor', async () => {
-    // The strip renders on every view; paying 14 checks (one of them a
-    // subprocess probe) per navigation to draw one line is the difference
-    // between a viewer that feels instant and one that feels broken.
+    // The strip renders on every view; paying the full doctor check list (one
+    // of them a subprocess probe) per navigation to draw one line is the
+    // difference between a viewer that feels instant and one that feels broken.
     const { status, body } = await getJson(base, '/api/health?strip=1');
     expect(status).toBe(200);
     expect(body.strip).toBeTruthy();
@@ -1091,7 +1134,7 @@ describe('viewer — the visual pass (260)', () => {
   it('(I1) every text/surface pair clears WCAG AA 4.5:1 — in BOTH themes', () => {
     // The visual pass first shipped 15 failing pairs in light, the worst at
     // 2.93:1 — and `--ink-3` alone carries the meta row, .micro, #freshness,
-    // #graph-note, .muted, .empty, inactive nav and the READ-ONLY pill. The
+    // .muted, .empty, inactive nav and the READ-ONLY pill. The
     // target is written down in design §24.1.2; this computes it, so lightening
     // a token to taste fails the suite instead of shipping.
     //
@@ -1144,6 +1187,24 @@ describe('viewer — the visual pass (260)', () => {
       }
       // The search-hit mark: ink-2 over the accent wash, on a card.
       check('search hit (ink-2 on accent wash)', tok('ink-2'), over(tok('accent'), 0.22, panel));
+    }
+
+    // The INSTRUMENT is its own colour space (`--g-*`), fixed in both themes —
+    // and the Task-268 redesign put real 11-12.5px text in it: the rail's
+    // headings and dl, the corpus sub-line, the legend counts, the peek meta,
+    // the SVG labels. The archive tokens above cannot see any of it, so a dark
+    // canvas could be lightened to taste with the AA test still green.
+    const gBlock = css.match(/:root\s*\{([\s\S]*?)\n  \}/)[1];
+    const gTok = (name) => {
+      const m = gBlock.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
+      expect(m, `no --${name} token`).toBeTruthy();
+      return srgb(m[1]);
+    };
+    for (const ink of ['g-ink', 'g-ink-2', 'g-ink-3']) {
+      for (const canvas of ['g-canvas', 'g-canvas-2']) {
+        const r = contrast(gTok(ink), gTok(canvas));
+        if (r < AA) failures.push(`instrument: ${ink} on ${canvas} = ${r.toFixed(2)}:1`);
+      }
     }
     expect(failures, `contrast below AA ${AA}:1:\n  ${failures.join('\n  ')}`).toEqual([]);
 
@@ -1210,8 +1271,10 @@ describe('viewer — the visual pass (260)', () => {
     expect(rule('#freshness')).toMatch(/font-variant-numeric:\s*tabular-nums/);
     // The graph note moved INTO the instrument rail in the Task-268 redesign.
     // The contract is that the rail's figures are tabular, not that a
-    // `#graph-note` selector exists — assert the contract.
+    // `#graph-note` selector exists — assert the contract, on BOTH of the
+    // rail's number columns (the stat list and the legend's per-cluster count).
     expect(rule('.rail dd')).toMatch(/font-variant-numeric:\s*tabular-nums/);
+    expect(rule('.key .n')).toMatch(/font-variant-numeric:\s*tabular-nums/);
     // The mono stack carries tabular figures AND slashed-zero for id/hash columns.
     const mono = css.match(/code,\s*\.mono\s*\{([^}]*)\}/);
     expect(mono, 'no code/.mono rule').toBeTruthy();
@@ -1257,6 +1320,34 @@ describe('viewer — the visual pass (260)', () => {
     const stacked = css.match(/@media \(max-width: 900px\)\s*\{([\s\S]*?)\n\s{2}\}/);
     expect(stacked, 'no 900px breakpoint').toBeTruthy();
     expect(stacked[1]).toMatch(/\.instrument\s*\{[^}]*height:\s*auto/);
+
+    // B1: the subtraction is calibrated against the QUIET health strip. When a
+    // check fails the strip becomes a full-width bar and wraps the freshness
+    // stamp onto its own line — the status line grows ~45px and the instrument
+    // overflows into exactly the scrollbar this rule exists to prevent, a beat
+    // after load (the strip paints when the health read lands). So the loud
+    // states must subtract MORE, and the two numbers must stay ordered.
+    const quiet = Number(instrument[1].match(/calc\(100dvh\s*-\s*(\d+)px\)/)[1]);
+    const loud = css.match(
+      /body:has\(#health-strip\[data-state="warn"\]\)[\s\S]{0,200}?\{([^}]*)\}/,
+    );
+    expect(loud, 'no warn/bad instrument-height override').toBeTruthy();
+    expect(loud[1]).toMatch(/height:\s*calc\(100vh\s*-/);
+    expect(loud[1]).toMatch(/height:\s*calc\(100dvh\s*-/);
+    expect(Number(loud[1].match(/calc\(100dvh\s*-\s*(\d+)px\)/)[1])).toBeGreaterThan(quiet);
+    // …and it must not reach the stacked layout, where the instrument is
+    // `height: auto` — a `:has()` selector out-specifies the media-query rule.
+    const guarded = css.match(/@media \(min-width: 901px\)\s*\{([\s\S]*?)\n\s{2}\}/);
+    expect(guarded, 'the :has() override is not gated above the stacked breakpoint').toBeTruthy();
+    expect(guarded[1]).toContain('#health-strip[data-state="warn"]');
+    expect(guarded[1]).toContain('#health-strip[data-state="bad"]');
+
+    // M2: the negative margin that claws back `main`'s footer padding is for
+    // windows tall enough for the instrument to fill — below the floor the page
+    // scrolls anyway and the rule just eats the footer.
+    const tall = css.match(/@media \(min-height: \d+px\)\s*\{([\s\S]*?)\n\s{2}\}/);
+    expect(tall, 'the graph margin rule is not inside a min-height media block').toBeTruthy();
+    expect(tall[1]).toMatch(/section\[data-view="graph"\]\s*\{[^}]*margin-bottom:\s*-\d+px/);
   });
 
   it('(5) the record rhythm is sane — rows share a boundary, so nothing floats', () => {
@@ -1337,6 +1428,12 @@ describe('viewer — the visual pass (260)', () => {
     // relaxed. They are still COUNTED — nothing disappears silently.
     expect(script).toMatch(/const linked = data\.nodes\.filter/);
     expect(script).toMatch(/unlinked, not drawn/);
+    // I6: the hover peek is LIVE feedback and goes ABOVE the static "Reading
+    // it" key. Appended last, it landed below the rail's own fold on a rail
+    // that just fits — pointing at a node then produced nothing visible at all.
+    expect(script).toMatch(/rail\.insertBefore\(box,\s*key\)/);
+    expect(script).toMatch(/el\('div', \{ id: 'rail-key' \}/);
+
     // A standing label is earned by degree; the rest appear on hover/focus.
     expect(script).toMatch(/LABEL_AT/);
     expect(css).toMatch(/#graph text\.lbl\s*\{[\s\S]*?opacity:\s*0/);
@@ -1395,10 +1492,14 @@ describe('viewer — the visual pass (260)', () => {
 
     // clamp=false is the DETAIL view.
     const [title, body] = factText(headline, false);
-    // The detail title must PRE-WRAP (that is what makes its line breaks render);
-    // the class NAME is cosmetic and moved to the display tier in the Task-268
-    // redesign. Assert the contract, not the classname.
+    // The detail title must PRE-WRAP (that is what makes its line breaks
+    // render). `.pre` is the class that DOES it — so assert both halves, or the
+    // classname is a label with nothing behind it.
     expect(title.className).toMatch(/(^|\s)pre(\s|$)/);
+    expect(css).toMatch(/\.pre\s*\{[^}]*white-space:\s*pre-wrap/);
+    // …and the title sits in the display tier the redesign introduced (d3 =
+    // 20px record title), not in the list's 14.5px `.fact-title`.
+    expect(title.className).toMatch(/(^|\s)d3(\s|$)/);
     // The short first line IS the title — it must not swallow the newline and
     // annex the head of the first bullet.
     expect(title.textContent).toBe('What changed:');
@@ -1472,25 +1573,19 @@ describe('viewer — the visual pass (260)', () => {
   });
 
   it('the fonts are SYSTEM fonts, with the survey’s two corrections held', () => {
-    // `system-ui` must be in the stack and must come before the named legacy
-    // faces, so the OS answer wins wherever it is the right one.
-    expect(css).toMatch(/system-ui,\s*-apple-system,\s*"Segoe UI"/);
+    // Anchored to the `--ui:` DECLARATION, not to "somewhere in the sheet":
+    // an unanchored match survives deleting the token it is supposed to pin.
+    expect(css).toMatch(/--ui:\s*system-ui,\s*-apple-system,\s*"Segoe UI"/);
+    expect(css).toMatch(/--display:\s*system-ui,\s*-apple-system,\s*"Segoe UI"/);
     expect(css).toMatch(/--mono:\s*ui-monospace,\s*SFMono-Regular/);
-    // OPEN DISAGREEMENT, recorded rather than erased (Task 268, pending the
-    // maintainer's ratification):
-    //   The survey found that `system-ui` on Windows 11 resolves to Segoe UI,
-    //   NOT the Variable face (Firefox bug 1732404, RESOLVED WONTFIX, because
-    //   Windows reports Segoe UI as its menu font) and concluded: do not name
-    //   the Variable family in the stack.
-    //   The Task-268 redesign names it FIRST anyway — `Segoe UI Variable Text`
-    //   for UI and `Segoe UI Variable Display` for the 56px display tier —
-    //   arguing that explicit naming is the only way to actually GET the face
-    //   the survey says system-ui will not give you, and that the Text/Display
-    //   split matches the optical sizes those families exist for.
-    //   Both readings are defensible; this assertion no longer forbids the
-    //   Variable family, but the zero-fetched-bytes contract below is absolute
-    //   either way (a named family is only ever used if already installed).
-    // Zero fetched bytes: no @font-face, no @import, nothing external.
+    // The survey's second correction, and the one design §24.1.2 ratifies:
+    // `system-ui` on Windows 11 resolves to Segoe UI, NOT the Variable face
+    // (Firefox bug 1732404, RESOLVED WONTFIX — Windows reports Segoe UI as its
+    // menu font), so naming the Variable family buys an inconsistent face on
+    // the machines that happen to have it and nothing anywhere else. The
+    // Task-268 redesign named it first and deleted this line; the contract is
+    // in the spec, so the spec wins and the guard comes back.
+    expect(css).not.toContain('Segoe UI Variable');
     // Zero fetched bytes: no @font-face, no @import, nothing external.
     expect(css).not.toMatch(/@font-face|@import|url\(\s*['"]?https?:/i);
   });

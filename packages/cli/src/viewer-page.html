@@ -99,12 +99,14 @@
     --r-ctl: 8px;
     --r-pill: 99px;
 
-    /* System fonts only. `system-ui` on Windows 11 resolves to Segoe UI — NOT
-       Segoe UI Variable — so the variable family is named ahead of it where it
-       exists and is simply skipped everywhere else. */
-    --ui: "Segoe UI Variable Text", system-ui, -apple-system, "Segoe UI", Roboto,
+    /* System fonts only, and the stack is the one design §24.1.2 ratifies —
+       `system-ui` first, the Segoe UI *Variable* families deliberately NOT
+       named. Changing it is a contract change: amend §24.1.2 first, then the
+       CSS. The display tier is a separate token because the tier is real (size,
+       weight, tracking), not because it resolves to a different family. */
+    --ui: system-ui, -apple-system, "Segoe UI", Roboto,
           "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-    --display: "Segoe UI Variable Display", system-ui, -apple-system, "Segoe UI",
+    --display: system-ui, -apple-system, "Segoe UI",
           Roboto, "Helvetica Neue", Arial, sans-serif;
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "Cascadia Mono", Consolas,
             "Liberation Mono", monospace;
@@ -259,12 +261,19 @@
      is the content here, and the prose that used to sit above it said the same
      thing as the rail's own legend. Two copies of an explanation cost a screen. */
   .overview-tight { margin: 0 0 12px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-  .overview-tight .micro { display: inline; margin: 0; }
+  /* Both classes are on the same element and `.overview .micro` below is the
+     later rule, so this has to out-specify it — `.overview-tight .micro`
+     (0,2,0) lost the tie and the eyebrow went back to its own block line. */
+  .overview.overview-tight .micro { display: inline; margin: 0; }
   /* `main` carries 88px of footer padding, which is right for a scrolling list
      and wrong under an instrument that already fills the window — it would buy
      a ~40px scrollbar that reveals nothing. Claw most of it back on this view
-     only, so the graph and its rail fit the window with no page scroll. */
-  section[data-view="graph"] { margin-bottom: -64px; }
+     only, so the graph and its rail fit the window with no page scroll.
+     Only above the instrument's own min-height floor: on a shorter window the
+     page scrolls anyway, and there the rule just steals the footer padding. */
+  @media (min-height: 700px) {
+    section[data-view="graph"] { margin-bottom: -64px; }
+  }
   .overview .micro { display: block; margin-bottom: 10px; }
   .overview .d1 { display: block; }
   .overview .sub {
@@ -460,6 +469,23 @@
     height: calc(100dvh - 244px);
     min-height: 440px;
   }
+  /* 244px is the chrome above the instrument with the health strip in its QUIET
+     pill shape (~32px). In warn/bad the strip becomes a full-width BAR (10/14
+     padding, 13.5px text) and pushes `#freshness` onto a second line, so the
+     status line grows ~45px — enough to buy back exactly the page scrollbar the
+     viewport sizing exists to prevent, and to do it a beat AFTER first paint,
+     because `paintStrip` sets `data-state` when the health read lands.
+     `:has()` reads that state off the strip itself. An engine without `:has()`
+     keeps the quiet-state subtraction and scrolls ~45px in warn/bad only.
+     Gated above the stacked breakpoint: below it the instrument is `height:
+     auto` by design, and this selector would out-specify that. */
+  @media (min-width: 901px) {
+    body:has(#health-strip[data-state="warn"]) .instrument,
+    body:has(#health-strip[data-state="bad"]) .instrument {
+      height: calc(100vh - 289px);
+      height: calc(100dvh - 289px);
+    }
+  }
   #graph-wrap { min-width: 0; }
   #graph { display: block; width: 100%; height: 100%; touch-action: none; }
   #graph .edge { stroke-opacity: .32; }
@@ -517,7 +543,7 @@
        instrument must size to its content instead of to the viewport —
        otherwise the two share one screen and both end up cramped. */
     .instrument { grid-template-columns: minmax(0, 1fr); height: auto; min-height: 0; }
-    .rail { border-left: 0; border-top: 1px solid var(--g-line); max-height: none; }
+    .rail { border-left: 0; border-top: 1px solid var(--g-line); }
     #graph { height: 460px; }
   }
   @media (max-width: 620px) {
@@ -653,23 +679,14 @@
 
   function badge(text, cls) { return el('span', { class: 'badge ' + (cls || ''), text }); }
 
-  // The corpus total. If the facts payload states it, that wins; otherwise the
-  // graph route already reports `fact_count` for the whole store, and it is read
-  // ONCE per page load and cached. Both are GETs on existing routes; if neither
-  // answers, the figure falls back to what is on screen and says so.
-  let corpusTotal = null;
-  function readTotal(data) {
-    for (const k of ['total', 'total_count', 'fact_count', 'corpus_count']) {
-      if (data && typeof data[k] === 'number') return data[k];
-    }
-    return null;
-  }
-  async function ensureTotal() {
-    if (corpusTotal !== null) return corpusTotal;
-    const g = await api('/graph').catch(() => null);
-    corpusTotal = readTotal(g);
-    return corpusTotal;
-  }
+  // The denominator behind the headline figure, and it rides on the SAME
+  // payload as the rows (`/api/facts` states `total` in both modes). It used to
+  // be fetched from `/api/graph` when the facts payload did not state one —
+  // which meant a COUNT, an edge SELECT and an archive walk on every facts
+  // page-load to paint one number, AND a number counted with different filters
+  // than the list it sat over.
+  const readTotal = (data) =>
+    data && typeof data.total === 'number' ? data.total : null;
 
   // ---- rendering untrusted text -----------------------------------------
   //
@@ -873,7 +890,7 @@
   // ---- the pinned health strip (every view) -----------------------------
   //
   // `?strip=1` deliberately: the strip is on EVERY view, and the full health
-  // route runs all 14 doctor checks (one of which probes the agent CLI as a
+  // route runs the whole doctor check list (one check probes the agent CLI as a
   // subprocess). Paying that on every navigation to draw one line would make
   // the whole viewer feel broken.
   function applyStrip(s) {
@@ -922,24 +939,36 @@
     const label = $('#ov-label');
     const sub = $('#ov-sub');
     const shown = data && data.facts ? data.facts.length : 0;
+    const total = readTotal(data);
+    const tail = tier ? ' · tier ' + tier + ' only' : '';
     if (data && data.mode === 'search') {
+      // The figure is the MATCH COUNT, not the page of it. Showing `count` here
+      // rendered "50 matches" for a 500-hit query, in the largest type on the
+      // page — the one number a user has no way to check.
+      const hits = total !== null ? total : (typeof data.count === 'number' ? data.count : shown);
       label.textContent = 'Search';
-      figure.textContent = group(typeof data.count === 'number' ? data.count : shown);
+      figure.textContent = group(hits);
       clear(sub);
-      sub.append('match' + (data.count === 1 ? '' : 'es') + ' for ');
+      sub.append('match' + (hits === 1 ? '' : 'es') + ' for ');
       sub.append(el('b', { text: '“' + (data.query || q) + '”' }));
-      sub.append(' — keyword, ranked by trust' + (tier ? ' · tier ' + tier + ' only' : '') + '.');
+      if (hits > shown) {
+        sub.append(' — showing the first ');
+        sub.append(el('b', { text: group(shown) }));
+        sub.append(', ranked by trust' + tail + '.');
+      } else {
+        sub.append(' — keyword, ranked by trust' + tail + '.');
+      }
       return;
     }
     label.textContent = tier ? 'Durable memory · tier ' + tier : 'Durable memory';
-    const stated = readTotal(data);
-    const total = stated !== null ? stated : corpusTotal;
     figure.textContent = total !== null ? group(total) : group(shown);
     clear(sub);
-    if (total !== null) {
+    if (total !== null && total > shown) {
       sub.append('facts on disk, none forgotten. Listing the newest ');
       sub.append(el('b', { text: group(shown) }));
       sub.append(' — search reaches all of them.');
+    } else if (total !== null) {
+      sub.append('facts on disk, none forgotten — all of them listed below.');
     } else {
       sub.append('facts listed, newest first. Search reaches the whole store.');
     }
@@ -975,12 +1004,13 @@
     if (seq !== factsSeq) return; // a newer query went out while this one flew
     clear(out);
     if (data.error) { out.append(errorCard(data)); return; }
-    stamp(data, data.mode === 'search' ? data.count + ' hit(s) for “' + data.query + '”' : 'newest ' + data.count);
+    // The stamp counts what the QUERY found, not what this response carried —
+    // otherwise the freshness line contradicts the headline figure above it.
+    const found = readTotal(data);
+    stamp(data, data.mode === 'search'
+      ? (found !== null ? found : data.count) + ' hit(s) for “' + data.query + '”'
+      : 'newest ' + data.count);
     paintOverview(data, q, tier);
-    if (readTotal(data) === null && corpusTotal === null && data.mode !== 'search') {
-      // Fill the figure in when the number arrives; never block the list on it.
-      ensureTotal().then(() => { if (seq === factsSeq) paintOverview(data, q, tier); });
-    }
     if (!data.facts.length) {
       out.append(el('p', { class: 'empty', text: q
         ? 'Nothing matches “' + q + '”. Try fewer words — search is keyword, not fuzzy.'
@@ -990,7 +1020,16 @@
     const rows = el('div', { class: 'rows' });
     for (const f of data.facts) rows.append(factRow(f));
     out.append(rows);
-    if (data.clamped) out.append(el('p', { class: 'note', text: 'Showing the first ' + data.limit + ' — refine the search to narrow it.' }));
+    // Keyed off the TOTAL, not off `clamped` (which only means the `?limit=`
+    // someone typed was above the cap): the honest question is whether there
+    // are records this list does not show, and that is true at the DEFAULT
+    // limit on any real corpus.
+    const total = readTotal(data);
+    if (total !== null && total > data.count) {
+      out.append(el('p', { class: 'note', text:
+        'Showing the first ' + group(data.count) + ' of ' + group(total) +
+        (data.mode === 'search' ? ' — refine the search to narrow it.' : ' — search reaches all of them.') }));
+    }
   }
 
   async function viewFact(id) {
@@ -1266,8 +1305,14 @@
     let box = rail.querySelector('#peek');
     if (!n) { if (box) box.remove(); return; }
     if (!box) {
-      box = el('div', { id: 'peek' }, [el('h3', { text: 'Pointed at' })]);
-      rail.append(box);
+      box = el('div', { id: 'peek' });
+      // ABOVE the static "Reading it" key, never appended last: the peek is the
+      // live answer to pointing at a node, and on a rail that only just fits it
+      // was landing below the rail's own fold — the affordance produced no
+      // visible feedback at all. The key is reference material and can sit at
+      // the bottom; feedback cannot.
+      const key = rail.querySelector('#rail-key');
+      if (key) rail.insertBefore(box, key); else rail.append(box);
     }
     clear(box);
     box.append(el('h3', { text: 'Pointed at' }));
@@ -1326,8 +1371,16 @@
       return;
     }
 
+    // The box is measured ONCE, at layout time, and nothing re-reads it: there
+    // is no resize handler, by design (a relayout would move every node under
+    // the pointer). With `dvh` the box CAN change afterwards — a mobile URL bar
+    // collapsing is the realistic case — and the SVG then letterboxes inside
+    // the new box (default `preserveAspectRatio: meet`). That is the accepted
+    // trade: a slightly padded picture beats a picture that jumps.
+    // The fallbacks are for a canvas measured before layout; they match the
+    // instrument's own floor rather than any historical fixed height.
     const W = svg.clientWidth || 900;
-    const H = svg.clientHeight || 620;
+    const H = svg.clientHeight || 440;
     let seed = 42;
     const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
 
@@ -1487,7 +1540,7 @@
     legend.append(el('p', { class: 'hint', text: 'Three hues is the honest limit on a dark all-pairs canvas; past that, structure is carried by position and labels. Click a cluster to isolate it.' }));
     rail.append(legend);
 
-    const key = el('div', {}, [el('h3', { text: 'Reading it' })]);
+    const key = el('div', { id: 'rail-key' }, [el('h3', { text: 'Reading it' })]);
     const staticKeys = el('div', { class: 'keys' });
     const rimKey = (frac, text) => {
       const sw = document.createElementNS(NS, 'svg');
