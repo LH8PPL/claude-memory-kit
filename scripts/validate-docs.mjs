@@ -125,12 +125,28 @@ function topLevelMd(dir) {
 const WALK_SKIP_DIRS = new Set([
   'node_modules', '.git', '.stress-logs', '.test-logs', 'coverage', 'dist', '.vitest',
 ]);
-// Agent worktrees are a WHOLE SECOND COPY of the repo at a different commit -
-// scanning one produces stale-count findings for prose that is correct at its
-// own commit, and a locked worktree made `npm test` unrunnable on the primary
-// checkout (2026-08-08). Deliberately `.claude/worktrees`-narrow, NOT all of
-// `.claude` - `.claude/skills/*.md` are legitimately in scope for count claims.
-const WALK_SKIP_PATHS = new Set([join(REPO, '.claude', 'worktrees')]);
+/**
+ * A subdirectory that carries its own `.git` is a WHOLE SECOND COPY of a repo
+ * at a different commit — an agent worktree (`.claude/worktrees/*`), a nested
+ * clone, a vendored checkout. Its prose is correct AT ITS OWN COMMIT, so
+ * scanning it produces stale-count findings for docs nobody should edit, and a
+ * LOCKED worktree made `npm test` unrunnable on the primary checkout entirely
+ * (2026-08-08).
+ *
+ * `.git` is tested as an ENTRY, not a directory: a worktree's `.git` is a FILE
+ * (`gitdir: …`), a clone's is a directory, and both mean the same thing here.
+ *
+ * This never fires on the repo ROOT — the walk starts inside it and only ever
+ * asks the question of directories it is about to DESCEND into. The check
+ * replaced a hardcoded `.claude/worktrees` path, which was correct for the one
+ * case that produced it and blind to every other second-copy shape.
+ *
+ * @param {string} dir absolute path of a directory the walk is about to enter
+ * @returns {boolean} true when `dir` is the root of its own repo copy
+ */
+function isSeparateRepoCopy(dir) {
+  return existsSync(join(dir, '.git'));
+}
 
 function walkMdRec(dir, out = []) {
   if (!existsSync(dir)) return out;
@@ -138,7 +154,7 @@ function walkMdRec(dir, out = []) {
     if (e.isDirectory() && WALK_SKIP_DIRS.has(e.name)) continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) {
-      if (WALK_SKIP_PATHS.has(p)) continue;
+      if (isSeparateRepoCopy(p)) continue;
       walkMdRec(p, out);
     } else if (e.name.endsWith('.md')) out.push(p);
   }

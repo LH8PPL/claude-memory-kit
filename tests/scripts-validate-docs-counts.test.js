@@ -26,7 +26,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -271,6 +271,80 @@ describe('Task 236 — Door 5: the end-to-end reporting contract', () => {
       );
       expect(good.status, 'clean must exit zero').toBe(0);
       expect(good.stdout).toMatch(/counts:/);
+    } finally {
+      rmSync(repo, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    }
+  });
+});
+
+describe('Task 236 — a nested repo COPY is not this repo (the worktree fix)', () => {
+  // An agent worktree under `.claude/worktrees/` is a second checkout of this
+  // repo at a DIFFERENT commit. Scanning it reports its prose as drift against
+  // the primary checkout's live registry — findings for docs nobody should
+  // edit, at a commit nobody is on — and a LOCKED worktree made `npm test`
+  // unrunnable here (2026-08-08). The first fix hardcoded that one path; this
+  // pins the general property, because a vendored clone or a `git clone` a
+  // contributor happens to leave in the tree is the same second copy.
+  //
+  // Driven through the REAL script, because the skip lives in the walk: a unit
+  // test of the check function would prove the predicate and not the pruning.
+  const run = (root) =>
+    spawnSync(
+      process.execPath,
+      [join(REPO_ROOT, 'scripts', 'validate-docs.mjs'), '--only', 'counts'],
+      { encoding: 'utf8', timeout: 60_000, env: { ...process.env, CMK_VALIDATOR_ROOT: root } },
+    );
+
+  // A worktree's `.git` is a FILE (`gitdir: …`); a clone's is a directory.
+  // Both mean "a repo starts here", so both must prune.
+  for (const [shape, plant] of [
+    ['a worktree (.git FILE)', (d) => writeFileSync(join(d, '.git'), 'gitdir: /elsewhere\n', 'utf8')],
+    ['a clone (.git DIR)', (d) => mkdirSync(join(d, '.git'))],
+  ]) {
+    it(`skips ${shape} — its prose is correct at its own commit`, () => {
+      const repo = mkdtempSync(join(tmpdir(), 'cmk-worktree-'));
+      try {
+        const copy = join(repo, 'vendor', 'second-copy');
+        mkdirSync(copy, { recursive: true });
+        plant(copy);
+        writeFileSync(join(copy, 'GUIDE.md'), 'the kit ships 777 MCP tools\n', 'utf8');
+
+        // Direction 1: the copy alone is invisible — a clean tree stays clean.
+        const clean = run(repo);
+        expect(clean.status, `${clean.stdout}\n${clean.stderr}`).toBe(0);
+        expect(`${clean.stdout}${clean.stderr}`).not.toMatch(/777/);
+
+        // Direction 2 (the load-bearing half): the SAME stale doc OUTSIDE the
+        // copy still fails, so the skip prunes a repo copy and not the scan.
+        writeFileSync(join(repo, 'GUIDE.md'), 'the kit ships 999 MCP tools\n', 'utf8');
+        const dirty = run(repo);
+        expect(dirty.status).toBe(1);
+        expect(dirty.stderr).toMatch(/GUIDE\.md/);
+        expect(dirty.stderr).toMatch(/999/);
+        // …and still only the one finding — the copy did not join in.
+        expect(dirty.stderr).not.toMatch(/777/);
+      } finally {
+        rmSync(repo, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+      }
+    });
+  }
+
+  it('prunes at the COPY, not at its parent — siblings of a copy are still scanned', () => {
+    // `vendor/` holds the copy; a doc that is `vendor/`'s own must not vanish
+    // with it. A skip that walked up one level would be silent about real drift.
+    const repo = mkdtempSync(join(tmpdir(), 'cmk-worktree-sib-'));
+    try {
+      const copy = join(repo, 'vendor', 'second-copy');
+      mkdirSync(copy, { recursive: true });
+      writeFileSync(join(copy, '.git'), 'gitdir: /elsewhere\n', 'utf8');
+      writeFileSync(join(copy, 'GUIDE.md'), 'the kit ships 777 MCP tools\n', 'utf8');
+      writeFileSync(join(repo, 'vendor', 'NOTES.md'), 'the kit ships 888 MCP tools\n', 'utf8');
+
+      const r = run(repo);
+      expect(r.status).toBe(1);
+      expect(r.stderr).toMatch(/NOTES\.md/);
+      expect(r.stderr).toMatch(/888/);
+      expect(r.stderr).not.toMatch(/777/);
     } finally {
       rmSync(repo, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
