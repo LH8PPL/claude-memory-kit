@@ -1168,6 +1168,17 @@ describe('viewer — the visual pass (260)', () => {
 
     // The explicit light override IS the media-query light palette, token for token.
     expect(explicitLight).toEqual(mediaLight);
+    // …and the DARK override must declare the same SET of tokens — value drift is
+    // checked below, but until this line the guard was one-directional on KEYS:
+    // a token added to `:root` + the media-light block + `[data-theme="light"]`
+    // and forgotten in `[data-theme="dark"]` passed every other assertion here,
+    // and rendered its LIGHT value inside a dark page for the one reader who is
+    // on an OS-light machine with the dark toggle on. The two sets are identical
+    // today, and both palettes cover exactly the theme-varying tokens.
+    expect(
+      Object.keys(explicitDark).sort(),
+      '[data-theme="dark"] and the light palette declare different token SETS',
+    ).toEqual(Object.keys(mediaLight).sort());
     // The explicit dark override re-asserts the default; it declares a SUBSET
     // (the theme-varying tokens only — `--g-*`, rhythm and fonts do not vary),
     // and every token it does declare must match the default exactly.
@@ -1185,6 +1196,50 @@ describe('viewer — the visual pass (260)', () => {
     // query, where a dark-preferring machine would never see it.
     const mediaBlock = bareCss.match(/@media\s*\(prefers-color-scheme:\s*light\)\s*\{([\s\S]*?)\n  \}/);
     expect(mediaBlock[1]).not.toContain('data-theme');
+  });
+
+  it('(I1b) every `--X-rgb` carries the channels of its OWN `--X` — every block, every pair', () => {
+    // The ONE badge rule is `rgba(<hue>-rgb, var(--tint))` under a hairline of
+    // the same channels (§24.1.2), so a hue is written TWICE: once as the hex
+    // the text is painted in, once as the channels its wash is mixed from. The
+    // two are only related by a human keeping them in step — and the dark port
+    // shipped `--ink-3: #a59b8c` beside `--ink-3-rgb: 157,147,132`, which is
+    // the channels of #9d9384: the value the AA test REJECTED at 4.23:1. So the
+    // one token lifted for contrast was painting its own badge wash out of the
+    // rejected hue, in both dark blocks, with every test green — the AA test
+    // reads the hex and never sees the channels.
+    //
+    // Every pair, in every block that declares one: with each palette written
+    // four times (two themes x two signals), a per-token spot check is exactly
+    // the shape that misses the copy nobody looked at.
+    const channels = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(',');
+    const bad = [];
+    let pairs = 0;
+    for (const [, sel, body] of bareCss.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+      const where = sel.trim().replace(/\s+/g, ' ');
+      const tok = Object.fromEntries(
+        [...body.matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]),
+      );
+      for (const [name, value] of Object.entries(tok)) {
+        if (!name.endsWith('-rgb')) continue;
+        // A badge VARIANT aliases (`--hue-rgb: var(--ok-rgb)`) — there is no
+        // literal to compare, and the alias is the shape that cannot drift.
+        if (!/^\d{1,3},\s*\d{1,3},\s*\d{1,3}$/.test(value)) continue;
+        const base = name.slice(0, -'-rgb'.length);
+        const hex = tok[base];
+        if (!hex || !/^#[0-9a-f]{6}$/i.test(hex)) {
+          bad.push(`${where}: ${name} has no literal ${base} beside it`);
+          continue;
+        }
+        pairs += 1;
+        const got = value.replace(/\s+/g, '');
+        const want = channels(hex);
+        if (got !== want) bad.push(`${where}: ${name} = ${got} but ${base} = ${hex} (= ${want})`);
+      }
+    }
+    expect(bad, `a hue's channels disagree with its own hex:\n  ${bad.join('\n  ')}`).toEqual([]);
+    // …and the scan actually reached the palettes, rather than passing on zero.
+    expect(pairs, 'the rgb-pair scan found almost nothing — the sheet shape moved').toBeGreaterThanOrEqual(40);
   });
 
   it('(I1) every text/surface pair clears WCAG AA 4.5:1 — in BOTH themes', () => {
@@ -1241,7 +1296,13 @@ describe('viewer — the visual pass (260)', () => {
         }
       }
       // Badge text on its own tint, over each surface a badge appears on.
-      for (const hue of ['ok', 'warn', 'bad', 'accent', 'tier-p', 'tier-u', 'ink-3']) {
+      // `tier-l` is in the list because it is a badge/glyph hue exactly like
+      // `tier-p`/`tier-u` (`.tier-L` sets `--hue`/`--hue-rgb` from it). It was
+      // omitted while it read `var(--accent)` and was AA-safe by aliasing; the
+      // D-432 port made all three tiers literal hexes and it fell out of
+      // coverage silently — the CHANGELOG's "every pair in both themes" claim
+      // was one hue short of true.
+      for (const hue of ['ok', 'warn', 'bad', 'accent', 'tier-p', 'tier-l', 'tier-u', 'ink-3']) {
         for (const [sn, s] of [['panel', panel], ['ground', ground]]) {
           check(`badge ${hue} on ${sn}`, tok(hue), over(tok(hue), tint, s));
         }

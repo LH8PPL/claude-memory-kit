@@ -91,8 +91,12 @@
     /* Reference value was #9d9384, which computes to 4.23:1 for 11px/600 badge
        text on its own tint over `--panel` — the one pair in the skin that fails
        AA. Lifted two steps up the same warm ramp: 4.59:1 badge, 5.99:1 as plain
-       text. Do not put it back without re-running the contrast test. */
-    --ink-3: #a59b8c;          --ink-3-rgb: 157,147,132;
+       text. Do not put it back without re-running the contrast test — and note
+       the CHANNELS are half of the token: the first cut of this lift left
+       `--ink-3-rgb` on the rejected value's channels, so every ink-3 badge was
+       still mixing its wash out of #9d9384 with the AA test green (it reads the
+       hex). A test now pins every `--X-rgb` to its own `--X`. */
+    --ink-3: #a59b8c;          --ink-3-rgb: 165,155,140;
 
     /* ONE accent, and it belongs to the ground's own hue family. The violet was
        a second, colder colour system laid over a warm page. Amber doubles as the
@@ -242,7 +246,7 @@
 
     --ink: #ece5d7;
     --ink-2: #b9ae9c;
-    --ink-3: #a59b8c;         --ink-3-rgb: 157,147,132;
+    --ink-3: #a59b8c;         --ink-3-rgb: 165,155,140;
 
     --accent: #e9b45c;        --accent-rgb: 233,180,92;
     --ok: #6cc78d;            --ok-rgb: 108,199,141;
