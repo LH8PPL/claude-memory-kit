@@ -1104,11 +1104,16 @@ describe('viewer — the visual pass (260)', () => {
     const r = await boot();
     html = await (await fetch(r.url)).text();
     css = html.match(/<style\b[^>]*>([\s\S]*?)<\/style\b[^>]*>/i)[1];
-    // Comment-stripped, for any assertion that matches a SELECTOR: the token
-    // block's own prose names the selectors it is describing (`:root`, the
-    // media queries, `data-theme`), and matching those against the raw sheet
-    // picks the prose up as if it were code — the M4 class, and the reason the
-    // D-432 polarity flip first went green against the wrong block entirely.
+    // Comment-stripped, and the sheet EVERY rule-shaped assertion below reads:
+    // the token block's own prose names the selectors, properties and values it
+    // is describing (`:root`, the media queries, `data-theme`, the rejected
+    // font family, the old `border-color: currentColor` shape), so matching
+    // against the raw sheet picks the prose up as if it were code — the M4
+    // class, and the reason the D-432 polarity flip first went green against
+    // the wrong block entirely. Three ad-hoc copies of this stripper had already
+    // appeared in this file; one definition, one place to fix (M6). The single
+    // deliberate exception is the "zero fetched bytes" scan in the fonts test,
+    // which is a claim about the served bytes and says so at its own line.
     bareCss = css.replace(/\/\*[\s\S]*?\*\//g, '');
     script = html.match(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/i)[1];
   });
@@ -1360,31 +1365,31 @@ describe('viewer — the visual pass (260)', () => {
   });
 
   it('(2) badges are TINTED, not outlined — one rule, literal rgba, no color-mix()', () => {
-    const badge = css.match(/\.badge\s*\{([\s\S]*?)\}/);
+    const badge = bareCss.match(/\.badge\s*\{([\s\S]*?)\}/);
     expect(badge, 'no .badge rule').toBeTruthy();
     expect(badge[1]).toMatch(/background:\s*rgba\(/);
     expect(badge[1]).toMatch(/border:\s*1px solid rgba\(/);
     // The old shape: `border-color: currentColor` on every pill variant.
-    expect(css).not.toMatch(/border-color:\s*currentColor/);
+    expect(bareCss).not.toMatch(/border-color:\s*currentColor/);
     // color-mix() support was flagged unverified in the survey; both reference
     // implementations use literal rgba pairs, and so do we.
-    expect(css).not.toMatch(/color-mix\(/);
+    expect(bareCss).not.toMatch(/color-mix\(/);
   });
 
   it('(1/4) the card has a title tier, a CSS clamp and a bounded measure', () => {
-    expect(css).toMatch(/\.fact-title\s*\{/);
-    expect(css).toMatch(/-webkit-line-clamp/);
+    expect(bareCss).toMatch(/\.fact-title\s*\{/);
+    expect(bareCss).toMatch(/-webkit-line-clamp/);
     // Clamping in CSS keeps the whole string in the DOM (and the a11y tree)
     // rather than asking the server for more "…".
     expect(script).toMatch(/clamp-2/);
-    const measure = css.match(/--measure:\s*(\d+)px/);
+    const measure = bareCss.match(/--measure:\s*(\d+)px/);
     expect(measure, 'no --measure token').toBeTruthy();
     expect(Number(measure[1])).toBeLessThanOrEqual(820);
     expect(html).toMatch(/id="facts-out"[^>]*class="measure"/);
 
     // Four sizes + ONE uppercase micro-label — asserted INSIDE the micro rule,
     // not anywhere in the sheet (M4).
-    const micro = css.match(/\.micro[^{]*\{([^}]*)\}/);
+    const micro = bareCss.match(/\.micro[^{]*\{([^}]*)\}/);
     expect(micro, 'no .micro rule').toBeTruthy();
     expect(micro[1]).toMatch(/text-transform:\s*uppercase/);
     expect(micro[1]).toMatch(/letter-spacing:\s*\.12em/);
@@ -1401,7 +1406,7 @@ describe('viewer — the visual pass (260)', () => {
     // it something it did not anticipate.
     const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const rule = (sel) => {
-      const m = css.match(new RegExp(`(?:^|\\n)\\s*${escapeRe(sel)}\\s*[^{]*\\{([^}]*)\\}`));
+      const m = bareCss.match(new RegExp(`(?:^|\\n)\\s*${escapeRe(sel)}\\s*[^{]*\\{([^}]*)\\}`));
       expect(m, `no ${sel} rule`).toBeTruthy();
       return m[1];
     };
@@ -1414,7 +1419,7 @@ describe('viewer — the visual pass (260)', () => {
     expect(rule('.rail dd')).toMatch(/font-variant-numeric:\s*tabular-nums/);
     expect(rule('.key .n')).toMatch(/font-variant-numeric:\s*tabular-nums/);
     // The mono stack carries tabular figures AND slashed-zero for id/hash columns.
-    const mono = css.match(/code,\s*\.mono\s*\{([^}]*)\}/);
+    const mono = bareCss.match(/code,\s*\.mono\s*\{([^}]*)\}/);
     expect(mono, 'no code/.mono rule').toBeTruthy();
     expect(mono[1]).toMatch(/tabular-nums/);
     expect(mono[1]).toMatch(/slashed-zero/);
@@ -1433,7 +1438,7 @@ describe('viewer — the visual pass (260)', () => {
     // The contract is VIEWPORT-RELATIVE SIZING, not any particular number:
     // a future redesign may retune the subtraction, but it may not go back
     // to a fixed pixel box that ignores the window.
-    const instrument = css.match(/\n\s*\.instrument\s*\{([^}]*)\}/);
+    const instrument = bareCss.match(/\n\s*\.instrument\s*\{([^}]*)\}/);
     expect(instrument, 'no .instrument rule').toBeTruthy();
     // Sizes to the window...
     expect(instrument[1]).toMatch(/height:\s*calc\(100dvh\s*-/);
@@ -1444,18 +1449,18 @@ describe('viewer — the visual pass (260)', () => {
     expect(instrument[1].indexOf('100vh')).toBeLessThan(instrument[1].indexOf('100dvh'));
 
     // The canvas fills that box rather than declaring its own fixed height.
-    const graph = css.match(/\n\s*#graph\s*\{([^}]*)\}/);
+    const graph = bareCss.match(/\n\s*#graph\s*\{([^}]*)\}/);
     expect(graph, 'no #graph rule').toBeTruthy();
     expect(graph[1]).toMatch(/height:\s*100%/);
 
     // The rail stretches with the instrument instead of clipping its legend.
-    const rail = css.match(/\n\s*\.rail\s*\{([^}]*)\}/);
+    const rail = bareCss.match(/\n\s*\.rail\s*\{([^}]*)\}/);
     expect(rail, 'no .rail rule').toBeTruthy();
     expect(rail[1]).not.toMatch(/max-height:\s*\d+px/);
 
     // Stacked (narrow) layout opts OUT: graph and rail become siblings in one
     // column, so a viewport-height instrument would cramp both.
-    const stacked = css.match(/@media \(max-width: 900px\)\s*\{([\s\S]*?)\n\s{2}\}/);
+    const stacked = bareCss.match(/@media \(max-width: 900px\)\s*\{([\s\S]*?)\n\s{2}\}/);
     expect(stacked, 'no 900px breakpoint').toBeTruthy();
     expect(stacked[1]).toMatch(/\.instrument\s*\{[^}]*height:\s*auto/);
 
@@ -1466,7 +1471,7 @@ describe('viewer — the visual pass (260)', () => {
     // after load (the strip paints when the health read lands). So the loud
     // states must subtract MORE, and the two numbers must stay ordered.
     const quiet = Number(instrument[1].match(/calc\(100dvh\s*-\s*(\d+)px\)/)[1]);
-    const loud = css.match(
+    const loud = bareCss.match(
       /body:has\(#health-strip\[data-state="warn"\]\)[\s\S]{0,200}?\{([^}]*)\}/,
     );
     expect(loud, 'no warn/bad instrument-height override').toBeTruthy();
@@ -1475,7 +1480,7 @@ describe('viewer — the visual pass (260)', () => {
     expect(Number(loud[1].match(/calc\(100dvh\s*-\s*(\d+)px\)/)[1])).toBeGreaterThan(quiet);
     // …and it must not reach the stacked layout, where the instrument is
     // `height: auto` — a `:has()` selector out-specifies the media-query rule.
-    const guarded = css.match(/@media \(min-width: 901px\)\s*\{([\s\S]*?)\n\s{2}\}/);
+    const guarded = bareCss.match(/@media \(min-width: 901px\)\s*\{([\s\S]*?)\n\s{2}\}/);
     expect(guarded, 'the :has() override is not gated above the stacked breakpoint').toBeTruthy();
     expect(guarded[1]).toContain('#health-strip[data-state="warn"]');
     expect(guarded[1]).toContain('#health-strip[data-state="bad"]');
@@ -1483,7 +1488,7 @@ describe('viewer — the visual pass (260)', () => {
     // M2: the negative margin that claws back `main`'s footer padding is for
     // windows tall enough for the instrument to fill — below the floor the page
     // scrolls anyway and the rule just eats the footer.
-    const tall = css.match(/@media \(min-height: \d+px\)\s*\{([\s\S]*?)\n\s{2}\}/);
+    const tall = bareCss.match(/@media \(min-height: \d+px\)\s*\{([\s\S]*?)\n\s{2}\}/);
     expect(tall, 'the graph margin rule is not inside a min-height media block').toBeTruthy();
     expect(tall[1]).toMatch(/section\[data-view="graph"\]\s*\{[^}]*margin-bottom:\s*-\d+px/);
   });
@@ -1496,38 +1501,38 @@ describe('viewer — the visual pass (260)', () => {
     // bounded surface, which makes that failure structurally impossible —
     // there is no inter-card gap left to invert. The surviving contract is
     // that a row has real internal padding and a hairline between rows.
-    const row = css.match(/\n\s*\.row\s*\{([^}]*)\}/);
+    const row = bareCss.match(/\n\s*\.row\s*\{([^}]*)\}/);
     expect(row, 'no .row rule').toBeTruthy();
     const padY = Number((row[1].match(/padding:\s*(\d+)px/) || [])[1]);
     expect(padY, 'the row has no vertical padding').toBeGreaterThanOrEqual(10);
     expect(row[1]).toMatch(/border-top:\s*1px solid/);
-    expect(css).toMatch(/\.rows\s*\{[^}]*overflow:\s*hidden/);
+    expect(bareCss).toMatch(/\.rows\s*\{[^}]*overflow:\s*hidden/);
   });
 
   it('(6) the header is sticky + blurred and the tabs are real pills, not a seam trick', () => {
     // Scoped INSIDE the rule: `header {[\s\S]*?position: sticky` would happily
     // match a `position: sticky` in some later, unrelated rule (M4).
-    const header = css.match(/(?:^|\n)\s*header\s*\{([^}]*)\}/);
+    const header = bareCss.match(/(?:^|\n)\s*header\s*\{([^}]*)\}/);
     expect(header, 'no header rule').toBeTruthy();
     expect(header[1]).toMatch(/position:\s*sticky/);
     expect(header[1]).toMatch(/backdrop-filter:/);
     // The seam trick: a tab that fakes "in front" with `border-bottom: none`.
-    expect(css).not.toMatch(/border-bottom:\s*none/);
-    expect(css).toMatch(/nav a\[aria-current="page"\]\s*\{[\s\S]*?background:\s*rgba\(var\(--accent-rgb\)/);
+    expect(bareCss).not.toMatch(/border-bottom:\s*none/);
+    expect(bareCss).toMatch(/nav a\[aria-current="page"\]\s*\{[\s\S]*?background:\s*rgba\(var\(--accent-rgb\)/);
   });
 
   it('(7) the health strip is a PILL when ok and a bar only when it is not', () => {
-    const strip = css.match(/#health-strip\s*\{([\s\S]*?)\}/);
+    const strip = bareCss.match(/#health-strip\s*\{([\s\S]*?)\}/);
     expect(strip, 'no #health-strip rule').toBeTruthy();
     expect(strip[1]).toMatch(/display:\s*inline-flex/);
-    const loud = css.match(
+    const loud = bareCss.match(
       /#health-strip\[data-state="warn"\][\s\S]{0,200}?\{([\s\S]*?)\}/,
     );
     expect(loud[1]).toMatch(/display:\s*flex/);
     expect(loud[1]).toMatch(/width:\s*100%/);
     // The SHAPE changed; the state semantics did not (§24.1.1 B1 fold).
     for (const state of ['ok', 'warn', 'queued', 'bad']) {
-      expect(css).toContain(`#health-strip[data-state="${state}"]`);
+      expect(bareCss).toContain(`#health-strip[data-state="${state}"]`);
     }
     expect(script).toMatch(/severity === 'memory-off' \? 'bad' : 'warn'/);
   });
@@ -1541,11 +1546,11 @@ describe('viewer — the visual pass (260)', () => {
     //
     // Every rule that grants the bar treatment must be keyed to warn or bad
     // ONLY; none of them may name `queued`.
-    // Comments are stripped first: the CSS comment ABOVE the bar rule explains
-    // why queued is excluded, and matching selector text against the raw sheet
-    // picks that prose up as if it were a selector.
-    const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');
-    const barRules = [...bare.matchAll(/([^{}]*?)\{([^}]*?)\}/g)]
+    // Comments are stripped first (`bareCss`, hoisted into the beforeEach): the
+    // CSS comment ABOVE the bar rule explains why queued is excluded, and
+    // matching selector text against the raw sheet picks that prose up as if it
+    // were a selector.
+    const barRules = [...bareCss.matchAll(/([^{}]*?)\{([^}]*?)\}/g)]
       .filter(([, , body]) => /width:\s*100%/.test(body) && /display:\s*flex/.test(body))
       .map(([, sel]) => sel.trim())
       .filter((sel) => sel.includes('#health-strip'));
@@ -1555,7 +1560,7 @@ describe('viewer — the visual pass (260)', () => {
       expect(sel).toMatch(/warn|bad/);
     }
     // …and `queued` must still be styled (colour), just not shaped like an alarm.
-    const queued = css.match(/#health-strip\[data-state="queued"\]\s*\{([\s\S]*?)\}/);
+    const queued = bareCss.match(/#health-strip\[data-state="queued"\]\s*\{([\s\S]*?)\}/);
     expect(queued, 'queued lost its styling entirely').toBeTruthy();
     expect(queued[1]).not.toMatch(/width:\s*100%/);
     expect(queued[1]).toMatch(/background:\s*rgba\(/);
@@ -1574,13 +1579,13 @@ describe('viewer — the visual pass (260)', () => {
 
     // A standing label is earned by degree; the rest appear on hover/focus.
     expect(script).toMatch(/LABEL_AT/);
-    expect(css).toMatch(/#graph text\.lbl\s*\{[\s\S]*?opacity:\s*0/);
-    expect(css).toMatch(/#graph \.node:hover text\.lbl/);
+    expect(bareCss).toMatch(/#graph text\.lbl\s*\{[\s\S]*?opacity:\s*0/);
+    expect(bareCss).toMatch(/#graph \.node:hover text\.lbl/);
     // Halos, so a label survives being drawn over a dot.
-    expect(css).toMatch(/paint-order:\s*stroke/);
+    expect(bareCss).toMatch(/paint-order:\s*stroke/);
     // Supersession is the one directed claim on the canvas — it reads louder.
-    const base = Number(css.match(/#graph \.edge\s*\{\s*stroke-opacity:\s*([\d.]+)/)[1]);
-    const sup = Number(css.match(/#graph \.edge-super\s*\{\s*stroke-opacity:\s*([\d.]+)/)[1]);
+    const base = Number(bareCss.match(/#graph \.edge\s*\{\s*stroke-opacity:\s*([\d.]+)/)[1]);
+    const sup = Number(bareCss.match(/#graph \.edge-super\s*\{\s*stroke-opacity:\s*([\d.]+)/)[1]);
     expect(sup).toBeGreaterThan(base);
   });
 
@@ -1634,7 +1639,7 @@ describe('viewer — the visual pass (260)', () => {
     // render). `.pre` is the class that DOES it — so assert both halves, or the
     // classname is a label with nothing behind it.
     expect(title.className).toMatch(/(^|\s)pre(\s|$)/);
-    expect(css).toMatch(/\.pre\s*\{[^}]*white-space:\s*pre-wrap/);
+    expect(bareCss).toMatch(/\.pre\s*\{[^}]*white-space:\s*pre-wrap/);
     // …and the title sits in the display tier the redesign introduced (d3 =
     // 20px record title), not in the list's 14.5px `.fact-title`.
     expect(title.className).toMatch(/(^|\s)d3(\s|$)/);
@@ -1696,7 +1701,7 @@ describe('viewer — the visual pass (260)', () => {
   });
 
   it('motion is guarded and the focus ring is keyboard-only', () => {
-    const guard = css.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\n  \}/);
+    const guard = bareCss.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\n  \}/);
     expect(guard, 'no prefers-reduced-motion guard').toBeTruthy();
     expect(guard[1]).toMatch(/transition-duration:[^;]*!important/);
     expect(guard[1]).toMatch(/animation-duration:[^;]*!important/);
@@ -1704,18 +1709,18 @@ describe('viewer — the visual pass (260)', () => {
     // is a `*` rule — so a new one cannot escape it.
     expect(guard[1]).toMatch(/\*,\s*\*::before,\s*\*::after/);
 
-    expect(css).toMatch(/:focus-visible\s*\{[\s\S]*?outline:/);
+    expect(bareCss).toMatch(/:focus-visible\s*\{[\s\S]*?outline:/);
     // A mouse click must not leave a ring behind.
-    expect(css).toMatch(/:focus\s*\{\s*outline:\s*none/);
-    expect(css).not.toMatch(/[^-]:focus\s*\{[^}]*outline:\s*2px/);
+    expect(bareCss).toMatch(/:focus\s*\{\s*outline:\s*none/);
+    expect(bareCss).not.toMatch(/[^-]:focus\s*\{[^}]*outline:\s*2px/);
   });
 
   it('the fonts are SYSTEM fonts, with the survey’s two corrections held', () => {
     // Anchored to the `--ui:` DECLARATION, not to "somewhere in the sheet":
     // an unanchored match survives deleting the token it is supposed to pin.
-    expect(css).toMatch(/--ui:\s*system-ui,\s*-apple-system,\s*"Segoe UI"/);
-    expect(css).toMatch(/--display:\s*system-ui,\s*-apple-system,\s*"Segoe UI"/);
-    expect(css).toMatch(/--mono:\s*ui-monospace,\s*SFMono-Regular/);
+    expect(bareCss).toMatch(/--ui:\s*system-ui,\s*-apple-system,\s*"Segoe UI"/);
+    expect(bareCss).toMatch(/--display:\s*system-ui,\s*-apple-system,\s*"Segoe UI"/);
+    expect(bareCss).toMatch(/--mono:\s*ui-monospace,\s*SFMono-Regular/);
     // The survey's second correction, and the one design §24.1.2 ratifies:
     // `system-ui` on Windows 11 resolves to Segoe UI, NOT the Variable face
     // (Firefox bug 1732404, RESOLVED WONTFIX — Windows reports Segoe UI as its
@@ -1723,8 +1728,16 @@ describe('viewer — the visual pass (260)', () => {
     // the machines that happen to have it and nothing anywhere else. The
     // Task-268 redesign named it first and deleted this line; the contract is
     // in the spec, so the spec wins and the guard comes back.
-    expect(css).not.toContain('Segoe UI Variable');
-    // Zero fetched bytes: no @font-face, no @import, nothing external.
+    // …on the comment-stripped sheet: the token block's own prose NAMES the
+    // family it is rejecting ("the Segoe UI *Variable* families deliberately NOT
+    // named"), and that line is one asterisk away from failing this assertion
+    // for saying the right thing. A rule about CSS reads CSS (M6).
+    expect(bareCss).not.toContain('Segoe UI Variable');
+    // The ONE assertion here that stays on the RAW sheet, deliberately: "zero
+    // fetched bytes" is a claim about the bytes the browser receives, and a
+    // CDN URL or an @import parked in a comment is exactly the thing worth
+    // failing on — it is a fetch one uncomment away. (Same reasoning as the
+    // 404-page test, which scans a whole served body for `http(s)://`.)
     expect(css).not.toMatch(/@font-face|@import|url\(\s*['"]?https?:/i);
   });
 
