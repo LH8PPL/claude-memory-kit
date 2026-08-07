@@ -4,7 +4,7 @@
 <!-- Browse this folder as an Obsidian vault. Each [[link]] opens a fact file. -->
 <!-- How to open + the read-vs-write rule: docs/OBSIDIAN.md -->
 
-Facts: 2242
+Facts: 2246
 
 ## feedback
 
@@ -124,6 +124,7 @@ Facts: 2242
 - [[project_task-236-counts-family-validation]] — Task 236: Counts Family Validation
 - [[project_expectation-resolution-gating]] — Expectation Resolution Gating
 - [[project_codeql-alerts-close-on-main-commit-not-npm-release]] — CodeQL Alerts Close on Main Commit, Not NPM Release
+- [[project_research-phase-2-ongoing-fetching-pai-pu-3at2gase]] — Research phase 2 ongoing—fetching PAI/Pulse tokens and screenshots as secondary
 - [[project_byte-preservation-as-hard-constraint-for-archive-splits]] — Byte-Preservation as Hard Constraint for Archive Splits
 - [[project_local-wiki-is-personal-only-wiki-file-pl-3bhcgqqt]] — local-wiki is personal-only wiki; file placement within project is flexible
 - [[project_task-236-enumeration-anti-pattern-prior-art-finding]] — Task 236: Enumeration Anti-Pattern (Prior-Art Finding)
@@ -330,6 +331,7 @@ Facts: 2242
 - [[project_v0-3-2-release-scope-locked]] — v0.3.2 Release Scope Locked
 - [[project_recursive-improvement-pattern-via-verification-questions]] — Recursive Improvement Pattern via Verification Questions
 - [[project_npm-deprecate-auth-failures-reported-as-e404]] — npm Deprecate Auth Failures Reported as E404
+- [[project_sonarcloud-coverage-gate-at-80-on-new-code]] — SonarCloud Coverage Gate at 80% on New Code
 - [[project_release-cut-workflow-local-isolation-user-tag-push]] — Release Cut Workflow — Local Isolation, User Tag Push
 - [[project_cursor-agent-automation-requires-separate-cursor-api-key-no]] — Cursor Agent Automation Requires Separate CURSOR_API_KEY (No Desktop Login Reuse)
 - [[project_cursor-adapter-proves-generic-per-profile-seam-works]] — Cursor Adapter Proves Generic Per-Profile Seam Works
@@ -1270,6 +1272,7 @@ Facts: 2242
 - [[project_task-148-v050-scope-transcript-path-not-just-fact-classifier]] — task-148-v050-scope-transcript-path-not-just-fact-classifier
   - related: [[project_cut-gate-v050-transcript-privacy-is-task-148-trigger-fired]]
 - [[project_task-planning-laning-workflow]] — Task Planning & Laning Workflow
+- [[project_co-occurrence-edge-layer-rider-for-task-262]] — Co-occurrence Edge Layer Rider for Task 262
 - [[project_wants-readme-structured-like-sinedied-to-l3eathk7]] — Wants README structured like sinedied/tool-README repos (Azure serverless, run-o
 - [[project_misplaced-memory-files-recovered-to-root-context]] — Misplaced Memory Files Recovered to Root Context
 - [[project_npm-run-stress-transient-flake-and-fresh-run-workaround]] — npm run stress — Transient Flake and Fresh-Run Workaround
@@ -2247,6 +2250,7 @@ Facts: 2242
 - [[project_the-kit-s-code-fix-is-correct-the-blocki-zxuwszwj]] — The kit's code fix is correct; the blocking issue is kiro-cli's env-passing arch
 - [[project_conditional-tech-adoption-discipline]] — Conditional Tech Adoption Discipline
 - [[project_user-s-established-practice-is-to-run-a-zyqvkvhz]] — user's established practice is to run a cut-gate (full live verification) before
+- [[project_three-design-patterns-from-mnemory-to-explore]] — Three Design Patterns from mnemory to Explore
 - [[project_two-minor-review-fixes-commit-9d785d3]] — Two Minor Review Fixes (Commit 9d785d3)
 - [[project_lost-track-of-what-task-159-was-doing-si-zznlf7us]] — lost track of what Task 159 was doing; signals confusion promptly rather than co
 - [[project_canonicalize-super-linear-regex-hotspot]] — canonicalize() Super-Linear Regex Hotspot
@@ -2352,7 +2356,7 @@ Facts: 2242
 
 ## Cited anchors
 
-- **ADR-0002** ← [[project_architecture-decisions-via-adr-references]], [[project_core-system-concepts]], [[project_derive-vs-stamp-design-rule]], [[project_everos-comparison-same-thesis-opposite-architecture-not-bett]], [[project_fts5-and-sqlite-vec-are-chosen-by-design-per-adr-0002-and-ad]], [[project_health-state-tracking-via-append-only-event-log]], [[project_long-jobs-incremental-resumable-from-artifacts-never-all-or]], [[project_qdrant-vector-database-re-rejected-adr-0015-reaffirmed]]
+- **ADR-0002** ← [[project_architecture-decisions-via-adr-references]], [[project_core-system-concepts]], [[project_derive-vs-stamp-design-rule]], [[project_everos-comparison-same-thesis-opposite-architecture-not-bett]], [[project_fts5-and-sqlite-vec-are-chosen-by-design-per-adr-0002-and-ad]], [[project_health-state-tracking-via-append-only-event-log]], [[project_long-jobs-incremental-resumable-from-artifacts-never-all-or]], [[project_qdrant-vector-database-re-rejected-adr-0015-reaffirmed]], [[project_three-design-patterns-from-mnemory-to-explore]]
 - **ADR-0005** ← [[project_kit-s-haiku-backend-has-undeclared-claude-cli-dependency]], [[project_plugin-install-and-bootstrap-are-separate-one-time-steps]]
 - **ADR-0009** ← [[project_adr-0009-inline-provenance-was-deliberate-but-lint-cost-unwe]], [[project_memory-format-linting-fix-md007]], [[project_scratchpad-provenance-format-resolved-keep-inline]]
 - **ADR-0012** ← [[project_adr-0012-deferred-product-rename-cross-agent-trigger]], [[project_agent-neutral-names-persist-across-any-rename]], [[project_cmk-search-scope-limitation-with-decision-queries]], [[project_kit-name-change-task-195-timeline-and-decision-point]], [[project_no-naming-collision-with-awrshift-claude-b46y2m6s]], [[project_project-governance-adrs-frozen-records-and-two-phase-rename]]
@@ -2439,7 +2443,7 @@ Facts: 2242
 - **D-292** ← [[project_confirmed-kiro-bug-user-turn-never-captured-auto-extract-can]], [[project_d-292-resolved-all-three-agent-gates-block-the-v0-5-0-tag-co]], [[project_kiro-gate-contaminated-by-running-cli-checks-in-a-kiro-open]], [[project_kiro-gate-v0-5-0-complete-all-3-sessions-pass-kit-works-end]], [[project_kiro-gate-v0-5-0-session-1-privacy-screen-all-core-surfaces]], [[project_kiro-gate-v0-5-0-verdict-pass-the-kit-works-on-kiro]], [[project_kiro-ide-v1-user-prompt-env-var-broken-read-from-messages-js]], [[project_resume-v0-5-0-tag-blocked-only-on-the-cursor-gate-everything]]
 - **D-293** ← [[project_d-293-with-semantic-on-large-corpora-cau-e6txlfhn]], [[project_d-293-workaround-avoid-with-semantic-on-dev-repo-large-corpu]], [[project_gate-testing-isolated-throwaway-folders]], [[project_resume-v0-5-0-tag-blocked-only-on-the-cursor-gate-everything]], [[project_task-256-design-constraints-and-incorporated-rules]]
 - **D-294** ← [[project_l3-promote-20s-judge-timeout-starves-the-committed-transcrip]], [[project_resume-task-148-build-paused-at-sessionend-wiring]]
-- **D-298** ← [[project_kit-s-own-loops-are-real-detection-targets]], [[project_octopoda-loop-detection-code-verified-findings]], [[project_v0-5-1-tasks-filed-for-distill-and-principle]]
+- **D-298** ← [[project_kit-s-own-loops-are-real-detection-targets]], [[project_octopoda-loop-detection-code-verified-findings]], [[project_three-design-patterns-from-mnemory-to-explore]], [[project_v0-5-1-tasks-filed-for-distill-and-principle]]
 - **D-300** ← [[project_l3-promote-20s-judge-timeout-starves-the-committed-transcrip]], [[project_resume-fix-l3-promote-timeout-wip-at-4e33935-then-v0-5-0-tag]], [[project_resume-v0-5-0-tag-blocked-only-on-the-cursor-gate-everything]], [[project_v0-5-0-release-feature-complete-l3-promotion-gate-pending]]
 - **D-301** ← [[project_resume-fix-l3-promote-timeout-wip-at-4e33935-then-v0-5-0-tag]], [[project_resume-v0-5-0-tag-blocked-only-on-the-cursor-gate-everything]]
 - **D-302** ← [[project_claude-memory-kit-dogfooding-setup-and-conflict-surface]], [[project_d-303-fixed-kiro-auto-extract-user-prompt-empty-recovered-fr]], [[project_npm-cleanup-warning-with-d-302-dll-lock-4hurzjlf]], [[project_task-205-preflight-fires-on-wrong-trigger-design-flaw]], [[project_windows-dll-locking-during-cmk-reinstall]]
@@ -2566,6 +2570,7 @@ Facts: 2242
 - **Task-257** ← [[project_brainapi2-code-dive-assessment-and-findings]], [[project_d-388-project-discipline-document-unreachable-code]], [[project_task-257-bom-blindness-is-complete-root-e5haw2f6]], [[project_v0-6-3-release-plan-task-queue]]
 - **Task-258** ← [[project_health-log-system-architecture-ratified]], [[project_task-258-kept-separate-from-task-250-approved]], [[project_v0-6-4-release-cmk-view-health-signals-live]], [[project_v0-6-4-release-workflow-and-task-ownership]]
 - **Task-260** ← [[project_design-research-memo-and-mvp-split]], [[project_memory-fact-validation-task-reference-exemption]], [[project_root-cause-of-visual-plainness]], [[project_task-260-and-262-sequencing]], [[project_task-260-viewer-awaits-user-final-verdict]], [[project_versioning-policy-d-24-differentiators-per-release-level]], [[project_viewer-page-visual-design-constraints]], [[project_viewer-visual-diagnosis-six-design-deficits]]
+- **Task-262** ← [[project_co-occurrence-edge-layer-rider-for-task-262]], [[project_task-260-and-262-sequencing]], [[project_three-design-patterns-from-mnemory-to-explore]]
 - **Task-50** ← [[project_architectural-thesis-session-runtime-learning-judge]], [[project_claude-memory-kit-judge-as-the-per-host-adapter]], [[project_concurrent-write-race-task-146-severity-tied-to-agent-multip]], [[project_correction-kiro-capture-prompt-wiring-is-present-not-missing]], [[project_kiro-transcript-format-resolved-verified-on-a-real-kiro-inst]], [[project_open-knowledge-format-okf-design-validation-and-interchange]], [[project_related-projects-mimir-memex-mcp-only-memory-integrations]], [[project_section-5-1-binding-rule-convergence-verification]], [[project_task-50-adapter-architecture-do-not-build-a-uniform-installe]], [[project_task-50-cross-agent-seam-target-kiro-cli-agent-hooks-agentsp]], [[project_task-50-highest-unverified-risk-kiro-transcript-format-is-un]], [[project_task-50-research-revisit-gate-and-multi-agent-pattern]], [[project_three-borrowed-ideas-laned-to-tasks-versions]], [[project_v0-4-x-versioning-roadmap]], [[project_v0-5-2-release-scope-and-workflow]]
 - **Task-55** ← [[project_2026-07-01-arc-complete-output-inventory-and-at-risk-layer]], [[project_four-flavors-of-memory-improvement-systems]], [[project_memory-learn-loop-as-converged-system]], [[project_pai-personal-ai-infrastructure-memory-architecture-convergen]], [[project_task-55-enrichment-relationship-memory-learn-phase]]
 - **Task-65** ← [[project_everos-comparison-same-thesis-opposite-architecture-not-bett]], [[project_post-retrieval-filtering-query-expansion-hyde]], [[reference_memweave-reference-patterns]]

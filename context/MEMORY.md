@@ -8,8 +8,6 @@
 
 <!-- Current work in progress. Drop bullets as work resolves. -->
 
-- (P-3AT2GaSE) Research phase 2 ongoing—fetching PAI/Pulse tokens and screenshots as secondary visual references
-  <!-- source: review-promote, source_line: 1, sha1: 13258b2f8db4250ee7b8a3ce436473d59b9e82f6140f580fdc5e8249687a529c, write: user-explicit, trust: high, at: 2026-08-05T20:05:35Z -->
 - (P-TETWUFPS) Task 260 visual pass completed with all gates passing: 3916 full suite green, 5/5 stress first invocation, 25/25 live-verify unchanged; zero new dependencies.
   <!-- source: review-promote, source_line: 1, sha1: 35891cf124087024a3562e67dc5d42369b1e8be39e167958ef127ee6af19d978, write: user-explicit, trust: high, at: 2026-08-05T20:05:37Z -->
 - (P-N4K4NVA6) Markdown tokenizer is security-critical component (XSS threat on untrusted fact bodies); reviewer pass includes tokenizer + accessibility + behavioral verification.
@@ -20,6 +18,8 @@
   <!-- source: review-promote, source_line: 1, sha1: 0a4aa3844989d4914a8784b6cf05702dccca3f58db001fc0835afefe6b0f9fab, write: user-explicit, trust: high, at: 2026-08-05T20:05:42Z -->
 - (P-UZ9BHS27) When design direction is ratified in advance, work within it rather than proposing alternatives
   <!-- source: auto-extract-session, source_line: 1, sha1: b4caf350ba5187edd71990ae099e5e42b6bc2fec40fab0a8e6d16b51216923f5, write: auto-extract, trust: high, at: 2026-08-05T20:39:17Z -->
+- (P-SDKP7RKS) Regression test added to pin graph layout—prevents graph from being pushed below the fold again
+  <!-- source: review-promote, source_line: 1, sha1: 283391bc8f188a2ee3aa22623e5728132d8880bbfa8fb502b66cf191eb03fc84, write: user-explicit, trust: high, at: 2026-08-06T20:38:35Z -->
 
 ## Environment Notes
 
