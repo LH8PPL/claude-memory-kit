@@ -647,9 +647,9 @@ const API = {
    * rim arc, supersession is the direction, anchors are the hubs.
    *
    * `node_limit` budgets the LIVE facts (newest-first) — live meaning the same
-   * population `/api/facts` lists: neither deleted nor expired. Three node classes ride
-   * on top of it rather than inside it, each counted on its own so the page can
-   * name it accurately: anchor hubs (the structure that makes a bounded slice
+   * population `/api/facts` lists: neither deleted nor expired. Three node
+   * classes ride on top of it rather than inside it, each counted on its own so
+   * the page can name it accurately: anchor hubs (the structure that makes a bounded slice
    * legible), dangling link targets (a reference to a fact that does not exist
    * — worth seeing, but not the same thing as a hub), and archived-superseded
    * predecessors (the direction the view exists to show — a supersession arrow
@@ -676,7 +676,7 @@ const API = {
       // counting a population the graph does not draw would have replaced one
       // disagreement with another.
       const now = Date.now();
-      const CORPUS = `deleted_at IS NULL AND (expires_at IS NULL OR expires_at > @now)`;
+      const CORPUS = 'deleted_at IS NULL AND (expires_at IS NULL OR expires_at > @now)';
       const live = db
         .prepare(
           `SELECT id, tier, trust, trust_score, heading_path, created_at, superseded_by
