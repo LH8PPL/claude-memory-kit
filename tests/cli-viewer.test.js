@@ -1098,37 +1098,93 @@ describe('viewer — the HTML page (255.3)', () => {
 describe('viewer — the visual pass (260)', () => {
   let html;
   let css;
+  let bareCss;
   let script;
   beforeEach(async () => {
     const r = await boot();
     html = await (await fetch(r.url)).text();
     css = html.match(/<style\b[^>]*>([\s\S]*?)<\/style\b[^>]*>/i)[1];
+    // Comment-stripped, for any assertion that matches a SELECTOR: the token
+    // block's own prose names the selectors it is describing (`:root`, the
+    // media queries, `data-theme`), and matching those against the raw sheet
+    // picks the prose up as if it were code — the M4 class, and the reason the
+    // D-432 polarity flip first went green against the wrong block entirely.
+    bareCss = css.replace(/\/\*[\s\S]*?\*\//g, '');
     script = html.match(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/i)[1];
   });
 
   it('(3) defines a real surface ladder — page ≠ panel ≠ sunken, in BOTH themes', () => {
     // The diagnosis was a 2% delta (#fbfaf8 page on #ffffff panels), which left
     // borders doing 100% of the work and nothing reading as a surface.
-    const root = css.match(/:root\s*\{([\s\S]*?)\}/)[1];
+    //
+    // POLARITY FLIPPED 2026-08-08 (D-432): dark is the `:root` DEFAULT and light
+    // is the media-query block. Every assertion below is the same contract with
+    // the two roles swapped — not a weakened one. Deleting either block still
+    // fails, and the M4 whole-ladder comparison is unchanged.
+    const root = bareCss.match(/:root\s*\{([\s\S]*?)\}/)[1];
     for (const token of ['--ground', '--panel', '--sunken', '--line', '--ink', '--ink-2', '--ink-3']) {
-      expect(root, `light theme is missing ${token}`).toContain(token + ':');
+      expect(root, `the default (dark) theme is missing ${token}`).toContain(token + ':');
     }
     const hex = (block, name) =>
       (block.match(new RegExp('\\' + name + ':\\s*(#[0-9a-f]{6})', 'i')) || [])[1];
     expect(hex(root, '--ground')).not.toBe(hex(root, '--panel'));
 
-    // Dark is DESIGNED, not an inversion: its own ladder, redefined.
-    const dark = css.match(/@media\s*\(prefers-color-scheme:\s*dark\)\s*\{\s*:root\s*\{([\s\S]*?)\}/);
-    expect(dark, 'no dark-theme token block').toBeTruthy();
+    // Light is DESIGNED, not an inversion: its own ladder, redefined.
+    const light = bareCss.match(/@media\s*\(prefers-color-scheme:\s*light\)\s*\{\s*:root\s*\{([\s\S]*?)\}/);
+    expect(light, 'no light-theme token block').toBeTruthy();
     for (const token of ['--ground', '--panel', '--sunken', '--line', '--ink', '--ink-3']) {
-      expect(dark[1], `dark theme is missing ${token}`).toContain(token + ':');
+      expect(light[1], `light theme is missing ${token}`).toContain(token + ':');
     }
-    expect(hex(dark[1], '--ground')).not.toBe(hex(dark[1], '--panel'));
-    // Dark is a DESIGN, not an inversion — so compare the whole ladder, not one
-    // token: every surface and ink must differ from its light counterpart (M4).
+    expect(hex(light[1], '--ground')).not.toBe(hex(light[1], '--panel'));
+    // Neither theme is an inversion of the other — so compare the whole ladder,
+    // not one token: every surface and ink must differ from its counterpart (M4).
     for (const token of ['--ground', '--panel', '--sunken', '--line', '--ink', '--ink-2', '--ink-3']) {
-      expect(hex(dark[1], token), `${token} is identical in both themes`).not.toBe(hex(root, token));
+      expect(hex(light[1], token), `${token} is identical in both themes`).not.toBe(hex(root, token));
     }
+  });
+
+  it('(I3) an explicit `data-theme` wins in BOTH directions, and cannot drift', () => {
+    // D-432 serves each theme on two signals — the system preference and an
+    // explicit `data-theme` — which means each palette is written TWICE. The AA
+    // test can only compute the block it parses, so a `data-theme` copy could
+    // drift out of contrast coverage silently: an override that ships an
+    // unmeasured palette is the composition gap this closes.
+    const tokens = (block) =>
+      Object.fromEntries(
+        [...block.matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]),
+      );
+    const blockAfter = (re) => {
+      const m = bareCss.match(re);
+      expect(m, `no block matching ${re}`).toBeTruthy();
+      return tokens(m[1]);
+    };
+    // Both directions exist: light over a dark default, dark over a light system.
+    const explicitLight = blockAfter(/:root\[data-theme="light"\]\s*\{([\s\S]*?)\n  \}/);
+    const explicitDark = blockAfter(/:root\[data-theme="dark"\]\s*\{([\s\S]*?)\n  \}/);
+    const mediaLight = blockAfter(
+      /@media\s*\(prefers-color-scheme:\s*light\)[\s\S]*?:root\s*\{([\s\S]*?)\n    \}/,
+    );
+    const defaultDark = blockAfter(/:root\s*\{([\s\S]*?)\n  \}/);
+
+    // The explicit light override IS the media-query light palette, token for token.
+    expect(explicitLight).toEqual(mediaLight);
+    // The explicit dark override re-asserts the default; it declares a SUBSET
+    // (the theme-varying tokens only — `--g-*`, rhythm and fonts do not vary),
+    // and every token it does declare must match the default exactly.
+    expect(Object.keys(explicitDark).length).toBeGreaterThan(15);
+    for (const [name, value] of Object.entries(explicitDark)) {
+      expect(defaultDark[name], `${name} drifted between :root and [data-theme="dark"]`).toBe(value);
+    }
+    // …and it must actually cover the palette, not a token or two of it.
+    for (const token of ['--ground', '--panel', '--sunken', '--ink', '--ink-3', '--accent', '--tint']) {
+      expect(explicitDark, `[data-theme="dark"] is missing ${token}`).toHaveProperty(token);
+      expect(explicitLight, `[data-theme="light"] is missing ${token}`).toHaveProperty(token);
+    }
+    // The attribute selector out-specifies the media block by construction
+    // (0,2,0 vs 0,1,0) — assert it is not accidentally nested INSIDE the media
+    // query, where a dark-preferring machine would never see it.
+    const mediaBlock = bareCss.match(/@media\s*\(prefers-color-scheme:\s*light\)\s*\{([\s\S]*?)\n  \}/);
+    expect(mediaBlock[1]).not.toContain('data-theme');
   });
 
   it('(I1) every text/surface pair clears WCAG AA 4.5:1 — in BOTH themes', () => {
@@ -1152,9 +1208,14 @@ describe('viewer — the visual pass (260)', () => {
     };
     const over = (fg, alpha, bg) => fg.map((c, i) => c * alpha + bg[i] * (1 - alpha));
 
+    // POLARITY FLIPPED 2026-08-08 (D-432): the `:root` default block is now the
+    // DARK palette and the media-query block is LIGHT. Both are still computed —
+    // the contract is "AA in both themes", and which one is the default does not
+    // change it. (The `data-theme` copies are pinned to these by I3, so a copy
+    // cannot ship an unmeasured palette.)
     const themes = {
-      light: css.match(/:root\s*\{([\s\S]*?)\n  \}/)[1],
-      dark: css.match(/@media\s*\(prefers-color-scheme:\s*dark\)[\s\S]*?:root\s*\{([\s\S]*?)\n    \}/)[1],
+      dark: bareCss.match(/:root\s*\{([\s\S]*?)\n  \}/)[1],
+      light: bareCss.match(/@media\s*\(prefers-color-scheme:\s*light\)[\s\S]*?:root\s*\{([\s\S]*?)\n    \}/)[1],
     };
     const failures = [];
     for (const [theme, block] of Object.entries(themes)) {
@@ -1189,12 +1250,28 @@ describe('viewer — the visual pass (260)', () => {
       check('search hit (ink-2 on accent wash)', tok('ink-2'), over(tok('accent'), 0.22, panel));
     }
 
+    // The archive tokens the `.trust` word and the plain-hue text land on are
+    // NOT badges — `.trust-high` / `.trust-medium` paint the hue directly on a
+    // row inside a panel, and links paint `--accent` on the page. The badge loop
+    // above measures each hue on its own tint, which is a DIFFERENT (harder)
+    // pair, so it can pass while the bare-text use of the same hue fails. With
+    // dark now the default and every hue re-picked (D-432), pin the bare use too.
+    for (const [theme, block] of Object.entries(themes)) {
+      const tok = (name) => srgb(block.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`))[1]);
+      for (const hue of ['ok', 'warn', 'bad', 'accent']) {
+        for (const [sn, s] of [['panel', tok('panel')], ['ground', tok('ground')]]) {
+          const r = contrast(tok(hue), s);
+          if (r < AA) failures.push(`${theme}: ${hue} as TEXT on ${sn} = ${r.toFixed(2)}:1`);
+        }
+      }
+    }
+
     // The INSTRUMENT is its own colour space (`--g-*`), fixed in both themes —
     // and the Task-268 redesign put real 11-12.5px text in it: the rail's
     // headings and dl, the corpus sub-line, the legend counts, the peek meta,
     // the SVG labels. The archive tokens above cannot see any of it, so a dark
     // canvas could be lightened to taste with the AA test still green.
-    const gBlock = css.match(/:root\s*\{([\s\S]*?)\n  \}/)[1];
+    const gBlock = bareCss.match(/:root\s*\{([\s\S]*?)\n  \}/)[1];
     const gTok = (name) => {
       const m = gBlock.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
       expect(m, `no --${name} token`).toBeTruthy();

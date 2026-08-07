@@ -17,11 +17,20 @@
   method other than GET. The answer to "let me delete this from here" is the
   copy-able `cmk forget` command on every fact.
 
-  VISUAL DIRECTION (ratified, memo §3): an instrument panel over a warm archive.
-  Everything you READ is a warm light document — paper ground, rows with shared
-  boundaries, one display type tier. Exactly ONE region is permanently dark and
-  permanently saturated: the graph. It is the hero object, and it keeps its own
-  colour space (`--g-*` tokens below) in both themes.
+  VISUAL DIRECTION.
+
+  Original position (ratified 2026-08-04, memo §3 — kept as the decision trail):
+  "an instrument panel over a warm archive". Everything you READ was a warm
+  LIGHT document, and exactly one region — the graph — was permanently dark.
+
+  Revised 2026-08-08 (D-432, the user's call): the product lives beside a
+  terminal and dies with it (Ctrl-C), so it is built out of the same material —
+  warm near-black, warm bone ink, exactly ONE accent (amber, drawn from the
+  ground's own hue family). DARK IS THE DEFAULT; the warm-light palette stays
+  fully supported and is served to a light-preferring system (and to an explicit
+  `data-theme="light"`). The graph is still the hero: it is now the hero by
+  being DEEPER than the page and by holding the only dense saturation in the
+  product, rather than by being the only dark thing on it.
 -->
 <style>
   /* ---------------------------------------------------------------------
@@ -29,16 +38,28 @@
 
      Two colour spaces, deliberately:
 
-       1. the ARCHIVE — warm paper (light) / warm dark (system dark). Ink,
-          trust hues, tier hues. Everything you read.
-       2. the INSTRUMENT — `--g-*`. A fixed warm-dark canvas (#221f1b, the
-          inverse hue family of our own paper, deliberately not navy) that does
-          NOT flip with the system theme, because the graph is one object and an
-          object does not change material when the room lights change.
+       1. the ARCHIVE — `--ground` / `--panel` / `--ink`. Warm near-black under
+          warm bone by DEFAULT; warm paper under warm ink when the system (or an
+          explicit `data-theme`) asks for light. Everything you read.
+       2. the INSTRUMENT — `--g-*`. A deeper, more saturated canvas for the
+          graph, IDENTICAL in both themes — the graph is one object and an object
+          does not change material when the room lights change. It sits below
+          `--ground` in both, so it reads as a distinct instrument inside a dark
+          page and as the one dark region inside a light one.
+
+     Four blocks, deliberately duplicated rather than derived: `:root` (dark, the
+     default) · `@media (prefers-color-scheme: light)` · `:root[data-theme=…]`
+     for each, so an explicit toggle wins in BOTH directions. The pairs are
+     byte-identical on purpose and a test asserts it — a derived form would need
+     a second indirection layer through every hue, and the AA test can only
+     compute what it can parse.
 
      Every hue also carries its channels as `--*-rgb`: the ONE badge/tint rule is
-     an `rgba(<hue>, .13)` fill under an `rgba(<hue>, .28)` hairline, and a
-     literal rgba pair is safer than a colour-mixing function.
+     an `rgba(<hue>, var(--tint))` fill under an `rgba(<hue>, var(--tint-line))`
+     hairline, and a literal rgba pair is safer than a colour-mixing function.
+     The two alphas are per-theme (dark carries more of both, because a wash has
+     less to work with over a near-black ground), which is why they are tokens
+     rather than the numbers this comment used to name.
 
      Ink and hue values are pinned by the contrast test — body text clears AA
      4.5:1 on every surface it can land on, and 11px/600 badge text is held to
@@ -46,42 +67,69 @@
      one without re-running that test.
      --------------------------------------------------------------------- */
   :root {
-    color-scheme: light dark;
+    /* ONE polarity by default. The whole product is warm dark — the same
+       material as the terminal it is launched from. Ink is warm bone, not white;
+       the ground is warm near-black, not navy and not neutral grey. `dark` is
+       listed first so a UA with no user preference lands on the identity. */
+    color-scheme: dark light;
 
-    /* Surfaces. A real ladder, and ORDERED: in light, elevation is lightness,
-       so panel (raised) > ground > sunken (recessed). */
-    --ground: #f4f2ed;
-    --panel: #ffffff;          --panel-rgb: 255,255,255;
-    --panel-hover: #f8f6f2;
-    --sunken: #eae5db;
-    --line: #d8d2c6;
-    --line-soft: #e5e0d5;
+    /* Surfaces. A real ladder, and ORDERED: in dark, elevation is lightness
+       upward, so ground (page) < sunken (recessed) < panel (raised). */
+    --ground: #1a1714;
+    --panel: #221f1b;          --panel-rgb: 34,31,27;
+    --panel-hover: #2a2622;
+    /* The reference skin put `--sunken` at #15120f, BELOW `--ground` — which
+       breaks design §24.1.2's ORDERED-ladder rule (in dark: panel > sunken >
+       ground) and its test. Raised to sit between ground and panel, in the same
+       warm hue family. */
+    --sunken: #1e1b17;
+    --line: #38322a;
+    --line-soft: #2c2822;
 
-    --ink: #2b2520;
-    --ink-2: #5a5248;
-    --ink-3: #676158;          --ink-3-rgb: 103,97,88;
+    --ink: #ece5d7;
+    --ink-2: #b9ae9c;
+    /* Reference value was #9d9384, which computes to 4.23:1 for 11px/600 badge
+       text on its own tint over `--panel` — the one pair in the skin that fails
+       AA. Lifted two steps up the same warm ramp: 4.59:1 badge, 5.99:1 as plain
+       text. Do not put it back without re-running the contrast test. */
+    --ink-3: #a59b8c;          --ink-3-rgb: 157,147,132;
 
-    --accent: #6044dd;         --accent-rgb: 96,68,221;
-    --ok: #176f30;             --ok-rgb: 23,111,48;
-    --warn: #805a14;           --warn-rgb: 128,90,20;
-    --bad: #b6271e;            --bad-rgb: 182,39,30;
+    /* ONE accent, and it belongs to the ground's own hue family. The violet was
+       a second, colder colour system laid over a warm page. Amber doubles as the
+       WARN hue on purpose: fewer hues is more designed, and the two never
+       contradict each other (both mean "look here"). */
+    --accent: #e9b45c;         --accent-rgb: 233,180,92;
+    --ok: #6cc78d;             --ok-rgb: 108,199,141;
+    --warn: #e9b45c;           --warn-rgb: 233,180,92;
+    --bad: #ef8a7e;            --bad-rgb: 239,138,126;
 
-    --tier-p: #085dc2;         --tier-p-rgb: 8,93,194;
-    --tier-l: var(--accent);   --tier-l-rgb: var(--accent-rgb);
-    --tier-u: #8b5416;         --tier-u-rgb: 139,84,22;
+    /* Tier is MONOCHROME in dark. P/L/U in a fixed left column is the most
+       repeated element on the page; with ONE accent there is no hue budget left
+       to spend three ways, and `--tier-l: var(--accent)` would collide with both
+       `--accent` and `--warn`. The LETTER carries the meaning. Hex and channels
+       agree deliberately (both are `--ink-2`): the AA test reads the hex for
+       BOTH the text and its own tint, so a split pair would measure something
+       the page never renders. Light keeps its hue-coded tiers — see below. */
+    --tier-p: #b9ae9c;         --tier-p-rgb: 185,174,156;
+    --tier-l: #b9ae9c;         --tier-l-rgb: 185,174,156;
+    --tier-u: #b9ae9c;         --tier-u-rgb: 185,174,156;
 
-    --tint: .13;
-    --tint-line: .28;
+    --tint: .16;
+    --tint-line: .30;
 
     /* --- the instrument. Fixed in both themes. ---
+       With the page itself dark, the graph is no longer the hero by being the
+       only dark thing: it is the hero by being DEEPER than `--ground` and by
+       holding the only dense saturation in the product.
+
        Community hue budget is THREE plus a neutral, by arithmetic: a node-link
        graph is an all-pairs form, and on this canvas slot 4 fails normal-vision
        separation and slot 5 fails deuteranopia outright. Structure past three
        communities is carried by POSITION and LABELS. Trust is a rim ARC, not a
        fill — colourblind-immune, and it keeps hue free for community. */
-    --g-canvas: #221f1b;
-    --g-canvas-2: #1c1a16;     /* the rail, one step deeper than the plot */
-    --g-line: #3b3730;
+    --g-canvas: #131110;
+    --g-canvas-2: #0f0d0c;     /* the rail, one step deeper than the plot */
+    --g-line: #322c25;
     --g-ink: #ece5d7;
     --g-ink-2: #b8afa0;
     --g-ink-3: #948b7d;        --g-ink-3-rgb: 148,139,125;
@@ -111,31 +159,102 @@
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "Cascadia Mono", Consolas,
             "Liberation Mono", monospace;
   }
-  @media (prefers-color-scheme: dark) {
+  /* ---- LIGHT: supported, not default ----------------------------------
+     The warm-paper archive, unchanged from the ratified 2026-08-04 direction.
+     It is a DESIGN, not an inversion of the block above: its own ladder, its own
+     ink ramp, its own hue-coded tiers (light has the accent budget dark does
+     not, because its accent is not also the warn hue).
+
+     Served on two signals — the system preference, and an explicit
+     `data-theme="light"`. The two declaration bodies are byte-identical and a
+     test asserts it; `--g-*`, the rhythm and the font stacks are NOT repeated
+     here because they do not vary by theme.
+     -------------------------------------------------------------------- */
+  @media (prefers-color-scheme: light) {
     :root {
-      /* In dark, elevation runs the other way: ground < sunken < panel. */
-      --ground: #171613;
-      --panel: #221f1b;        --panel-rgb: 34,31,27;
-      --panel-hover: #2a2723;
-      --sunken: #1d1b18;
-      --line: #3a3834;
-      --line-soft: #302e2a;
+      color-scheme: light dark;
 
-      --ink: #dcd6cc;
-      --ink-2: #b8b0a4;
-      --ink-3: #aaa399;        --ink-3-rgb: 170,163,153;
+      /* In light, elevation is lightness: sunken < ground < panel. */
+      --ground: #f4f2ed;
+      --panel: #ffffff;        --panel-rgb: 255,255,255;
+      --panel-hover: #f8f6f2;
+      --sunken: #eae5db;
+      --line: #d8d2c6;
+      --line-soft: #e5e0d5;
 
-      --accent: #a993ff;       --accent-rgb: 169,147,255;
-      --ok: #4ec97a;           --ok-rgb: 78,201,122;
-      --warn: #e0b055;         --warn-rgb: 224,176,85;
-      --bad: #ea877f;          --bad-rgb: 234,135,127;
+      --ink: #2b2520;
+      --ink-2: #5a5248;
+      --ink-3: #676158;        --ink-3-rgb: 103,97,88;
 
-      --tier-p: #58a6ff;       --tier-p-rgb: 88,166,255;
-      --tier-u: #dda56a;       --tier-u-rgb: 221,165,106;
+      --accent: #6044dd;       --accent-rgb: 96,68,221;
+      --ok: #176f30;           --ok-rgb: 23,111,48;
+      --warn: #805a14;         --warn-rgb: 128,90,20;
+      --bad: #b6271e;          --bad-rgb: 182,39,30;
 
-      --tint: .18;
-      --tint-line: .34;
+      --tier-p: #085dc2;       --tier-p-rgb: 8,93,194;
+      --tier-l: #6044dd;       --tier-l-rgb: 96,68,221;
+      --tier-u: #8b5416;       --tier-u-rgb: 139,84,22;
+
+      --tint: .13;
+      --tint-line: .28;
     }
+  }
+  /* An explicit choice beats the system preference in BOTH directions: light on
+     a dark-preferring machine, and dark on a light-preferring one. Nothing in
+     the page sets `data-theme` today — the viewer has no toggle — so these are
+     the hook for one, and for a reader who sets it from devtools or an
+     extension. Specificity (0,2,0) already beats the media block's `:root`. */
+  :root[data-theme="light"] {
+    color-scheme: light dark;
+
+    --ground: #f4f2ed;
+    --panel: #ffffff;        --panel-rgb: 255,255,255;
+    --panel-hover: #f8f6f2;
+    --sunken: #eae5db;
+    --line: #d8d2c6;
+    --line-soft: #e5e0d5;
+
+    --ink: #2b2520;
+    --ink-2: #5a5248;
+    --ink-3: #676158;        --ink-3-rgb: 103,97,88;
+
+    --accent: #6044dd;       --accent-rgb: 96,68,221;
+    --ok: #176f30;           --ok-rgb: 23,111,48;
+    --warn: #805a14;         --warn-rgb: 128,90,20;
+    --bad: #b6271e;          --bad-rgb: 182,39,30;
+
+    --tier-p: #085dc2;       --tier-p-rgb: 8,93,194;
+    --tier-l: #6044dd;       --tier-l-rgb: 96,68,221;
+    --tier-u: #8b5416;       --tier-u-rgb: 139,84,22;
+
+    --tint: .13;
+    --tint-line: .28;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark light;
+
+    --ground: #1a1714;
+    --panel: #221f1b;         --panel-rgb: 34,31,27;
+    --panel-hover: #2a2622;
+    --sunken: #1e1b17;
+    --line: #38322a;
+    --line-soft: #2c2822;
+
+    --ink: #ece5d7;
+    --ink-2: #b9ae9c;
+    --ink-3: #a59b8c;         --ink-3-rgb: 157,147,132;
+
+    --accent: #e9b45c;        --accent-rgb: 233,180,92;
+    --ok: #6cc78d;            --ok-rgb: 108,199,141;
+    --warn: #e9b45c;          --warn-rgb: 233,180,92;
+    --bad: #ef8a7e;           --bad-rgb: 239,138,126;
+
+    --tier-p: #b9ae9c;        --tier-p-rgb: 185,174,156;
+    --tier-l: #b9ae9c;        --tier-l-rgb: 185,174,156;
+    --tier-u: #b9ae9c;        --tier-u-rgb: 185,174,156;
+
+    --tint: .16;
+    --tint-line: .30;
   }
 
   * { box-sizing: border-box; }
