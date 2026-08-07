@@ -73,6 +73,38 @@ The "self-learning" banner resolves to FOUR distinct loops; conflating them unde
 
 ---
 
+## 6. Completeness sweep (same day) — what the first-pass agents MISSED
+
+The user asked for an adversarial second pass over both clones ("did the agents skip anything?"). **Both first passes under-reported, and in both repos the most kit-relevant module was among the misses.** Methodology lesson worth keeping: a single-agent feature inventory reports what it happened to walk; the adversarial enumerate-everything pass (tools list, API routes, config surface, docs TOC, changelog, tests) earns its cost — it found the items below.
+
+### mnemory misses (kit-relevant only; full trail in the clone)
+
+| Miss | What it is | Why it matters to us |
+| --- | --- | --- |
+| **`sanitize.py`** — their Poison_Guard, unmentioned in pass 1 | Unicode boundary tags around untrusted content (13 tag types, tag-breakout escaping), markdown-header escaping against section forgery, injection-pattern detection that **logs rather than blocks** | The single most comparable module to anything we own; the log-don't-block stance + boundary-tag design are deliberate deltas to weigh before Poison_Guard is next touched |
+| Budgeted incremental auto-fsck + resumable migration framework | Per-run budgets (`FSCK_MAX_MEMORIES`/`FSCK_MAX_LLM_CALLS`), graceful stop, incremental resume; idempotent batch-checkpointed migrations | Independently-arrived-at ADR-0020 shape — reference implementations |
+| MCP token-overhead surgery (v1.8.0) | Tool docstrings cut ~5,500→~1,500 tokens by moving guidance into server instructions; `include_instructions` flag | We ship 13 MCP tools whose docstrings ride into every session — same cost class, never measured. Cheap audit |
+| `/api/recall` session-dedup | Later recalls return only results NOT already sent this session | Our repeated `mk_search` calls re-send the same facts into context every time |
+| Ranking penalties + prompt-caching-aware ordering | raw −0.05 / superseded −0.15 so consolidated wins; stable prompt text before variable | Small, composable recall-quality ideas |
+| Confirmed absent | No export/import, no backup, no webhooks | The matrix rows stand |
+
+(Also: the real MCP tool count is 19, not 17 — even their own docs say 16. Everyone's counts were stale, which is exactly what our validate-docs `counts` family exists to prevent.)
+
+### KiroCrew misses (kit-relevant only)
+
+| Miss | What it is | Why it matters to us |
+| --- | --- | --- |
+| **The FIFTH learning loop: automatic skill creation/refinement** (`skills.auto_*` config: `auto_create_from_sessions`, `auto_refine_on_deviation`, `auto_min_tool_calls`, similarity threshold, LLM judge, approval gate, staleness/archive lifecycle) | Skills are CREATED from observed sessions and REFINED when the agent deviates from them — procedural learning, distinct from the four lesson sources | The deep-dive's "four loops" undercounted — this is the most advanced piece: behavior → durable *procedure*, not just durable *rule*. Direct SYSTEM-MAP §6 input |
+| **`promote_episodic_patterns`** (`vector_memory.py:2700`) | Clusters top-500 episodic embeddings; ≥5 members at ≥0.75 similarity → promoted to a semantic fact at confidence 0.9, source `"promotion"` | A statistical episodic→semantic graduation path — a consolidation mechanism neither prior pass named; relevant to our graduation/consolidation design |
+| **`onboarding_import.py`** | Imports from OTHER agent tools — `codex, claude_code, meshclaw, openclaw, hermes`: lessons (capped), instructions, memories, MCP servers, skills, crons; SOUL.md → lessons; injection screening + credential redaction + alias-free YAML loader; skip/rename/replace conflict strategies | Competitor-migration onboarding as a first-class feature — the generalization of our single `import-anthropic` verb, with the security screening ours would need |
+| Snapshot/restore with host-bound HMAC audit | `kirocrew snapshot` tars memory/crons/config/skills; the audit-log HMAC key NEVER rides a snapshot — regenerated on restore so audit HMACs stay host-bound | Their audit log is HMAC'd; ours is plain NDJSON. The host-binding detail is a genuinely good idea |
+| `subagent-session-cleanup` spec | A real user hit **26,000+ orphan LLM session files in two weeks**; fixed with tombstones + 7-day pruning | Our sessions/transcripts/`.index` tiers share the failure class — worth a boundedness check (not yet verified either way on our side) |
+| Memory eval is 4 scenarios, not 1 | `memory_recall_basic` + `context_accumulation` + `lesson_application` + `smoke_test` | The recall-eval harness shape, one step more complete than reported |
+| Watchdog + time-boxed yolo | Tool-stall suspect/hard caps, model-silent probes; auto-expiring permission bypass (`yolo_duration`) | Composes with our timeout thinking; time-boxed trust elevation is a clean pattern |
+| Lazy skill loading via MCP (`skill_search`/`skill_discover`/`skill_fetch`) | Skills fetched on demand through MCP instead of stuffed into context | Same token-overhead class as the mnemory docstring finding |
+| `search_chat_history` self-retrieval | The agent searches its own transcript history as a tool | We already have this (`cmk search --scope transcripts`) — parity confirmed, not a gap |
+| Trust-model doc pattern | An honest "enabling an app = running its code with our privileges" admission; permission system gates the SDK surface only, stated plainly | The documentation *pattern* for our skills/hooks story in SECURITY.md |
+
 ## Actionable outcomes
 
 | # | Outcome | Where it lands |
