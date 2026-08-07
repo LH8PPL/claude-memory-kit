@@ -4,7 +4,7 @@
 <!-- Browse this folder as an Obsidian vault. Each [[link]] opens a fact file. -->
 <!-- How to open + the read-vs-write rule: docs/OBSIDIAN.md -->
 
-Facts: 2246
+Facts: 2251
 
 ## feedback
 
@@ -131,6 +131,7 @@ Facts: 2246
 - [[project_cursor-agent-backend-doc-confirmed-feasible-not-yet-live-tes]] — Cursor Agent Backend — Doc-Confirmed Feasible, Not Yet Live-Tested
 - [[project_v0-6-0-installed-precompact-task-235-waiting-for-release]] — v0.6.0 Installed; PreCompact (Task 235) Waiting for Release
 - [[project_decisions-md-is-append-only-permanent-journal-not-regenerate]] — DECISIONS.md is append-only permanent journal not regenerated
+- [[project_kirocrew-s-procedural-skill-learning-loop]] — KiroCrew's Procedural Skill Learning Loop
 - [[project_documentation-taxonomy-and-update-responsibility]] — Documentation Taxonomy and Update Responsibility
 - [[project_i-do-not-run-kiro-claude-assistant-drive-3euedzv2]] — I do not run Kiro; Claude/assistant drives live Kiro sessions in this project
 - [[project_urgent-resume-the-global-cmk-is-half-ins-3evdaurq]] — URGENT RESUME: the GLOBAL cmk is HALF-INSTALLED/BROKEN (ERR_MODULE_NOT_FOUND) -
@@ -183,6 +184,7 @@ Facts: 2246
 - [[project_test-suite-pattern-buildmcpserver-for-mcp-refresh-not-repeat]] — Test Suite Pattern: buildMcpServer for MCP Refresh (not repeated runMcpServer)
 - [[project_zero-loss-archive-verification-method]] — Zero-Loss Archive Verification Method
 - [[project_tasks-should-be-pinned-to-actual-version-4al3bzxw]] — Tasks should be pinned to actual versions, not left vague or undocumented.
+- [[project_hmac-bound-audit-log-design]] — HMAC-Bound Audit Log Design
 - [[project_always-verify-installed-files-behavioral-4bbpnlmv]] — Always verify installed files + behavioral tests, not just tarball contents — th
 - [[project_v0-5-2-release-code-complete-awaiting-final-ci]] — v0.5.2 Release — Code-Complete, Awaiting Final CI
 - [[project_this-gate-test-uses-cmk-install-with-sem-4cakqaq7]] — This gate test uses `cmk install --with-semantic`, enabling hybrid semantic sear
@@ -336,6 +338,7 @@ Facts: 2246
 - [[project_cursor-agent-automation-requires-separate-cursor-api-key-no]] — Cursor Agent Automation Requires Separate CURSOR_API_KEY (No Desktop Login Reuse)
 - [[project_cursor-adapter-proves-generic-per-profile-seam-works]] — Cursor Adapter Proves Generic Per-Profile Seam Works
 - [[project_files-first-context-discovery-in-repo-versionable-memory]] — Files-First Context Discovery — In-Repo, Versionable Memory
+- [[project_episodic-to-semantic-clustering-promotion]] — Episodic-to-Semantic Clustering Promotion
 - [[project_code-review-excellence-is-pre-existing-s-6dnyctb2]] — Code-review-excellence is pre-existing skill, not one of 6 newly adopted; produc
 - [[project_viewer-page-redesign-multi-layer-validation-workflow]] — Viewer-Page Redesign: Multi-Layer Validation Workflow
 - [[project_kiro-ide-vs-cli-hooks-verified-quote-from-an-aws-builders-ar]] — Kiro IDE vs CLI hooks (verified quote from an AWS-builders article the user foun
@@ -415,6 +418,7 @@ Facts: 2246
 - [[project_compression-retry-strategy-for-claude-memory-kit]] — Compression Retry Strategy for claude-memory-kit
 - [[project_memory-kit-validation-gates-d1-w4-dj4-live-gate]] — Memory Kit Validation Gates (D1–W4 + DJ4 Live Gate)
 - [[project_prefers-comprehensive-full-end-to-end-te-7l3ftz3y]] — Prefers comprehensive, full end-to-end test coverage. Concerned that changes shi
+- [[project_d-366-verification-session-file-unboundedness-risk]] — D-366 Verification: Session File Unboundedness Risk
 - [[project_health-log-system-architecture-ratified]] — Health-Log System Architecture (Ratified)
 - [[project_user-reviews-multiple-adjacent-competing-7mxbhawu]] — User reviews multiple adjacent/competing projects to extract design patterns and
 - [[project_1-gate-run-verification-expected-health-checks-and-session]] — §1 Gate Run Verification — Expected Health Checks and Session 1 Handoff
@@ -930,6 +934,7 @@ Facts: 2246
 - [[project_sessionstart-hook-requires-reopen-after-install]] — SessionStart Hook Requires Reopen After Install
 - [[project_map-module-sort-determinism-localecompare-banned-explicit-or]] — Map Module Sort Determinism — localeCompare Banned, Explicit Ordering Required
 - [[project_kit-update-drift-detection-gaps-v0-3-4-task]] — Kit Update & Drift Detection Gaps (v0.3.4 Task)
+- [[project_multi-legacy-onboarding-migration-framework]] — Multi-Legacy Onboarding Migration Framework
 - [[project_user-views-obsidian-vault-integration-as-fc2wq9ja]] — User views Obsidian vault integration as pragmatic/simple; questions whether ela
 - [[project_expires-at-enforcement-dual-mode-read-time-sweep]] — Expires_at Enforcement — Dual-Mode (Read-Time + Sweep)
 - [[project_resume-v0-3-2-cut-gate-in-progress]] — RESUME v0.3.2 cut-gate in progress
