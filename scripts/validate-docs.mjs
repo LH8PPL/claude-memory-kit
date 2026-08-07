@@ -125,14 +125,22 @@ function topLevelMd(dir) {
 const WALK_SKIP_DIRS = new Set([
   'node_modules', '.git', '.stress-logs', '.test-logs', 'coverage', 'dist', '.vitest',
 ]);
+// Agent worktrees are a WHOLE SECOND COPY of the repo at a different commit -
+// scanning one produces stale-count findings for prose that is correct at its
+// own commit, and a locked worktree made `npm test` unrunnable on the primary
+// checkout (2026-08-08). Deliberately `.claude/worktrees`-narrow, NOT all of
+// `.claude` - `.claude/skills/*.md` are legitimately in scope for count claims.
+const WALK_SKIP_PATHS = new Set([join(REPO, '.claude', 'worktrees')]);
 
 function walkMdRec(dir, out = []) {
   if (!existsSync(dir)) return out;
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     if (e.isDirectory() && WALK_SKIP_DIRS.has(e.name)) continue;
     const p = join(dir, e.name);
-    if (e.isDirectory()) walkMdRec(p, out);
-    else if (e.name.endsWith('.md')) out.push(p);
+    if (e.isDirectory()) {
+      if (WALK_SKIP_PATHS.has(p)) continue;
+      walkMdRec(p, out);
+    } else if (e.name.endsWith('.md')) out.push(p);
   }
   return out;
 }
