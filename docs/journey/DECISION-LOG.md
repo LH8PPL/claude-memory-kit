@@ -12,6 +12,13 @@
 
 > **Older entries live in the archive.** **D-1 … D-306** — every decision made BEFORE the v0.5.0 cut — were relocated to [`DECISION-LOG-archive-pre-v0.5.md`](DECISION-LOG-archive-pre-v0.5.md) on 2026-07-28 (Task 249), byte-identical and in the same newest-at-top order. **This file holds D-307 onward** (D-307 IS the "tag v0.5.0 now" decision). Both files are `D-nnn` anchor sources for `validate-docs`'s `references` family — it globs `docs/journey/DECISION-LOG*.md` — so a citation to any entry, archived or live, still resolves.
 
+## 2026-08-07 — D-431 · DECISION — Tasks 47+48 laned v0.6.6 (the user's call), and RELEASE-PLAN caught up to its own rule
+
+**The find:** walking the trigger shelf with the user surfaced that Task 47's July sweep verdict read "trigger FIRED, laned v0.6.x doctor-UX rider batch" — **a lane with no digit is not a lane**; it had sat fired-but-unscheduled for three weeks, the D-267 rot shape one level down (a fired trigger nobody stamps is the same as an unfired one). The user's call: *"so lane it?"* → **47 + 48 ship in v0.6.6.**
+
+**The systemic half:** RELEASE-PLAN.md's own Notes bind "when a new finding/task appears, assign it a lane HERE in the same batch" — and the file still ended at "Next: v0.6.6 — Task 259" while the actual lane had grown to eight tasks across three days of filings (262/264/265/266/268/269/270 + now 47/48), and today's seven v0.7 filings weren't registered at all. Fixed in one pass: the 6g bullet writes the FULL v0.6.6 lane, a v0.7 section registers 271–277 as candidates (explicitly: the v0.7 DIFFERENTIATOR is not yet chosen — the trigger shelf competes at the cut), and the per-filing discipline is re-noted: **a lane assigned in tasks.md without the RELEASE-PLAN row is half a lane.**
+
+
 ## 2026-08-07 — D-430 · NOTE — The health whisper's FIRST production firing — it worked exactly as designed, and the cause is a pattern worth naming
 
 **What happened.** Mid-session, the Task-250 whisper surfaced `extract-failing` ("auto-extract keeps failing; turns are not being captured") in the prompt context. Diagnosis from `health.log`: two `haiku_timeout` failures (19:21, 19:31) on the detached extract child's `claude --print` call — landing EXACTLY in the window where this session had four research subagents, npm audits, and validators saturating the machine and the API concurrently. The 90s inner ceiling (itself a live-test finding, 2026-06-01) was not enough under that load. The Task-242 fallback degraded both captures to PARTIAL rather than zero, `now.md` stayed current, and the class clears on the next successful extract.

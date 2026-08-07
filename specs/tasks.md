@@ -332,6 +332,7 @@ Each parent task ships as a PR titled `[<task #>] <description>` (e.g., `[7] Per
   - _Requirements: forward-looking to a new NFR (see §16.48); design §14_
 
 - [ ] 47. **→ SWEEP VERDICT 2026-07-18 (D-353): trigger FIRED unnoticed (Task 210 touched the doctor surface). Laned v0.6.x — the doctor-UX rider batch (with 48+71); per-touch re-firing is noise.** **+ D-354 addition: HC-5 gains a cron-TARGET-exists check** (the v0.5.4 rename stranded the absolute-path schtask on the dead package name for 4 nights; sentinel-presence HC-5 stayed green while HC-10 caught it — read the registered command, stat the target, FAIL with `cmk register-crons` recovery when gone). **[Trigger (D-248/D-253): the next doctor-surface touch, or recurring HC-failure user reports]** `cmk doctor --repair` — prompt-then-install for individual failed HCs
+  - → **LANED v0.6.6 (2026-08-07, D-431 — the user's explicit call).** The July verdict said "laned v0.6.x rider batch" but never stamped a digit, so it sat fired-but-unscheduled — exactly the D-267 rot shape, caught while walking the trigger shelf with the user. Ships in v0.6.6 with 48 riding.
   - Estimate: M · Depends: 46
   - **Motivation**: even with `cmk install --with-semantic` opt-in at install time, users who skipped it (or whose memsearch broke) need a runtime path to fix. Currently `cmk doctor` prints the command; user runs it manually. This task adds a prompt that the user can `[y/N]` to invoke the same install command.
 - [ ] 47.1 Add `--repair` flag to `cmk doctor`
@@ -352,6 +353,7 @@ Each parent task ships as a PR titled `[<task #>] <description>` (e.g., `[7] Per
   - _Requirements: forward-looking to NFR (see §16.48); design §14_
 
 - [ ] 48. **→ SWEEP VERDICT 2026-07-18 (D-353): rides 47's verdict — laned v0.6.x doctor-UX rider batch.** **[Trigger (D-248/D-253): rides Task 47 — same doctor-surface batch, docs-only]** Promote ask-before-install rule to a proper NFR
+  - → **LANED v0.6.6 (2026-08-07, D-431)** — rides 47, same call.
   - Estimate: S · Depends: 46, 47
   - The "any repair requiring `pip install` / `npm install` MUST ASK the user first" rule currently lives in design §14 as an unsourced assertion. Task 37's skill-review (I1, 2026-05-28) flagged the citation drift (it was originally cited as NFR-9 which is actually "Memory poisoning defense baseline").
 - [ ] 48.1 Add the NFR to `requirements.md` (next available NFR number)
