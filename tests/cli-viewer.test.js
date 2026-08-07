@@ -240,8 +240,9 @@ const U_HABIT = 'U-D6YL7RBC';
 const P_OLD = 'P-GDZU5542'; // superseded BY P_NEW (archived)
 const P_NEW = 'P-NJD6HT3P';
 
-function seedFact({ id, tier, slug, body, related, root }) {
+function seedFact({ id, tier, slug, body, related, root, expiresAt }) {
   const r = writeFact({
+    ...(expiresAt ? { expiresAt } : {}),
     projectRoot,
     userDir,
     tier,
@@ -668,6 +669,46 @@ describe('viewer — JSON API routes (255.2)', () => {
     // …and the anchor count is unmoved by it (the whole point of the split).
     expect(body.anchor_count).toBe(body.nodes.filter((n) => n.kind === 'anchor').length);
     expect(body.nodes.some((n) => n.kind === 'anchor' && n.id === 'anchor:D-414')).toBe(true);
+  });
+
+  it('M4 — the corpus is ONE population: an EXPIRED fact is outside both 56px figures', async () => {
+    // The redesign puts a 56px "Corpus / facts on disk" figure in the graph
+    // rail and a 56px total on the facts view. They came from different
+    // populations: `/api/facts` filters `(expires_at IS NULL OR expires_at >
+    // now)`, `/api/graph` counted `deleted_at IS NULL` and nothing else. On any
+    // corpus with one expired fact the same product states two different corpus
+    // sizes in the same type size — and the graph's was the larger one, naming
+    // records no search on the page can reach.
+    const before = await getJson(base, '/api/graph');
+    const factsBefore = await getJson(base, '/api/facts?limit=200');
+    expect(before.body.fact_count).toBe(factsBefore.body.total);
+
+    const EXPIRED = 'P-KVZ7WM3N';
+    seedFact({
+      id: EXPIRED,
+      tier: 'P',
+      slug: 'held-until-the-cut',
+      body: 'True right up until the release shipped.',
+      expiresAt: '2020-01-01',
+    });
+
+    const after = await getJson(base, '/api/graph');
+    const factsAfter = await getJson(base, '/api/facts?limit=200');
+    // The expired fact is on disk and in the index — and in neither figure.
+    expect(factsAfter.body.facts.map((f) => f.id)).not.toContain(EXPIRED);
+    expect(after.body.fact_count).toBe(before.body.fact_count);
+    expect(after.body.fact_count).toBe(factsAfter.body.total);
+    // …and it is not DRAWN either. The budget test below pins
+    // `nodes(fact, live) === fact_count` at cap; counting a population the node
+    // query does not draw from would make that invariant false the moment a
+    // real corpus had an expired fact in it.
+    expect(after.body.nodes.some((n) => n.id === EXPIRED)).toBe(false);
+
+    // Over-mutation guard: excluding one record excludes exactly one. Every
+    // other node the graph drew before is still there.
+    expect(after.body.nodes.map((n) => n.id).sort()).toEqual(
+      before.body.nodes.map((n) => n.id).sort(),
+    );
   });
 
   it('the graph budget: AT-CAP nodes are returned whole, OVER-CAP truncates and says so', async () => {

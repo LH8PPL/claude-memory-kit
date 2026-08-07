@@ -643,10 +643,11 @@ const API = {
   },
 
   /**
-   * The kit-semantic graph (§24.1.4 iii): trust is the colour, supersession is
-   * the direction, anchors are the hubs.
+   * The kit-semantic graph (§24.1.4 iii): community is the colour, trust is the
+   * rim arc, supersession is the direction, anchors are the hubs.
    *
-   * `node_limit` budgets the LIVE facts (newest-first). Three node classes ride
+   * `node_limit` budgets the LIVE facts (newest-first) — live meaning the same
+   * population `/api/facts` lists: neither deleted nor expired. Three node classes ride
    * on top of it rather than inside it, each counted on its own so the page can
    * name it accurately: anchor hubs (the structure that makes a bounded slice
    * legible), dangling link targets (a reference to a fact that does not exist
@@ -663,16 +664,29 @@ const API = {
   graph(route, ctx) {
     const { limit, clamped } = readLimit(route.params, { fallback: VIEWER_MAX_LIMIT });
     return withDb(ctx, (db) => {
+      // ONE definition of "the corpus", shared with `/api/facts`: not deleted,
+      // not expired — the population the page's search can actually reach.
+      //
+      // Both queries carried only `deleted_at IS NULL`, so on any corpus with an
+      // expired fact the graph rail's 56px "facts on disk" figure exceeded the
+      // facts view's 56px total by exactly the expired count — two different
+      // corpus sizes for the same corpus, in the same type size, one page apart.
+      // The COUNT and the node query take the filter off the same `now`: the
+      // budget contract is `nodes(live facts) === fact_count` at cap, so
+      // counting a population the graph does not draw would have replaced one
+      // disagreement with another.
+      const now = Date.now();
+      const CORPUS = `deleted_at IS NULL AND (expires_at IS NULL OR expires_at > @now)`;
       const live = db
         .prepare(
           `SELECT id, tier, trust, trust_score, heading_path, created_at, superseded_by
-             FROM observations WHERE deleted_at IS NULL
+             FROM observations WHERE ${CORPUS}
             ORDER BY created_at DESC, id ASC LIMIT @limit`,
         )
-        .all({ limit });
+        .all({ now, limit });
       const total = db
-        .prepare('SELECT COUNT(*) AS n FROM observations WHERE deleted_at IS NULL')
-        .get().n;
+        .prepare(`SELECT COUNT(*) AS n FROM observations WHERE ${CORPUS}`)
+        .get({ now }).n;
 
       const nodes = new Map();
       for (const r of live) {
