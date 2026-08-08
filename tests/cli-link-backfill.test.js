@@ -242,6 +242,32 @@ describe('Task 262 — the backfill (Doors 1, 2, 5)', () => {
     }
   });
 
+  it('G9 the SHIPPED verb is a dry run unless --apply is passed (the 2026-08-08 incident)', async () => {
+    seedClusteredCorpus();
+    const before = snapshotFactFiles();
+    const { runAutolink } = await import('../packages/cli/src/subcommands.mjs');
+    const lines = [];
+
+    // Bare invocation — exactly what the scaffold smoke test ran against the
+    // maintainer's real corpus, and what a user gets from typing the verb name.
+    const dry = await runAutolink({}, null, { projectRoot, userDir, log: (m) => lines.push(m) });
+    expect(dry.dryRun).toBe(true);
+    expect(dry.linked).toBe(0);
+    expect(dry.wouldLink).toBeGreaterThan(0);
+    const afterDry = snapshotFactFiles();
+    for (const [name, content] of before) expect(afterDry.get(name)).toBe(content);
+    expect(lines.join(' ')).toContain('--apply');
+
+    // ...and --apply is what actually writes.
+    const wet = await runAutolink({ apply: true }, null, { projectRoot, userDir, log: () => {} });
+    expect(wet.dryRun).toBe(false);
+    expect(wet.linked).toBeGreaterThan(0);
+    const afterWet = snapshotFactFiles();
+    let changed = 0;
+    for (const [name, content] of before) if (afterWet.get(name) !== content) changed++;
+    expect(changed).toBe(wet.linked);
+  });
+
   it('G8 never touches a fact that already carries links (artifact-derived skip)', () => {
     seedClusteredCorpus();
     const explicit = writeFact({

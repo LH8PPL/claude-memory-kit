@@ -3467,7 +3467,19 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
   const { linkBackfill, BACKFILL_DEFAULT_MAX } = await import('./link-backfill.mjs');
 
   const tier = String(options?.tier ?? 'P').toUpperCase();
-  const dryRun = options?.dryRun === true;
+  // DRY RUN IS THE DEFAULT — writing takes an explicit `--apply`.
+  //
+  // This is not caution for its own sake; it is an incident (2026-08-08). The
+  // scaffold smoke test runs every leaf verb bare from the repo cwd, so the
+  // first full-suite run after this verb was registered executed
+  // `cmk autolink` against the maintainer's REAL corpus and added `related:`
+  // to 177 committed fact files. Nothing was lost (linking only adds
+  // frontmatter, and the changes were uncommitted so `git checkout --`
+  // restored them exactly) — but a bulk mutation of someone's memory must not
+  // be what a verb does when you type its name with no arguments. The test
+  // exclusion that stops the smoke run is the local fix; this is the
+  // structural one, and it protects every user, not just this repo.
+  const dryRun = options?.apply !== true;
   const max = Number(options?.max ?? BACKFILL_DEFAULT_MAX);
 
   // --semantic scores from the CONTENT-ADDRESSED EMBEDDING CACHE, both sides —
@@ -3534,6 +3546,9 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
     log(`  ${r.remaining} fact(s) remain — re-run to continue (bounded per run, resumes where it stopped).`);
   } else {
     log('  nothing remains — the corpus is fully considered.');
+  }
+  if (dryRun && (r.wouldLink > 0 || r.remaining > 0)) {
+    log('  (dry run — nothing was written. Re-run with `--apply` to write these links.)');
   }
   return r;
 }
@@ -3724,7 +3739,8 @@ export const subcommands = [
       'populate `related:` on facts that have none — scores each unlinked fact against the corpus and applies up to 3 edges above a floor derived from this corpus. Bounded + resumable; re-run to continue.',
     milestone: 262,
     optionSpec: [
-      { flags: '--dry-run', description: 'report what WOULD link (band distribution + sample edges) and write nothing' },
+      { flags: '--apply', description: 'actually write the links. WITHOUT it this is a dry run — bare `cmk autolink` never modifies memory.' },
+      { flags: '--dry-run', description: 'the default; report what WOULD link (band distribution + sample edges) and write nothing' },
       { flags: '--max <n>', description: 'facts to consider this run (default 250) — the run is bounded and resumes where it stopped' },
       { flags: '--tier <tier>', description: 'tier to link within: P (default) | L | U. Links never cross tiers.' },
       { flags: '--semantic', description: 'score with the local embedder instead of token-Jaccard (needs the optional embedder)' },

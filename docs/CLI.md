@@ -220,11 +220,11 @@ Read/write kit settings (`context/settings.json`) without hand-editing JSON. Key
 
 ## Maintenance & repair
 
-### `cmk autolink [--dry-run] [--max <n>] [--tier <P|L|U>] [--semantic]`
+### `cmk autolink [--apply] [--max <n>] [--tier <P|L|U>] [--semantic]`
 
 **Give your existing facts the links new ones now get automatically.** Every fact captured from now on is scored against your corpus at write time and gains up to 3 `related:` edges by itself — no command, no cron. This verb is the one-off catch-up pass for everything written *before* that existed.
 
-- **Start with `--dry-run`.** It reports the band distribution and a sample of the edges it would add, and writes nothing at all — no fact files, no resume markers, no audit entries.
+- **A bare `cmk autolink` is a DRY RUN and never modifies your memory** — writing takes an explicit `--apply`. The dry run reports the band distribution and a sample of the edges it would add, and touches none of your memory — no fact file is edited, no resume marker is recorded, no audit entry is written. (It may compute and cache the threshold in the rebuildable search index, which is derived state, not memory.)
 - **Three bands, one of which is not a link.** A candidate that scores like a *near-duplicate* is not auto-linked: merging two facts is a human call, so at capture time it becomes a proposal in `cmk queue conflicts` instead. A backfill never queues — both facts already exist and were both accepted, often months apart.
 - **The threshold is derived from *your* corpus**, not a constant copied from someone else's. It is the 99th percentile of your own facts' random-pair similarity, recomputed on every `cmk reindex --full`. On a corpus too small or too uniform to separate signal from noise, it links nothing and says so.
 - **Bounded and resumable** (ADR-0020): each run considers `--max` facts (default 250) and persists each one before moving on, so a killed run keeps everything it finished and a re-run continues where it stopped. Re-running a finished corpus is a no-op.

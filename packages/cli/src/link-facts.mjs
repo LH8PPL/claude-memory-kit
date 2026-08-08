@@ -55,6 +55,9 @@ import {
   SUBSTRING_NEARDUP_THRESHOLD,
 } from './conflict-queue.mjs';
 import { parseJsonFile } from './read-json.mjs';
+// The filename→slug rule, shared with rebuildEdges so a written slug and a
+// resolved slug can never be two different rules.
+import { slugForFactFilename } from './graph-index.mjs';
 // Static, not lazy: the sync write path must never await. semantic-backend has
 // no heavy top-level side effects — the ~110 MB ONNX import lives behind
 // `loadExtractor`, so importing the key derivation + the calibrated threshold
@@ -119,12 +122,18 @@ const FLOOR_META_PREFIX = 'link_floor:';
  */
 const FACT_SOURCE_RE = /(^|\/)(memory|fragments)\/[^/]+\.md$/;
 
-const FACT_TYPE_PREFIX = /^(user|feedback|project|reference|judgment)_/;
-
-/** `context/memory/project_foo-bar.md` → `foo-bar` (the slug `related:` stores). */
+/**
+ * `context/memory/project_foo-bar.md` → `foo-bar` (the slug `related:` stores).
+ *
+ * The filename→slug rule itself is graph-index's `slugForFactFilename` — the
+ * SAME function `rebuildEdges` resolves `related:` values with. A second copy
+ * here would be a slug the writer produces and the edge builder cannot resolve,
+ * i.e. a fact linked to a dangling target. This only adds the path→basename
+ * step, because the index stores a relative path where graph-index has a
+ * filename.
+ */
 export function slugForFactSource(sourceFile) {
-  const base = String(sourceFile ?? '').split('/').pop() ?? '';
-  return base.replace(/\.md$/i, '').replace(FACT_TYPE_PREFIX, '');
+  return slugForFactFilename(String(sourceFile ?? '').split('/').pop() ?? '');
 }
 
 // --- The flag ---------------------------------------------------------------
@@ -720,28 +729,4 @@ export function makeCachedCosineBackend(db, { modelId: wantModel = null } = {}) 
       return cosineOf(va, vb);
     },
   };
-}
-
-/**
- * Build the SEMANTIC similarity backend for one capture, mirroring Task 143's
- * `prepareNearDupGuard` shape exactly: the async model work happens here, in a
- * caller that can afford it, and what crosses into the sync write path is a
- * plain `similarityFn`.
- *
- * Returns null (never throws) whenever semantic is not available — the caller
- * then gets the always-available token-Jaccard path.
- *
- * @returns {Promise<{similarityFn:Function, backend:'semantic'}|null>}
- */
-export async function prepareSemanticLinkBackend({ projectRoot, text, prepareImpl, resolveModeImpl } = {}) {
-  try {
-    const { resolveDefaultSearchMode, prepareSemanticSimilarity } = await import('./semantic-backend.mjs');
-    const mode = (resolveModeImpl ?? resolveDefaultSearchMode)({ projectRoot });
-    if (mode === 'keyword') return null;
-    const sem = await (prepareImpl ?? prepareSemanticSimilarity)({ projectRoot, newText: text });
-    if (!sem?.ok) return null;
-    return { similarityFn: sem.similarityFn, backend: 'semantic' };
-  } catch {
-    return null;
-  }
 }
