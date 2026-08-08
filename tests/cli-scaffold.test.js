@@ -19,9 +19,10 @@
 //     subcommand NAME appears in the help output, not that it appears
 //     at a particular column or with a particular separator.
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { existsSync, statSync, readFileSync } from 'node:fs';
+import { existsSync, statSync, readFileSync, mkdtempSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { subcommands, subcommandNames, STUB_NOTICE_PREFIX } from '../packages/cli/src/subcommands.mjs';
@@ -44,11 +45,62 @@ const CMK_BIN = join(REPO_ROOT, 'packages', 'cli', 'bin', 'cmk.mjs');
 // twenty-minute mystery into a named failure on the offending verb.
 const SMOKE_TIMEOUT_MS = 60_000;
 
-function runCmk(args, { input } = {}) {
+// THE SANDBOX — every smoke-run verb executes HERE, never in the repo.
+//
+// WHY (the 2026-08-08 incident, D-437). This file's job is to run EVERY leaf
+// verb bare and prove none is still a stub. It used to do that with
+// `cwd: REPO_ROOT` — and the repo root is itself a kit project. Protection was
+// a hand-maintained OPT-OUT list (`NON_STUB_VERBS`), so a newly-registered verb
+// was live-fired against the maintainer's real memory BY DEFAULT until someone
+// remembered to add it. `cmk autolink` was registered without its entry, and
+// the next full-suite run rewrote `related:` into 177 committed fact files.
+//
+// The list is still here and still useful, but it is no longer the only thing
+// standing between a forgotten verb and someone's memory. The default is now
+// SAFE: a disposable scaffolded project, with the user tier redirected too, so
+// a mutating verb that slips through mutates a temp dir and nothing else.
+// Proven by the `disposable-by-default` test at the end of this file.
+let SANDBOX;
+let SANDBOX_PROJECT;
+let SANDBOX_USER;
+
+beforeAll(() => {
+  SANDBOX = mkdtempSync(join(tmpdir(), 'cmk-scaffold-'));
+  SANDBOX_PROJECT = join(SANDBOX, 'proj');
+  SANDBOX_USER = join(SANDBOX, 'user');
+  mkdirSync(SANDBOX_PROJECT, { recursive: true });
+  mkdirSync(SANDBOX_USER, { recursive: true });
+  // Scaffold it as a REAL kit project so verbs meet the environment they expect
+  // (the repo root was one too) — the difference is that this one is disposable.
+  const r = spawnSync(process.execPath, [CMK_BIN, 'install', '--no-hooks'], {
+    cwd: SANDBOX_PROJECT,
+    encoding: 'utf8',
+    env: { ...process.env, MEMORY_KIT_USER_DIR: SANDBOX_USER },
+    timeout: SMOKE_TIMEOUT_MS,
+    killSignal: 'SIGKILL',
+  });
+  if (r.status !== 0) {
+    throw new Error(`scaffold sandbox install failed (${r.status}): ${r.stdout}${r.stderr}`);
+  }
+});
+
+afterAll(() => {
+  if (SANDBOX) rmSync(SANDBOX, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+});
+
+/**
+ * Invoke `cmk` with the given args, IN THE SANDBOX by default.
+ *
+ * `cwd: REPO_ROOT` is available via the option for the few assertions that are
+ * genuinely about the repo (packaging, the bin file itself) — but a verb
+ * INVOCATION should never ask for it.
+ */
+function runCmk(args, { input, cwd = SANDBOX_PROJECT } = {}) {
   return spawnSync(process.execPath, [CMK_BIN, ...args], {
-    cwd: REPO_ROOT,
+    cwd,
     encoding: 'utf8',
     input,
+    env: { ...process.env, MEMORY_KIT_USER_DIR: SANDBOX_USER },
     timeout: SMOKE_TIMEOUT_MS,
     killSignal: 'SIGKILL',
   });
@@ -261,6 +313,50 @@ describe('Task 2 — cmk CLI scaffold', () => {
         });
       }
     }
+  });
+
+  // --- THE GUARD ITSELF (D-437) -------------------------------------------
+  //
+  // The inversion above is only worth anything if it is checked. This proves
+  // the property directly, using the exact verb that caused the incident and
+  // its most dangerous form: `cmk autolink --apply` genuinely rewrites
+  // `related:` frontmatter across a corpus. Fired through the same helper every
+  // smoke run uses, it must land entirely inside the sandbox.
+  describe('the smoke harness is disposable-by-default (D-437)', () => {
+    it('a genuinely MUTATING verb run bare touches the sandbox and never the repo', () => {
+      const repoFacts = join(REPO_ROOT, 'context', 'memory');
+      const fingerprint = () => {
+        if (!existsSync(repoFacts)) return null;
+        return readdirSync(repoFacts)
+          .filter((f) => /^(user|feedback|project|reference|judgment)_.+\.md$/.test(f))
+          .map((f) => `${f}:${statSync(join(repoFacts, f)).mtimeMs}:${statSync(join(repoFacts, f)).size}`)
+          .join('|');
+      };
+      const before = fingerprint();
+      // ANTI-TAUTOLOGY: if the repo had no fact files, `before` and the
+      // post-run fingerprint would both be null and this test would pass
+      // vacuously — watching nothing. Assert it is actually watching a real,
+      // populated corpus. (We do NOT prove the guard by pointing the verb at
+      // the repo and observing damage: that is the incident, not a test.)
+      expect(before, 'the repo corpus this guard watches is missing').toBeTruthy();
+      expect(before.split('|').length).toBeGreaterThan(100);
+
+      // The most destructive shape of the verb, with no guard flags at all.
+      const r = runCmk(['autolink', '--apply']);
+      expect(r.status, `stdout: ${r.stdout}; stderr: ${r.stderr}`).toBe(0);
+
+      // The repo's own memory is byte-and-mtime identical.
+      expect(fingerprint()).toBe(before);
+
+      // And the run really did execute against the sandbox project, not nothing.
+      expect(r.stdout).toContain('cmk autolink');
+    });
+
+    it('runCmk sends the user tier somewhere disposable too', () => {
+      const r = runCmk(['--help']);
+      expect(r.status).toBe(0);
+      expect(SANDBOX_USER.startsWith(SANDBOX)).toBe(true);
+    });
   });
 
   describe('Unknown subcommand handling', () => {
