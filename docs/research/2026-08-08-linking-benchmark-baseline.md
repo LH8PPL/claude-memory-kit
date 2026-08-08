@@ -256,11 +256,23 @@ embedder build.
 
 _Added 2026-08-08 (sub-task 4), same fixture, same script, same build. `npm run bench:linking -- --after --semantic`._
 
-**The headline, stated before the tables because it is the finding:** the automatic linker
-**does not reproduce the hand-placed edges, and on this fixture it makes relational recall
-WORSE than no links at all.** D-433's condition — *"if the graph rung regresses the temporal
-control beyond the pinned band, the mechanism (or its seeding) needs tuning before ship — the
-controls are the judge"* — **fires**.
+**The headline, stated before the tables because it is the finding — and stated for the two
+automatic variants SEPARATELY, because they do not say the same thing.** The BACKFILL, which is
+the only arm with enough edges to be a fair test, **recovers none of the recall that hand-placed
+edges do, and costs the temporal control 0.25.** The WRITE PATH placed 4 edges over 3 of 50 facts
+and is **structurally starved on a fixture this size — effectively unmeasured**, not measured-and-
+fine. D-433's condition — *"if the graph rung regresses the temporal control beyond the pinned
+band, the mechanism (or its seeding) needs tuning before ship — the controls are the judge"* —
+**fires on the backfill**.
+
+> **Corrected 2026-08-08 (review finding B1).** An earlier version of this section collapsed both
+> automatic variants into a single "automatic 0.333" and reported a **−0.111** regression against
+> the unlinked baseline. That was wrong in two ways and both mattered: the 0.333 is the
+> **backfill's** number — the write path scores **0.444, identical to unlinked** — and −0.111 is
+> **one question** on a 9-question set, which this note's own canary rationale calls
+> "single-question wobble" and which is the instrument's resolution floor. The durable claim is
+> **"recovers 0% of the available gain"**, which is robust at this resolution; **"−0.111"** is not,
+> and has been withdrawn.
 
 ### 7.1 Two automatic variants, because two things ship
 
@@ -299,13 +311,29 @@ variant — no regression there. `temporal` goes 1.000 (unlinked) → 1.000 (aut
 (auto-backfill): the dilution cost §4(e) predicted, now reproduced by automatic edges at −0.25,
 the same magnitude the hand-placed corpus paid.
 
-**Delta against both reference points, on the kit's real default recall (`graph-hybrid`, fresh
-multi-hop):**
+**Read per variant, on the kit's real default recall (`graph-hybrid`, fresh multi-hop):**
 
-- vs the unlinked BEFORE: **−0.111** (0.444 → 0.333) — the automatic linker is a *regression*.
-- vs the hand-placed CEILING: **−0.556** (0.889 → 0.333) — it recovers **0%** of the available gain.
+| variant | vs unlinked BEFORE (0.444) | vs hand-placed CEILING (0.889) | verdict |
+| --- | --- | --- | --- |
+| `auto-write` | 0.444 — **no change** | recovers **0%** | **unmeasured** — 4 edges over 3 of 50 facts |
+| `auto-backfill` | 0.333 — one question down | recovers **0%** | measured, and it does not work |
 
-### 7.3 Why — and it is not a tuning knob
+**What is solid and what is not.** "Recovers 0% of the available gain" is solid for both: the
+ceiling is 0.889 and neither arm moves off the baseline toward it. The **one-question deltas
+(±0.111) are NOT solid** — one multi-hop question is worth exactly 0.111, which §2 calls
+single-question wobble when arguing for the canary floor, and the same standard has to apply when
+the result is unflattering. The **temporal control's −0.25 under the backfill IS solid** (one
+temporal question is 0.25, but it is a control moving in the direction the dilution mechanism
+predicts, corroborated fresh and aged).
+
+**The write path is starved, and that is a property of the fixture, not a finding about the
+mechanism.** It can only link BACKWARD (a fact sees only what the index already held) and no floor
+is derivable below `MIN_FLOOR_ITEMS` = 24 facts — so on a 50-entry corpus the first half links
+nothing by construction and the second half sees at most half the corpus. 4 edges is too few to
+move a 9-question metric either way. **This benchmark cannot currently evaluate write-time
+linking**; saying so is the honest result, and a fixture large enough to test it is the follow-up.
+
+### 7.3 Why the BACKFILL's edges do not help — and it is not a tuning knob
 
 The fixture's `multi-hop` questions are built so the answer body **shares no distinctive term with
 its query** (§1.2). By construction the ground-truth edge connects two facts that are *topically*
@@ -324,10 +352,18 @@ are different relations, and the deterministic linker only has access to the fir
 ### 7.4 What this says about ADR-0023
 
 ADR-0023 deferred LLM edge derivation (Memora-style `cues:` first in line) behind the trigger
-sub-task 1 fired. Sub-task 4 now adds the other half of the answer: **the deterministic,
-zero-LLM linker was the cheap thing to try first, it is built, and it does not close the gap.**
-The 0.444 → 0.889 headroom §3 measured is real and still unclaimed. The measurement therefore
-points at exactly the candidate the ADR ranked first, for exactly the reason it gave.
+sub-task 1 fired. Sub-task 4 now adds the other half of the answer, and it survives the B1
+correction **because it never rested on the write path**: the BACKFILL is the fair test — every
+fact sees every other, it placed 19 edges over 14 facts against the hand-placed 13 over 11, i.e.
+comparable density — and at that density it recovers **0%** of the 0.444 → 0.889 headroom. So
+**the deterministic, zero-LLM linker was the cheap thing to try first, it is built, it was given a
+fair test, and it does not close the gap.** The headroom is real and still unclaimed, and the
+measurement points at exactly the candidate the ADR ranked first, for exactly the reason it gave.
+
+What the write path's starved arm changes is only the SCOPE of the claim: this says the
+similarity-ranked *edge source* does not close the gap. It does not say anything either way about
+whether placing those same edges at capture time would behave differently — that question is
+untested here.
 
 ### 7.5 What DID work, and is not visible in the table above
 

@@ -12,7 +12,7 @@
 
 > **Older entries live in the archive.** **D-1 … D-306** — every decision made BEFORE the v0.5.0 cut — were relocated to [`DECISION-LOG-archive-pre-v0.5.md`](DECISION-LOG-archive-pre-v0.5.md) on 2026-07-28 (Task 249), byte-identical and in the same newest-at-top order. **This file holds D-307 onward** (D-307 IS the "tag v0.5.0 now" decision). Both files are `D-nnn` anchor sources for `validate-docs`'s `references` family — it globs `docs/journey/DECISION-LOG*.md` — so a citation to any entry, archived or live, still resolves.
 
-## 2026-08-09 — D-438 · NOTE — The wedge gate is a coin flip, and 262's A/B proved it the hard way
+## 2026-08-08 — D-438 · NOTE — The wedge gate is a coin flip, and 262's A/B proved it the hard way
 
 **Finding:** live-verify's Phase A wedge gate fails ~50% of clean serial runs on the same missing rule ("run ruff before committing") — measured across five samples during 262's live-verify attribution, failing and passing in BOTH flag conditions, with a mechanical unreachability proof excluding the linking change entirely (zero fact files in the wedge sandboxes; the flag's single call site requires a fact create). The gate's verdict on any branch is therefore noise on this phase: a ~50% false-alarm rate, and a real capture regression would hide inside it. **Filed as Task 279 (v0.7)** with the fix classes enumerated (prompt-hardening / presence-relaxation / logged-retry / deterministic-fake-agent variant) and a measurable done-bar (<5% false alarms over ≥10 runs, with a seeded regression still caught). The meta-point worth the entry: the five-sample matrix exists because the first sample looked like a clean ON-fails/OFF-passes split — one more sample would have indicted the wrong suspect. Attribution needs samples in BOTH conditions, and the implementer kept sampling past the convenient answer.
 
@@ -33,7 +33,16 @@
 
 **Task 262 sub-tasks 2-4 are built, tested and live-verified — and the AFTER measurement says the mechanism does not work for its stated purpose on the benchmark that was built to judge it.** Filing this as the finding rather than burying it in a task annotation, because the honest reading changes what should ship.
 
-**The numbers** ([research note](../research/2026-08-08-linking-benchmark-baseline.md) §7, same fixture / script / build as the D-433 baseline, fresh and aged agreeing). `graph-hybrid` multi-hop R@5: unlinked **0.444** → automatic **0.333** → hand-placed **0.889**. On the `graph` rung: 0.333 → 0.222 → 0.778. The temporal control loses **0.25** under the automatic backfill, the same dilution magnitude the hand-placed corpus paid. Controls `single-hop` and `preference` are unmoved. So: **the automatic linker recovers 0% of the measured headroom and costs 0.111 on the way.** D-433's condition ("the controls are the judge") fires.
+**The numbers, RESTATED 2026-08-08 after review finding B1** ([research note](../research/2026-08-08-linking-benchmark-baseline.md) §7, same fixture / script / build as the D-433 baseline, fresh and aged agreeing). The first version of this entry collapsed two automatic variants into one number and leaned on a delta the instrument cannot resolve. Corrected, on `graph-hybrid` multi-hop R@5 (the kit's real default recall):
+
+| variant | R@5 | vs unlinked 0.444 | vs ceiling 0.889 |
+| --- | --- | --- | --- |
+| `auto-write` (capture time) | **0.444** | no change | recovers 0% |
+| `auto-backfill` (whole corpus) | **0.333** | one question down | recovers 0% |
+
+**What survives the correction:** the BACKFILL — the only arm with comparable edge density to the hand-placed set (19 edges / 14 facts vs 13 / 11) — **recovers 0% of the available gain** and costs the temporal control **0.25**. That is the solid claim, and D-433's condition fires on it.
+
+**What was withdrawn:** the "−0.111 regression" attributed to the write path. One multi-hop question is worth 0.111 — the instrument's resolution floor, which this project's own canary rationale calls single-question wobble. And the write path placed **4 edges over 3 of 50 facts**: structurally starved (it links backward only, and no floor exists below 24 facts), i.e. **effectively unmeasured**, not measured-and-bad.
 
 **Why, and it is not a threshold to tune.** The fixture's multi-hop answers share no distinctive term with their query — by construction the ground-truth edge joins two facts that are topically related and lexically/distributionally far apart. A similarity-ranked linker selects on precisely the axis those edges are weak on. Lowering the floor buys more edges of the same kind, and more edges of that kind is what already made recall worse. The deterministic linker measures the wrong quantity; it is not mis-calibrated.
 
@@ -41,10 +50,12 @@
 
 **What this settles for ADR-0023.** Its DEFER ranked LLM edge derivation (Memora-style `cues:`) first in line. Sub-task 1 fired the trigger; sub-task 4 now adds the other half — **the cheap deterministic alternative was tried, built, and does not close the gap.** The measurement points back at the ADR's own first-ranked candidate, for the reason the ADR gave.
 
-**DECIDED — default-OFF (lead-ratified 2026-08-08).** Ratified on a TWO-EVIDENCE basis, both measured, neither a matter of taste:
+**DECIDED — default-OFF (lead-ratified 2026-08-08; re-ratified the same day on the corrected basis below).**
 
-1. **It regresses the qtype it was built for** — the numbers above.
-2. **It costs unbudgeted write-path latency** — `cmk remember` 11.6 s → 14.4 s on the real 2,260-fact corpus, **+2.8 s per capture**, growing linearly with corpus size, on the same synchronous path the detached auto-extract child runs under the §8.5 hook ceiling. That composition is **unverified**, which is its own reason not to switch it on for everyone.
+The original ratification cited two grounds. Review finding B1 dissolved the first one **as applied to the write path**: the recall regression is the BACKFILL's, and the write path's own arm is unmeasured on this fixture. Re-adjudicated honestly, the decision **stands on the second ground alone**, which is untouched by the correction and is about the write path specifically:
+
+1. ~~It regresses the qtype it was built for~~ — **withdrawn as a reason to default the WRITE PATH off.** It is a real finding about the similarity-ranked edge source (see the numbers above), and it is why ADR-0023's deferred candidate is still the live one; it is not evidence about capture-time placement, which this fixture cannot measure.
+2. **It costs unbudgeted write-path latency** — the sole surviving ground, and sufficient on its own: — `cmk remember` 11.6 s → 14.4 s on the real 2,260-fact corpus, **+2.8 s per capture**, growing linearly with corpus size, on the same synchronous path the detached auto-extract child runs under the §8.5 hook ceiling. That composition is **unverified**, which is its own reason not to switch it on for everyone.
 
 **What ships:** the mechanism, the flag, the derived floor and the backfill, all complete. `cmk autolink` (dry-run by default, `--apply` to write) is the deliberate opt-in and needs no configuration; `memory.link_facts: true` / `CMK_LINK_FACTS=1` turns the write path on for anyone who wants it. Flipping the default back is one line in `linkingEnabled`, pinned by test C1 so that flip always breaks a test.
 

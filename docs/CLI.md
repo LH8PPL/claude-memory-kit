@@ -222,7 +222,7 @@ Read/write kit settings (`context/settings.json`) without hand-editing JSON. Key
 
 ### `cmk autolink [--apply] [--max <n>] [--tier <P|L|U>] [--semantic]`
 
-**Give your existing facts the links new ones now get automatically.** Every fact captured from now on is scored against your corpus at write time and gains up to 3 `related:` edges by itself — no command, no cron. This verb is the one-off catch-up pass for everything written *before* that existed.
+**Put `related:` edges on facts that have none.** Each unlinked fact is scored against your corpus and gains up to 3 `related:` edges, which `cmk links`, `cmk expand` and the viewer's graph all walk. This verb is the way linking is meant to be used: deliberate, inspectable, and needing no configuration. (The same scoring can also run automatically at capture time, but that is **off by default** — see the note at the end.)
 
 - **A bare `cmk autolink` is a DRY RUN and never modifies your memory** — writing takes an explicit `--apply`. The dry run reports the band distribution and a sample of the edges it would add, and touches none of your memory — no fact file is edited, no resume marker is recorded, no audit entry is written. (It may compute and cache the threshold in the rebuildable search index, which is derived state, not memory.)
 - **Three bands, one of which is not a link.** A candidate that scores like a *near-duplicate* is not auto-linked: merging two facts is a human call, so at capture time it becomes a proposal in `cmk queue conflicts` instead. A backfill never queues — both facts already exist and were both accepted, often months apart.
@@ -232,7 +232,7 @@ Read/write kit settings (`context/settings.json`) without hand-editing JSON. Key
 - Links never cross tiers, so a committed project fact can never point at a machine-local one.
 - `--semantic` scores with the local embedder instead of word overlap (needs the optional embedder from `cmk install --with-semantic`).
 
-To turn the automatic half off: `cmk config set memory.link_facts false` (or `CMK_LINK_FACTS=0` for one command).
+**The automatic half is OFF by default**, and deliberately so: measured on our own relational benchmark, edges placed at capture time recovered none of the recall that hand-placed edges do, and linking adds ~2.8 s to every capture on a 2,260-fact corpus. Turn it on with `cmk config set memory.link_facts true` (or `CMK_LINK_FACTS=1` for one command) if you want it; this verb needs no flag.
 
 ### `cmk backfill [--dry-run] [--days <n>] [--max <n>]`
 

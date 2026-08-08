@@ -2316,10 +2316,14 @@ screens it upstream unchanged. A caller-supplied `related` always wins. Links ne
 committed project fact can never reference a machine-local one. And a link write touches exactly one
 file, which is what makes the over-mutation guarantee checkable byte-for-byte.
 
-**MEASURED OUTCOME — the mechanism does NOT yet reach the ceiling, and on the Task-262 fixture it
-REGRESSES the measured type.** See [the AFTER measurement](../docs/research/2026-08-08-linking-benchmark-baseline.md)
-§7. The BEFORE/AFTER/ceiling on `graph-hybrid` multi-hop R@5 (fresh): unlinked **0.444** → automatic
-**0.333** → hand-placed **0.889**, with the temporal control losing 0.25 on the `graph` rung. The
+**MEASURED OUTCOME — the similarity-ranked edge source does not reach the ceiling.** See
+[the AFTER measurement](../docs/research/2026-08-08-linking-benchmark-baseline.md) §7, and read the
+two automatic variants separately (they do not say the same thing). On `graph-hybrid` multi-hop R@5
+(fresh, the kit's real default recall): unlinked **0.444** · `auto-write` **0.444** (no change, and
+**unmeasured** — 4 edges over 3 of 50 facts, because the write path links backward only and no floor
+exists below 24 facts) · `auto-backfill` **0.333** · hand-placed **0.889**. The BACKFILL is the fair
+test — comparable edge density to the hand-placed set (19/14 vs 13/11) — and it **recovers 0% of the
+available gain** while costing the temporal control 0.25. The
 edges the linker produces are *lexically/semantically similar* facts; the fixture's ground-truth
 edges connect facts that are *topically related but share little surface*, which similarity of any
 kind is the wrong instrument for. **D-433's condition therefore fires: the controls are the judge.**

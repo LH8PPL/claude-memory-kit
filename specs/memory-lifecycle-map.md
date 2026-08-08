@@ -59,7 +59,7 @@ Every fact-file write now has one more step between "the body is screened" and "
 ```
   writeFact: <private> strip → Poison_Guard → PII mask
                  │
-                 ├─ LINKING (Task 262, flag: memory.link_facts, default on)
+                 ├─ LINKING (Task 262, flag: memory.link_facts, default OFF)
                  │    score vs live same-tier facts (jaccard | cached cosine)
                  │      ├─ >= near-dup ceiling → conflict queue proposal (NOT a link)
                  │      ├─ >= derived floor    → related: [≤3 slugs]  + audit `auto-linked`
@@ -75,7 +75,7 @@ Three properties that matter to the lifecycle:
 - **`cmk autolink` is the symmetric catch-up** over facts written before the mechanism existed — bounded, resumable, and idempotent, with the resume point derived from the artifacts (`related:` in the markdown, or a `link_eval` row in the rebuildable index).
 - **The floor is recomputed at index time**, so it tracks the corpus rather than freezing a number from whenever the feature shipped.
 
-See design §9.7. The AFTER measurement (research note, 2026-08-08) shows the automatic edges do **not** yet match hand-placed ones on the Task-262 fixture — the mechanism ships, the default-on posture is under review.
+See design §9.7. **The write-path step is OFF by default (D-436, SETTLED 2026-08-08)** — the mechanism ships complete, and `cmk autolink` is the entry point that needs no configuration. The deciding evidence is the per-capture cost: **+2.8 s** on a 2,260-fact corpus, growing linearly, on the same synchronous path the detached auto-extract child runs under the §8.5 hook ceiling — a composition Task 262 did not verify. On the benchmark, the *backfill* at density recovers **0%** of the recall that hand-placed edges do; the *write path* showed no measurable effect either way on a fixture too small to exercise it.
 
 ---
 
