@@ -8,10 +8,6 @@
 
 <!-- Current work in progress. Drop bullets as work resolves. -->
 
-- (P-BFW296WG) PR #338 open with CodeQL/Sonar checks active; v0.6.5 release pending on green
-  <!-- source: review-promote, source_line: 1, sha1: 979c6731d620d5ecd0cf781a14af1699dd3705162b70c0ef63aad34bc47b54d0, write: user-explicit, trust: high, at: 2026-08-05T20:05:40Z -->
-- (P-R9QN2J4G) PowerShell silently parses `stash@{0}` as hashtable literal when unquoted; quoting fixes it — discovered during memory stash
-  <!-- source: review-promote, source_line: 1, sha1: 0a4aa3844989d4914a8784b6cf05702dccca3f58db001fc0835afefe6b0f9fab, write: user-explicit, trust: high, at: 2026-08-05T20:05:42Z -->
 - (P-UZ9BHS27) When design direction is ratified in advance, work within it rather than proposing alternatives
   <!-- source: auto-extract-session, source_line: 1, sha1: b4caf350ba5187edd71990ae099e5e42b6bc2fec40fab0a8e6d16b51216923f5, write: auto-extract, trust: high, at: 2026-08-05T20:39:17Z -->
 - (P-SDKP7RKS) Regression test added to pin graph layout—prevents graph from being pushed below the fold again
@@ -20,6 +16,10 @@
   <!-- source: auto-extract-session, source_line: 1, sha1: 32941c64f8316959dfa27f5f6ee618efa28ed3de04bc01a6bce6f52faaae8f3c, write: auto-extract, trust: high, at: 2026-08-07T20:17:45Z -->
 - (P-XGJVVQ4K) User approved dark-default-with-light-supported design direction over dark-only
   <!-- source: auto-extract-session, source_line: 1, sha1: 7ce49d3141547292f636ce5fb92a025f9f94ac51341f6fa1070db54b419e59a2, write: auto-extract, trust: high, at: 2026-08-07T21:21:47Z -->
+- (P-2RTaUT3D) Task 47 HC-5 improvement (stat actual Windows task target, not just sentinel) was motivated by v0.5.4 incident: package rename caused registered task to point to dead path for 4 nights while HC-5 stayed green.
+  <!-- source: review-promote, source_line: 1, sha1: c91dfdcc622cd57600f2a96989dbe4397d93bf04d6ae5a8efe1f53217418bfc5, write: user-explicit, trust: high, at: 2026-08-08T20:26:00Z -->
+- (P-SL5KD5Ya) we need a button to switch between dark and light.
+  <!-- source: review-promote, source_line: 1, sha1: 6ac9522b1d10d52dcadc79f80c5336c68a1009b555c3455f1965113d6f286043, write: user-explicit, trust: high, at: 2026-08-08T20:26:02Z -->
 
 ## Environment Notes
 
