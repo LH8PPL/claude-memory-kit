@@ -494,6 +494,13 @@ export function registerCron(opts = {}) {
     // showing the user something other than what it will do. The settings half is
     // built here from the same builder the exec path uses — one source, no drift.
     const settingsScript = buildWindowsSettingsPowerShell(entryName);
+    // Displayed with a BARE `powershell` while the exec below resolves the
+    // ABSOLUTE System32 path. That divergence is deliberate, not drift: the exec
+    // must not be PATH-hijackable (Sonar S4036, same reason as schtasks.exe),
+    // while this string exists to be READ and pasted by a human — an absolute
+    // System32 path would only make it harder to use. The part that must not
+    // diverge is the SCRIPT, and it cannot: both come from `settingsScript`,
+    // and a test asserts the dry-run text contains exactly what gets spawned.
     const settingsCommand = `powershell -NoProfile -NonInteractive -Command "${settingsScript}"`;
     if (dryRun) {
       return {
