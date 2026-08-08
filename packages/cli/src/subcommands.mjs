@@ -3187,6 +3187,16 @@ export async function runQueueConflicts(opts = {}) {
     log(
       `cmk queue conflicts: ${result.resolved} resolved (${result.kept_old} kept-old, ${result.kept_new} kept-new, ${result.merged} merged), ${result.skipped} skipped`,
     );
+    // Task 262 (I5): entries about FACT FILES are left pending on purpose —
+    // this walker only knows how to act on scratchpad bullets. Say so plainly
+    // rather than letting them look like they were handled.
+    if (result.unsupported > 0) {
+      log(
+        `  ${result.unsupported} entr${result.unsupported === 1 ? 'y' : 'ies'} left PENDING: they name fact files, ` +
+          'which this resolver cannot merge or discard. Nothing was changed for them. ' +
+          'Inspect with `cmk get <id>` and act with `cmk forget` / `cmk trust` for now.',
+      );
+    }
     return result;
   } finally {
     if (rl) rl.close();
@@ -3448,6 +3458,133 @@ export async function runBackfillCli(options = {}, _cmd, deps = {}) {
   if (r.remaining > 0) log(`  ${r.remaining} more remain — re-run to continue (bounded per run).`);
 }
 
+/**
+ * `cmk autolink` — Task 262 sub-task 3. Link the facts that already exist.
+ *
+ * Write-time linking only ever helps facts written from now on; this is the
+ * pass over the corpus already on disk. Bounded + resumable per ADR-0020, so
+ * a killed run keeps everything it finished, and a re-run continues rather
+ * than restarts.
+ *
+ * `--dry-run` is the default posture for a first look at a real corpus: it
+ * reports the band distribution and a sample of proposed edges and writes
+ * nothing at all — not the fact files, not the resume markers, not the audit.
+ */
+export async function runAutolink(options = {}, _cmd, deps = {}) {
+  const projectRoot = deps.projectRoot ?? resolvePath(process.cwd());
+  const userDir = deps.userDir ?? resolveUserDir();
+  const log = deps.log ?? console.log;
+  const logError = deps.logError ?? ((s) => process.stderr.write(`${s}
+`));
+  const { linkBackfill, BACKFILL_DEFAULT_MAX } = await import('./link-backfill.mjs');
+
+  const tier = String(options?.tier ?? 'P').toUpperCase();
+  // DRY RUN IS THE DEFAULT — writing takes an explicit `--apply`.
+  //
+  // This is not caution for its own sake; it is an incident (2026-08-08). The
+  // scaffold smoke test runs every leaf verb bare from the repo cwd, so the
+  // first full-suite run after this verb was registered executed
+  // `cmk autolink` against the maintainer's REAL corpus and added `related:`
+  // to 177 committed fact files. Nothing was lost (linking only adds
+  // frontmatter, and the changes were uncommitted so `git checkout --`
+  // restored them exactly) — but a bulk mutation of someone's memory must not
+  // be what a verb does when you type its name with no arguments. The test
+  // exclusion that stops the smoke run is the local fix; this is the
+  // structural one, and it protects every user, not just this repo.
+  // A CONTRADICTORY pair must never resolve to the destructive reading. Both
+  // flags given → dry run wins, and we say why rather than silently picking.
+  if (options?.apply === true && options?.dryRun === true) {
+    log('cmk autolink: --apply and --dry-run contradict each other — treating this as a DRY RUN. Re-run with only --apply to write.');
+  }
+  const dryRun = options?.apply !== true || options?.dryRun === true;
+
+  // `--max` is a bound, and an unparseable bound is not "no bound".
+  // `Number('abc')` is NaN, and `considered >= NaN` is always false — which
+  // turned a typo into an UNBOUNDED walk of the whole corpus, the opposite of
+  // what the flag exists for.
+  const rawMax = options?.max;
+  let max = BACKFILL_DEFAULT_MAX;
+  if (rawMax !== undefined) {
+    const parsed = Number(rawMax);
+    if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed <= 0) {
+      logError(`cmk autolink: --max must be a positive whole number (got ${JSON.stringify(rawMax)})`);
+      process.exitCode = 2;
+      return { action: 'error', errors: ['--max must be a positive integer'] };
+    }
+    max = parsed;
+  }
+
+  // --semantic scores from the CONTENT-ADDRESSED EMBEDDING CACHE, both sides —
+  // never the capture-path scorer, which closes over ONE embedded text and
+  // would compare the whole corpus against a single probe (see
+  // makeCachedCosineBackend's note). Both facts in a backfill pair are already
+  // in the corpus, so this makes zero model calls; it only needs the vectors to
+  // exist, which is what the sync below guarantees.
+  let similarity = null;
+  if (options?.semantic) {
+    const { makeCachedCosineBackend } = await import('./link-facts.mjs');
+    const { prepareSemanticBackend } = await import('./semantic-backend.mjs');
+    const { openIndexDb } = await import('./index-db.mjs');
+    const db = openIndexDb({ projectRoot });
+    try {
+      // Sync first: a cache with no vectors for this corpus degrades every pair
+      // to token-Jaccard, which would silently make --semantic a no-op.
+      const prep = await prepareSemanticBackend({ db, query: 'link' });
+      if (!prep.ok) {
+        log(`cmk autolink: --semantic unavailable (${prep.reason}) — scoring with token-Jaccard instead.`);
+      } else {
+        similarity = makeCachedCosineBackend(db);
+        if (!similarity) {
+          log('cmk autolink: --semantic requested but no vectors are cached — scoring with token-Jaccard instead.');
+        }
+      }
+    } finally {
+      try {
+        db.close();
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
+
+  const r = linkBackfill({ projectRoot, userDir, tier, max, dryRun, similarity });
+  if (r.action === 'error') {
+    for (const e of r.errors) logError(`cmk autolink: ${e}`);
+    process.exitCode = 2;
+    return r;
+  }
+
+  if (r.floor == null) {
+    log(
+      'cmk autolink: no linking floor could be derived for this corpus yet — it needs at least a few dozen facts.\n' +
+        '  Nothing was linked. This is the honest answer, not a failure.',
+    );
+    return r;
+  }
+
+  const verb = dryRun ? 'would link' : 'linked';
+  log(
+    `cmk autolink${dryRun ? ' (dry run)' : ''}: considered ${r.evaluated} fact(s) in tier ${r.tier} ` +
+      `· ${verb} ${dryRun ? r.wouldLink : r.linked} ` +
+      `· ${dryRun ? r.wouldAddEdges : r.edges} edge(s) · backend=${r.backend} floor=${r.floor.toFixed(4)}`,
+  );
+  log(
+    `  bands — related ${r.bands.related} · near-dup ${r.bands.nearDup} (not linked; a merge is a human call) · nothing ${r.bands.none}`,
+  );
+  for (const s of r.samples) {
+    log(`  ${s.id} ${s.title ?? ''} → ${s.links.map((l) => `${l.slug} (${l.score})`).join(', ')}`);
+  }
+  if (r.remaining > 0) {
+    log(`  ${r.remaining} fact(s) remain — re-run to continue (bounded per run, resumes where it stopped).`);
+  } else {
+    log('  nothing remains — the corpus is fully considered.');
+  }
+  if (dryRun && (r.wouldLink > 0 || r.remaining > 0)) {
+    log('  (dry run — nothing was written. Re-run with `--apply` to write these links.)');
+  }
+  return r;
+}
+
 export const subcommands = [
   {
     name: 'install',
@@ -3627,6 +3764,20 @@ export const subcommands = [
       { flags: '--project <dir>', description: 'project root to view (default: cwd)' },
     ],
     action: runView,
+  },
+  {
+    name: 'autolink',
+    description:
+      'populate `related:` on facts that have none — scores each unlinked fact against the corpus and applies up to 3 edges above a floor derived from this corpus. Bounded + resumable; re-run to continue.',
+    milestone: 262,
+    optionSpec: [
+      { flags: '--apply', description: 'actually write the links. WITHOUT it this is a dry run — bare `cmk autolink` never modifies memory.' },
+      { flags: '--dry-run', description: 'the default; report what WOULD link (band distribution + sample edges) and write nothing' },
+      { flags: '--max <n>', description: 'facts to consider this run (default 250) — the run is bounded and resumes where it stopped' },
+      { flags: '--tier <tier>', description: 'tier to link within: P (default) | L | U. Links never cross tiers.' },
+      { flags: '--semantic', description: 'score with the local embedder instead of token-Jaccard (needs the optional embedder)' },
+    ],
+    action: runAutolink,
   },
   {
     name: 'backfill',

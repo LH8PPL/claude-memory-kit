@@ -1,0 +1,223 @@
+{
+  "_comment": [
+    "Task 262 sub-task 1 — the relational query set.",
+    "",
+    "Taxonomy from LoCoMo + LongMemEval (the shared question categories both",
+    "papers in the 2026-08-07 research break benchmark on): single-hop /",
+    "multi-hop / temporal / preference. Two of the four are CONTROLS by design:",
+    "",
+    "  single-hop  the answer is directly findable by flat search. Traversal must",
+    "              not REGRESS it — a graph pipeline that pushes true answers out",
+    "              of the top-5 with neighbours is a loss, not a win.",
+    "  preference  the same control on the USER tier (LongMemEval's category).",
+    "  temporal    reachable by walking `superseded_by`, which is NOT a `related:`",
+    "              edge and therefore survives the unlinked twin unchanged. If the",
+    "              canary margin shows up here too, the margin is measuring",
+    "              traversal-in-general and not LINKING — that is the false-positive",
+    "              this control exists to catch. Four questions, not two: a control",
+    "              of size two moves in 0.5 steps and cannot resolve anything.",
+    "  multi-hop   the measured type. `edge: related`.",
+    "",
+    "`hops` is how many edges separate the query's best flat hit from the answer.",
+    "`reach` states honestly how findable the answer is WITHOUT any edge:",
+    "  link-only  the answer body shares no distinctive term with the query",
+    "  partial    the answer shares some query vocabulary, so flat can score > 0",
+    "A set of only `link-only` questions would make the canary margin a trivial",
+    "0 -> 1 step; the `partial` cases are what make it a graded measurement."
+  ],
+  "queries": [
+    {
+      "id": "q-merge",
+      "qtype": "single-hop",
+      "query": "how do changes get into main",
+      "relevant": ["ci-merge-queue"],
+      "hops": 0,
+      "edge": null,
+      "reach": "flat"
+    },
+    {
+      "id": "q-lang",
+      "qtype": "single-hop",
+      "query": "what language is the service written in",
+      "relevant": ["lang-typescript"],
+      "hops": 0,
+      "edge": null,
+      "reach": "flat"
+    },
+    {
+      "id": "q-runner",
+      "qtype": "single-hop",
+      "query": "which test runner do we use",
+      "relevant": ["test-vitest"],
+      "hops": 0,
+      "edge": null,
+      "reach": "flat"
+    },
+    {
+      "id": "q-pkg",
+      "qtype": "single-hop",
+      "query": "what package manager do we use",
+      "relevant": ["pkg-pnpm"],
+      "hops": 0,
+      "edge": null,
+      "reach": "flat"
+    },
+    {
+      "id": "q-logs",
+      "qtype": "single-hop",
+      "query": "what format are the logs in",
+      "relevant": ["logs-structured"],
+      "hops": 0,
+      "edge": null,
+      "reach": "flat"
+    },
+
+    {
+      "id": "q-queue-successor",
+      "qtype": "multi-hop",
+      "query": "what replaced RabbitMQ",
+      "relevant": ["queue-nats"],
+      "hops": 1,
+      "edge": "related",
+      "reach": "link-only"
+    },
+    {
+      "id": "q-release-safety",
+      "qtype": "multi-hop",
+      "query": "what safety margin does the blue-green release path give us",
+      "relevant": ["deploy-rollback-window"],
+      "hops": 1,
+      "edge": "related",
+      "reach": "link-only"
+    },
+    {
+      "id": "q-auth-validity",
+      "qtype": "multi-hop",
+      "query": "how long does an OIDC sign-in stay usable",
+      "relevant": ["auth-idle-timeout"],
+      "hops": 2,
+      "edge": "related",
+      "reach": "link-only"
+    },
+    {
+      "id": "q-upload-retention",
+      "qtype": "multi-hop",
+      "query": "how long are uploaded artefacts kept",
+      "relevant": ["storage-lifecycle"],
+      "hops": 1,
+      "edge": "related",
+      "reach": "partial"
+    },
+    {
+      "id": "q-alert-target",
+      "qtype": "multi-hop",
+      "query": "who gets woken up when a Prometheus threshold trips",
+      "relevant": ["alert-routing"],
+      "hops": 1,
+      "edge": "related",
+      "reach": "link-only"
+    },
+    {
+      "id": "q-api-deprecation",
+      "qtype": "multi-hop",
+      "query": "how are API consumers told a version is going away",
+      "relevant": ["api-deprecation-notice"],
+      "hops": 1,
+      "edge": "related",
+      "reach": "partial"
+    },
+    {
+      "id": "q-ratelimit-overflow",
+      "qtype": "multi-hop",
+      "query": "what does a tenant see once its allowance runs out",
+      "relevant": ["rate-limit-overflow"],
+      "hops": 1,
+      "edge": "related",
+      "reach": "link-only"
+    },
+    {
+      "id": "q-backup-verification",
+      "qtype": "multi-hop",
+      "query": "do we ever check that the nightly backup actually works",
+      "relevant": ["backup-restore-drill"],
+      "hops": 1,
+      "edge": "related",
+      "reach": "link-only"
+    },
+    {
+      "id": "q-flag-growth",
+      "qtype": "multi-hop",
+      "query": "what keeps the feature flag list from growing without limit",
+      "relevant": ["flag-cleanup"],
+      "hops": 1,
+      "edge": "related",
+      "reach": "partial"
+    },
+
+    {
+      "id": "q-db-successor",
+      "qtype": "temporal",
+      "query": "what replaced MySQL as the primary datastore",
+      "relevant": ["db-postgres"],
+      "hops": 1,
+      "edge": "superseded_by",
+      "reach": "link-only"
+    },
+    {
+      "id": "q-search-successor",
+      "qtype": "temporal",
+      "query": "what came after Solr",
+      "relevant": ["search-typesense"],
+      "hops": 2,
+      "edge": "superseded_by",
+      "reach": "link-only"
+    },
+
+    {
+      "id": "q-image-successor",
+      "qtype": "temporal",
+      "query": "what did we move to instead of Alpine",
+      "relevant": ["images-distroless"],
+      "hops": 1,
+      "edge": "superseded_by",
+      "reach": "link-only"
+    },
+    {
+      "id": "q-transport-successor",
+      "qtype": "temporal",
+      "query": "what replaced plain HTTP inside the VPC",
+      "relevant": ["net-mtls"],
+      "hops": 1,
+      "edge": "superseded_by",
+      "reach": "link-only"
+    },
+
+    {
+      "id": "q-review-style",
+      "qtype": "preference",
+      "query": "how should review comments be written",
+      "relevant": ["pref-review-terse"],
+      "hops": 0,
+      "edge": null,
+      "reach": "flat"
+    },
+    {
+      "id": "q-emoji",
+      "qtype": "preference",
+      "query": "is emoji use acceptable in output",
+      "relevant": ["pref-no-emoji"],
+      "hops": 0,
+      "edge": null,
+      "reach": "flat"
+    },
+    {
+      "id": "q-shells",
+      "qtype": "preference",
+      "query": "which shells do our commands have to work on",
+      "relevant": ["pref-windows-shells"],
+      "hops": 0,
+      "edge": null,
+      "reach": "flat"
+    }
+  ]
+}

@@ -220,6 +220,20 @@ Read/write kit settings (`context/settings.json`) without hand-editing JSON. Key
 
 ## Maintenance & repair
 
+### `cmk autolink [--apply] [--max <n>] [--tier <P|L|U>] [--semantic]`
+
+**Put `related:` edges on facts that have none.** Each unlinked fact is scored against your corpus and gains up to 3 `related:` edges, which `cmk links`, `cmk expand` and the viewer's graph all walk. This verb is the way linking is meant to be used: deliberate, inspectable, and needing no configuration. (The same scoring can also run automatically at capture time, but that is **off by default** — see the note at the end.)
+
+- **A bare `cmk autolink` is a DRY RUN and never modifies your memory** — writing takes an explicit `--apply`. The dry run reports the band distribution and a sample of the edges it would add, and touches none of your memory — no fact file is edited, no resume marker is recorded, no audit entry is written. (It may compute and cache the threshold in the rebuildable search index, which is derived state, not memory.)
+- **Three bands, one of which is not a link.** A candidate that scores like a *near-duplicate* is not auto-linked: merging two facts is a human call, so at capture time it becomes a proposal in `cmk queue conflicts` instead. A backfill never queues — both facts already exist and were both accepted, often months apart.
+- **The threshold is derived from *your* corpus**, not a constant copied from someone else's. It is the 99th percentile of your own facts' random-pair similarity, recomputed on every `cmk reindex --full`. On a corpus too small or too uniform to separate signal from noise, it links nothing and says so.
+- **Bounded and resumable** (ADR-0020): each run considers `--max` facts (default 250) and persists each one before moving on, so a killed run keeps everything it finished and a re-run continues where it stopped. Re-running a finished corpus is a no-op.
+- **Never touches a fact that already has links** — a hand-placed edge is a decision, not a gap.
+- Links never cross tiers, so a committed project fact can never point at a machine-local one.
+- `--semantic` scores with the local embedder instead of word overlap (needs the optional embedder from `cmk install --with-semantic`).
+
+**The automatic half is OFF by default**, and deliberately so: measured on our own relational benchmark, edges placed at capture time recovered none of the recall that hand-placed edges do, and linking adds ~2.8 s to every capture on a 2,260-fact corpus. Turn it on with `cmk config set memory.link_facts true` (or `CMK_LINK_FACTS=1` for one command) if you want it; this verb needs no flag.
+
 ### `cmk backfill [--dry-run] [--days <n>] [--max <n>]`
 
 **Reconstruct the session logs for days you worked but the kit didn't record.** If a session crashes, the Stop hook misfires, or you spend a day in another tool and only commit, that day has commits in git but no entry in `context/sessions/` — a silent hole in your memory timeline. This finds those days and rebuilds a short work log for each from that day's commit messages and diffs.

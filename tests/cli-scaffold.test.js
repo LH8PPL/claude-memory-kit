@@ -19,12 +19,18 @@
 //     subcommand NAME appears in the help output, not that it appears
 //     at a particular column or with a particular separator.
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { existsSync, statSync, readFileSync } from 'node:fs';
+import { existsSync, statSync, readFileSync, mkdtempSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import { subcommands, subcommandNames, STUB_NOTICE_PREFIX } from '../packages/cli/src/subcommands.mjs';
+import { writeFact } from '../packages/cli/src/write-fact.mjs';
+import { openIndexDb } from '../packages/cli/src/index-db.mjs';
+import { reindexFull } from '../packages/cli/src/index-rebuild.mjs';
+import { writeLinkFloor, MIN_FLOOR_ITEMS } from '../packages/cli/src/link-facts.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = join(dirname(__filename), '..');
@@ -44,11 +50,62 @@ const CMK_BIN = join(REPO_ROOT, 'packages', 'cli', 'bin', 'cmk.mjs');
 // twenty-minute mystery into a named failure on the offending verb.
 const SMOKE_TIMEOUT_MS = 60_000;
 
-function runCmk(args, { input } = {}) {
+// THE SANDBOX — every smoke-run verb executes HERE, never in the repo.
+//
+// WHY (the 2026-08-08 incident, D-437). This file's job is to run EVERY leaf
+// verb bare and prove none is still a stub. It used to do that with
+// `cwd: REPO_ROOT` — and the repo root is itself a kit project. Protection was
+// a hand-maintained OPT-OUT list (`NON_STUB_VERBS`), so a newly-registered verb
+// was live-fired against the maintainer's real memory BY DEFAULT until someone
+// remembered to add it. `cmk autolink` was registered without its entry, and
+// the next full-suite run rewrote `related:` into 177 committed fact files.
+//
+// The list is still here and still useful, but it is no longer the only thing
+// standing between a forgotten verb and someone's memory. The default is now
+// SAFE: a disposable scaffolded project, with the user tier redirected too, so
+// a mutating verb that slips through mutates a temp dir and nothing else.
+// Proven by the `disposable-by-default` test at the end of this file.
+let SANDBOX;
+let SANDBOX_PROJECT;
+let SANDBOX_USER;
+
+beforeAll(() => {
+  SANDBOX = mkdtempSync(join(tmpdir(), 'cmk-scaffold-'));
+  SANDBOX_PROJECT = join(SANDBOX, 'proj');
+  SANDBOX_USER = join(SANDBOX, 'user');
+  mkdirSync(SANDBOX_PROJECT, { recursive: true });
+  mkdirSync(SANDBOX_USER, { recursive: true });
+  // Scaffold it as a REAL kit project so verbs meet the environment they expect
+  // (the repo root was one too) — the difference is that this one is disposable.
+  const r = spawnSync(process.execPath, [CMK_BIN, 'install', '--no-hooks'], {
+    cwd: SANDBOX_PROJECT,
+    encoding: 'utf8',
+    env: { ...process.env, MEMORY_KIT_USER_DIR: SANDBOX_USER },
+    timeout: SMOKE_TIMEOUT_MS,
+    killSignal: 'SIGKILL',
+  });
+  if (r.status !== 0) {
+    throw new Error(`scaffold sandbox install failed (${r.status}): ${r.stdout}${r.stderr}`);
+  }
+});
+
+afterAll(() => {
+  if (SANDBOX) rmSync(SANDBOX, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+});
+
+/**
+ * Invoke `cmk` with the given args, IN THE SANDBOX by default.
+ *
+ * `cwd: REPO_ROOT` is available via the option for the few assertions that are
+ * genuinely about the repo (packaging, the bin file itself) — but a verb
+ * INVOCATION should never ask for it.
+ */
+function runCmk(args, { input, cwd = SANDBOX_PROJECT } = {}) {
   return spawnSync(process.execPath, [CMK_BIN, ...args], {
-    cwd: REPO_ROOT,
+    cwd,
     encoding: 'utf8',
     input,
+    env: { ...process.env, MEMORY_KIT_USER_DIR: SANDBOX_USER },
     timeout: SMOKE_TIMEOUT_MS,
     killSignal: 'SIGKILL',
   });
@@ -85,7 +142,7 @@ function runCmk(args, { input } = {}) {
  *               from the repo cwd here they exit 2 (no anchor/fact found / bad
  *               id), so they're excluded from the scaffold's exit-0 stub loop.
  */
-const NON_STUB_VERBS = new Set(['version', 'install', 'uninstall', 'reindex', 'forget', 'init-user-tier', 'trust', 'search', 'remember', 'daily-distill', 'weekly-curate', 'register-crons', 'compress', 'doctor', 'digest', 'import-anthropic-memory', 'import-claude-md', 'config', 'repair', 'roll', 'disable-native-memory', 'enable-native-memory', 'get', 'timeline', 'cite', 'recent-activity', 'hook', 'cursor-hook', 'codex-hook', 'redact', 'purge', 'import-sessions', 'expand', 'links', 'tour', 'backfill', 'view']); // cursor-hook + codex-hook: Task 196 — wired; logic tested by cli-cursor-hook-bin.test.js. redact + purge: Task 96 (ADR-0022) — wired; require --pattern / --hard --yes (exit 2 otherwise); logic tested by cli-redact.test.js against tempdir sandboxes — never invoked unguarded from the repo cwd here (purge --hard is irreversible). import-sessions: Task 225 — wired; requires --yes non-interactively (exit 2 otherwise) and would discover the maintainer's REAL ~/.claude history from the repo cwd; logic tested by cli-import-sessions.test.js against tempdir sandboxes. backfill: Task 174 — wired; the CRON does it automatically (D-169), the verb is the manual override; it shells out to git + the compressor, so it is exercised in cli-backfill.test.js against tempdir git repos rather than the real one here. view: Task 255 — wired, and the ONE verb here that BLOCKS BY DESIGN: bare `cmk view` binds a port, opens a browser and serves until Ctrl-C, so smoke-running it from the repo cwd wedges the whole suite on an orphaned server (it did, twice, before this entry existed) AND serves the maintainer's real memory. Same class as `mcp serve`, which is excluded for being a child. Its logic is tested by cli-viewer.test.js over real HTTP and by `npm run live-verify:viewer` against the real bin in a sandbox
+const NON_STUB_VERBS = new Set(['version', 'install', 'uninstall', 'reindex', 'forget', 'init-user-tier', 'trust', 'search', 'remember', 'daily-distill', 'weekly-curate', 'register-crons', 'compress', 'doctor', 'digest', 'import-anthropic-memory', 'import-claude-md', 'config', 'repair', 'roll', 'disable-native-memory', 'enable-native-memory', 'get', 'timeline', 'cite', 'recent-activity', 'hook', 'cursor-hook', 'codex-hook', 'redact', 'purge', 'import-sessions', 'expand', 'links', 'tour', 'backfill', 'view', 'autolink']); // cursor-hook + codex-hook: Task 196 — wired; logic tested by cli-cursor-hook-bin.test.js. redact + purge: Task 96 (ADR-0022) — wired; require --pattern / --hard --yes (exit 2 otherwise); logic tested by cli-redact.test.js against tempdir sandboxes — never invoked unguarded from the repo cwd here (purge --hard is irreversible). import-sessions: Task 225 — wired; requires --yes non-interactively (exit 2 otherwise) and would discover the maintainer's REAL ~/.claude history from the repo cwd; logic tested by cli-import-sessions.test.js against tempdir sandboxes. backfill: Task 174 — wired; the CRON does it automatically (D-169), the verb is the manual override; it shells out to git + the compressor, so it is exercised in cli-backfill.test.js against tempdir git repos rather than the real one here. view: Task 255 — wired, and the ONE verb here that BLOCKS BY DESIGN: bare `cmk view` binds a port, opens a browser and serves until Ctrl-C, so smoke-running it from the repo cwd wedges the whole suite on an orphaned server (it did, twice, before this entry existed) AND serves the maintainer's real memory. Same class as `mcp serve`, which is excluded for being a child. Its logic is tested by cli-viewer.test.js over real HTTP and by `npm run live-verify:viewer` against the real bin in a sandbox. autolink: Task 262 — wired; a bare run from the repo cwd would score and REWRITE the maintainer's real 2,260 fact files, so it is exercised in cli-link-backfill.test.js against tempdir sandboxes and by a real-bin `--dry-run` over a COPY of the corpus, never unguarded here
 
 // Wired child sub-verbs (e.g. `cmk queue conflicts` shipped in Task 25).
 // Listed as "<parent>/<child>" so the generic child-stub assertion
@@ -261,6 +318,111 @@ describe('Task 2 — cmk CLI scaffold', () => {
         });
       }
     }
+  });
+
+  // --- THE GUARD ITSELF (D-437) -------------------------------------------
+  //
+  // The inversion above is only worth anything if it is checked. This proves
+  // the property directly, using the exact verb that caused the incident and
+  // its most dangerous form: `cmk autolink --apply` genuinely rewrites
+  // `related:` frontmatter across a corpus. Fired through the same helper every
+  // smoke run uses, it must land entirely inside the sandbox.
+  // --- THE GUARD ITSELF (D-437) -------------------------------------------
+  //
+  // The inversion above is only worth anything if it is checked, and checked
+  // with a run that could actually have done damage. An EMPTY sandbox is not
+  // that: `cmk autolink --apply` bails at "no floor could be derived" and never
+  // reaches its write loop, so asserting the repo is unharmed afterwards proves
+  // only that a no-op is harmless. So the sandbox is seeded into a state where
+  // the verb genuinely writes, and BOTH halves are asserted: the sandbox
+  // changed, and the repo did not.
+  describe('the smoke harness is disposable-by-default (D-437)', () => {
+    const REPO_FACTS = join(REPO_ROOT, 'context', 'memory');
+    const FACT_FILE_RE = /^(user|feedback|project|reference|judgment)_.+\.md$/;
+
+    /** CONTENT fingerprint of the repo's fact files — not mtime/size, which a
+     *  rewrite of identical length on a coarse clock could slip past. */
+    function repoFingerprint() {
+      if (!existsSync(REPO_FACTS)) return null;
+      const h = createHash('sha256');
+      let count = 0;
+      for (const f of readdirSync(REPO_FACTS).filter((x) => FACT_FILE_RE.test(x)).sort()) {
+        h.update(f);
+        h.update(readFileSync(join(REPO_FACTS, f)));
+        count += 1;
+      }
+      return { digest: h.digest('hex'), count };
+    }
+
+    function sandboxFactsWithLinks() {
+      const dir = join(SANDBOX_PROJECT, 'context', 'memory');
+      if (!existsSync(dir)) return 0;
+      return readdirSync(dir)
+        .filter((f) => FACT_FILE_RE.test(f))
+        .filter((f) => /^related:/m.test(readFileSync(join(dir, f), 'utf8'))).length;
+    }
+
+    it('a genuinely MUTATING verb run bare writes to the sandbox and never the repo', () => {
+      // Seed the sandbox so the verb has real work: enough facts to clear
+      // MIN_FLOOR_ITEMS, in topical clusters so candidates exist above a floor.
+      const clusters = 5;
+      for (let c = 0; c < clusters; c++) {
+        for (let k = 0; k < 6; k++) {
+          writeFact({
+            tier: 'P', type: 'project',
+            slug: `guard-topic-${c}-note-${k}`,
+            title: `Guard topic ${c} note ${k}`,
+            body: `topic${c}alpha topic${c}beta topic${c}gamma topic${c}delta variant${k} detail${k}x`,
+            writeSource: 'user-explicit', trust: 'high',
+            sourceFile: 'test', sourceLine: 1, sourceSha1: 'guard',
+            autoLink: false,
+            projectRoot: SANDBOX_PROJECT, userDir: SANDBOX_USER,
+          });
+        }
+      }
+      expect(clusters * 6).toBeGreaterThanOrEqual(MIN_FLOOR_ITEMS);
+      const db = openIndexDb({ projectRoot: SANDBOX_PROJECT });
+      try {
+        reindexFull({ projectRoot: SANDBOX_PROJECT, userDir: SANDBOX_USER, db });
+        // Pin the floor so the run cannot bail for a reason unrelated to the guard.
+        writeLinkFloor(db, 'jaccard', {
+          backend: 'jaccard', floor: 0.15, median: 0.01, max: 0.9,
+          quantile: 0.99, pairs: 500, sampledItems: clusters * 6, corpusSize: clusters * 6,
+          computedAt: new Date().toISOString(),
+        });
+      } finally {
+        db.close();
+      }
+
+      const before = repoFingerprint();
+      // ANTI-TAUTOLOGY on the NEGATIVE half: the fingerprint must be watching a
+      // real, populated corpus, or null === null would pass forever.
+      expect(before, 'the repo corpus this guard watches is missing').toBeTruthy();
+      expect(before.count).toBeGreaterThan(100);
+      expect(sandboxFactsWithLinks()).toBe(0);
+
+      // The most destructive shape of the verb, with no guard flags at all.
+      const r = runCmk(['autolink', '--apply']);
+      expect(r.status, `stdout: ${r.stdout}; stderr: ${r.stderr}`).toBe(0);
+
+      // POSITIVE half — the run really did write. Without this the test cannot
+      // tell "the guard worked" from "the verb did nothing".
+      expect(sandboxFactsWithLinks(), `verb did not write; stdout: ${r.stdout}`).toBeGreaterThan(0);
+      expect(r.stdout).toMatch(/linked \d+/);
+
+      // NEGATIVE half — and it wrote NONE of it here.
+      expect(repoFingerprint()).toEqual(before);
+    });
+
+    it('runCmk really does redirect the user tier into the sandbox', () => {
+      // Behavioural, not a string comparison between two of our own variables:
+      // run the verb whose whole job is to create the user tier, then prove the
+      // tier landed in the sandbox.
+      const r = runCmk(['init-user-tier']);
+      expect(r.status, `stdout: ${r.stdout}; stderr: ${r.stderr}`).toBe(0);
+      expect(existsSync(SANDBOX_USER)).toBe(true);
+      expect(readdirSync(SANDBOX_USER).length).toBeGreaterThan(0);
+    });
   });
 
   describe('Unknown subcommand handling', () => {

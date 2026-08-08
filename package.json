@@ -44,6 +44,7 @@
     "sync:plugin-skills": "node scripts/sync-plugin-skills.mjs",
     "validate:template": "node scripts/validate-template.mjs",
     "bench:recall": "node scripts/bench-recall.mjs",
+    "bench:linking": "node scripts/bench-linking.mjs",
     "live-verify:viewer": "node scripts/live-verify-viewer.mjs",
     "live-verify:semantic": "node scripts/live-verify-semantic.mjs"
   },

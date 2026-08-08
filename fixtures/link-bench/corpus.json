@@ -1,0 +1,589 @@
+{
+  "_comment": [
+    "Task 262 sub-task 1 — the RELATIONAL recall benchmark corpus.",
+    "",
+    "Deliberately a hand-authored, committed, deterministic fixture (the Task-99",
+    "convention): every id the runner produces is a pure function of this file, so",
+    "two runs on two machines score identically. Fact TEXT is modelled on the shape",
+    "of this repo's own 2,300-fact corpus (short decision statements with a stated",
+    "mechanism), but the subject matter is a fictional service so nothing here",
+    "leaks project content into a fixture.",
+    "",
+    "THE LOAD-BEARING PROPERTY. A `multi-hop` query's answer fact is written so it",
+    "does NOT contain the query's distinctive terms — it is reachable only by",
+    "following a `related:` edge out of the fact the query DOES match. Strip the",
+    "`related:` lists (the unlinked twin) and that answer becomes unreachable by",
+    "any flat pipeline. That is what makes the canary a real detector rather than",
+    "a restatement of keyword search.",
+    "",
+    "`supersededBy` clusters are deliberately NOT `related:` edges — they survive",
+    "the strip, so the `temporal` qtype is the control that proves a measured",
+    "margin is attributable to LINKING specifically and not to graph traversal in",
+    "general. `single-hop` + `preference` are the flat-answerable controls that",
+    "prove traversal does not REGRESS what already worked."
+  ],
+  "entries": [
+    {
+      "key": "queue-rabbitmq",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Job transport, first generation",
+      "body": "Background jobs run through RabbitMQ with a dedicated worker fleet and one vhost per tenant.",
+      "trust": "high",
+      "createdAt": "2026-01-12T09:00:00Z",
+      "related": ["queue-nats"]
+    },
+    {
+      "key": "queue-nats",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Durable consumers",
+      "body": "Durable consumers on NATS JetStream carry every asynchronous task; each subscriber acknowledges explicitly and redelivery stops after five attempts.",
+      "trust": "high",
+      "createdAt": "2026-03-02T09:00:00Z"
+    },
+    {
+      "key": "deploy-blue-green",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Blue-green releases",
+      "body": "Releases go out blue-green behind the edge router, with traffic shifted in ten-percent steps.",
+      "trust": "high",
+      "createdAt": "2026-01-20T09:00:00Z",
+      "related": ["deploy-rollback-window", "release-notes"]
+    },
+    {
+      "key": "deploy-rollback-window",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Stale colour retention",
+      "body": "The stale colour is retained for ninety minutes before teardown, so a regression can be undone without a rebuild.",
+      "trust": "high",
+      "createdAt": "2026-01-21T09:00:00Z"
+    },
+    {
+      "key": "auth-oidc",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "OIDC sign-in",
+      "body": "Sign-in uses OIDC against the corporate identity provider; local passwords were removed entirely.",
+      "trust": "high",
+      "createdAt": "2026-02-04T09:00:00Z",
+      "related": ["auth-session-store"]
+    },
+    {
+      "key": "auth-session-store",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Where handshake material lives",
+      "body": "Material for the identity-provider handshake lives in the shared cache and never in a cookie.",
+      "trust": "high",
+      "createdAt": "2026-02-05T09:00:00Z",
+      "related": ["auth-idle-timeout"]
+    },
+    {
+      "key": "auth-idle-timeout",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Dormancy eviction",
+      "body": "Cached handshake material is dropped after twenty minutes without activity, which forces a fresh exchange.",
+      "trust": "high",
+      "createdAt": "2026-02-06T09:00:00Z"
+    },
+    {
+      "key": "storage-uploads",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Where uploads land",
+      "body": "Uploaded artefacts land in object storage under a per-tenant prefix.",
+      "trust": "high",
+      "createdAt": "2026-02-11T09:00:00Z",
+      "related": ["storage-lifecycle"]
+    },
+    {
+      "key": "storage-lifecycle",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Object lifecycle",
+      "body": "Objects older than one year move to cold storage and are purged after seven years under the retention policy.",
+      "trust": "high",
+      "createdAt": "2026-02-12T09:00:00Z"
+    },
+    {
+      "key": "metrics-prometheus",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Metric scraping",
+      "body": "Service metrics are scraped by Prometheus every fifteen seconds.",
+      "trust": "high",
+      "createdAt": "2026-02-18T09:00:00Z",
+      "related": ["alert-routing", "logs-structured"]
+    },
+    {
+      "key": "alert-routing",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Where pages go",
+      "body": "Pages reach the on-call rota through Opsgenie; anything below severity two only opens a ticket.",
+      "trust": "high",
+      "createdAt": "2026-02-19T09:00:00Z"
+    },
+    {
+      "key": "api-versioning",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "API version support",
+      "body": "The public API is versioned in the path, and a version stays supported for eighteen months after its successor ships.",
+      "trust": "high",
+      "createdAt": "2026-02-24T09:00:00Z",
+      "related": ["api-deprecation-notice"]
+    },
+    {
+      "key": "api-deprecation-notice",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Two warnings before shutdown",
+      "body": "Consumers are warned twice: a response header from the first day, then a direct mail six weeks before shutdown.",
+      "trust": "high",
+      "createdAt": "2026-02-25T09:00:00Z"
+    },
+    {
+      "key": "rate-limit-buckets",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Per-tenant allowance",
+      "body": "Every tenant gets a token bucket of six hundred requests per minute at the edge.",
+      "trust": "high",
+      "createdAt": "2026-03-05T09:00:00Z",
+      "related": ["rate-limit-overflow"]
+    },
+    {
+      "key": "rate-limit-overflow",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Empty bucket behaviour",
+      "body": "When a bucket empties the edge answers 429 and sets Retry-After to the refill delay.",
+      "trust": "high",
+      "createdAt": "2026-03-06T09:00:00Z"
+    },
+    {
+      "key": "backup-nightly",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Nightly backup",
+      "body": "A full backup runs nightly at 02:00 UTC into a separate account.",
+      "trust": "high",
+      "createdAt": "2026-03-11T09:00:00Z",
+      "related": ["backup-restore-drill"]
+    },
+    {
+      "key": "backup-restore-drill",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Quarterly drill",
+      "body": "A restore is rehearsed every quarter against a scratch cluster, and the timing is recorded.",
+      "trust": "high",
+      "createdAt": "2026-03-12T09:00:00Z"
+    },
+    {
+      "key": "feature-flags",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Flag evaluation",
+      "body": "Feature flags are evaluated in-process from a snapshot refreshed every thirty seconds.",
+      "trust": "high",
+      "createdAt": "2026-03-18T09:00:00Z",
+      "related": ["flag-cleanup"]
+    },
+    {
+      "key": "flag-cleanup",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Flag tidy-up",
+      "body": "A flag older than ninety days is reported to its owner and removed at the next tidy-up.",
+      "trust": "high",
+      "createdAt": "2026-03-19T09:00:00Z"
+    },
+
+    {
+      "key": "db-mysql",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Primary datastore, first generation",
+      "body": "The primary datastore is MySQL 8 with row-based replication.",
+      "trust": "high",
+      "createdAt": "2026-01-05T09:00:00Z",
+      "supersededBy": "db-postgres"
+    },
+    {
+      "key": "db-postgres",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Every write path",
+      "body": "PostgreSQL 16 now backs every write path; logical replication feeds the read replicas.",
+      "trust": "high",
+      "createdAt": "2026-04-02T09:00:00Z"
+    },
+    {
+      "key": "search-solr",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Full-text, first generation",
+      "body": "Full-text lookup runs on Solr with a nightly full import.",
+      "trust": "medium",
+      "createdAt": "2026-01-08T09:00:00Z",
+      "supersededBy": "search-elastic"
+    },
+    {
+      "key": "search-elastic",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Near-real-time indexing",
+      "body": "Elasticsearch replaced the nightly import and indexes in near real time.",
+      "trust": "medium",
+      "createdAt": "2026-02-08T09:00:00Z",
+      "supersededBy": "search-typesense"
+    },
+    {
+      "key": "search-typesense",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Rebuilt in under a minute",
+      "body": "Typesense serves every lookup today; its index is rebuilt from the source of record in under a minute.",
+      "trust": "high",
+      "createdAt": "2026-04-09T09:00:00Z"
+    },
+
+    {
+      "key": "images-alpine",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Base images, first generation",
+      "body": "Container images were Alpine-based with a shared build stage.",
+      "trust": "medium",
+      "createdAt": "2026-01-09T09:00:00Z",
+      "supersededBy": "images-distroless"
+    },
+    {
+      "key": "net-plaintext",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Internal traffic, first generation",
+      "body": "Internal traffic was plain HTTP inside the VPC.",
+      "trust": "low",
+      "createdAt": "2026-01-10T09:00:00Z",
+      "supersededBy": "net-mtls"
+    },
+
+    {
+      "key": "pref-review-terse",
+      "kind": "fact",
+      "tier": "U",
+      "type": "user",
+      "title": "Terse review comments",
+      "body": "Review comments should be terse: one line per finding, never a restatement of the diff.",
+      "trust": "high",
+      "createdAt": "2026-01-15T09:00:00Z"
+    },
+    {
+      "key": "pref-no-emoji",
+      "kind": "fact",
+      "tier": "U",
+      "type": "user",
+      "title": "No emoji",
+      "body": "No emoji anywhere in generated output; plain text only.",
+      "trust": "high",
+      "createdAt": "2026-01-16T09:00:00Z"
+    },
+    {
+      "key": "pref-windows-shells",
+      "kind": "fact",
+      "tier": "U",
+      "type": "user",
+      "title": "Shells that must work",
+      "body": "Every shell snippet must run on Windows PowerShell as well as POSIX shells.",
+      "trust": "high",
+      "createdAt": "2026-01-17T09:00:00Z"
+    },
+
+    {
+      "key": "ci-merge-queue",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Merge queue",
+      "body": "Changes land through the GitHub merge queue; direct pushes to main are blocked.",
+      "trust": "high",
+      "createdAt": "2026-01-22T09:00:00Z"
+    },
+    {
+      "key": "lang-typescript",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Implementation language",
+      "body": "The service is written in TypeScript with strict mode enabled everywhere.",
+      "trust": "high",
+      "createdAt": "2026-01-06T09:00:00Z"
+    },
+    {
+      "key": "test-vitest",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Test runner",
+      "body": "Tests run under Vitest, and a single npm script is the only supported entry point.",
+      "trust": "high",
+      "createdAt": "2026-01-07T09:00:00Z"
+    },
+    {
+      "key": "pkg-pnpm",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Package manager",
+      "body": "Dependencies are installed with pnpm; the lockfile is pnpm-lock.yaml.",
+      "trust": "high",
+      "createdAt": "2026-01-04T09:00:00Z"
+    },
+    {
+      "key": "logs-structured",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Log format",
+      "body": "All logs are structured JSON with a request id on every line.",
+      "trust": "high",
+      "createdAt": "2026-02-20T09:00:00Z"
+    },
+
+    {
+      "key": "edge-cdn",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Asset delivery",
+      "body": "Static assets are served from the CDN with a one-hour edge cache and immutable filenames.",
+      "trust": "medium",
+      "createdAt": "2026-02-01T09:00:00Z",
+      "related": ["edge-purge"]
+    },
+    {
+      "key": "edge-purge",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Purge trigger",
+      "body": "A purge is issued from the deploy pipeline whenever the asset manifest changes.",
+      "trust": "medium",
+      "createdAt": "2026-02-02T09:00:00Z"
+    },
+    {
+      "key": "logs-retention",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Log retention",
+      "body": "Log volumes are kept hot for fourteen days and archived for one year.",
+      "trust": "medium",
+      "createdAt": "2026-02-21T09:00:00Z"
+    },
+    {
+      "key": "secrets-vault",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Secret delivery",
+      "body": "Secrets come from the vault at boot; nothing is baked into an image.",
+      "trust": "high",
+      "createdAt": "2026-02-14T09:00:00Z"
+    },
+    {
+      "key": "images-distroless",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Base images",
+      "body": "Container images are distroless and rebuilt weekly for patches.",
+      "trust": "medium",
+      "createdAt": "2026-02-15T09:00:00Z"
+    },
+    {
+      "key": "net-mtls",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Service-to-service traffic",
+      "body": "Service-to-service traffic is mutual TLS with certificates rotated daily.",
+      "trust": "high",
+      "createdAt": "2026-02-16T09:00:00Z"
+    },
+    {
+      "key": "db-migrations",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Migration discipline",
+      "body": "Schema migrations run forward-only and must stay backward compatible for one release.",
+      "trust": "high",
+      "createdAt": "2026-03-22T09:00:00Z"
+    },
+    {
+      "key": "cost-budget",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Cloud budget",
+      "body": "Each team owns a monthly cloud budget and an alert fires at eighty percent.",
+      "trust": "medium",
+      "createdAt": "2026-03-23T09:00:00Z"
+    },
+    {
+      "key": "i18n-locales",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Locale coverage",
+      "body": "Nine locales ship today; strings are extracted at build time.",
+      "trust": "medium",
+      "createdAt": "2026-03-24T09:00:00Z"
+    },
+    {
+      "key": "mobile-clients",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Mobile client contract",
+      "body": "The mobile clients talk to the same public API and pin a minimum supported version.",
+      "trust": "medium",
+      "createdAt": "2026-03-25T09:00:00Z"
+    },
+    {
+      "key": "support-slas",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Support response times",
+      "body": "Support answers within one business day for standard plans and one hour for enterprise.",
+      "trust": "medium",
+      "createdAt": "2026-03-26T09:00:00Z"
+    },
+    {
+      "key": "onboarding-docs",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Onboarding target",
+      "body": "A new engineer is productive in a week using the runbook index.",
+      "trust": "low",
+      "createdAt": "2026-03-27T09:00:00Z"
+    },
+    {
+      "key": "worker-autoscale",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Worker scaling signal",
+      "body": "Worker pods autoscale on queue depth rather than CPU.",
+      "trust": "high",
+      "createdAt": "2026-03-28T09:00:00Z"
+    },
+    {
+      "key": "session-analytics",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Analytics batching",
+      "body": "Product analytics events are batched client-side and flushed every thirty seconds.",
+      "trust": "low",
+      "createdAt": "2026-03-29T09:00:00Z"
+    },
+    {
+      "key": "incident-postmortem",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Postmortem rule",
+      "body": "Every severity-one incident gets a written postmortem within five business days.",
+      "trust": "high",
+      "createdAt": "2026-03-30T09:00:00Z"
+    },
+    {
+      "key": "release-notes",
+      "kind": "fact",
+      "tier": "P",
+      "type": "project",
+      "title": "Release notes",
+      "body": "Release notes are generated from the changelog, never hand-written.",
+      "trust": "medium",
+      "createdAt": "2026-03-31T09:00:00Z"
+    },
+
+    {
+      "key": "b-migration-thread",
+      "kind": "bullet",
+      "tier": "P",
+      "scratchpad": "MEMORY.md",
+      "section": "Active Threads",
+      "text": "moving the last two services off the shared database",
+      "trust": "medium",
+      "createdAt": "2026-04-01T09:00:00Z"
+    },
+    {
+      "key": "b-flaky-test",
+      "kind": "bullet",
+      "tier": "P",
+      "scratchpad": "MEMORY.md",
+      "section": "Active Threads",
+      "text": "chasing a flaky test in the checkout suite",
+      "trust": "medium",
+      "createdAt": "2026-04-03T09:00:00Z"
+    },
+    {
+      "key": "b-env-node",
+      "kind": "bullet",
+      "tier": "P",
+      "scratchpad": "MEMORY.md",
+      "section": "Environment Notes",
+      "text": "local dev needs Node 20; Node 22 breaks the native build",
+      "trust": "high",
+      "createdAt": "2026-04-04T09:00:00Z"
+    },
+    {
+      "key": "b-pending-cdn",
+      "kind": "bullet",
+      "tier": "P",
+      "scratchpad": "MEMORY.md",
+      "section": "Pending Decisions",
+      "text": "whether to move the CDN contract at renewal",
+      "trust": "low",
+      "createdAt": "2026-04-05T09:00:00Z"
+    }
+  ]
+}

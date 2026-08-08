@@ -12,6 +12,78 @@
 
 > **Older entries live in the archive.** **D-1 … D-306** — every decision made BEFORE the v0.5.0 cut — were relocated to [`DECISION-LOG-archive-pre-v0.5.md`](DECISION-LOG-archive-pre-v0.5.md) on 2026-07-28 (Task 249), byte-identical and in the same newest-at-top order. **This file holds D-307 onward** (D-307 IS the "tag v0.5.0 now" decision). Both files are `D-nnn` anchor sources for `validate-docs`'s `references` family — it globs `docs/journey/DECISION-LOG*.md` — so a citation to any entry, archived or live, still resolves.
 
+## 2026-08-08 — D-438 · NOTE — The wedge gate is a coin flip, and 262's A/B proved it the hard way
+
+**Finding:** live-verify's Phase A wedge gate fails ~50% of clean serial runs on the same missing rule ("run ruff before committing") — measured across five samples during 262's live-verify attribution, failing and passing in BOTH flag conditions, with a mechanical unreachability proof excluding the linking change entirely (zero fact files in the wedge sandboxes; the flag's single call site requires a fact create). The gate's verdict on any branch is therefore noise on this phase: a ~50% false-alarm rate, and a real capture regression would hide inside it. **Filed as Task 279 (v0.7)** with the fix classes enumerated (prompt-hardening / presence-relaxation / logged-retry / deterministic-fake-agent variant) and a measurable done-bar (<5% false alarms over ≥10 runs, with a seeded regression still caught). The meta-point worth the entry: the five-sample matrix exists because the first sample looked like a clean ON-fails/OFF-passes split — one more sample would have indicted the wrong suspect. Attribution needs samples in BOTH conditions, and the implementer kept sampling past the convenient answer.
+
+
+## 2026-08-08 — D-437 · BUG/FIX — The test suite ran `cmk autolink` against the maintainer's REAL memory and rewrote 177 fact files
+
+**What happened.** `tests/cli-scaffold.test.js` smoke-runs **every leaf CLI verb bare from the repo cwd** to prove none is still a stub. A newly-registered verb that is not listed in its `NON_STUB_VERBS` set gets executed for real. `cmk autolink` shipped without that entry, so the first full-suite run after registering it executed the verb against **this repo's own 2,260-fact corpus** and added `related:` frontmatter to **177 committed fact files**, plus 177 `auto-linked` entries in the (gitignored) audit log.
+
+**Accounted for before calling it anything (D-366).** Nothing was lost and nothing was moved: linking only ADDS a `related:` key, and a `git diff -U0` over the whole tier showed **every** hunk was a single `+related: [...]` line — the only other changes were `INDEX.md`/`MAP.md`, already modified before this session. The count reconciles exactly: 90 facts carried `related:` before, 267 after, 177 audit entries. All 177 were uncommitted, and the session-start `git status` proved no fact file had prior uncommitted changes, so `git checkout --` on exactly those 177 paths restored them losslessly. **Verified after: 90 again.** The audit-log entries are left in place — the log is append-only and this is honest history of what ran. The repo's `.index/` gained a `link_eval` table and a stored floor: rebuildable derived state, cleared by the next `reindex --full`.
+
+**Two fixes, deliberately at different levels:**
+1. **Local** — `autolink` added to `NON_STUB_VERBS` with the reason spelled out, joining `view`, `import-sessions`, `purge` and `redact`, all excluded for the same "must not run unguarded from the repo cwd" reason. That list is now four entries long for one recurring hazard, which is itself the signal.
+2. **Structural, and the one that matters** — **bare `cmk autolink` is now a DRY RUN; writing takes an explicit `--apply`.** The test exclusion protects this repo; the flag protects every user. A command that rewrites part of someone's memory must not be what you get from typing its name with no arguments, and "the smoke test will run it" is only the way we happened to find that out. Pinned by test G9, which asserts the bare invocation changes nothing and prints the `--apply` hint.
+
+**The lesson worth keeping:** the failing test was not noise to be silenced by adding an exclusion — it was the guardrail firing, and reading it as "add the verb to the list" would have shipped the real hazard. When a generic test fails on a NEW verb, ask what the test was protecting before you tell it about the exception. _Relates Task 262, D-192/D-193 (memory-delete discipline), D-366 (account for records before naming the loss)._
+
+## 2026-08-08 — D-436 · DECISION — Write-time linking ships DEFAULT-OFF: measured, it REGRESSES the type it was built for
+
+**Task 262 sub-tasks 2-4 are built, tested and live-verified — and the AFTER measurement says the mechanism does not work for its stated purpose on the benchmark that was built to judge it.** Filing this as the finding rather than burying it in a task annotation, because the honest reading changes what should ship.
+
+**The numbers, RESTATED 2026-08-08 after review finding B1** ([research note](../research/2026-08-08-linking-benchmark-baseline.md) §7, same fixture / script / build as the D-433 baseline, fresh and aged agreeing). The first version of this entry collapsed two automatic variants into one number and leaned on a delta the instrument cannot resolve. Corrected, on `graph-hybrid` multi-hop R@5 (the kit's real default recall):
+
+| variant | R@5 | vs unlinked 0.444 | vs ceiling 0.889 |
+| --- | --- | --- | --- |
+| `auto-write` (capture time) | **0.444** | no change | recovers 0% |
+| `auto-backfill` (whole corpus) | **0.333** | one question down | recovers 0% |
+
+**What survives the correction:** the BACKFILL — the only arm with comparable edge density to the hand-placed set (19 edges / 14 facts vs 13 / 11) — **recovers 0% of the available gain** and costs the temporal control **0.25**. That is the solid claim, and D-433's condition fires on it.
+
+**What was withdrawn:** the "−0.111 regression" attributed to the write path. One multi-hop question is worth 0.111 — the instrument's resolution floor, which this project's own canary rationale calls single-question wobble. And the write path placed **4 edges over 3 of 50 facts**: structurally starved (it links backward only, and no floor exists below 24 facts), i.e. **effectively unmeasured**, not measured-and-bad.
+
+**Why, and it is not a threshold to tune.** The fixture's multi-hop answers share no distinctive term with their query — by construction the ground-truth edge joins two facts that are topically related and lexically/distributionally far apart. A similarity-ranked linker selects on precisely the axis those edges are weak on. Lowering the floor buys more edges of the same kind, and more edges of that kind is what already made recall worse. The deterministic linker measures the wrong quantity; it is not mis-calibrated.
+
+**What IS true of it.** On the real 2,260-fact corpus the derived floor is 0.1564 (median 0.0724, max 0.3636 over 20,000 pairs — non-degenerate), a live `cmk remember` auto-linked to two edges a human would place, and the dry-run proposes 4,902 edges over 1,843 of 2,170 unlinked facts with a similar character. So the mechanism produces *defensible* links on real data; it does not produce the *specific* links that answer multi-hop questions. Both are true.
+
+**What this settles for ADR-0023.** Its DEFER ranked LLM edge derivation (Memora-style `cues:`) first in line. Sub-task 1 fired the trigger; sub-task 4 now adds the other half — **the cheap deterministic alternative was tried, built, and does not close the gap.** The measurement points back at the ADR's own first-ranked candidate, for the reason the ADR gave.
+
+**DECIDED — default-OFF (lead-ratified 2026-08-08; re-ratified the same day on the corrected basis below).**
+
+The original ratification cited two grounds. Review finding B1 dissolved the first one **as applied to the write path**: the recall regression is the BACKFILL's, and the write path's own arm is unmeasured on this fixture. Re-adjudicated honestly, the decision **stands on the second ground alone**, which is untouched by the correction and is about the write path specifically:
+
+1. ~~It regresses the qtype it was built for~~ — **withdrawn as a reason to default the WRITE PATH off.** It is a real finding about the similarity-ranked edge source (see the numbers above), and it is why ADR-0023's deferred candidate is still the live one; it is not evidence about capture-time placement, which this fixture cannot measure.
+2. **It costs unbudgeted write-path latency** — the sole surviving ground, and sufficient on its own: — `cmk remember` 11.6 s → 14.4 s on the real 2,260-fact corpus, **+2.8 s per capture**, growing linearly with corpus size, on the same synchronous path the detached auto-extract child runs under the §8.5 hook ceiling. That composition is **unverified**, which is its own reason not to switch it on for everyone.
+
+**What ships:** the mechanism, the flag, the derived floor and the backfill, all complete. `cmk autolink` (dry-run by default, `--apply` to write) is the deliberate opt-in and needs no configuration; `memory.link_facts: true` / `CMK_LINK_FACTS=1` turns the write path on for anyone who wants it. Flipping the default back is one line in `linkingEnabled`, pinned by test C1 so that flip always breaks a test.
+
+**The user may overrule at the morning review** — this is the lead's call on the implementer's evidence, recorded as decided rather than left hanging. _Relates D-433, ADR-0023, Task 262, Task 143._
+
+## 2026-08-08 — D-435 · BUG/FIX — Two silent composition defects in the linker, both invisible to unit tests, both found only by running the measurement
+
+**Neither would have failed a suite, and both produce confident wrong output rather than an error** — the class this project keeps re-learning.
+
+**(1) A single prepared semantic scorer is wrong for a backfill.** `prepareSemanticSimilarity` (Task 143) embeds ONE incoming text and returns a closure over that vector; its `similarityFn(a, b)` **ignores `a`**. That is exactly right for a capture (one new text vs many candidates) and catastrophic for a backfill, where a single prepared scorer compares every fact in the corpus against whatever probe string happened to prepare it — producing real, plausibly-distributed, meaningless numbers. **Fix:** `makeCachedCosineBackend` — symmetric, both sides read from the content-addressed cache, **zero model calls** (both facts are already embedded; that is what the semantic index IS). Pinned by a test asserting the score depends on both arguments and is symmetric.
+
+**(2) The backfill scored the FILE body while the embedding cache is keyed on the INDEXED body.** The indexer trims; a fact file carries writeFact's surrounding newlines. So every cache lookup missed, every pair silently degraded to token-Jaccard, and those lexical scores were judged against a **semantic** floor of 0.68 — `cmk autolink --semantic` produced exactly **zero** links while reporting a healthy floor and a healthy-looking run. Separately-correct-jointly-broken: the key derivation was right, the scorer was right, the body was right, the composition was silent. **Fix:** score the indexed body; the file body stays the content-sha for edit detection.
+
+**The lesson worth keeping:** the AFTER measurement was not a formality after the tests went green — it was the only instrument that could see either bug. A "0 links" run with a plausible floor looks identical to "nothing qualified". _Relates Task 262, Task 143, D-421 (same keying-assumption family), CLAUDE.md "Composition verification"._
+
+## 2026-08-08 — D-434 · DECISION — Write-time linking: the shape that shipped (Task 262 sub-tasks 2 + 3)
+
+Implementation decisions taken during the build that the grill did not settle, recorded so they are not re-derived:
+
+- **The linker attaches inside `writeFact`**, the one boundary every fact create flows through, and is **sync**. The async model work stays in the caller (the Task-143 `prepareNearDupGuard` shape): a prepared `similarityFn` is injected via `linkSimilarity`, and the always-available token-Jaccard path is the default. Consequence: the write path today links **lexically** on every surface including auto-extract; the semantic path is reached via `cmk autolink --semantic` and the injection seam. Wiring an embed into the explicit-capture adapters is a budget question left for the lead.
+- **`related:` stores SLUGS, not ids** — the existing corpus convention (`relatedSlugs`, `rebuildEdges`' slug→id resolution). Verified empirically: 2,260 real facts have **zero** slug collisions after stripping the type prefix.
+- **Links never cross tiers.** A committed project fact referencing a machine-local user-tier slug would dangle for every other clone.
+- **The backfill never queues near-dups.** Both facts already exist and were both accepted, often months apart; manufacturing hundreds of retroactive merge decisions would bury the conflict queue's real signal. Write time still queues.
+- **`link_eval` (the "considered, nothing found" resume artifact) lives in the REBUILDABLE index**, keyed `(id, content_sha)`. Losing it to a full reindex costs a re-consideration — idempotent work, never lost work, and never a second source of truth about the markdown (ADR-0002 / ADR-0020 rule 3).
+- **The verb is `cmk autolink`**, not `cmk link` — one character from the existing `cmk links` query verb is a UX trap. CLI-only in the parity guard: the automatic half needs no command, and this is a one-off catch-up the model has no reason to drive mid-conversation.
+- **Two DERIVED degeneracy guards** refuse to link when the distribution cannot separate signal from noise (floor ≥ the calibrated near-dup ceiling; floor ≤ the random-pair median). Confirmed live: a sandbox of 30 near-identical facts derives floor 0.90 against a 0.5 ceiling and correctly links nothing.
+- **`??=` is not available** to the repo's test transform — it parses under `node --check` and fails under vitest/esbuild with a locationless `SyntaxError`. Worth knowing before the next hour is spent on it. _Relates Task 262, ADR-0020, ADR-0023, D-433._
+
 ## 2026-08-08 — D-432 · DECISION — The viewer goes DARK-DEFAULT (light stays supported) — revisiting D-425's ratified direction with new evidence
 
 **This revisits SETTLED decision D-425 (and through it the [2026-08-04 direction memo](../research/2026-08-04-viewer-visual-direction-memo.md)), which is a frozen record and stays untouched.** The memo's ratified position was *"an instrument panel over a warm archive"* — warm LIGHT for everything you read, exactly one permanently dark saturated region (the graph) as the hero. It explicitly rejected dark-first on three grounds: the dullness is polarity-invariant, this is a reading surface, and dark-first makes us a Linear clone.
@@ -27,6 +99,11 @@
 **Rejected: dark-ONLY.** It was the tempting simplification (the reference file is single-polarity, `color-scheme: dark`, one token block) and it buys nothing functional — it would delete the theme-aware contract, roughly half the AA surface the contrast test computes, and the choice from every user whose eyes or room disagree with ours. Light is now the supported second theme rather than the identity; each theme is served on two signals (the system preference AND an explicit `data-theme`), with a new drift guard pinning the duplicate palettes to each other so a `data-theme` copy cannot ship an unmeasured palette.
 
 **Also rejected: keeping hue-coded tier glyphs in dark.** With one accent that doubles as `--warn`, `--tier-l: var(--accent)` becomes a three-way collision and `--tier-u`'s orange sits next to it; the alternatives were a stray cold violet (the exact thing the revision removes) or monochrome. Dark's tier glyphs are monochrome and the LETTER carries the meaning; **light keeps its hue-coded tiers**, because light's accent is not also its warn hue. This is a deliberate asymmetry, not drift.
+
+## 2026-08-08 — D-433 · NOTE — 262's benchmark fired ADR-0023's trigger before the mechanism exists, found traversal DILUTION, and measured the keyword floor (Task 278)
+
+**Sub-task 1 shipped and the trigger is MET, measured not argued:** the kit's default flat pipeline answers 1.000 of flat-answerable questions and **0.444** of relational ones; hand-placed `related:` edges lift the relational half to 0.889 with no flat loss. The canary discipline (KiroCrew-derived, D-429) held: margin 0.444 against a 0.300 floor on a byte-identical unlinked twin, three controls proving attribution — and the CLI refuses to print a baseline when the canary fails, so the instrument cannot silently measure noise. **The design-shaping finding: link traversal DILUTES when seeded badly** — correct edges cost 0.25 on the temporal control because a junk keyword sub-query made a weak fact the rank-0 seed and its neighbours evicted the right answer; zero cost when seeded from hybrid. The linking mechanism inherits this as a constraint: relational expansion seeds from hybrid, never the keyword ladder alone, and D-226's post-retrieval filtering is now measurable rather than speculative. **The lead ratified an assertion change** (controls now pin "no control may GAIN" + a banded dilution cost, replacing a delta===0 the design never promised — the contract was wrong, not the result; the temporal control also grew 2→4 questions first because a 2-item control cannot resolve anything). **And the benchmark measured something nobody asked it to:** one-shot keyword search — the DEFAULT `cmk search` mode — answers **0 of 21** natural-language questions (implicit-AND; live-verified). The 0.941 headline was always the hybrid pipeline. Filed as **Task 278** (v0.7) with the benchmark's controls as the ready-made judge for any fix.
+
 
 ## 2026-08-07 — D-431 · DECISION — Tasks 47+48 laned v0.6.6 (the user's call), and RELEASE-PLAN caught up to its own rule
 

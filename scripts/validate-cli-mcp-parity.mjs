@@ -67,6 +67,12 @@ export const CLI_ONLY = new Set([
   // and the verb is only a manual maintenance override — not an operation the
   // model should drive mid-conversation (Task 174).
   'backfill',
+  // `autolink` is maintenance over the EXISTING corpus (Task 262): the write
+  // path links new facts automatically with no command at all, and this verb is
+  // the one-off catch-up pass for what was written before the mechanism
+  // existed. Same class as `backfill`/`reindex` — the user runs it once, the
+  // model has no reason to drive it mid-conversation.
+  'autolink',
   'daily-distill', 'weekly-curate', 'persona', 'disable-native-memory',
   'enable-native-memory', 'compress', 'register-crons', 'mcp', 'version',
   // `hook` is the Kiro hook entrypoint (called by Kiro's IDE/CLI hooks, never by

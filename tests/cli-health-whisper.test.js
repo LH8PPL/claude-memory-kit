@@ -58,13 +58,29 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
-/** Seed a health.log with `n` consecutive fails for `cls`, `agoMs` old. */
-function seedFails(cls, n, agoMs = 60_000) {
+/**
+ * Seed a health.log with `n` consecutive fails for `cls`, `agoMs` old.
+ *
+ * `baseMs` is the clock the evidence is dated against, and it is the whole
+ * point of this parameter. The in-process tests INJECT `now: NOW`, so their
+ * evidence must be dated against that same pinned NOW. The tests that drive the
+ * REAL BIN cannot inject a clock — the bin reads `Date.now()` — so their
+ * evidence must be dated against the ACTUAL RUNTIME now.
+ *
+ * Dating real-bin fixtures against the pinned NOW made them a TIME BOMB: the
+ * whisper's freshness window is HEALTH_FRESHNESS_MS (7 days), so on
+ * 2026-08-08T11:59:58Z — exactly seven days after the pinned constant — the
+ * seeded evidence aged out and both real-bin tests went red on main, with
+ * nothing in the code having changed. Found 2026-08-08 during Task 262; the fix
+ * is to make the fixture honest about time, not to widen the window or weaken
+ * the assertion.
+ */
+function seedFails(cls, n, agoMs = 60_000, baseMs = NOW_MS) {
   const lines = [];
   for (let i = n; i >= 1; i--) {
     lines.push(
       JSON.stringify({
-        ts: new Date(NOW_MS - agoMs - i * 1000).toISOString(),
+        ts: new Date(baseMs - agoMs - i * 1000).toISOString(),
         schema: 1,
         class: cls,
         outcome: 'fail',
@@ -336,7 +352,7 @@ describe('the REAL cmk-capture-prompt bin surfaces the whisper (Door 3)', () => 
   }
 
   it('a seeded failure streak appears in the bin stdout as additionalContext — no command run', () => {
-    seedFails(HEALTH_CODES.EXTRACT_FAILING, 2, 1000);
+    seedFails(HEALTH_CODES.EXTRACT_FAILING, 2, 1000, Date.now());
     const r = runBin('go');
     expect(r.status).toBe(0); // a hook that errors would interrupt the user mid-prompt
     const out = JSON.parse(r.stdout);
@@ -347,7 +363,7 @@ describe('the REAL cmk-capture-prompt bin surfaces the whisper (Door 3)', () => 
   });
 
   it('the memory-off systemMessage rides the same stdout object as a sibling field', () => {
-    seedFails(HEALTH_CODES.EXTRACT_FAILING, 2, 1000);
+    seedFails(HEALTH_CODES.EXTRACT_FAILING, 2, 1000, Date.now());
     const out = JSON.parse(runBin('go').stdout);
     expect(typeof out.systemMessage).toBe('string');
     expect(out.systemMessage).toContain('core-memory-kit');
@@ -365,7 +381,7 @@ describe('the REAL cmk-capture-prompt bin surfaces the whisper (Door 3)', () => 
   });
 
   it('the bin still captures the prompt to the transcript while whispering', () => {
-    seedFails(HEALTH_CODES.EXTRACT_FAILING, 2, 1000);
+    seedFails(HEALTH_CODES.EXTRACT_FAILING, 2, 1000, Date.now());
     runBin('a prompt worth keeping');
     const dir = join(projectRoot, 'context', 'transcripts');
     expect(existsSync(dir)).toBe(true);

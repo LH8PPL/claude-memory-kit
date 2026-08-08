@@ -52,6 +52,7 @@ You work. It learns — automatically, no buttons. Next session, it remembers th
 - **Recalls by meaning** — ask in your own words; no keyword overlap needed. Fully local, zero API calls.
 - **Learns how you work** — state a habit once, and every new project cold-opens knowing it.
 - **Learns from outcomes** — facts that keep failing sink in ranking; you decide whether to keep or prune.
+- **Links related facts** — `cmk autolink` proposes up to 3 `related:` edges per fact; opt-in write-time linking does it as you capture.
 - **Stays true as it ages** — facts expire, supersede, and keep their history labelled rather than lost.
 - **Stays private** — secrets, personal data and machine paths are screened before every committed write.
 - **Guards your memory** — destructive commands aimed at a memory path are blocked before they run.

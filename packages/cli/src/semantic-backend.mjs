@@ -130,6 +130,21 @@ function sha256(text) {
   return createHash('sha256').update(text, 'utf8').digest('hex');
 }
 
+/**
+ * The `embedding_cache.content_sha` key for a (model, text) pair — the ONE
+ * derivation of the content-addressed embedding key.
+ *
+ * Exported for Task 262: the write-time linker's floor derivation reads cached
+ * vectors for live fact bodies straight out of `embedding_cache`, and it must
+ * key them EXACTLY the way `syncSemanticIndex` wrote them. A second copy of
+ * `sha256(model\nbody)` in another module is precisely the drift the
+ * shared-module rule exists to stop — one silent format change there and the
+ * floor would be derived from an empty sample, i.e. no floor at all.
+ */
+export function embeddingCacheKey(modelId, text) {
+  return sha256(`${modelId}\n${text}`);
+}
+
 function toBlob(floatArray) {
   return Buffer.from(new Float32Array(floatArray).buffer);
 }

@@ -52,6 +52,33 @@ Legend: ✓ intent matches code · ✗ gap (design says X, code does Y) · ~ par
 
 ---
 
+## Write-path step: linking (Task 262)
+
+Every fact-file write now has one more step between "the body is screened" and "the file is written": the incoming body is scored against the live **same-tier** fact corpus and, above a floor **derived from that corpus**, up to **3** `related:` slugs are put on the new fact's frontmatter. A near-duplicate is *not* linked — it becomes a merge proposal in `queues/conflicts.md` — and below the floor nothing happens.
+
+```
+  writeFact: <private> strip → Poison_Guard → PII mask
+                 │
+                 ├─ LINKING (Task 262, flag: memory.link_facts, default OFF)
+                 │    score vs live same-tier facts (jaccard | cached cosine)
+                 │      ├─ >= near-dup ceiling → conflict queue proposal (NOT a link)
+                 │      ├─ >= derived floor    → related: [≤3 slugs]  + audit `auto-linked`
+                 │      └─ below floor         → nothing
+                 │    (no index / no floor / any failure → write UNLINKED — capture > linking)
+                 ▼
+  context/memory/<type>_<slug>.md  ──reindex──> edges table ──> cmk links / expand
+```
+
+Three properties that matter to the lifecycle:
+
+- **The write path is backward-only.** A fact can only link to what the index already held when it was written, so a fresh corpus links sparsely and gets denser as it grows.
+- **`cmk autolink` is the symmetric catch-up** over facts written before the mechanism existed — bounded, resumable, and idempotent, with the resume point derived from the artifacts (`related:` in the markdown, or a `link_eval` row in the rebuildable index).
+- **The floor is recomputed at index time**, so it tracks the corpus rather than freezing a number from whenever the feature shipped.
+
+See design §9.7. **The write-path step is OFF by default (D-436, SETTLED 2026-08-08)** — the mechanism ships complete, and `cmk autolink` is the entry point that needs no configuration. The deciding evidence is the per-capture cost: **+2.8 s** on a 2,260-fact corpus, growing linearly, on the same synchronous path the detached auto-extract child runs under the §8.5 hook ceiling — a composition Task 262 did not verify. On the benchmark, the *backfill* at density recovers **0%** of the recall that hand-placed edges do; the *write path* showed no measurable effect either way on a fixture too small to exercise it.
+
+---
+
 ## Write-path variant: the extraction fallback (Task 242)
 
 The capture edge has a second, degraded path. When automatic extraction fails for **any** reason, a deterministic no-LLM pass over the user's turn produces candidates instead of the turn being dropped. It joins the same lifecycle at the **routing** step rather than bypassing it: medium-trust candidates go to `queues/review.md` exactly as medium-trust LLM candidates do, and every write still passes Poison_Guard. The only lifecycle difference is provenance — these carry `write: auto-extract-fallback`, so a later curation pass (and the learn-loop) can tell a heuristic capture from a real extraction. Content is constrained to mission context; kit-operational noise is filtered before any write. See design §6.4b.
