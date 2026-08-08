@@ -611,42 +611,15 @@ export function autoLinkFact({
     candidates,
   });
 
-  // The near-dup band is a MERGE PROPOSAL, not a link and not a block: the fact
-  // is captured either way (capture > linking) and a human decides in
-  // `cmk queue conflicts`.
-  //
-  // BACKFILL NEVER QUEUES. In a backfill both facts already exist and were both
-  // accepted, often months apart; manufacturing hundreds of retroactive merge
-  // decisions the user never asked for would bury the queue's real signal.
-  let queued = 0;
-  if (mode === 'write' && sel.nearDups.length > 0) {
-    const top = sel.nearDups[0];
-    try {
-      const r = writeConflictEntry({
-        tier,
-        projectRoot,
-        userDir,
-        newId: id,
-        newText: text,
-        newTrust: 'medium',
-        existingId: top.id,
-        existingText: top.body,
-        existingTrust: top.trust ?? 'medium',
-        similarity: top.score,
-        similarityBackend: backend,
-        detectedAt: now ?? nowIso(),
-      });
-      if (r.action === 'queued') queued = 1;
-    } catch {
-      /* best-effort: a queue hiccup must never fail the capture */
-    }
-  }
-
+  // NOTE — the near-dup band's QUEUE WRITE does not happen here. This function
+  // runs BEFORE the fact file is written, so filing a merge proposal from here
+  // could leave the queue citing a fact that never landed (M12). The decision
+  // is returned; `recordAutoLinkSideEffects` files it after the file exists.
   return {
     related: sel.links.map((l) => l.slug),
     links: sel.links,
     nearDups: sel.nearDups,
-    queued,
+    queued: 0,
     mode,
     backend,
     floor: floorRec.floor,
@@ -659,6 +632,50 @@ export function autoLinkFact({
  * backend, floor. Written AFTER the fact lands on disk, so an audit line always
  * describes a link that exists.
  */
+/**
+ * The side effects of a linking decision, run AFTER the fact file is on disk.
+ *
+ * Both halves must happen post-write (M12): an audit line should never describe
+ * a link that does not exist, and a conflict-queue entry should never cite a
+ * fact that does not exist. `autoLinkFact` is therefore a pure decision and
+ * this is the only thing that writes.
+ *
+ * Returns the number of proposals queued (0 or 1) so the caller can report it.
+ * Best-effort throughout: the fact is already durably captured.
+ */
+export function recordAutoLinkSideEffects({
+  tierRoot, tier, id, text, decision, projectRoot, userDir, now = null,
+}) {
+  auditAutoLink({ tierRoot, tier, id, decision, now });
+  // BACKFILL NEVER QUEUES: in a backfill both facts already exist and were both
+  // accepted, often months apart; manufacturing hundreds of retroactive merge
+  // decisions the user never asked for would bury the queue's real signal.
+  if (!decision || decision.mode !== 'write' || decision.nearDups.length === 0) return 0;
+  const top = decision.nearDups[0];
+  try {
+    const r = writeConflictEntry({
+      tier,
+      projectRoot,
+      userDir,
+      newId: id,
+      newText: text,
+      newTrust: 'medium',
+      existingId: top.id,
+      existingText: top.body,
+      existingTrust: top.trust ?? 'medium',
+      similarity: top.score,
+      similarityBackend: decision.backend,
+      // The queue's OTHER producer files scratchpad bullets; these are fact
+      // files, and the resolver has to be able to tell (I5).
+      entryKind: 'fact',
+      detectedAt: now ?? nowIso(),
+    });
+    return r.action === 'queued' ? 1 : 0;
+  } catch {
+    return 0; // a queue hiccup must never fail the capture
+  }
+}
+
 export function auditAutoLink({ tierRoot, tier, id, decision, now = null }) {
   if (!decision || decision.links.length === 0) return;
   try {

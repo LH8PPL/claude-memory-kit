@@ -741,3 +741,106 @@ describe('Task 262 — the backfill semantic backend scores BOTH sides (Door 1)'
     }
   });
 });
+
+// --- G. The queue's SECOND producer — resolve-side (I5) ----------------------
+
+describe('Task 262 — a linker-sourced conflict entry is refused, never falsely stamped', () => {
+  beforeEach(() => {
+    process.env.CMK_LINK_FACTS = '1';
+  });
+
+  const queuePath = () => join(projectRoot, 'context', 'queues', 'conflicts.md');
+
+  /** Produce a REAL linker-sourced entry through the write path. */
+  function seedFactShapedEntry() {
+    for (let i = 0; i < 30; i++) {
+      seedFact({ slug: `rnoise-${i}`, title: `RNoise ${i}`, body: vocabBody(i, 0) });
+    }
+    seedFact({
+      slug: 'uv-canonical', title: 'uv canonical',
+      body: 'Always install python packages with uv, never with pip.',
+    });
+    const db = openIndexDb({ projectRoot });
+    reindexFull({ projectRoot, userDir, db });
+    writeLinkFloor(db, 'jaccard', {
+      backend: 'jaccard', floor: 0.15, median: 0.03, max: 0.9,
+      quantile: FLOOR_QUANTILE, pairs: 500, sampledItems: 31, corpusSize: 31,
+      computedAt: new Date().toISOString(),
+    });
+    db.close();
+    const r = writeFact({
+      tier: 'P', type: 'project', slug: 'uv-restated',
+      title: 'uv restated',
+      body: 'Always install python packages with uv, never with pip today.',
+      writeSource: 'user-explicit', trust: 'high',
+      sourceFile: 'test', sourceLine: 1, sourceSha1: 'x',
+      projectRoot, userDir,
+    });
+    expect(r.action).toBe('created');
+    expect(existsSync(queuePath())).toBe(true);
+    return r;
+  }
+
+  it('H1 the entry declares its kind, so the resolver can tell the two producers apart', () => {
+    seedFactShapedEntry();
+    expect(readFileSync(queuePath(), 'utf8')).toMatch(/entry_kind: fact/);
+  });
+
+  it('H2 EVERY resolution action leaves it PENDING and reports it as unsupported', async () => {
+    seedFactShapedEntry();
+    const { resolveConflictQueue } = await import('../packages/cli/src/conflict-queue.mjs');
+
+    for (const decision of ['merge-both', 'keep-old', 'keep-new']) {
+      const before = readFileSync(queuePath(), 'utf8');
+      let merged = 0;
+      const r = await resolveConflictQueue({
+        tier: 'P', projectRoot, userDir,
+        prompter: () => decision,
+        mergeFn: async () => { merged += 1; },
+      });
+
+      // THE REGRESSION THIS PINS: the pre-fix resolver ran the prompt, ignored
+      // mergeScratchpadBullets' NOT_FOUND, and stamped `resolution: <decision>`
+      // + resolved_at anyway — so the user's decision evaporated while the
+      // queue, the audit log and the summary all reported success.
+      expect(r.resolved, `${decision} was reported as resolved`).toBe(0);
+      expect(r.unsupported).toBe(1);
+      expect(merged, 'the scratchpad merger was invoked on a fact-file entry').toBe(0);
+
+      const after = readFileSync(queuePath(), 'utf8');
+      expect(after).toMatch(/resolution: pending/);
+      expect(after).not.toMatch(/resolved_at/);
+      // Semantic identity rather than byte identity: `serializeEntry` re-quotes
+      // any value starting with a digit, so a rewrite re-emits
+      // `detected_at: 2026-…` as `detected_at: "2026-…"`. That round-trip
+      // asymmetry predates this change and is cosmetic (the parser strips the
+      // quotes again) — noted here rather than silently absorbed. What matters
+      // is that no FIELD changed.
+      const fields = (text) =>
+        Object.fromEntries(
+          text.split(/\r?\n/)
+            .map((l) => l.match(/^\s+(\w+):\s*(.+)$/))
+            .filter(Boolean)
+            .map((m) => [m[1], m[2].replace(/^"|"$/g, '')]),
+        );
+      expect(fields(after)).toEqual(fields(before));
+    }
+  });
+
+  it('H3 a genuine BULLET entry still resolves exactly as before (no collateral)', async () => {
+    const { writeConflictEntry, resolveConflictQueue } = await import('../packages/cli/src/conflict-queue.mjs');
+    writeConflictEntry({
+      tier: 'P', projectRoot, userDir,
+      newId: 'P-2345679A', newText: 'a proposed bullet', newTrust: 'medium',   // validate-test-ids: ignore
+      existingId: 'P-BCDEFGHJ', existingText: 'an existing bullet', existingTrust: 'high', // validate-test-ids: ignore
+      similarity: 0.9, similarityBackend: 'substring',
+    });
+    const r = await resolveConflictQueue({
+      tier: 'P', projectRoot, userDir, prompter: () => 'keep-old',
+    });
+    expect(r.resolved).toBe(1);
+    expect(r.kept_old).toBe(1);
+    expect(r.unsupported).toBe(0);
+    expect(readFileSync(queuePath(), 'utf8')).toMatch(/resolution: keep-old/);
+  });
+});

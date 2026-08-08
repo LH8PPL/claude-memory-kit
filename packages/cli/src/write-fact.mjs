@@ -31,7 +31,7 @@ import { appendHealthTransition, HEALTH_CODES } from './health-log.mjs';
 // Task 262 (ADR-0023 / D-433) — write-time linking. The `related` option has
 // been accepted here since Task 7 and nothing ever passed it; this is the
 // module that passes it.
-import { autoLinkFact, auditAutoLink, linkingEnabled } from './link-facts.mjs';
+import { autoLinkFact, recordAutoLinkSideEffects, linkingEnabled } from './link-facts.mjs';
 import { openIndexDb } from './index-db.mjs';
 
 // Task 191 (ADR-0017 Phase 1b): 'judgment' is a LOOP-BORN type — written by
@@ -531,7 +531,11 @@ export function writeFact(opts = {}) {
   // Door 5, AFTER the file lands: an audit line always describes a link that
   // exists on disk.
   if (linkDecision) {
-    auditAutoLink({ tierRoot, tier: opts.tier, id, decision: linkDecision, now: createdAt });
+    recordAutoLinkSideEffects({
+      tierRoot, tier: opts.tier, id, text: factOpts.body,
+      decision: linkDecision, projectRoot: opts.projectRoot, userDir: opts.userDir,
+      now: createdAt,
+    });
   }
 
   // Keep INDEX.md consistent on every create — the index is a derived view of

@@ -54,7 +54,7 @@ import { stripBom } from './read-json.mjs';
 import { listFactFiles } from './fact-store.mjs';
 import { initTrustScore } from './trust-score.mjs';
 import { rebuildEdges, edgesBuilt } from './graph-index.mjs';
-import { refreshLinkFloors, readLinkFloor } from './link-facts.mjs';
+import { refreshLinkFloors, readLinkFloor, liveFactRows } from './link-facts.mjs';
 
 // Task 262: how far the live-fact count may drift from the count a stored
 // linking floor was derived on before the boot path re-derives it. 50% is one
@@ -672,12 +672,12 @@ export function reindexBoot({ projectRoot, userDir, db, now }) {
     const existing = readLinkFloor(db, 'jaccard');
     let stale = !existing;
     if (existing && changed) {
-      const { n } = db
-        .prepare(
-          `SELECT COUNT(*) AS n FROM observations
-            WHERE deleted_at IS NULL AND superseded_by IS NULL AND source_file LIKE '%memory/%'`,
-        )
-        .get();
+      // Count the SAME population the floor was derived from — link-facts'
+      // live fact rows — instead of a hand-rolled LIKE that both over-matches
+      // (`memory/archive/...`) and MISSES the user tier entirely (its fact dir
+      // is `fragments/`). A numerator and denominator drawn from different
+      // populations make the drift ratio meaningless.
+      const n = liveFactRows(db).length;
       const base = Math.max(1, existing.corpusSize ?? 1);
       stale = Math.abs(n - base) / base > LINK_FLOOR_DRIFT_RATIO;
     }

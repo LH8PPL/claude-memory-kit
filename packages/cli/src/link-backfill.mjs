@@ -128,10 +128,17 @@ export function countLinkBackfillPending({ projectRoot, userDir, tier = 'P' } = 
  * Write `related:` onto ONE fact file, preserving every other byte of its
  * frontmatter and its body verbatim.
  *
- * The same in-place mutation shape as `write-fact.bumpRecurrence`: parse →
- * set one field → re-format. Linking is METADATA — the body is never reordered
- * or rewritten, which is what makes the over-mutation guarantee (this run
- * touches exactly the facts that earned links) checkable byte-for-byte.
+ * The same in-place mutation shape as `write-fact.bumpRecurrence`: parse → set
+ * one field → re-format.
+ *
+ * HONEST ABOUT WHAT THIS PRESERVES. It does NOT preserve every other byte: the
+ * frontmatter is re-serialized by js-yaml, so key quoting/wrapping can shift
+ * even where the value did not. What it DOES guarantee is semantic: every
+ * frontmatter key keeps its value, `related` is the only key added or replaced,
+ * and the BODY is passed through untouched — never reordered, re-wrapped or
+ * rewritten. The over-mutation guarantee is therefore "this run touches only
+ * the facts that earned links", which is what the tests assert; it is not a
+ * byte-identity claim about the file that was edited.
  */
 function applyRelated(path, slugs) {
   const parsed = parse(readFileSync(path, 'utf8'));
@@ -220,9 +227,11 @@ export function linkBackfill({
 
     const bands = { related: 0, nearDup: 0, none: 0 };
     const samples = [];
+    const failures = [];
     let considered = 0;
     let linked = 0;
     let edges = 0;
+    let wouldEdges = 0;
 
     for (const fact of pendingFacts({ projectRoot, userDir, tier, evaluated })) {
       if (considered >= max) break;
@@ -245,8 +254,9 @@ export function linkBackfill({
 
       if (decision.related.length > 0) {
         bands.related += 1;
-        linked += 1;
-        edges += decision.related.length;
+        wouldEdges += decision.related.length;
+        // `linked`/`edges` are incremented after the write lands (M7) — see the
+        // apply block below. In a dry run they are counted via `wouldLink`.
         if (samples.length < sampleLimit) {
           samples.push({
             id: fact.id,
@@ -258,7 +268,27 @@ export function linkBackfill({
           // PERSIST AS YOU GO (ADR-0020 rule 2): this fact's links are durable
           // before the next fact is considered, so a kill here keeps everything
           // already done.
-          if (applyRelated(fact.path, decision.related)) {
+          //
+          // PER-FACT BEST-EFFORT (M8): one unwritable file — EBUSY from a
+          // virus scanner, EPERM, or a fact deleted between the walk and the
+          // write — must not abort a 250-fact run and lose the 249 that
+          // worked. Skip it, count it, report it.
+          //
+          // The counters move only AFTER the write succeeds (M7), so `linked`
+          // and `edges` describe what is on disk rather than what was
+          // attempted. A fact whose write failed is recorded as EVALUATED so
+          // the resume walk does not spin on it forever; its content sha means
+          // an edit still brings it back.
+          let applied = false;
+          try {
+            applied = applyRelated(fact.path, decision.related);
+          } catch (err) {
+            applied = false;
+            failures.push({ id: fact.id, error: String(err?.code ?? err?.message ?? err) });
+          }
+          if (applied) {
+            linked += 1;
+            edges += decision.related.length;
             auditAutoLink({
               tierRoot,
               tier,
@@ -266,6 +296,8 @@ export function linkBackfill({
               decision: { ...decision, mode: 'backfill' },
               now: ts,
             });
+          } else {
+            markEval.run({ id: fact.id, content_sha: fact.contentSha, backend, evaluated_at: ts });
           }
         }
       } else {
@@ -291,10 +323,15 @@ export function linkBackfill({
       backend,
       floor: floorRec?.floor ?? null,
       evaluated: considered,
-      linked: dryRun ? 0 : linked,
-      wouldLink: linked,
-      edges: dryRun ? 0 : edges,
-      wouldAddEdges: edges,
+      // `linked`/`edges` count WRITES THAT LANDED; `wouldLink`/`wouldAddEdges`
+      // count facts that cleared the floor, which is the dry run's answer and
+      // also the honest denominator when some writes failed.
+      linked,
+      wouldLink: bands.related,
+      edges,
+      wouldAddEdges: bands.related > 0 ? wouldEdges : 0,
+      failed: failures.length,
+      failures: failures.slice(0, 10),
       alreadyDone,
       remaining,
       nearDupBand: bands.nearDup,

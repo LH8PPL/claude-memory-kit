@@ -56,6 +56,7 @@ import { ERROR_CATEGORIES, errorResult } from './result-shapes.mjs';
 import { generateId } from '@lh8ppl/cmk-canonicalize';
 import { applyTrustSignal } from './trust-signal.mjs';
 import { openIndexDb } from './index-db.mjs';
+import { eachFact } from './fact-store.mjs';
 
 // Trust ordering. Higher number = higher trust.
 const TRUST_LEVELS = Object.freeze({
@@ -329,6 +330,12 @@ export function writeConflictEntry({
   similarity,
   similarityBackend,
   detectedAt,
+  // Task 262 (I5): WHICH KIND of record the two ids name. The queue was built
+  // for scratchpad BULLETS, and its resolver still only knows how to act on
+  // those. The write-time linker is a SECOND producer that files FACT-FILE ids,
+  // so the entry has to say so — otherwise the resolver cannot tell, and
+  // silently stamps a resolution it never performed.
+  entryKind = 'bullet',
 } = {}) {
   if (!VALID_TIERS.has(tier)) {
     return errorResult({
@@ -355,6 +362,7 @@ export function writeConflictEntry({
     `  new_trust: ${newTrust}`,
     `  similarity: ${similarity.toFixed(4)}`,
     `  similarity_backend: ${similarityBackend}`,
+    `  entry_kind: ${entryKind}`,
     `  detected_at: ${ts}`,
     `  resolution: pending`,
     '',
@@ -472,6 +480,27 @@ export function listConflictQueue({ tier = 'P', projectRoot, userDir } = {}) {
   return entries.filter((e) => e.fields.resolution === 'pending');
 }
 
+/**
+ * Is this entry about FACT FILES rather than scratchpad bullets?
+ *
+ * Two producers write to this queue and only one of them was designed for
+ * (Task 25). `entry_kind` says so explicitly from Task 262 onward; entries
+ * written before that carry no marker, so fall back to asking the corpus
+ * whether a fact file actually holds the proposed id.
+ */
+function isFactShaped(entry, { projectRoot, userDir }) {
+  if (entry.fields.entry_kind === 'fact') return true;
+  if (entry.fields.entry_kind === 'bullet') return false;
+  try {
+    for (const fact of eachFact({ projectRoot, userDir })) {
+      if (fact.id === entry.proposedId || fact.id === entry.fields.conflicts_with) return true;
+    }
+  } catch {
+    /* corpus unreadable → treat as bullet, the historical behaviour */
+  }
+  return false;
+}
+
 export async function resolveConflictQueue({
   tier,
   projectRoot,
@@ -505,6 +534,7 @@ export async function resolveConflictQueue({
   let kept_new = 0;
   let merged = 0;
   let skipped = 0;
+  let unsupported = 0;
 
   // Rewriting strategy: build a new queue file from scratch with
   // resolved entries marked + skipped entries kept as pending.
@@ -515,6 +545,27 @@ export async function resolveConflictQueue({
       newEntryLines.push(serializeEntry(entry));
       continue;
     }
+    // Task 262 (I5) — REFUSE, do not pretend.
+    //
+    // Every resolution this walker performs is scratchpad-shaped: `merge-both`
+    // calls mergeScratchpadBullets (which answers NOT_FOUND for a fact id), and
+    // keep-old / keep-new are no-ops on records that do not live in a
+    // scratchpad. The pre-fix code ran the prompt, ignored the merger's error,
+    // and stamped `resolution: <decision>` + `resolved_at` anyway — so the
+    // user's decision evaporated while the queue, the audit log and the summary
+    // line all reported success. A stamp must describe what HAPPENED.
+    //
+    // So a fact-shaped entry is left PENDING, counted, and reported. Building a
+    // real fact-file resolution UX (merge needs a composed body/title/slug that
+    // a yes/no prompter cannot supply; keep-old/keep-new mean tombstone and
+    // supersede) is a feature with its own design, not a bug fix — filed rather
+    // than half-built here.
+    if (isFactShaped(entry, { projectRoot, userDir })) {
+      unsupported++;
+      newEntryLines.push(serializeEntry(entry));
+      continue;
+    }
+
     const decision = await prompter({
       proposedId: entry.proposedId,
       proposedText: entry.proposedText,
@@ -592,6 +643,9 @@ export async function resolveConflictQueue({
     kept_new,
     merged,
     skipped,
+    // Fact-shaped entries this walker cannot act on. Reported, never counted as
+    // resolved, and left pending so nothing is lost.
+    unsupported,
   };
 }
 
@@ -603,6 +657,7 @@ function serializeEntry(entry) {
     'new_trust',
     'similarity',
     'similarity_backend',
+    'entry_kind',
     'detected_at',
     'resolution',
     'resolved_at',

@@ -28,7 +28,7 @@
 // facts, which is idempotent work, not lost work.
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, readFileSync, existsSync, readdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync, chmodSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -240,6 +240,66 @@ describe('Task 262 — the backfill (Doors 1, 2, 5)', () => {
     } finally {
       db.close();
     }
+  });
+
+  it('G10 --max rejects a non-numeric or non-positive bound instead of walking unbounded', async () => {
+    seedClusteredCorpus();
+    const { runAutolink } = await import('../packages/cli/src/subcommands.mjs');
+    const before = snapshotFactFiles();
+    for (const bad of ['abc', '0', '-5', '2.5']) {
+      const errs = [];
+      const r = await runAutolink(
+        { apply: true, max: bad },
+        null,
+        { projectRoot, userDir, log: () => {}, logError: (m) => errs.push(m) },
+      );
+      // `Number('abc')` is NaN and `considered >= NaN` is always false — the
+      // pre-fix behaviour turned a typo into an UNBOUNDED walk.
+      expect(r.action, `--max ${bad} was accepted`).toBe('error');
+    }
+    const after = snapshotFactFiles();
+    for (const [name, content] of before) expect(after.get(name)).toBe(content);
+  });
+
+  it('G11 --apply --dry-run together resolve to the SAFE reading, never the destructive one', async () => {
+    seedClusteredCorpus();
+    const { runAutolink } = await import('../packages/cli/src/subcommands.mjs');
+    const before = snapshotFactFiles();
+    const lines = [];
+    const r = await runAutolink(
+      { apply: true, dryRun: true },
+      null,
+      { projectRoot, userDir, log: (m) => lines.push(m) },
+    );
+    expect(r.dryRun).toBe(true);
+    expect(r.linked).toBe(0);
+    const after = snapshotFactFiles();
+    for (const [name, content] of before) expect(after.get(name)).toBe(content);
+    expect(lines.join(' ')).toMatch(/contradict/i);
+  });
+
+  it('G12 a fact whose write FAILS is not counted as linked, and is recorded as evaluated (M7/M8)', () => {
+    seedClusteredCorpus();
+    // Make one linkable fact READ-ONLY: it still parses (so it is a real
+    // candidate and the linker decides to write it), and the write then throws
+    // EPERM/EACCES — the shape a virus scanner or a locked file produces.
+    const victimName = readdirSync(factDir()).find((f) => /^project_topic-0-note-\d\.md$/.test(f));
+    expect(victimName).toBeTruthy();
+    const victimPath = join(factDir(), victimName);
+
+    let r;
+    try {
+      chmodSync(victimPath, 0o444);
+      r = linkBackfill({ projectRoot, userDir, tier: 'P', max: 100 });
+    } finally {
+      chmodSync(victimPath, 0o644);
+    }
+
+    // The run completed rather than throwing, and reported the failure.
+    expect(r.action).not.toBe('error');
+    expect(r.failed).toBeGreaterThan(0);
+    // `linked` counts writes that LANDED, so it never includes the failure.
+    expect(r.linked).toBeLessThan(r.wouldLink);
   });
 
   it('G9 the SHIPPED verb is a dry run unless --apply is passed (the 2026-08-08 incident)', async () => {

@@ -3187,6 +3187,16 @@ export async function runQueueConflicts(opts = {}) {
     log(
       `cmk queue conflicts: ${result.resolved} resolved (${result.kept_old} kept-old, ${result.kept_new} kept-new, ${result.merged} merged), ${result.skipped} skipped`,
     );
+    // Task 262 (I5): entries about FACT FILES are left pending on purpose —
+    // this walker only knows how to act on scratchpad bullets. Say so plainly
+    // rather than letting them look like they were handled.
+    if (result.unsupported > 0) {
+      log(
+        `  ${result.unsupported} entr${result.unsupported === 1 ? 'y' : 'ies'} left PENDING: they name fact files, ` +
+          'which this resolver cannot merge or discard. Nothing was changed for them. ' +
+          'Inspect with `cmk get <id>` and act with `cmk forget` / `cmk trust` for now.',
+      );
+    }
     return result;
   } finally {
     if (rl) rl.close();
@@ -3464,6 +3474,8 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
   const projectRoot = deps.projectRoot ?? resolvePath(process.cwd());
   const userDir = deps.userDir ?? resolveUserDir();
   const log = deps.log ?? console.log;
+  const logError = deps.logError ?? ((s) => process.stderr.write(`${s}
+`));
   const { linkBackfill, BACKFILL_DEFAULT_MAX } = await import('./link-backfill.mjs');
 
   const tier = String(options?.tier ?? 'P').toUpperCase();
@@ -3479,8 +3491,28 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
   // be what a verb does when you type its name with no arguments. The test
   // exclusion that stops the smoke run is the local fix; this is the
   // structural one, and it protects every user, not just this repo.
-  const dryRun = options?.apply !== true;
-  const max = Number(options?.max ?? BACKFILL_DEFAULT_MAX);
+  // A CONTRADICTORY pair must never resolve to the destructive reading. Both
+  // flags given → dry run wins, and we say why rather than silently picking.
+  if (options?.apply === true && options?.dryRun === true) {
+    log('cmk autolink: --apply and --dry-run contradict each other — treating this as a DRY RUN. Re-run with only --apply to write.');
+  }
+  const dryRun = options?.apply !== true || options?.dryRun === true;
+
+  // `--max` is a bound, and an unparseable bound is not "no bound".
+  // `Number('abc')` is NaN, and `considered >= NaN` is always false — which
+  // turned a typo into an UNBOUNDED walk of the whole corpus, the opposite of
+  // what the flag exists for.
+  const rawMax = options?.max;
+  let max = BACKFILL_DEFAULT_MAX;
+  if (rawMax !== undefined) {
+    const parsed = Number(rawMax);
+    if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed <= 0) {
+      logError(`cmk autolink: --max must be a positive whole number (got ${JSON.stringify(rawMax)})`);
+      process.exitCode = 2;
+      return { action: 'error', errors: ['--max must be a positive integer'] };
+    }
+    max = parsed;
+  }
 
   // --semantic scores from the CONTENT-ADDRESSED EMBEDDING CACHE, both sides —
   // never the capture-path scorer, which closes over ONE embedded text and
