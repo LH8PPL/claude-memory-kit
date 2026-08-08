@@ -220,6 +220,20 @@ Read/write kit settings (`context/settings.json`) without hand-editing JSON. Key
 
 ## Maintenance & repair
 
+### `cmk autolink [--dry-run] [--max <n>] [--tier <P|L|U>] [--semantic]`
+
+**Give your existing facts the links new ones now get automatically.** Every fact captured from now on is scored against your corpus at write time and gains up to 3 `related:` edges by itself — no command, no cron. This verb is the one-off catch-up pass for everything written *before* that existed.
+
+- **Start with `--dry-run`.** It reports the band distribution and a sample of the edges it would add, and writes nothing at all — no fact files, no resume markers, no audit entries.
+- **Three bands, one of which is not a link.** A candidate that scores like a *near-duplicate* is not auto-linked: merging two facts is a human call, so at capture time it becomes a proposal in `cmk queue conflicts` instead. A backfill never queues — both facts already exist and were both accepted, often months apart.
+- **The threshold is derived from *your* corpus**, not a constant copied from someone else's. It is the 99th percentile of your own facts' random-pair similarity, recomputed on every `cmk reindex --full`. On a corpus too small or too uniform to separate signal from noise, it links nothing and says so.
+- **Bounded and resumable** (ADR-0020): each run considers `--max` facts (default 250) and persists each one before moving on, so a killed run keeps everything it finished and a re-run continues where it stopped. Re-running a finished corpus is a no-op.
+- **Never touches a fact that already has links** — a hand-placed edge is a decision, not a gap.
+- Links never cross tiers, so a committed project fact can never point at a machine-local one.
+- `--semantic` scores with the local embedder instead of word overlap (needs the optional embedder from `cmk install --with-semantic`).
+
+To turn the automatic half off: `cmk config set memory.link_facts false` (or `CMK_LINK_FACTS=0` for one command).
+
 ### `cmk backfill [--dry-run] [--days <n>] [--max <n>]`
 
 **Reconstruct the session logs for days you worked but the kit didn't record.** If a session crashes, the Stop hook misfires, or you spend a day in another tool and only commit, that day has commits in git but no entry in `context/sessions/` — a silent hole in your memory timeline. This finds those days and rebuilds a short work log for each from that day's commit messages and diffs.
