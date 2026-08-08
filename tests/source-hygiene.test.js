@@ -1,8 +1,8 @@
 // @doors: 2
 // Door 1 N/A: no kit function is called — the subject is the repo's own
-//   tracked source bytes, which have no return value.
+//   tracked bytes, which have no return value.
 // Door 2 (State): the assertion IS state — what is physically committed in
-//   the working tree. A raw NUL byte in a .mjs/.js file is behaviourally
+//   the working tree. A raw NUL byte in a text file is behaviourally
 //   invisible (it is a valid string character) but makes `grep` classify the
 //   file as binary, so every content search silently skips it.
 // Door 3 N/A: `git ls-files` is spawned to enumerate TRACKED files (so the
@@ -31,34 +31,94 @@ import { dirname, join, resolve } from 'node:path';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-// Text sources only. Binary fixtures (.onnx, .png, .db) legitimately contain
-// NUL bytes and are not in scope.
-const TEXT_SOURCE_RE = /\.(mjs|cjs|js|ts|json|md|yml|yaml)$/i;
+// DENY-list, not an allow-list (review finding, Task 264): an allow-list of
+// text extensions silently under-scans — the first version missed 61 tracked
+// files including the SHIPPED python package, the shell + PowerShell scripts,
+// the scaffold `.template`/`.fragment` files and the codex rollout fixture,
+// while its header claimed to cover "every tracked text source". Everything
+// tracked is scanned EXCEPT the extensions below, so a file type nobody has
+// added yet (.rs, .rb, .kt) is covered the day it lands.
+//
+// Why a list at all, rather than sniffing the content: the standard "is this
+// binary?" heuristic IS "does it contain a NUL byte", which is the thing under
+// test — sniffing would make the check vacuous. So the exclusions are named.
+// `.svg` is deliberately NOT here: SVG is XML text and greppable like any
+// other source. Extending this list when a genuinely-binary asset lands is the
+// intended maintenance, and the failure message names the file that needs it.
+const BINARY_EXTENSIONS = new Set([
+  // raster + vector-binary assets
+  'png', 'jpg', 'jpeg', 'gif', 'ico', 'webp', 'avif', 'bmp', 'pdf',
+  // archives
+  'zip', 'gz', 'tgz', 'bz2', 'xz', '7z', 'tar',
+  // fonts
+  'woff', 'woff2', 'ttf', 'otf', 'eot',
+  // compiled / model / database artifacts
+  'onnx', 'wasm', 'node', 'db', 'sqlite', 'sqlite3', 'bin',
+  // platform binaries + media
+  'exe', 'dll', 'so', 'dylib', 'mp3', 'mp4', 'mov', 'webm',
+]);
 
-function trackedTextSources() {
-  const out = execFileSync('git', ['ls-files', '-z'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-    maxBuffer: 32 * 1024 * 1024,
-  });
-  return out.split('\0').filter((p) => p && TEXT_SOURCE_RE.test(p));
+// The memory tiers are MACHINE-WRITTEN from captured content, not hand-typed
+// source (this repo dogfoods the kit — D-108). They stay IN scope, because a
+// NUL in a fact file makes that fact grep-invisible exactly like a source file
+// and retrievability is the tier's whole point — but the advice has to differ:
+// nobody "escapes" a byte in a data file, the answer is that a capture path
+// let it through. Same check, correct hint (review finding, Task 264).
+const MEMORY_TIER_RE = /^(context|context\.local)\//;
+
+function extensionOf(relPath) {
+  const base = relPath.split('/').pop() ?? '';
+  const dot = base.lastIndexOf('.');
+  return dot > 0 ? base.slice(dot + 1).toLowerCase() : '';
 }
 
-describe('Task 264(a) — no raw NUL bytes in tracked text sources', () => {
-  it('every tracked text source is NUL-free (a NUL makes grep treat the file as binary)', () => {
+// Returns null when this is not a git checkout (an extracted tarball, a
+// vendored copy) — the check then SKIPS with a stated reason rather than
+// erroring, because "not a git checkout" is not a hygiene failure.
+function trackedFiles() {
+  try {
+    const out = execFileSync('git', ['ls-files', '-z'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return out.split('\0').filter(Boolean);
+  } catch {
+    return null;
+  }
+}
+
+describe('Task 264(a) — no raw NUL bytes in tracked text files', () => {
+  it('every tracked non-binary file is NUL-free (a NUL makes grep treat the file as binary)', () => {
+    const tracked = trackedFiles();
+    if (tracked === null) {
+      console.log('source-hygiene: skipped — not a git checkout (git ls-files unavailable)');
+      return;
+    }
+    expect(tracked.length).toBeGreaterThan(0);
+
     const offenders = [];
-    for (const rel of trackedTextSources()) {
+    let scanned = 0;
+    for (const rel of tracked) {
+      if (BINARY_EXTENSIONS.has(extensionOf(rel))) continue;
       let buf;
       try {
         buf = readFileSync(join(REPO_ROOT, rel));
       } catch {
-        continue; // deleted-but-still-indexed during a rebase, etc.
+        continue; // indexed but absent mid-rebase / sparse checkout
       }
+      scanned += 1;
       const at = buf.indexOf(0);
-      if (at !== -1) {
-        offenders.push(`${rel} (first NUL at byte ${at}) — write it as the \\u0000 escape instead`);
-      }
+      if (at === -1) continue;
+      offenders.push(
+        MEMORY_TIER_RE.test(rel)
+          ? `${rel} (first NUL at byte ${at}) — a memory tier is machine-written: a capture path let a raw NUL through, so screen it at the write path, do not hand-edit the tier`
+          : `${rel} (first NUL at byte ${at}) — write it as the \\u0000 escape instead`,
+      );
     }
+
+    expect(scanned).toBeGreaterThan(0);
     expect(offenders).toEqual([]);
   });
 });
