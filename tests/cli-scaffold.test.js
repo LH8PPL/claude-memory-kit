@@ -25,7 +25,12 @@ import { existsSync, statSync, readFileSync, mkdtempSync, mkdirSync, rmSync, rea
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import { subcommands, subcommandNames, STUB_NOTICE_PREFIX } from '../packages/cli/src/subcommands.mjs';
+import { writeFact } from '../packages/cli/src/write-fact.mjs';
+import { openIndexDb } from '../packages/cli/src/index-db.mjs';
+import { reindexFull } from '../packages/cli/src/index-rebuild.mjs';
+import { writeLinkFloor, MIN_FLOOR_ITEMS } from '../packages/cli/src/link-facts.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = join(dirname(__filename), '..');
@@ -322,40 +327,101 @@ describe('Task 2 — cmk CLI scaffold', () => {
   // its most dangerous form: `cmk autolink --apply` genuinely rewrites
   // `related:` frontmatter across a corpus. Fired through the same helper every
   // smoke run uses, it must land entirely inside the sandbox.
+  // --- THE GUARD ITSELF (D-437) -------------------------------------------
+  //
+  // The inversion above is only worth anything if it is checked, and checked
+  // with a run that could actually have done damage. An EMPTY sandbox is not
+  // that: `cmk autolink --apply` bails at "no floor could be derived" and never
+  // reaches its write loop, so asserting the repo is unharmed afterwards proves
+  // only that a no-op is harmless. So the sandbox is seeded into a state where
+  // the verb genuinely writes, and BOTH halves are asserted: the sandbox
+  // changed, and the repo did not.
   describe('the smoke harness is disposable-by-default (D-437)', () => {
-    it('a genuinely MUTATING verb run bare touches the sandbox and never the repo', () => {
-      const repoFacts = join(REPO_ROOT, 'context', 'memory');
-      const fingerprint = () => {
-        if (!existsSync(repoFacts)) return null;
-        return readdirSync(repoFacts)
-          .filter((f) => /^(user|feedback|project|reference|judgment)_.+\.md$/.test(f))
-          .map((f) => `${f}:${statSync(join(repoFacts, f)).mtimeMs}:${statSync(join(repoFacts, f)).size}`)
-          .join('|');
-      };
-      const before = fingerprint();
-      // ANTI-TAUTOLOGY: if the repo had no fact files, `before` and the
-      // post-run fingerprint would both be null and this test would pass
-      // vacuously — watching nothing. Assert it is actually watching a real,
-      // populated corpus. (We do NOT prove the guard by pointing the verb at
-      // the repo and observing damage: that is the incident, not a test.)
+    const REPO_FACTS = join(REPO_ROOT, 'context', 'memory');
+    const FACT_FILE_RE = /^(user|feedback|project|reference|judgment)_.+\.md$/;
+
+    /** CONTENT fingerprint of the repo's fact files — not mtime/size, which a
+     *  rewrite of identical length on a coarse clock could slip past. */
+    function repoFingerprint() {
+      if (!existsSync(REPO_FACTS)) return null;
+      const h = createHash('sha256');
+      let count = 0;
+      for (const f of readdirSync(REPO_FACTS).filter((x) => FACT_FILE_RE.test(x)).sort()) {
+        h.update(f);
+        h.update(readFileSync(join(REPO_FACTS, f)));
+        count += 1;
+      }
+      return { digest: h.digest('hex'), count };
+    }
+
+    function sandboxFactsWithLinks() {
+      const dir = join(SANDBOX_PROJECT, 'context', 'memory');
+      if (!existsSync(dir)) return 0;
+      return readdirSync(dir)
+        .filter((f) => FACT_FILE_RE.test(f))
+        .filter((f) => /^related:/m.test(readFileSync(join(dir, f), 'utf8'))).length;
+    }
+
+    it('a genuinely MUTATING verb run bare writes to the sandbox and never the repo', () => {
+      // Seed the sandbox so the verb has real work: enough facts to clear
+      // MIN_FLOOR_ITEMS, in topical clusters so candidates exist above a floor.
+      const clusters = 5;
+      for (let c = 0; c < clusters; c++) {
+        for (let k = 0; k < 6; k++) {
+          writeFact({
+            tier: 'P', type: 'project',
+            slug: `guard-topic-${c}-note-${k}`,
+            title: `Guard topic ${c} note ${k}`,
+            body: `topic${c}alpha topic${c}beta topic${c}gamma topic${c}delta variant${k} detail${k}x`,
+            writeSource: 'user-explicit', trust: 'high',
+            sourceFile: 'test', sourceLine: 1, sourceSha1: 'guard',
+            autoLink: false,
+            projectRoot: SANDBOX_PROJECT, userDir: SANDBOX_USER,
+          });
+        }
+      }
+      expect(clusters * 6).toBeGreaterThanOrEqual(MIN_FLOOR_ITEMS);
+      const db = openIndexDb({ projectRoot: SANDBOX_PROJECT });
+      try {
+        reindexFull({ projectRoot: SANDBOX_PROJECT, userDir: SANDBOX_USER, db });
+        // Pin the floor so the run cannot bail for a reason unrelated to the guard.
+        writeLinkFloor(db, 'jaccard', {
+          backend: 'jaccard', floor: 0.15, median: 0.01, max: 0.9,
+          quantile: 0.99, pairs: 500, sampledItems: clusters * 6, corpusSize: clusters * 6,
+          computedAt: new Date().toISOString(),
+        });
+      } finally {
+        db.close();
+      }
+
+      const before = repoFingerprint();
+      // ANTI-TAUTOLOGY on the NEGATIVE half: the fingerprint must be watching a
+      // real, populated corpus, or null === null would pass forever.
       expect(before, 'the repo corpus this guard watches is missing').toBeTruthy();
-      expect(before.split('|').length).toBeGreaterThan(100);
+      expect(before.count).toBeGreaterThan(100);
+      expect(sandboxFactsWithLinks()).toBe(0);
 
       // The most destructive shape of the verb, with no guard flags at all.
       const r = runCmk(['autolink', '--apply']);
       expect(r.status, `stdout: ${r.stdout}; stderr: ${r.stderr}`).toBe(0);
 
-      // The repo's own memory is byte-and-mtime identical.
-      expect(fingerprint()).toBe(before);
+      // POSITIVE half — the run really did write. Without this the test cannot
+      // tell "the guard worked" from "the verb did nothing".
+      expect(sandboxFactsWithLinks(), `verb did not write; stdout: ${r.stdout}`).toBeGreaterThan(0);
+      expect(r.stdout).toMatch(/linked \d+/);
 
-      // And the run really did execute against the sandbox project, not nothing.
-      expect(r.stdout).toContain('cmk autolink');
+      // NEGATIVE half — and it wrote NONE of it here.
+      expect(repoFingerprint()).toEqual(before);
     });
 
-    it('runCmk sends the user tier somewhere disposable too', () => {
-      const r = runCmk(['--help']);
-      expect(r.status).toBe(0);
-      expect(SANDBOX_USER.startsWith(SANDBOX)).toBe(true);
+    it('runCmk really does redirect the user tier into the sandbox', () => {
+      // Behavioural, not a string comparison between two of our own variables:
+      // run the verb whose whole job is to create the user tier, then prove the
+      // tier landed in the sandbox.
+      const r = runCmk(['init-user-tier']);
+      expect(r.status, `stdout: ${r.stdout}; stderr: ${r.stderr}`).toBe(0);
+      expect(existsSync(SANDBOX_USER)).toBe(true);
+      expect(readdirSync(SANDBOX_USER).length).toBeGreaterThan(0);
     });
   });
 
