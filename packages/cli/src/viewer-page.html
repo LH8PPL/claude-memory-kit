@@ -58,9 +58,14 @@
 
      TWO blocks, and each palette is written exactly ONCE: `:root` is dark — the
      identity, and what you get with nothing stored — and `:root[data-theme=
-     "light"]` is the override. The page stamps `data-theme` on `<html>` before
-     the first paint (the script at the end of this head), so the attribute is
-     always present and the override always wins when it should.
+     "light"]` is the override. The page stamps `data-theme` on the root element
+     before the first paint (the script at the end of this head), so the
+     attribute is always present and the override always wins when it should.
+
+     (Element names are written WITHOUT angle brackets in this file's comments
+     on purpose: an HTML analyser reads a bracketed tag inside a comment as a
+     real element, and a stray second root element makes it report this page as
+     having no `lang` and no title. Prose should not be parseable as markup.)
 
      There is deliberately no `@media (prefers-color-scheme: light)` here. It
      shipped in the first dark pass and it is what made D-432 under-deliver: it
@@ -668,7 +673,7 @@
 /*
   THE THEME, stamped before the first paint.
 
-  This is in `<head>`, above the body, on purpose: it is the one script whose
+  This is in the document head, above the body, on purpose: it is the one whose
   POSITION is the feature. Run it at the bottom of the document instead and a
   reader who chose light gets a dark page first and a light one a moment later —
   a flash on every single load, which is worse than either theme.
@@ -694,29 +699,36 @@
     root.dataset.theme = t;
     return t;
   };
+  // `getItem` ITSELF throws in a blocked-storage profile, so the guard is around
+  // the read and not only around the value it hands back. Anything that is not
+  // one of the two themes is not a choice this page wrote: answer "no choice"
+  // rather than stamping an attribute no CSS block answers.
+  const recall = () => {
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw === 'light' || raw === 'dark' ? raw : null;
+    } catch {
+      return null;
+    }
+  };
+  // Persistence is best-effort; the FLIP is not. A profile with storage blocked
+  // (private mode, a locked-down browser) fails here and the reader still gets
+  // the theme they clicked — they are just asked again next time.
+  const remember = (t) => {
+    try {
+      localStorage.setItem(KEY, t);
+      return true;
+    } catch {
+      return false;
+    }
+  };
   const set = (t) => {
     const next = clean(t);
-    // Persistence is best-effort; the FLIP is not. A profile with storage
-    // blocked (private mode, a locked-down browser) throws here — the reader
-    // still gets the theme they clicked, they just get it again next time.
-    try {
-      localStorage.setItem(KEY, next);
-    } catch (_) {
-      /* storage unavailable — the choice lasts this session only */
-    }
+    remember(next);
     return apply(next);
   };
-  let stored = null;
-  try {
-    // `getItem` itself throws in a blocked-storage profile, so this guard is
-    // around the read and not only around the value.
-    const raw = localStorage.getItem(KEY);
-    if (raw === 'light' || raw === 'dark') stored = raw;
-  } catch (_) {
-    /* storage unavailable — fall through to the default */
-  }
   window.cmkTheme = { KEY, current, set, toggle: () => set(current() === 'light' ? 'dark' : 'light') };
-  apply(stored || 'dark');
+  apply(recall() || 'dark');
 })();
 </script>
 </head>
@@ -1793,7 +1805,7 @@
   $('#refresh').addEventListener('click', render);
 
   // ---- the theme toggle -------------------------------------------------
-  // The stamp in <head> owns the state, the storage key, and the writing of
+  // The head stamp owns the state, the storage key, and the writing of
   // both; this owns the LABEL. It names the theme the next click moves to, so
   // it has to be repainted the moment the theme changes — a button still
   // reading "Light" on a light page is a control that lies about what it does,

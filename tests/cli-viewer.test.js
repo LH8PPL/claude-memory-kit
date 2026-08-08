@@ -1998,7 +1998,15 @@ describe('viewer — the theme toggle (268 rider, D-432)', () => {
     expect(btn[0]).toMatch(/type="button"/);
     // A lone glyph is not a label. A small quiet moon in the corner is exactly
     // the affordance nobody finds — the control carries WORDS.
-    expect(btn[1].replace(/<[^>]*>/g, '').trim()).toMatch(/^[A-Za-z][A-Za-z ]{2,}$/);
+    //
+    // Asserted on the button's content AS SERVED, with no tag-stripping pass:
+    // the label is plain text and nothing else belongs in there, so admitting
+    // markup and then removing it would both weaken the assertion and reach for
+    // a single-pass `<[^>]*>` strip — the incomplete-multi-character-
+    // sanitization shape CodeQL flags, and the same partial-filter class the
+    // sink scan and `escapeRe` above are written against. Held to that standard
+    // even though this string is the kit's own served bytes.
+    expect(btn[1].trim()).toMatch(/^[A-Za-z][A-Za-z ]{2,}$/);
     // …and the accessible name says what the CLICK DOES, not only where we are.
     expect(btn[0]).toMatch(/aria-label="Switch to the (light|dark) theme"/);
   });
