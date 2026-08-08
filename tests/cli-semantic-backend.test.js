@@ -253,8 +253,14 @@ describe('Task 65 — rerank stage (pure, Door 1)', () => {
 
   it('temporal boost lifts the date-proximate result when the query carries a hint', () => {
     const now = Date.parse('2026-06-10T00:00:00Z');
-    const mayTs = Math.floor(Date.parse('2026-05-25T00:00:00Z') / 1000);
-    const aprTs = Math.floor(Date.parse('2026-03-01T00:00:00Z') / 1000);
+    // FIXTURE CORRECTED (Task 264(b)): these were `Date.parse(...) / 1000`,
+    // i.e. epoch SECONDS — the same wrong unit the implementation carried, so
+    // the two cancelled and this case passed over a broken temporal term. An
+    // observation's `created_at` is epoch MS everywhere it is produced
+    // (index-rebuild's isoToEpochMs). The assertion is unchanged; only the
+    // input now matches the contract the code is tested against.
+    const mayTs = Date.parse('2026-05-25T00:00:00Z');
+    const aprTs = Date.parse('2026-03-01T00:00:00Z');
     const results = [
       { id: 'old', snippet: 'database choice notes', score: 0.5, created_at: aprTs },
       { id: 'recent', snippet: 'database choice notes', score: 0.5, created_at: mayTs },
@@ -281,6 +287,63 @@ describe('Task 65 — rerank stage (pure, Door 1)', () => {
     // A month AFTER "now" refers to last year.
     expect(parseTemporalHint('the december incident', now)).toBe(Date.UTC(2025, 11, 15));
     expect(parseTemporalHint('no dates here', now)).toBeNull();
+  });
+});
+
+// Task 264(b): the unit contract of the temporal term, pinned. `created_at`
+// on an observation row is ALREADY epoch ms (index-rebuild's isoToEpochMs =
+// Date.parse) — the same contract the sibling `semanticRowPassesFilters`
+// states at the top of this module. `rerankResults` multiplied it by 1000,
+// which pushed every diff ~3 orders past the 45-day window, so the temporal
+// boost could never fire on real data. These cases assert the ARITHMETIC, not
+// just the order: an order-only assertion passes under both units whenever the
+// fixture is written in the same wrong unit as the code (which is exactly how
+// the bug survived — see the corrected fixture in the case above).
+describe('Task 264(b) — rerank temporal term reads created_at as epoch ms', () => {
+  const NOW = Date.parse('2026-06-10T00:00:00Z');
+  const QUERY = 'what changed in late may'; // → target Date.UTC(2026, 4, 25)
+
+  function fixture() {
+    return [
+      // 85 days before the hinted date — outside the 45-day window.
+      { id: 'old', snippet: 'database choice notes', score: 0.5, created_at: Date.parse('2026-03-01T00:00:00Z') },
+      // Exactly the hinted date — full 0.40 boost.
+      { id: 'recent', snippet: 'database choice notes', score: 0.5, created_at: Date.parse('2026-05-25T00:00:00Z') },
+    ];
+  }
+
+  it('boosts the date-proximate row by the documented 0.40 weight (Door 1)', () => {
+    const out = rerankResults(fixture(), { query: QUERY, now: NOW });
+    expect(out[0].id).toBe('recent');
+    // 0.5 * (1 + 0.40) — the full weight, because diff === 0.
+    expect(out[0].score).toBeCloseTo(0.7, 10);
+  });
+
+  it('leaves a row outside the temporal window at its input score (Door 1)', () => {
+    const out = rerankResults(fixture(), { query: QUERY, now: NOW });
+    const old = out.find((r) => r.id === 'old');
+    // No keyword overlap either, so the score must be byte-for-byte the input.
+    expect(old.score).toBe(0.5);
+  });
+
+  it('over-mutation guard: boosting one row leaves every other row and the input array untouched', () => {
+    const input = [
+      ...fixture(),
+      { id: 'nodate', snippet: 'database choice notes', score: 0.5 },
+      { id: 'far', snippet: 'database choice notes', score: 0.25, created_at: Date.parse('2025-01-01T00:00:00Z') },
+    ];
+    const before = input.map((r) => ({ ...r }));
+    const out = rerankResults(input, { query: QUERY, now: NOW });
+
+    // Nothing dropped, nothing duplicated.
+    expect(out).toHaveLength(4);
+    expect(new Set(out.map((r) => r.id))).toEqual(new Set(['old', 'recent', 'nodate', 'far']));
+    // Exactly ONE row's score moved.
+    const moved = out.filter((r) => r.score !== before.find((b) => b.id === r.id).score);
+    expect(moved.map((r) => r.id)).toEqual(['recent']);
+    // The caller's array is not mutated in place, and the sort key does not leak.
+    expect(input).toEqual(before);
+    expect(out.every((r) => !('_i' in r))).toBe(true);
   });
 });
 
