@@ -4,7 +4,7 @@
 <!-- Browse this folder as an Obsidian vault. Each [[link]] opens a fact file. -->
 <!-- How to open + the read-vs-write rule: docs/OBSIDIAN.md -->
 
-Facts: 2251
+Facts: 2258
 
 ## feedback
 
@@ -54,6 +54,7 @@ Facts: 2251
 - [[project_lazy-re-embedding-on-model-upgrades]] — Lazy Re-Embedding on Model Upgrades
 - [[project_confirmed-kiro-bugs-5873-5662-custom-agents-dont-get-mcp-too]] — CONFIRMED-kiro-bugs-5873-5662-custom-agents-dont-get-mcp-tools
   - related: `DEFINITIVE-kiro-cli-does-not-pass-mcp-json-env-to-stdio-server`, `kiro-cli-mcp-list-reveals-agent-server-link-broken-includemcpjson-shows-legacy`
+- [[project_task-management-discipline-d-248]] — Task Management Discipline (D-248)
 - [[project_test-repo-1455-facts-activated-semantic-mode-today]] — Test repo (1455 facts) activated semantic mode today
 - [[project_user-chose-to-upgrade-to-kiro-ide-1-0-52-25bq2bvy]] — User chose to upgrade to Kiro IDE 1.0.52; will perform upgrade, rebuild, and clo
 - [[project_research-paper-ingested-research-note-cr-25jltt5z]] — Research paper ingested; research note created; 10 base sources re-read; synthes
@@ -408,6 +409,7 @@ Facts: 2251
 - [[project_kiro-ide-must-be-restarted-after-hook-mc-7g3ez5hm]] — Kiro IDE must be restarted after hook + MCP write to load them; open `C:\Temp\ki
 - [[project_index-drift-self-heal-architecture]] — INDEX Drift Self-Heal Architecture
 - [[project_updating-cmk-requires-re-running-bootstrap-on-project-files]] — Updating CMK Requires Re-running Bootstrap on Project Files
+- [[project_design-direction-dark-default-with-light-supported]] — Design Direction: Dark-Default-with-Light-Supported
 - [[project_validate-docs-enforces-catalog-consistency]] — validate-docs enforces catalog consistency
 - [[project_hand-written-research-note-frontmatter-requirements]] — Hand-Written Research Note Frontmatter Requirements
 - [[project_automatic-oracle-free-quadrant-is-the-real-design-target]] — Automatic-Oracle-Free Quadrant Is the Real Design Target
@@ -891,6 +893,7 @@ Facts: 2251
 - [[project_memory-auto-injection-on-session-start]] — Memory Auto-Injection on Session Start
 - [[project_claude-code-2-1-198-permission-hook-regression]] — Claude Code 2.1.198 Permission Hook Regression
 - [[project_sonarcloud-zero-coverage-from-missing-cache-step]] — SonarCloud Zero-Coverage From Missing Cache Step
+- [[project_dark-theme-port-workflow-initiated]] — Dark-Theme Port Workflow Initiated
 - [[project_user-s-ci-linter-does-not-distinguish-or-epa4nqek]] — User's CI linter does not distinguish or exempt context/ files — all files are s
 - [[project_staged-release-observe-only-then-steering-wiring]] — Staged Release: Observe-Only Then Steering Wiring
 - [[project_bench-storage-yml-pins-node-20-but-node-eqnqheu9]] — Bench-storage.yml pins Node 20 but node:sqlite (imported at module scope, line 2
@@ -1446,6 +1449,7 @@ Facts: 2251
 - [[project_kiro-ide-hooks-are-a-better-fit-for-the-kit-than-i-first-con]] — Kiro IDE hooks are a BETTER fit for the kit than I first concluded (verified acr
 - [[project_global-binary-lag-after-code-merge]] — Global Binary Lag After Code Merge
 - [[project_workflow-green-release-commit-checks-green]] — Workflow Green ≠ Release Commit Checks Green
+- [[project_markdown-tokenizer-is-security-critical-n4k4nva6]] — Markdown tokenizer is security-critical component (XSS threat on untrusted fact
 - [[project_cut-gate-review-process]] — Cut-Gate Review Process
 - [[project_test-prompts-should-use-natural-language-n5npmlyy]] — Test prompts should use natural language with subtle behavioral triggers, not ex
 - [[project_direction-2-path-harvesting-bug-was-pull-n5vvvcv2]] — Direction-2 path-harvesting bug: was pulling paths from narrative prose, would f
@@ -1788,6 +1792,7 @@ Facts: 2251
 - [[project_you-re-challenging-a-silent-drift-v0-4-x-te9svr6n]] — You're challenging a silent drift: v0.4.x was supposed to be the breadth lane (a
 - [[project_global-cmk-artifact-version-and-template-sync]] — Global `cmk` Artifact Version and Template Sync
 - [[project_task-257-data-durability-commitments]] — Task 257 Data-Durability Commitments
+- [[project_task-260-visual-pass-completed-with-all-tetwufps]] — Task 260 visual pass completed with all gates passing: 3916 full suite green, 5/
 - [[project_prefers-actual-version-lanes-v0-6-0-v0-7-tev46ca9]] — Prefers actual version lanes (v0.6.0, v0.7.0, etc.) over "future 0.5.x" placehol
 - [[project_d-388-project-discipline-document-unreachable-code]] — D-388 Project Discipline: Document Unreachable Code
 - [[project_field-wide-headless-llm-pattern-confirme-th4arbra]] — Field-wide headless-LLM pattern confirmed across 15 projects: 4 per-agent-CLI, 2
@@ -2290,6 +2295,7 @@ Facts: 2251
 - [[project_windows-npm-uninstall-eperm-on-better-sqlite3-is-benign]] — Windows npm uninstall EPERM on better_sqlite3 is Benign
 - [[project_main-branch-at-fc9c816-ci-green-through-ajbm76pw]] — main branch at fc9c816, CI green through latest push
 - [[project_viewer-page-design-constraints]] — Viewer Page Design Constraints
+- [[project_lane-naming-convention]] — Lane Naming Convention
 - [[project_triage-entries-must-state-counter-arguments]] — Triage Entries Must State Counter-Arguments
 - [[project_cmk-install-breaks-itself-on-its-own-running-mcp-server-dll]] — cmk install breaks itself on its own running MCP server DLL lock (Windows) — a real bug, never code-fixed
   - related: [[project_global-cmk-is-broken-windows-sqlite-dll-sam22r7b]], [[project_windows-dll-lock-blocks-npm-reinstall]], [[project_windows-sqlite-dll-lock-from-running-mcp-server]]
@@ -2314,6 +2320,7 @@ Facts: 2251
 - [[project_release-cut-sequencing-and-prerequisites-v0-4-4-pattern]] — Release Cut Sequencing and Prerequisites (v0.4.4 Pattern)
 - [[project_requests-immediate-execution-of-loop-res-auspyzjr]] — Requests immediate execution of loop research ("why not do the research now?")
 - [[project_dependency-pr-decision-process]] — Dependency PR Decision Process
+- [[project_d-390-agent-allocation-system]] — D-390 Agent Allocation System
 - [[project_secondary-detail-kiro-reference-should-l-awbap97f]] — Secondary detail (Kiro reference) should live in separate docs (docs/KIRO.md), n
 - [[project_markdownlint-github-alert-callouts-workaround]] — Markdownlint + GitHub Alert Callouts Workaround
 - [[project_kiro-cli-agent-resolution-requires-global-default]] — Kiro-cli Agent Resolution Requires Global Default
@@ -2475,6 +2482,7 @@ Facts: 2251
 - **D-40** ← [[project_doctor-as-a-skill-design-2026-07-22-discussion-prior-art-ver]], [[project_doctor-health-nudge-corrected-design-2026-07-22-supersedes-t]], [[project_mcp-tools-under-used-when-harness-defers-them-task-233-fire]]
 - **D-406** ← [[project_hooktimeout-identified-as-root-cause-of-d-406]], [[project_stress-flake-root-cause-hook-timeout-config-gap]], [[project_task-252-review-completed-six-bugs-fixed-via-multi-round-fix]]
 - **D-408** ← [[project_d-408-housekeeping-supersedes-d-395]], [[project_hooktimeout-identified-as-root-cause-of-d-406]], [[project_task-252-review-completed-six-bugs-fixed-via-multi-round-fix]]
+- **D-432** ← [[project_dark-theme-port-workflow-initiated]], [[project_design-direction-dark-default-with-light-supported]]
 - **D-51** ← [[project_design-lesson-numbering-system-d-in-claude-memory-kit]], [[project_pr-168-cmk-import-claude-md-command-complete]]
 - **D-75** ← [[project_cascade-starvation-lazy-distill-limitation-on-busy-repos]], [[project_cmk-health-check-status-2026-06-20]], [[project_daily-distill-starvation-cron-killed-at-23-00-both-safety-ne]]
 - **D-80** ← [[project_claude-code-cd-compound-command-prompting-edge]], [[project_dj4-live-gate-test-passed-v0-3-3-headline-feature]], [[project_windows-dll-lock-prevents-global-npm-install-during-active-c]], [[reference_cmk-permission-prompt-only-on-cd-compound-d-80-edge]]
@@ -2518,6 +2526,7 @@ Facts: 2251
 - **Task-177** ← [[project_four-flavors-of-memory-improvement-systems]], [[project_memclaw-s-6-passive-outcome-signals-3-already-produced]], [[project_multi-project-survey-6-external-links-1-revisit-yields-10-re]]
 - **Task-178** ← [[project_post-retrieval-filtering-query-expansion-hyde]], [[project_research-task-workflow-pattern]], [[project_rrf-configuration-fusion-strategy]]
 - **Task-179** ← [[project_four-flavors-of-memory-improvement-systems]], [[project_hermes-is-skill-library-curation-not-memory-self-improvement]], [[project_letta-memory-model-code-read-2026-06-29-two-durable-tiers-a]], [[project_memory-learn-loop-as-converged-system]], [[project_task-179-umbrella-task-for-memory-improvement-sequencing]], [[project_u-mem-describes-one-unified-loop-not-nine-separate-features]]
+- **Task-180** ← [[project_signal-portfolio-for-learning-loop-in-claude-code-ide]], [[project_task-management-discipline-d-248]]
 - **Task-181** ← [[project_cut-gate-process-for-v0-4-3]], [[project_outcome-signal-portfolio-8-types-2-transferable]], [[project_recurrence-as-system-fuel-master-variable]], [[project_signal-portfolio-for-learning-loop-in-claude-code-ide]]
 - **Task-182** ← [[project_canonical-registry-for-persona-search]], [[project_tdd-workflow-for-v0-4-3-fixes-tasks-182-183]], [[project_two-pass-review-discipline]]
 - **Task-185** ← [[project_adr-0017-finalization-agenda]], [[project_adr-0017-ready-for-adoption-decision]], [[project_architectural-thesis-session-runtime-learning-judge]], [[project_external-source-ingestion-and-task-triage-workflow]], [[project_memory-learn-loop-as-converged-system]], [[project_task-185-backlog-triage-trigger]], [[project_v0-4-3-release-verification-process]]
@@ -2574,7 +2583,7 @@ Facts: 2251
 - **Task-256** ← [[project_post-fix-integration-workflow]], [[project_task-255-viewer-design-grill]], [[project_task-256-design-constraints-and-incorporated-rules]], [[project_validation-by-independent-test-reproduction]]
 - **Task-257** ← [[project_brainapi2-code-dive-assessment-and-findings]], [[project_d-388-project-discipline-document-unreachable-code]], [[project_task-257-bom-blindness-is-complete-root-e5haw2f6]], [[project_v0-6-3-release-plan-task-queue]]
 - **Task-258** ← [[project_health-log-system-architecture-ratified]], [[project_task-258-kept-separate-from-task-250-approved]], [[project_v0-6-4-release-cmk-view-health-signals-live]], [[project_v0-6-4-release-workflow-and-task-ownership]]
-- **Task-260** ← [[project_design-research-memo-and-mvp-split]], [[project_memory-fact-validation-task-reference-exemption]], [[project_root-cause-of-visual-plainness]], [[project_task-260-and-262-sequencing]], [[project_task-260-viewer-awaits-user-final-verdict]], [[project_versioning-policy-d-24-differentiators-per-release-level]], [[project_viewer-page-visual-design-constraints]], [[project_viewer-visual-diagnosis-six-design-deficits]]
+- **Task-260** ← [[project_design-research-memo-and-mvp-split]], [[project_memory-fact-validation-task-reference-exemption]], [[project_root-cause-of-visual-plainness]], [[project_task-260-and-262-sequencing]], [[project_task-260-viewer-awaits-user-final-verdict]], [[project_task-260-visual-pass-completed-with-all-tetwufps]], [[project_versioning-policy-d-24-differentiators-per-release-level]], [[project_viewer-page-visual-design-constraints]], [[project_viewer-visual-diagnosis-six-design-deficits]]
 - **Task-262** ← [[project_co-occurrence-edge-layer-rider-for-task-262]], [[project_task-260-and-262-sequencing]], [[project_three-design-patterns-from-mnemory-to-explore]]
 - **Task-50** ← [[project_architectural-thesis-session-runtime-learning-judge]], [[project_claude-memory-kit-judge-as-the-per-host-adapter]], [[project_concurrent-write-race-task-146-severity-tied-to-agent-multip]], [[project_correction-kiro-capture-prompt-wiring-is-present-not-missing]], [[project_kiro-transcript-format-resolved-verified-on-a-real-kiro-inst]], [[project_open-knowledge-format-okf-design-validation-and-interchange]], [[project_related-projects-mimir-memex-mcp-only-memory-integrations]], [[project_section-5-1-binding-rule-convergence-verification]], [[project_task-50-adapter-architecture-do-not-build-a-uniform-installe]], [[project_task-50-cross-agent-seam-target-kiro-cli-agent-hooks-agentsp]], [[project_task-50-highest-unverified-risk-kiro-transcript-format-is-un]], [[project_task-50-research-revisit-gate-and-multi-agent-pattern]], [[project_three-borrowed-ideas-laned-to-tasks-versions]], [[project_v0-4-x-versioning-roadmap]], [[project_v0-5-2-release-scope-and-workflow]]
 - **Task-55** ← [[project_2026-07-01-arc-complete-output-inventory-and-at-risk-layer]], [[project_four-flavors-of-memory-improvement-systems]], [[project_memory-learn-loop-as-converged-system]], [[project_pai-personal-ai-infrastructure-memory-architecture-convergen]], [[project_task-55-enrichment-relationship-memory-learn-phase]]
