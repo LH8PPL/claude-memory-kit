@@ -26,11 +26,20 @@
   Revised 2026-08-08 (D-432, the user's call): the product lives beside a
   terminal and dies with it (Ctrl-C), so it is built out of the same material —
   warm near-black, warm bone ink, exactly ONE accent (amber, drawn from the
-  ground's own hue family). DARK IS THE DEFAULT; the warm-light palette stays
-  fully supported and is served to a light-preferring system (and to an explicit
-  `data-theme="light"`). The graph is still the hero: it is now the hero by
+  ground's own hue family). DARK IS THE DEFAULT and the warm-light palette
+  stays fully supported. The graph is still the hero: it is now the hero by
   being DEEPER than the page and by holding the only dense saturation in the
   product, rather than by being the only dark thing on it.
+
+  DARK IS THE DEFAULT FOR EVERYONE — not for whoever's OS already agreed with
+  us. The first cut of the revision above expressed "default" as `:root` dark
+  under a `prefers-color-scheme: light` override, which quietly handed the
+  decision back to the operating system: on a light-preferring machine the page
+  was byte-for-byte the same as before, and the verdict on it was "looks the
+  same to me". So the choice is now the READER's and nobody else's — the script
+  at the end of this head stamps `data-theme` before the first paint (the
+  stored choice, else dark, never the system preference), and the button in the
+  header flips it and remembers.
 -->
 <style>
   /* ---------------------------------------------------------------------
@@ -39,20 +48,36 @@
      Two colour spaces, deliberately:
 
        1. the ARCHIVE — `--ground` / `--panel` / `--ink`. Warm near-black under
-          warm bone by DEFAULT; warm paper under warm ink when the system (or an
-          explicit `data-theme`) asks for light. Everything you read.
+          warm bone by DEFAULT; warm paper under warm ink when the reader has
+          asked for light. Everything you read.
        2. the INSTRUMENT — `--g-*`. A deeper, more saturated canvas for the
           graph, IDENTICAL in both themes — the graph is one object and an object
           does not change material when the room lights change. It sits below
           `--ground` in both, so it reads as a distinct instrument inside a dark
           page and as the one dark region inside a light one.
 
-     Four blocks, deliberately duplicated rather than derived: `:root` (dark, the
-     default) · `@media (prefers-color-scheme: light)` · `:root[data-theme=…]`
-     for each, so an explicit toggle wins in BOTH directions. The pairs are
-     byte-identical on purpose and a test asserts it — a derived form would need
-     a second indirection layer through every hue, and the AA test can only
-     compute what it can parse.
+     TWO blocks, and each palette is written exactly ONCE: `:root` is dark — the
+     identity, and what you get with nothing stored — and `:root[data-theme=
+     "light"]` is the override. The page stamps `data-theme` on the root element
+     before the first paint (the script at the end of this head), so the
+     attribute is always present and the override always wins when it should.
+
+     (Element names are written WITHOUT angle brackets in this file's comments
+     on purpose: an HTML analyser reads a bracketed tag inside a comment as a
+     real element, and a stray second root element makes it report this page as
+     having no `lang` and no title. Prose should not be parseable as markup.)
+
+     There is deliberately no `@media (prefers-color-scheme: light)` here. It
+     shipped in the first dark pass and it is what made D-432 under-deliver: it
+     handed the DEFAULT back to the operating system, so every reader on a
+     light-preferring machine got the light page and never saw the dark design
+     at all. Since the stamp runs on every load the block could never apply
+     again — but the reason it is deleted rather than left as a dead layer is
+     that CSS asserting "the OS decides" is CSS stating the policy this page
+     reversed. There is no `[data-theme="dark"]` block either: `:root` IS dark,
+     so a dark override would override nothing. Both deletions remove a
+     duplicate palette, and a test pins that every theme-varying token is
+     declared exactly twice in this sheet — once here, once in light.
 
      Every hue also carries its channels as `--*-rgb`: the ONE badge/tint rule is
      an `rgba(<hue>, var(--tint))` fill under an `rgba(<hue>, var(--tint-line))`
@@ -169,45 +194,11 @@
      ink ramp, its own hue-coded tiers (light has the accent budget dark does
      not, because its accent is not also the warn hue).
 
-     Served on two signals — the system preference, and an explicit
-     `data-theme="light"`. The two declaration bodies are byte-identical and a
-     test asserts it; `--g-*`, the rhythm and the font stacks are NOT repeated
-     here because they do not vary by theme.
+     Reached ONE way: the reader pressed the button in the header. The stamp
+     writes `data-theme="light"` and remembers it, so this block is the light
+     theme's only home — `--g-*`, the rhythm and the font stacks are not
+     repeated here because they do not vary by theme.
      -------------------------------------------------------------------- */
-  @media (prefers-color-scheme: light) {
-    :root {
-      color-scheme: light dark;
-
-      /* In light, elevation is lightness: sunken < ground < panel. */
-      --ground: #f4f2ed;
-      --panel: #ffffff;        --panel-rgb: 255,255,255;
-      --panel-hover: #f8f6f2;
-      --sunken: #eae5db;
-      --line: #d8d2c6;
-      --line-soft: #e5e0d5;
-
-      --ink: #2b2520;
-      --ink-2: #5a5248;
-      --ink-3: #676158;        --ink-3-rgb: 103,97,88;
-
-      --accent: #6044dd;       --accent-rgb: 96,68,221;
-      --ok: #176f30;           --ok-rgb: 23,111,48;
-      --warn: #805a14;         --warn-rgb: 128,90,20;
-      --bad: #b6271e;          --bad-rgb: 182,39,30;
-
-      --tier-p: #085dc2;       --tier-p-rgb: 8,93,194;
-      --tier-l: #6044dd;       --tier-l-rgb: 96,68,221;
-      --tier-u: #8b5416;       --tier-u-rgb: 139,84,22;
-
-      --tint: .13;
-      --tint-line: .28;
-    }
-  }
-  /* An explicit choice beats the system preference in BOTH directions: light on
-     a dark-preferring machine, and dark on a light-preferring one. Nothing in
-     the page sets `data-theme` today — the viewer has no toggle — so these are
-     the hook for one, and for a reader who sets it from devtools or an
-     extension. Specificity (0,2,0) already beats the media block's `:root`. */
   :root[data-theme="light"] {
     color-scheme: light dark;
 
@@ -233,32 +224,6 @@
 
     --tint: .13;
     --tint-line: .28;
-  }
-  :root[data-theme="dark"] {
-    color-scheme: dark light;
-
-    --ground: #1a1714;
-    --panel: #221f1b;         --panel-rgb: 34,31,27;
-    --panel-hover: #2a2622;
-    --sunken: #1e1b17;
-    --line: #38322a;
-    --line-soft: #2c2822;
-
-    --ink: #ece5d7;
-    --ink-2: #b9ae9c;
-    --ink-3: #a59b8c;         --ink-3-rgb: 165,155,140;
-
-    --accent: #e9b45c;        --accent-rgb: 233,180,92;
-    --ok: #6cc78d;            --ok-rgb: 108,199,141;
-    --warn: #e9b45c;          --warn-rgb: 233,180,92;
-    --bad: #ef8a7e;           --bad-rgb: 239,138,126;
-
-    --tier-p: #b9ae9c;        --tier-p-rgb: 185,174,156;
-    --tier-l: #b9ae9c;        --tier-l-rgb: 185,174,156;
-    --tier-u: #b9ae9c;        --tier-u-rgb: 185,174,156;
-
-    --tint: .16;
-    --tint-line: .30;
   }
 
   * { box-sizing: border-box; }
@@ -313,6 +278,23 @@
     background: rgba(var(--ink-3-rgb), .10);
     border: 1px solid rgba(var(--ink-3-rgb), var(--tint-line));
   }
+  /* The theme toggle wears the pill idiom of the read-only stamp it sits beside
+     — this is chrome, and chrome is quiet — but it is the one CONTROL up here,
+     so it is a step louder: `--ink-2` rather than `--ink-3`, and it answers to
+     hover. It overrides the shared control rule below (0,2,0 beats 0,0,1), so
+     it does not inherit the toolbar's 8px box. The wash is the ONE badge rule's
+     `rgba(<hue>, var(--tint))` rather than a literal alpha, which is also what
+     lets the AA test compute the pair it actually renders. */
+  .brand .theme {
+    font: inherit; font-size: 11px; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; border-radius: var(--r-pill); padding: 3px 10px;
+    cursor: pointer;
+    color: var(--ink-2);
+    background: rgba(var(--ink-3-rgb), var(--tint));
+    border: 1px solid rgba(var(--ink-3-rgb), var(--tint-line));
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .brand .theme:hover { color: var(--ink); border-color: var(--ink-3); }
   /* Tabs share a boundary with the page: an underline rail, not five floating
      pills. The rail is the same hairline the content rows use. */
   nav { display: flex; gap: 2px; margin-top: 10px; flex-wrap: wrap; }
@@ -687,6 +669,68 @@
     }
   }
 </style>
+<script>
+/*
+  THE THEME, stamped before the first paint.
+
+  This is in the document head, above the body, on purpose: it is the one whose
+  POSITION is the feature. Run it at the bottom of the document instead and a
+  reader who chose light gets a dark page first and a light one a moment later —
+  a flash on every single load, which is worse than either theme.
+
+  It decides on exactly one input: what the reader last chose. NOT the system
+  preference — that is the whole of the D-432 completion (see the note at the
+  top of this file). With nothing stored, the answer is the kit's identity.
+
+  It is also the page's ONLY writer of the choice, and the only place the
+  storage key is spelled: the page script below reaches for `cmkTheme.toggle()`
+  rather than keeping a second copy of any of this. The CSP is
+  `default-src 'none'; script-src 'unsafe-inline'` — inline only, no host source
+  — so an inline block is exactly what is allowed here and a `src=` would not
+  load at all.
+*/
+(() => {
+  'use strict';
+  const KEY = 'cmk-viewer-theme';
+  const root = document.documentElement;
+  const clean = (t) => (t === 'light' ? 'light' : 'dark');
+  const current = () => clean(root.dataset.theme);
+  const apply = (t) => {
+    root.dataset.theme = t;
+    return t;
+  };
+  // `getItem` ITSELF throws in a blocked-storage profile, so the guard is around
+  // the read and not only around the value it hands back. Anything that is not
+  // one of the two themes is not a choice this page wrote: answer "no choice"
+  // rather than stamping an attribute no CSS block answers.
+  const recall = () => {
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw === 'light' || raw === 'dark' ? raw : null;
+    } catch {
+      return null;
+    }
+  };
+  // Persistence is best-effort; the FLIP is not. A profile with storage blocked
+  // (private mode, a locked-down browser) fails here and the reader still gets
+  // the theme they clicked — they are just asked again next time.
+  const remember = (t) => {
+    try {
+      localStorage.setItem(KEY, t);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const set = (t) => {
+    const next = clean(t);
+    remember(next);
+    return apply(next);
+  };
+  window.cmkTheme = { KEY, current, set, toggle: () => set(current() === 'light' ? 'dark' : 'light') };
+  apply(recall() || 'dark');
+})();
+</script>
 </head>
 <body>
 <header>
@@ -695,6 +739,13 @@
       <h1>cmk view</h1>
       <span class="path mono" id="project-path"></span>
       <span class="ro" title="This viewer mounts no write route. Use the copy-able commands.">read-only</span>
+      <!-- The label names the theme the click MOVES TO, and the accessible name
+           says so in a sentence — "Light" alone would be ambiguous about which
+           side of the switch you are on. Both are repainted by the page script.
+           It is a WORD and not a moon glyph: a small quiet icon in the corner of
+           the chrome is exactly the control nobody finds, and the ask that
+           produced this button was "we need a button to switch". -->
+      <button type="button" id="theme-toggle" class="theme" aria-label="Switch to the light theme" title="Switch to the light theme">Light</button>
     </div>
     <nav>
       <a href="/facts" data-nav="facts">Memory</a>
@@ -1752,6 +1803,32 @@
   // Manual refresh, and nothing automatic: no filesystem watch on the server, no
   // server-sent-events client here.
   $('#refresh').addEventListener('click', render);
+
+  // ---- the theme toggle -------------------------------------------------
+  // The head stamp owns the state, the storage key, and the writing of
+  // both; this owns the LABEL. It names the theme the next click moves to, so
+  // it has to be repainted the moment the theme changes — a button still
+  // reading "Light" on a light page is a control that lies about what it does,
+  // and it lies to a screen reader in the same breath.
+  const themeBtn = $('#theme-toggle');
+  if (window.cmkTheme) {
+    const paintTheme = (theme) => {
+      const target = theme === 'light' ? 'dark' : 'light';
+      themeBtn.textContent = target === 'light' ? 'Light' : 'Dark';
+      const label = 'Switch to the ' + target + ' theme';
+      themeBtn.setAttribute('aria-label', label);
+      themeBtn.title = label;
+    };
+    paintTheme(window.cmkTheme.current());
+    themeBtn.addEventListener('click', () => paintTheme(window.cmkTheme.toggle()));
+  } else {
+    // The stamp is the module's only definition site and it cannot throw past
+    // its own guards — but EVERY view on this page is rendered from this one
+    // script, so an unguarded reference here would cost the reader their whole
+    // memory to save a button. Drop the control instead: a toggle that is gone
+    // is honest, a toggle that does nothing when clicked is not.
+    themeBtn.remove();
+  }
 
   $('#project-path').textContent = location.host;
   render();
