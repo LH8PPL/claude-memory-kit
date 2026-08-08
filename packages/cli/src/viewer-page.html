@@ -5,116 +5,260 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>cmk view — your memory</title>
 <!--
-  The kit's memory viewer (Task 255, design §24; the visual pass is Task 260).
+  The kit's memory viewer (Task 255, design §24; visual pass 3).
 
-  ONE file, on purpose. No framework, no bundler, no CDN, no build step — the
-  page is a plain consumer of the read API the same server exposes, and the
-  response's CSP (`default-src 'none'`) means a stray external reference fails
-  loudly rather than silently working on the author's machine. That constraint
-  is §24.1.7, and it is NOT the reason a page looks plain: everything below is
-  hand-written CSS over system fonts, with zero bytes fetched.
+  ONE file, on purpose. No framework, no bundler, no CDN, no build step, no
+  fetched font, no image byte — the page is a plain consumer of the read API the
+  same server exposes, and the response's CSP (`default-src 'none'`) means a
+  stray external reference fails loudly rather than silently working on the
+  author's machine.
 
   It is READ-ONLY and it stays that way: this page never issues a request with a
   method other than GET. The answer to "let me delete this from here" is the
-  copy-able `cmk forget` command on every fact — the server mounts no route that
-  could do it anyway.
+  copy-able `cmk forget` command on every fact.
+
+  VISUAL DIRECTION.
+
+  Original position (ratified 2026-08-04, memo §3 — kept as the decision trail):
+  "an instrument panel over a warm archive". Everything you READ was a warm
+  LIGHT document, and exactly one region — the graph — was permanently dark.
+
+  Revised 2026-08-08 (D-432, the user's call): the product lives beside a
+  terminal and dies with it (Ctrl-C), so it is built out of the same material —
+  warm near-black, warm bone ink, exactly ONE accent (amber, drawn from the
+  ground's own hue family). DARK IS THE DEFAULT; the warm-light palette stays
+  fully supported and is served to a light-preferring system (and to an explicit
+  `data-theme="light"`). The graph is still the hero: it is now the hero by
+  being DEEPER than the page and by holding the only dense saturation in the
+  product, rather than by being the only dark thing on it.
 -->
 <style>
   /* ---------------------------------------------------------------------
-     Tokens. A warm neutral ladder (never browser grey), one accent, and one
-     hue per meaning: trust green/amber/grey, supersession red, the tiers
-     blue/violet/ochre. The values come from the 2026-08-03 survey — the warm
-     ink `#2b2520` and dark ground `#1a1916` are claude-mem's; the step
-     semantics are Radix slate's — rather than from taste.
+     Tokens.
 
-     Every hue also carries its channels as `--*-rgb`, because the ONE badge
-     rule below is a TINT — an `rgba(<hue>, .13)` fill under an
-     `rgba(<hue>, .28)` hairline — and a literal rgba pair is the safer
-     substitution than a colour-mixing function, which both reference
-     implementations avoid too.
+     Two colour spaces, deliberately:
+
+       1. the ARCHIVE — `--ground` / `--panel` / `--ink`. Warm near-black under
+          warm bone by DEFAULT; warm paper under warm ink when the system (or an
+          explicit `data-theme`) asks for light. Everything you read.
+       2. the INSTRUMENT — `--g-*`. A deeper, more saturated canvas for the
+          graph, IDENTICAL in both themes — the graph is one object and an object
+          does not change material when the room lights change. It sits below
+          `--ground` in both, so it reads as a distinct instrument inside a dark
+          page and as the one dark region inside a light one.
+
+     Four blocks, deliberately duplicated rather than derived: `:root` (dark, the
+     default) · `@media (prefers-color-scheme: light)` · `:root[data-theme=…]`
+     for each, so an explicit toggle wins in BOTH directions. The pairs are
+     byte-identical on purpose and a test asserts it — a derived form would need
+     a second indirection layer through every hue, and the AA test can only
+     compute what it can parse.
+
+     Every hue also carries its channels as `--*-rgb`: the ONE badge/tint rule is
+     an `rgba(<hue>, var(--tint))` fill under an `rgba(<hue>, var(--tint-line))`
+     hairline, and a literal rgba pair is safer than a colour-mixing function.
+     The two alphas are per-theme (dark carries more of both, because a wash has
+     less to work with over a near-black ground), which is why they are tokens
+     rather than the numbers this comment used to name.
+
+     Ink and hue values are pinned by the contrast test — body text clears AA
+     4.5:1 on every surface it can land on, and 11px/600 badge text is held to
+     the same 4.5:1 (it does not earn the large-text exemption). Do not lighten
+     one without re-running that test.
      --------------------------------------------------------------------- */
   :root {
-    color-scheme: light dark;
+    /* ONE polarity by default. The whole product is warm dark — the same
+       material as the terminal it is launched from. Ink is warm bone, not white;
+       the ground is warm near-black, not navy and not neutral grey. `dark` is
+       listed first so a UA with no user preference lands on the identity. */
+    color-scheme: dark light;
 
-    /* Surfaces — a real ladder rather than a 2% delta, and ORDERED: in light,
-       elevation is lightness, so panel (raised) > ground > sunken (recessed).
-       `--sunken` shipped LIGHTER than `--ground`, which made the graph canvas
-       and the code chips read as raised (M5). `--panel-hover` is the gentle
-       step a white card takes on hover — sunken is now too dark for that job. */
-    --ground: #f2efe9;
-    --panel: #ffffff;          --panel-rgb: 255,255,255;
-    --panel-hover: #f7f5f1;
-    --sunken: #eae4da;
-    --line: #d7d1c5;
-    --line-soft: #e3ddd2;
+    /* Surfaces. A real ladder, and ORDERED: in dark, elevation is lightness
+       upward, so ground (page) < sunken (recessed) < panel (raised). */
+    --ground: #1a1714;
+    --panel: #221f1b;          --panel-rgb: 34,31,27;
+    --panel-hover: #2a2622;
+    /* The reference skin put `--sunken` at #15120f, BELOW `--ground` — which
+       breaks design §24.1.2's ORDERED-ladder rule (in dark: panel > sunken >
+       ground) and its test. Raised to sit between ground and panel, in the same
+       warm hue family. */
+    --sunken: #1e1b17;
+    --line: #38322a;
+    --line-soft: #2c2822;
 
-    /* Ink and hue. Every value below is pinned by the contrast test: body text
-       clears WCAG AA 4.5:1 on EVERY surface it can land on, and a badge hue
-       clears 4.5:1 against its own tint composited over BOTH panel and ground
-       (design §24.1.2). Do not lighten one without re-running that test. */
-    --ink: #2b2520;
-    --ink-2: #5a5248;
-    --ink-3: #676158;          --ink-3-rgb: 103,97,88;
+    --ink: #ece5d7;
+    --ink-2: #b9ae9c;
+    /* Reference value was #9d9384, which computes to 4.23:1 for 11px/600 badge
+       text on its own tint over `--panel` — the one pair in the skin that fails
+       AA. Lifted two steps up the same warm ramp: 4.59:1 badge, 5.99:1 as plain
+       text. Do not put it back without re-running the contrast test — and note
+       the CHANNELS are half of the token: the first cut of this lift left
+       `--ink-3-rgb` on the rejected value's channels, so every ink-3 badge was
+       still mixing its wash out of #9d9384 with the AA test green (it reads the
+       hex). A test now pins every `--X-rgb` to its own `--X`. */
+    --ink-3: #a59b8c;          --ink-3-rgb: 165,155,140;
 
-    --accent: #6044dd;         --accent-rgb: 96,68,221;
-    --ok: #176f30;             --ok-rgb: 23,111,48;
-    --warn: #805a14;           --warn-rgb: 128,90,20;
-    --bad: #b6271e;            --bad-rgb: 182,39,30;
+    /* ONE accent, and it belongs to the ground's own hue family. The violet was
+       a second, colder colour system laid over a warm page. Amber doubles as the
+       WARN hue on purpose: fewer hues is more designed, and the two never
+       contradict each other (both mean "look here"). */
+    --accent: #e9b45c;         --accent-rgb: 233,180,92;
+    --ok: #6cc78d;             --ok-rgb: 108,199,141;
+    --warn: #e9b45c;           --warn-rgb: 233,180,92;
+    --bad: #ef8a7e;            --bad-rgb: 239,138,126;
 
-    --tier-p: #085dc2;         --tier-p-rgb: 8,93,194;
-    --tier-l: var(--accent);   --tier-l-rgb: var(--accent-rgb);
-    --tier-u: #8b5416;         --tier-u-rgb: 139,84,22;
+    /* Tier is MONOCHROME in dark. P/L/U in a fixed left column is the most
+       repeated element on the page; with ONE accent there is no hue budget left
+       to spend three ways, and `--tier-l: var(--accent)` would collide with both
+       `--accent` and `--warn`. The LETTER carries the meaning. Hex and channels
+       agree deliberately (both are `--ink-2`): the AA test reads the hex for
+       BOTH the text and its own tint, so a split pair would measure something
+       the page never renders. Light keeps its hue-coded tiers — see below. */
+    --tier-p: #b9ae9c;         --tier-p-rgb: 185,174,156;
+    --tier-l: #b9ae9c;         --tier-l-rgb: 185,174,156;
+    --tier-u: #b9ae9c;         --tier-u-rgb: 185,174,156;
 
-    /* the tint pair — one place, so a badge / tab / pill is one declaration */
-    --tint: .13;
-    --tint-line: .28;
+    --tint: .16;
+    --tint-line: .30;
 
-    /* rhythm: 4/8/12/16/20/24/32 — and card padding EXCEEDS card gap, which
-       is the way round it was not (13px padding inside a 9px gap made every
-       card crowd its neighbour harder than its own contents) */
-    --pad-card: 16px;
-    --gap-card: 14px;
-    --measure: 760px;
-    --shell: 1080px;
+    /* --- the instrument. Fixed in both themes. ---
+       With the page itself dark, the graph is no longer the hero by being the
+       only dark thing: it is the hero by being DEEPER than `--ground` and by
+       holding the only dense saturation in the product.
 
-    --r-card: 10px;
+       Community hue budget is THREE plus a neutral, by arithmetic: a node-link
+       graph is an all-pairs form, and on this canvas slot 4 fails normal-vision
+       separation and slot 5 fails deuteranopia outright. Structure past three
+       communities is carried by POSITION and LABELS. Trust is a rim ARC, not a
+       fill — colourblind-immune, and it keeps hue free for community. */
+    --g-canvas: #131110;
+    --g-canvas-2: #0f0d0c;     /* the rail, one step deeper than the plot */
+    --g-line: #322c25;
+    --g-ink: #ece5d7;
+    --g-ink-2: #b8afa0;
+    --g-ink-3: #948b7d;        --g-ink-3-rgb: 148,139,125;
+    --g-rim: #efe9dc;
+    --c1: #7fb0ff;             --c1-rgb: 127,176,255;
+    --c2: #e8b04b;             --c2-rgb: 232,176,75;
+    --c3: #e58fc8;             --c3-rgb: 229,143,200;
+    --c0: #93897a;             --c0-rgb: 147,137,122;
+    --g-bad: #f0766c;          --g-bad-rgb: 240,118,108;
+
+    /* rhythm: 4/8/12/16/20/24/32/48 */
+    --measure: 720px;
+    --shell: 1120px;
+    --r-card: 12px;
     --r-ctl: 8px;
     --r-pill: 99px;
 
-    --ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif,
-          "Apple Color Emoji", "Segoe UI Emoji";
+    /* System fonts only, and the stack is the one design §24.1.2 ratifies —
+       `system-ui` first, the Segoe UI *Variable* families deliberately NOT
+       named. Changing it is a contract change: amend §24.1.2 first, then the
+       CSS. The display tier is a separate token because the tier is real (size,
+       weight, tracking), not because it resolves to a different family. */
+    --ui: system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    --display: system-ui, -apple-system, "Segoe UI",
+          Roboto, "Helvetica Neue", Arial, sans-serif;
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "Cascadia Mono", Consolas,
             "Liberation Mono", monospace;
   }
-  @media (prefers-color-scheme: dark) {
+  /* ---- LIGHT: supported, not default ----------------------------------
+     The warm-paper archive, unchanged from the ratified 2026-08-04 direction.
+     It is a DESIGN, not an inversion of the block above: its own ladder, its own
+     ink ramp, its own hue-coded tiers (light has the accent budget dark does
+     not, because its accent is not also the warn hue).
+
+     Served on two signals — the system preference, and an explicit
+     `data-theme="light"`. The two declaration bodies are byte-identical and a
+     test asserts it; `--g-*`, the rhythm and the font stacks are NOT repeated
+     here because they do not vary by theme.
+     -------------------------------------------------------------------- */
+  @media (prefers-color-scheme: light) {
     :root {
-      /* In dark, elevation runs the other way: ground (deepest) < sunken < panel. */
-      --ground: #1a1916;
-      --panel: #252320;        --panel-rgb: 37,35,32;
-      --panel-hover: #2d2a26;
-      --sunken: #1f1d1a;
-      --line: #3a3834;
-      --line-soft: #302e2a;
+      color-scheme: light dark;
 
-      --ink: #dcd6cc;
-      --ink-2: #b8b0a4;
-      /* ink-3 and bad are LIFTED from #938a7e / #e7736a: at the dark tint alpha
-         their badge form measured 3.56 and 4.01, under AA. The other four dark
-         hues already cleared and are left exactly as they were. */
-      --ink-3: #aaa399;        --ink-3-rgb: 170,163,153;
+      /* In light, elevation is lightness: sunken < ground < panel. */
+      --ground: #f4f2ed;
+      --panel: #ffffff;        --panel-rgb: 255,255,255;
+      --panel-hover: #f8f6f2;
+      --sunken: #eae5db;
+      --line: #d8d2c6;
+      --line-soft: #e5e0d5;
 
-      --accent: #a993ff;       --accent-rgb: 169,147,255;
-      --ok: #4ec97a;           --ok-rgb: 78,201,122;
-      --warn: #e0b055;         --warn-rgb: 224,176,85;
-      --bad: #ea877f;          --bad-rgb: 234,135,127;
+      --ink: #2b2520;
+      --ink-2: #5a5248;
+      --ink-3: #676158;        --ink-3-rgb: 103,97,88;
 
-      --tier-p: #58a6ff;       --tier-p-rgb: 88,166,255;
-      --tier-u: #dda56a;       --tier-u-rgb: 221,165,106;
+      --accent: #6044dd;       --accent-rgb: 96,68,221;
+      --ok: #176f30;           --ok-rgb: 23,111,48;
+      --warn: #805a14;         --warn-rgb: 128,90,20;
+      --bad: #b6271e;          --bad-rgb: 182,39,30;
 
-      /* a tint needs more alpha to read against a dark ground */
-      --tint: .18;
-      --tint-line: .34;
+      --tier-p: #085dc2;       --tier-p-rgb: 8,93,194;
+      --tier-l: #6044dd;       --tier-l-rgb: 96,68,221;
+      --tier-u: #8b5416;       --tier-u-rgb: 139,84,22;
+
+      --tint: .13;
+      --tint-line: .28;
     }
+  }
+  /* An explicit choice beats the system preference in BOTH directions: light on
+     a dark-preferring machine, and dark on a light-preferring one. Nothing in
+     the page sets `data-theme` today — the viewer has no toggle — so these are
+     the hook for one, and for a reader who sets it from devtools or an
+     extension. Specificity (0,2,0) already beats the media block's `:root`. */
+  :root[data-theme="light"] {
+    color-scheme: light dark;
+
+    --ground: #f4f2ed;
+    --panel: #ffffff;        --panel-rgb: 255,255,255;
+    --panel-hover: #f8f6f2;
+    --sunken: #eae5db;
+    --line: #d8d2c6;
+    --line-soft: #e5e0d5;
+
+    --ink: #2b2520;
+    --ink-2: #5a5248;
+    --ink-3: #676158;        --ink-3-rgb: 103,97,88;
+
+    --accent: #6044dd;       --accent-rgb: 96,68,221;
+    --ok: #176f30;           --ok-rgb: 23,111,48;
+    --warn: #805a14;         --warn-rgb: 128,90,20;
+    --bad: #b6271e;          --bad-rgb: 182,39,30;
+
+    --tier-p: #085dc2;       --tier-p-rgb: 8,93,194;
+    --tier-l: #6044dd;       --tier-l-rgb: 96,68,221;
+    --tier-u: #8b5416;       --tier-u-rgb: 139,84,22;
+
+    --tint: .13;
+    --tint-line: .28;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark light;
+
+    --ground: #1a1714;
+    --panel: #221f1b;         --panel-rgb: 34,31,27;
+    --panel-hover: #2a2622;
+    --sunken: #1e1b17;
+    --line: #38322a;
+    --line-soft: #2c2822;
+
+    --ink: #ece5d7;
+    --ink-2: #b9ae9c;
+    --ink-3: #a59b8c;         --ink-3-rgb: 165,155,140;
+
+    --accent: #e9b45c;        --accent-rgb: 233,180,92;
+    --ok: #6cc78d;            --ok-rgb: 108,199,141;
+    --warn: #e9b45c;          --warn-rgb: 233,180,92;
+    --bad: #ef8a7e;           --bad-rgb: 239,138,126;
+
+    --tier-p: #b9ae9c;        --tier-p-rgb: 185,174,156;
+    --tier-l: #b9ae9c;        --tier-l-rgb: 185,174,156;
+    --tier-u: #b9ae9c;        --tier-u-rgb: 185,174,156;
+
+    --tint: .16;
+    --tint-line: .30;
   }
 
   * { box-sizing: border-box; }
@@ -124,22 +268,33 @@
     -webkit-font-smoothing: antialiased;
   }
   code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums slashed-zero; }
-  a { color: inherit; }
+  a { color: var(--accent); }
+  a:hover { color: var(--ink); }
 
-  /* Keyboard users get the ring; a mouse click leaves nothing behind. */
   :focus { outline: none; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
-  /* THE micro-label — one uppercase tier, used for every eyebrow + column head. */
-  .micro, .block h3, .hid {
+  /* THE micro-label — one uppercase tier for every eyebrow and column head. */
+  .micro, .block h3, .hid, .rail h3 {
     font-size: 11px; font-weight: 600; text-transform: uppercase;
     letter-spacing: .12em; color: var(--ink-3);
   }
 
+  /* ---- display tier ----------------------------------------------------
+     The page had no type above 16px and a 1.45× total range. Three real steps
+     now sit above the UI: 56 (the corpus figure), 30 (view title), 20 (record
+     title), each with a tracking ramp that tightens as it grows.
+     -------------------------------------------------------------------- */
+  .d1, .d2, .d3 { font-family: var(--display); color: var(--ink); text-wrap: balance; }
+  .d1 { font-size: 56px; line-height: 1.0; font-weight: 620; letter-spacing: -.035em;
+        font-variant-numeric: tabular-nums; }
+  .d2 { font-size: 30px; line-height: 1.14; font-weight: 600; letter-spacing: -.022em; }
+  .d3 { font-size: 20px; line-height: 1.3; font-weight: 600; letter-spacing: -.014em; }
+
   /* ---- chrome ---------------------------------------------------------- */
   header {
     position: sticky; top: 0; z-index: 5;
-    background: rgba(var(--panel-rgb), .82);
+    background: rgba(var(--panel-rgb), .84);
     -webkit-backdrop-filter: saturate(1.5) blur(12px);
     backdrop-filter: saturate(1.5) blur(12px);
     border-bottom: 1px solid var(--line);
@@ -147,48 +302,43 @@
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     header { background: var(--panel); }
   }
-  .bar { max-width: var(--shell); margin: 0 auto; padding: 14px 20px 0; }
+  .bar { max-width: var(--shell); margin: 0 auto; padding: 13px 24px 0; }
   .brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-  .brand h1 { font-size: 16px; font-weight: 650; margin: 0; letter-spacing: -0.015em; }
+  .brand h1 { font-size: 15px; font-weight: 650; margin: 0; letter-spacing: -.015em; }
   .brand .path { color: var(--ink-3); font-size: 12px; }
   .brand .ro {
-    margin-left: auto; font-size: 11px; font-weight: 600; letter-spacing: .12em;
+    margin-left: auto; font-size: 11px; font-weight: 600; letter-spacing: .1em;
     text-transform: uppercase; border-radius: var(--r-pill); padding: 3px 10px;
     color: var(--ink-3);
     background: rgba(var(--ink-3-rgb), .10);
     border: 1px solid rgba(var(--ink-3-rgb), var(--tint-line));
   }
-  /* Real pills. The old active tab faked "in front of the page" by dropping
-     its bottom border, and what that read as was a seam. */
-  nav { display: flex; gap: 6px; margin-top: 12px; padding-bottom: 10px; flex-wrap: wrap; }
+  /* Tabs share a boundary with the page: an underline rail, not five floating
+     pills. The rail is the same hairline the content rows use. */
+  nav { display: flex; gap: 2px; margin-top: 10px; flex-wrap: wrap; }
   nav a {
-    text-decoration: none; padding: 6px 13px; border-radius: var(--r-pill);
+    text-decoration: none; padding: 9px 12px 11px; margin-bottom: -1px;
     color: var(--ink-3); font-size: 13.5px; font-weight: 500;
-    border: 1px solid transparent;
-    transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+    border-bottom: 2px solid transparent;
+    transition: color .15s ease, border-color .15s ease;
   }
-  nav a:hover { color: var(--ink); background: rgba(var(--ink-3-rgb), .10); }
-  nav a[aria-current="page"] {
-    color: var(--accent); font-weight: 600;
-    background: rgba(var(--accent-rgb), var(--tint));
-    border-color: rgba(var(--accent-rgb), var(--tint-line));
-  }
+  nav a:hover { color: var(--ink); }
+  nav a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
 
-  main { max-width: var(--shell); margin: 0 auto; padding: 20px 20px 72px; }
-  /* The reading column. Left-aligned, so the facts list, the toolbar, the
-     graph and the health rows all share ONE gutter instead of three. */
+  main { max-width: var(--shell); margin: 0 auto; padding: 24px 24px 88px; }
   .measure { max-width: var(--measure); }
 
   /* ---- the pinned health strip ----------------------------------------- */
-  /*
-     Quiet by default: an inline pill. A full-width bar is a LOUD shape, and it
-     is reserved for the states that earned it — a pale-green wall for the GOOD
-     state was the single loudest element on the page. The strip's TEXT and its
-     state semantics are the server's (§24.1.1); only the shape changes here.
-  */
+  /* Quiet by default: an inline pill. The bar shape is LOUD and is earned only
+     by the rungs that mean something is wrong. Text and state semantics are the
+     server's (§24.1.1); only shape changes here. */
+  /* The strip and the freshness stamp share one status line at MAIN level, so
+     the stamp is on screen for every view — it belongs to the page, not to the
+     search toolbar (§24.1.6: freshness is stated per view, never implied). */
+  .statusline { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 0 0 24px; }
   #health-strip {
     display: inline-flex; align-items: center; gap: 8px;
-    margin: 0 0 18px; padding: 5px 13px 5px 11px;
+    margin: 0; padding: 5px 13px 5px 11px;
     border-radius: var(--r-pill); font-size: 12.5px;
     color: var(--ink-3);
     background: rgba(var(--ink-3-rgb), .10);
@@ -199,10 +349,6 @@
     background: rgba(var(--ok-rgb), var(--tint));
     border-color: rgba(var(--ok-rgb), var(--tint-line));
   }
-  /* The bar shape is earned by the rungs of §24.1.1's precedence ladder that
-     mean something is WRONG. `queued` sits one rung above all-clear — pending
-     items are informational — so it stays a pill; giving the second-quietest
-     state the loudest shape would just repeat the bug in a new colour. */
   #health-strip[data-state="warn"],
   #health-strip[data-state="bad"] {
     display: flex; width: 100%;
@@ -224,74 +370,133 @@
     border-color: rgba(var(--bad-rgb), var(--tint-line));
   }
   #health-strip .dot { width: 7px; height: 7px; border-radius: var(--r-pill); background: currentColor; flex: none; }
-  #health-strip .fix { margin-left: 10px; opacity: .8; }
+  #health-strip .fix { margin-left: 10px; color: inherit; }
   #health-strip[data-state="warn"] .fix,
   #health-strip[data-state="bad"] .fix { margin-left: auto; }
 
+  /* ---- the overview -----------------------------------------------------
+     The landing used to show 50 of ~2,300 facts and never say so. The corpus
+     figure is now the largest thing on the page, and the fraction on screen is
+     stated underneath it rather than left to be discovered.
+     -------------------------------------------------------------------- */
+  .overview { margin: 0 0 26px; }
+  /* The graph view's header is deliberately one compact line: the instrument
+     is the content here, and the prose that used to sit above it said the same
+     thing as the rail's own legend. Two copies of an explanation cost a screen. */
+  .overview-tight { margin: 0 0 12px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  /* Both classes are on the same element and `.overview .micro` below is the
+     later rule, so this has to out-specify it — `.overview-tight .micro`
+     (0,2,0) lost the tie and the eyebrow went back to its own block line. */
+  .overview.overview-tight .micro { display: inline; margin: 0; }
+  /* `main` carries 88px of footer padding, which is right for a scrolling list
+     and wrong under an instrument that already fills the window — it would buy
+     a ~40px scrollbar that reveals nothing. Claw most of it back on this view
+     only, so the graph and its rail fit the window with no page scroll.
+     Only above the instrument's own min-height floor: on a shorter window the
+     page scrolls anyway, and there the rule just steals the footer padding. */
+  @media (min-height: 700px) {
+    section[data-view="graph"] { margin-bottom: -64px; }
+  }
+  .overview .micro { display: block; margin-bottom: 10px; }
+  .overview .d1 { display: block; }
+  .overview .sub {
+    margin-top: 10px; color: var(--ink-2); font-size: 14px; max-width: 46ch;
+    text-wrap: pretty;
+  }
+  .overview .sub b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
   /* ---- controls -------------------------------------------------------- */
-  .toolbar { display: flex; gap: 8px; align-items: center; margin: 0 0 20px; flex-wrap: wrap; }
+  .toolbar { display: flex; gap: 8px; align-items: center; margin: 0 0 18px; flex-wrap: wrap; }
   input[type="search"], select, button {
-    font: inherit; color: inherit; background: var(--panel);
+    font: inherit; color: var(--ink); background: var(--panel);
     border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 8px 11px;
     transition: border-color .15s ease;
   }
-  input[type="search"] { flex: 1 1 300px; min-width: 180px; }
+  input[type="search"] { flex: 1 1 280px; min-width: 180px; }
   input[type="search"]::placeholder { color: var(--ink-3); }
-  select { max-width: 190px; }
+  select { max-width: 180px; }
   button { cursor: pointer; font-weight: 500; }
   button:hover, input[type="search"]:hover, select:hover { border-color: var(--ink-3); }
-  #freshness {
-    color: var(--ink-3); font-size: 12px; margin-left: auto;
-    font-variant-numeric: tabular-nums;
-  }
+  #freshness { color: var(--ink-3); font-size: 12px; margin-left: auto; font-variant-numeric: tabular-nums; }
 
-  /* ---- the fact card --------------------------------------------------- */
-  /*
-     Three typographic tiers, top to bottom: title (15/600) · snippet (13.5,
-     second ink) · meta row (12, third ink, tinted badges). ONE undifferentiated
-     15px paragraph at a ~1040px measure was the wall-of-text effect the survey
-     named first, and the biggest single win here.
-  */
-  .card {
+  /* ---- the fact list: ROWS ---------------------------------------------
+     Not 50 rounded boxes. Cards do not share edges, so N items become N
+     separate objects with no rail for the eye; every craft reference here
+     (Linear, Sentry, Primer, Grafana, NetNewsWire) uses rows inside one
+     bounded surface with internal hairlines.
+     -------------------------------------------------------------------- */
+  .rows {
     background: var(--panel); border: 1px solid var(--line-soft);
-    border-radius: var(--r-card);
-    padding: var(--pad-card) calc(var(--pad-card) + 4px) calc(var(--pad-card) - 2px);
-    margin-bottom: var(--gap-card);
-    transition: border-color .15s ease, background-color .15s ease;
+    border-radius: var(--r-card); overflow: hidden;
   }
-  a.card { display: block; text-decoration: none; }
-  a.card:hover { border-color: rgba(var(--accent-rgb), .5); background: var(--panel-hover); }
-  a.card:focus-visible { outline-offset: 3px; }
+  .row {
+    display: grid; grid-template-columns: 26px minmax(0, 1fr) auto;
+    gap: 2px 14px; align-items: start;
+    padding: 14px 18px; min-height: 44px;
+    border-top: 1px solid var(--line-soft);
+    text-decoration: none; color: inherit;
+    transition: background-color .12s ease, box-shadow .12s ease;
+  }
+  .row:first-child { border-top: 0; }
+  a.row:hover { background: var(--panel-hover); box-shadow: inset 2px 0 0 var(--accent); }
+  a.row:focus-visible { outline-offset: -2px; border-radius: 0; }
+  .row-main { min-width: 0; }
+  .row-side {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+    font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums;
+    white-space: nowrap; padding-top: 1px;
+  }
+  .row-side .id { font-family: var(--mono); font-size: 11px; }
+
+  /* The tier is a fixed glyph in a fixed column — it becomes a scannable
+     vertical rail instead of a pill that moves with the text. */
+  .glyph {
+    width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center;
+    font-size: 11px; font-weight: 700; letter-spacing: 0;
+    --hue: var(--ink-3); --hue-rgb: var(--ink-3-rgb);
+    color: var(--hue);
+    background: rgba(var(--hue-rgb), var(--tint));
+    border: 1px solid rgba(var(--hue-rgb), var(--tint-line));
+  }
+  .tier-P { --hue: var(--tier-p); --hue-rgb: var(--tier-p-rgb); }
+  .tier-L { --hue: var(--tier-l); --hue-rgb: var(--tier-l-rgb); }
+  .tier-U { --hue: var(--tier-u); --hue-rgb: var(--tier-u-rgb); }
 
   .fact-title {
-    font-size: 15px; font-weight: 600; line-height: 1.42; letter-spacing: -.006em;
+    font-size: 14.5px; font-weight: 600; line-height: 1.45; letter-spacing: -.006em;
     color: var(--ink); text-wrap: pretty;
   }
-  .snippet { margin-top: 5px; font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
-  /* Clamp in CSS rather than with more server-side "…": the whole string stays
-     in the DOM (and in the accessibility tree) and every card is one height. */
+  .row .snippet { margin-top: 3px; }
+  .snippet { font-size: 13.5px; line-height: 1.58; color: var(--ink-2); text-wrap: pretty; }
   .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  /* The detail view is unclamped and must keep the record's own line breaks —
-     a list headline read as one flowed paragraph without this. */
   .pre { white-space: pre-wrap; overflow-wrap: anywhere; }
-  .snippet b, .fact-title b {
+  .snippet b, .fact-title b, .d3 b {
     background: rgba(var(--accent-rgb), .22); color: inherit;
     border-radius: 3px; padding: 0 2px; font-weight: 600;
   }
-  .snippet code, .body code, .fact-title code {
-    font-size: .92em; background: rgba(var(--ink-3-rgb), .13);
+  .snippet code, .body code, .fact-title code, .d3 code {
+    font-size: .9em; background: rgba(var(--ink-3-rgb), .13);
     border-radius: 4px; padding: .1em .35em;
   }
 
   .meta {
     display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-    margin-top: 12px; font-size: 12px; color: var(--ink-3);
+    margin-top: 10px; font-size: 12px; color: var(--ink-3);
     font-variant-numeric: tabular-nums;
   }
+  .row .meta { margin-top: 7px; }
+  /* Trust in the list is a WORD with a dot, not a coloured capsule: three
+     capsules per row was the visual static, and the word is the thing that
+     carries the meaning anyway. */
+  .trust { display: inline-flex; align-items: center; gap: 5px; }
+  .trust::before {
+    content: ""; width: 6px; height: 6px; border-radius: 99px; background: currentColor;
+  }
+  .trust-high { color: var(--ok); }
+  .trust-medium { color: var(--warn); }
+  .trust-low { color: var(--ink-3); }
 
-  /* THE badge rule — one tint, every pill. A variant sets `--hue`/`--hue-rgb`
-     and nothing else. Five OUTLINED pills per card was visual static; both
-     reference implementations tint. */
+  /* THE badge rule — one tint, every remaining pill (health status, states). */
   .badge {
     --hue: var(--ink-3); --hue-rgb: var(--ink-3-rgb);
     border-radius: var(--r-pill); padding: 2px 9px; font-size: 11px; font-weight: 600;
@@ -300,25 +505,29 @@
     background: rgba(var(--hue-rgb), var(--tint));
     border: 1px solid rgba(var(--hue-rgb), var(--tint-line));
   }
-  .tier-P { --hue: var(--tier-p); --hue-rgb: var(--tier-p-rgb); }
-  .tier-L { --hue: var(--tier-l); --hue-rgb: var(--tier-l-rgb); }
-  .tier-U { --hue: var(--tier-u); --hue-rgb: var(--tier-u-rgb); }
-  .trust-high { --hue: var(--ok); --hue-rgb: var(--ok-rgb); }
-  .trust-medium { --hue: var(--warn); --hue-rgb: var(--warn-rgb); }
-  .trust-low { --hue: var(--ink-3); --hue-rgb: var(--ink-3-rgb); }
   .state, .st-fail { --hue: var(--bad); --hue-rgb: var(--bad-rgb); }
   .st-pass { --hue: var(--ok); --hue-rgb: var(--ok-rgb); }
   .st-warn { --hue: var(--warn); --hue-rgb: var(--warn-rgb); }
   .st-skip { --hue: var(--ink-3); --hue-rgb: var(--ink-3-rgb); }
 
   .muted { color: var(--ink-3); }
-  .empty { color: var(--ink-3); padding: 48px 4px; text-align: center; }
+  .note { color: var(--ink-3); font-size: 12.5px; margin: 12px 2px 0; }
+  .empty {
+    color: var(--ink-2); padding: 56px 24px; text-align: center;
+    background: var(--panel); border: 1px solid var(--line-soft); border-radius: var(--r-card);
+    text-wrap: pretty;
+  }
 
-  /* ---- fact detail ----------------------------------------------------- */
-  .block { margin: 20px 0; }
+  /* ---- a record ------------------------------------------------------- */
+  .card {
+    background: var(--panel); border: 1px solid var(--line-soft);
+    border-radius: var(--r-card); padding: 18px 20px 16px;
+  }
+  .record-head { margin-bottom: 24px; }
+  .record-head .meta { margin-top: 14px; }
+  .block { margin: 24px 0; }
   .block h3 { margin: 0 0 8px; }
   .body { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink-2); font-size: 13.5px; }
-  .fact-title + .body { margin-top: 6px; }
   .cmd { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
   .cmd code {
     flex: 1; background: var(--sunken); border: 1px solid var(--line);
@@ -335,74 +544,140 @@
   .spaced { margin-top: 12px; }
 
   /* ---- health rows ----------------------------------------------------- */
-  /*
-     A row per check, not a three-column table: CHECK used to wrap onto three
-     lines while a third of WHAT-IT-FOUND sat empty.
-  */
   .hhead { display: flex; justify-content: space-between; gap: 12px; margin: 0 2px 8px; }
-  /* One panel with internal dividers — the same surface language as a card,
-     rather than rows floating on the page ground. */
   .hlist {
     background: var(--panel); border: 1px solid var(--line-soft);
-    border-radius: var(--r-card); padding: 2px 18px;
+    border-radius: var(--r-card); overflow: hidden;
   }
   .hrow {
-    display: grid; grid-template-columns: 1fr auto; align-items: baseline;
-    gap: 4px 16px; padding: 13px 0; border-bottom: 1px solid var(--line-soft);
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline;
+    gap: 4px 16px; padding: 14px 18px; border-top: 1px solid var(--line-soft);
   }
-  .hrow:last-child { border-bottom: 0; }
+  .hrow:first-child { border-top: 0; }
   .hname { font-size: 13.5px; font-weight: 600; color: var(--ink); }
   .hid { font-family: var(--mono); margin-left: 8px; }
   .hmsg { grid-column: 1 / -1; font-size: 13px; color: var(--ink-2); margin-top: 2px; }
-  .hfix { grid-column: 1 / -1; margin-top: 8px; }
+  .hfix { grid-column: 1 / -1; margin-top: 10px; }
   .hfix .cmd { margin-bottom: 0; }
 
   /* ---- decisions ------------------------------------------------------- */
-  .decision { border-left: 2px solid var(--line); padding-left: 16px; margin-bottom: 24px; }
-  .decision.retracted { opacity: .55; }
-  .decision.retracted h3 { text-decoration: line-through; }
-  .decision h3 {
-    font-size: 14.5px; font-weight: 600; margin: 0 0 4px;
-    text-transform: none; letter-spacing: 0; color: var(--ink);
+  .decision {
+    border-top: 1px solid var(--line-soft);
+    padding: 20px 0 4px;
   }
+  .decision:first-child { border-top: 0; padding-top: 4px; }
+  .decision.retracted { opacity: .58; }
+  .decision.retracted .d3 { text-decoration: line-through; }
+  .decision .body { margin-top: 10px; max-width: var(--measure); }
 
-  /* ---- graph ----------------------------------------------------------- */
-  #graph-wrap {
-    border: 1px solid var(--line); border-radius: var(--r-card);
-    background: var(--sunken); overflow-x: auto;
+  /* ---- THE GRAPH: the one dark region ---------------------------------
+     Plot and rail are one object on one canvas, so the dark area reads as an
+     instrument rather than as a rectangle someone forgot to theme. The rail
+     carries the corpus count, the legend (click to isolate) and — only once
+     something is pointed at — the record peek. An always-visible empty panel is
+     the single most self-inflicted cause of a page looking under-populated, so
+     it is not in the DOM until there is something in it.
+     -------------------------------------------------------------------- */
+  /* The instrument SIZES TO THE WINDOW. It is the hero of this view, and a
+     fixed 620px box meant it started below the fold on a laptop and left the
+     rail scrolling its own legend out of sight. `dvh` first so a mobile URL bar
+     cannot lie about the height; `vh` for anything that does not know `dvh`.
+     The subtraction is the chrome above it (header + status line + title). */
+  .instrument {
+    display: grid; grid-template-columns: minmax(0, 1fr) 264px;
+    background: var(--g-canvas); color: var(--g-ink);
+    border: 1px solid var(--g-line); border-radius: var(--r-card);
+    overflow: hidden;
+    height: calc(100vh - 244px);
+    height: calc(100dvh - 244px);
+    min-height: 440px;
   }
-  #graph { display: block; width: 100%; height: 560px; touch-action: none; }
-  /* Association is texture; supersession is a claim, and reads at full strength. */
-  #graph .edge { stroke-opacity: 0.3; }
-  #graph .edge-super { stroke-opacity: 0.95; }
+  /* 244px is the chrome above the instrument with the health strip in its QUIET
+     pill shape (~32px). In warn/bad the strip becomes a full-width BAR (10/14
+     padding, 13.5px text) and pushes `#freshness` onto a second line, so the
+     status line grows ~45px — enough to buy back exactly the page scrollbar the
+     viewport sizing exists to prevent, and to do it a beat AFTER first paint,
+     because `paintStrip` sets `data-state` when the health read lands.
+     `:has()` reads that state off the strip itself. An engine without `:has()`
+     keeps the quiet-state subtraction and scrolls ~45px in warn/bad only.
+     Gated above the stacked breakpoint: below it the instrument is `height:
+     auto` by design, and this selector would out-specify that. */
+  @media (min-width: 901px) {
+    body:has(#health-strip[data-state="warn"]) .instrument,
+    body:has(#health-strip[data-state="bad"]) .instrument {
+      height: calc(100vh - 289px);
+      height: calc(100dvh - 289px);
+    }
+  }
+  #graph-wrap { min-width: 0; }
+  #graph { display: block; width: 100%; height: 100%; touch-action: none; }
+  #graph .edge { stroke-opacity: .32; }
+  #graph .edge-super { stroke-opacity: .95; }
   #graph text {
-    font-size: 10.5px; fill: var(--ink-2); pointer-events: none;
-    /* a halo, so a label survives being drawn over a dot or an edge */
-    paint-order: stroke; stroke: var(--sunken); stroke-width: 3.5px; stroke-linejoin: round;
+    font-family: var(--ui); font-size: 10.5px; fill: var(--g-ink-2); pointer-events: none;
+    paint-order: stroke; stroke: var(--g-canvas); stroke-width: 3.5px; stroke-linejoin: round;
   }
-  #graph text.anchor-label { fill: var(--accent); font-weight: 600; }
-  /* Only the nodes that carry the shape keep a standing label; the rest are
-     drawn hidden and revealed on hover/focus, so the canvas reads as a map
-     instead of a hedge of overlapping text. */
+  #graph text.anchor-label { fill: var(--g-ink); font-weight: 600; }
   #graph text.lbl { opacity: 0; transition: opacity .12s ease; }
   #graph text.lbl-on { opacity: 1; }
   #graph .node:hover text.lbl { opacity: 1; }
   #graph a:focus-visible text.lbl { opacity: 1; }
-  .legend { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
-  .legend .badge { text-transform: none; letter-spacing: 0; font-weight: 500; }
-  #graph-note { color: var(--ink-3); font-size: 12px; margin: 12px 2px 0; font-variant-numeric: tabular-nums; }
+  #graph .dim { opacity: .12; }
+  #graph .node, #graph .edge { transition: opacity .15s ease; }
+
+  /* No `max-height` here: the rail is a grid child of an instrument that now
+     has a definite height, so it stretches to the full canvas. `overflow-y`
+     stays as the guard for a genuinely long cluster list, but the legend below
+     it must not be behind a scroll on a normal window. */
+  .rail {
+    border-left: 1px solid var(--g-line); background: var(--g-canvas-2);
+    padding: 18px 18px; display: flex; flex-direction: column; gap: 18px;
+    font-size: 12.5px; color: var(--g-ink-2); overflow-y: auto; min-height: 0;
+  }
+  .rail h3 { color: var(--g-ink-3); margin: 0 0 9px; }
+  .rail .d1 { color: var(--g-ink); font-size: 34px; }
+  .rail .corpus-sub { margin-top: 6px; color: var(--g-ink-3); font-size: 12px; }
+  .rail dl { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 7px 12px; }
+  .rail dt { color: var(--g-ink-3); }
+  .rail dd { margin: 0; color: var(--g-ink-2); font-variant-numeric: tabular-nums; }
+  .rail .keys { display: flex; flex-direction: column; gap: 3px; }
+  .key {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    background: none; border: 1px solid transparent; border-radius: 7px;
+    padding: 6px 8px; font: inherit; color: var(--g-ink-2); text-align: left;
+    cursor: pointer; transition: background-color .12s ease, color .12s ease;
+  }
+  .key:hover { background: rgba(var(--g-ink-3-rgb), .16); color: var(--g-ink); border-color: transparent; }
+  .key[aria-pressed="true"] { background: rgba(var(--g-ink-3-rgb), .22); color: var(--g-ink); }
+  .key .n { margin-left: auto; color: var(--g-ink-3); font-variant-numeric: tabular-nums; font-size: 11.5px; }
+  .key:focus-visible { outline: 2px solid var(--g-rim); outline-offset: 1px; }
+  .key-static { display: flex; align-items: center; gap: 9px; padding: 6px 8px; }
+  .swatch { width: 11px; height: 11px; border-radius: 99px; flex: none; }
+  .swatch.diamond { border-radius: 2px; transform: rotate(45deg); width: 9px; height: 9px; }
+  .rail .peek-title { color: var(--g-ink); font-size: 13px; font-weight: 600; line-height: 1.4; }
+  .rail .peek-meta { margin-top: 7px; color: var(--g-ink-3); font-size: 11.5px; line-height: 1.7; }
+  .rail .peek-meta .mono { color: var(--g-ink-2); }
+  .rail .hint { color: var(--g-ink-3); font-size: 11.5px; line-height: 1.6; text-wrap: pretty; }
 
   .hidden { display: none !important; }
 
+  @media (max-width: 900px) {
+    /* Stacked: the graph and the rail are siblings in one column, so the
+       instrument must size to its content instead of to the viewport —
+       otherwise the two share one screen and both end up cramped. */
+    .instrument { grid-template-columns: minmax(0, 1fr); height: auto; min-height: 0; }
+    .rail { border-left: 0; border-top: 1px solid var(--g-line); }
+    #graph { height: 460px; }
+  }
   @media (max-width: 620px) {
-    :root { --pad-card: 14px; }
-    .bar, main { padding-left: 14px; padding-right: 14px; }
+    .bar, main { padding-left: 16px; padding-right: 16px; }
+    .d1 { font-size: 42px; }
+    .d2 { font-size: 25px; }
     #freshness { margin-left: 0; }
+    .row { grid-template-columns: 22px minmax(0, 1fr); }
+    .row-side { grid-column: 2; flex-direction: row; align-items: center; gap: 10px; }
   }
 
-  /* Nothing on this page needs to move for anyone who asked it not to. Every
-     transition above is declared before this rule, and this rule is a `*`
-     rule — so a transition added later cannot escape it either. */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       transition-duration: 0.01ms !important;
@@ -431,35 +706,58 @@
 </header>
 
 <main>
-  <div id="health-strip" data-state="loading"><span class="dot"></span><span id="health-strip-text">reading health…</span><a class="fix hidden" id="health-strip-fix" href="/health">details</a></div>
-
-  <div class="toolbar measure">
-    <input type="search" id="q" placeholder="Search your memory…" aria-label="Search your memory" autocomplete="off" spellcheck="false" />
-    <select id="tier" aria-label="Filter by tier" title="Filter by tier. At session start the tiers are injected with local &gt; project &gt; user precedence — the most specific wins and the others are logged as shadowed.">
-      <option value="">All tiers</option>
-      <option value="P" title="Project — committed, travels with the repo">P · project</option>
-      <option value="L" title="Local — this machine only, gitignored">L · local</option>
-      <option value="U" title="User — you, across every project">U · user</option>
-    </select>
-    <button id="refresh" type="button" title="Re-read from disk">Refresh</button>
+  <div class="statusline">
+    <div id="health-strip" data-state="loading"><span class="dot"></span><span id="health-strip-text">reading health…</span><a class="fix hidden" id="health-strip-fix" href="/health">details</a></div>
     <span id="freshness">as of —</span>
   </div>
 
-  <section data-view="facts" class="hidden"><div id="facts-out" class="measure"></div></section>
-  <section data-view="fact" class="hidden"><div id="fact-out" class="measure"></div></section>
-  <section data-view="graph" class="hidden">
-    <div class="legend">
-      <span class="badge trust-high">high trust</span>
-      <span class="badge trust-medium">medium</span>
-      <span class="badge trust-low">low</span>
-      <span class="badge state">superseded — arrow points at the successor</span>
-      <span class="badge tier-L">doc anchor (hub)</span>
+  <section data-view="facts" class="hidden">
+    <div class="overview measure" id="overview">
+      <span class="micro" id="ov-label">Durable memory</span>
+      <span class="d1" id="ov-figure">—</span>
+      <p class="sub" id="ov-sub">Reading the store…</p>
     </div>
-    <div id="graph-wrap"><svg id="graph" role="img" aria-label="memory graph"></svg></div>
-    <p id="graph-note"></p>
+    <div class="toolbar measure">
+      <input type="search" id="q" placeholder="Search your memory…" aria-label="Search your memory" autocomplete="off" spellcheck="false" />
+      <select id="tier" aria-label="Filter by tier" title="Filter by tier. At session start the tiers are injected with local &gt; project &gt; user precedence — the most specific wins and the others are logged as shadowed.">
+        <option value="">All tiers</option>
+        <option value="P" title="Project — committed, travels with the repo">P · project</option>
+        <option value="L" title="Local — this machine only, gitignored">L · local</option>
+        <option value="U" title="User — you, across every project">U · user</option>
+      </select>
+      <button id="refresh" type="button" title="Re-read from disk">Refresh</button>
+    </div>
+    <div id="facts-out" class="measure"></div>
   </section>
-  <section data-view="health" class="hidden"><div id="health-out" class="measure"></div></section>
-  <section data-view="decisions" class="hidden"><div id="decisions-out" class="measure"></div></section>
+
+  <section data-view="fact" class="hidden"><div id="fact-out" class="measure"></div></section>
+
+  <section data-view="graph" class="hidden">
+    <div class="overview overview-tight">
+      <span class="micro">The shape of it</span>
+      <span class="d3">How your facts cite and supersede each other</span>
+    </div>
+    <div class="instrument">
+      <div id="graph-wrap"><svg id="graph" role="img" aria-label="memory graph"></svg></div>
+      <aside class="rail" id="rail" aria-label="graph legend and counts"></aside>
+    </div>
+  </section>
+
+  <section data-view="health" class="hidden">
+    <div class="overview measure">
+      <span class="micro">Instrument check</span>
+      <span class="d2">Is the memory system actually running?</span>
+    </div>
+    <div id="health-out" class="measure"></div>
+  </section>
+
+  <section data-view="decisions" class="hidden">
+    <div class="overview measure">
+      <span class="micro">Journal</span>
+      <span class="d2">Decisions, newest first</span>
+    </div>
+    <div id="decisions-out"></div>
+  </section>
 </main>
 
 <script>
@@ -479,6 +777,7 @@
     return n;
   };
   const clear = (n) => n.replaceChildren();
+  const group = (n) => (typeof n === 'number' ? n.toLocaleString('en-US') : n);
 
   // The ONLY request shape this page makes. No method, no body — GET is all
   // the server mounts, and all this page is allowed to want.
@@ -494,25 +793,23 @@
     return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   };
 
-  // Freshness is stated per view, never implied (§24.1.6 — the TabFreshness
-  // borrow). This page does not watch the filesystem; if the label is old, it
-  // is old, and Refresh is how it stops being old.
+  // Freshness is stated per view, never implied (§24.1.6). This page does not
+  // watch the filesystem; if the label is old, it is old, and Refresh is how it
+  // stops being old.
   function stamp(payload, what) {
     $('#freshness').textContent = 'as of ' + hhmm(payload && payload.generated_at) + ' · ' + what;
   }
 
   function badge(text, cls) { return el('span', { class: 'badge ' + (cls || ''), text }); }
 
-  function factMeta(f) {
-    const m = el('div', { class: 'meta' });
-    m.append(badge(f.tier, 'tier-' + f.tier));
-    if (f.trust) m.append(badge(f.trust + ' trust', 'trust-' + f.trust));
-    if (f.state) m.append(badge(f.state, 'state'));
-    if (f.date) m.append(el('span', { text: f.date }));
-    if (f.write_source) m.append(el('span', { text: f.write_source }));
-    m.append(el('span', { class: 'mono', text: f.id }));
-    return m;
-  }
+  // The denominator behind the headline figure, and it rides on the SAME
+  // payload as the rows (`/api/facts` states `total` in both modes). It used to
+  // be fetched from `/api/graph` when the facts payload did not state one —
+  // which meant a COUNT, an edge SELECT and an archive walk on every facts
+  // page-load to paint one number, AND a number counted with different filters
+  // than the list it sat over.
+  const readTotal = (data) =>
+    data && typeof data.total === 'number' ? data.total : null;
 
   // ---- rendering untrusted text -----------------------------------------
   //
@@ -520,17 +817,15 @@
   // of fact content reaches the DOM as a text node, or as the text of an
   // element this code created (design §24.1.1 — and a test scans this script
   // for the parsing sinks). The markdown handling is therefore a TOKENIZER
-  // over plain strings, deliberately: `**Global install**:` rendering
-  // literally was a visible defect, and its fix must not become a parser.
+  // over plain strings, deliberately.
   //
   // Segment kinds: 'text' | 'code' | 'strong' | 'hit'. A 'hit' is an FTS match
   // marker (the search route wraps matches in <b>…</b>); it is re-created as a
   // real <b> element, never interpolated.
   // The block between the region markers below is extracted VERBATIM by
-  // tests/cli-viewer.test.js and run against a ~20-line element shim, so the
-  // tokenizer and the title split have real behavioural coverage without a DOM
-  // dependency (§24.1 point 7). It depends on `el` and nothing else; keep it
-  // that way, and keep each marker alone on its line.
+  // tests/cli-viewer.test.js and run against a ~20-line element shim. It
+  // depends on `el` and nothing else; keep it that way, and keep each marker
+  // alone on its line.
   // #region text-render
   const MD_INLINE = /`([^`\n]+)`|\*\*([^*\n]+)\*\*|__([^_\n]+)__|\[([^\]\n]+)\]\([^)\n]*\)/g;
 
@@ -602,8 +897,7 @@
   // typographic tiers are made HERE rather than by changing the payload.
   //
   // Boundaries are looked for in PROSE only: a `.` inside a backticked command
-  // is not the end of a sentence, and cutting there produced titles like
-  // "Running Copy-Item scratchpad\*.md -Destination .".
+  // is not the end of a sentence.
   const TITLE_MIN = 14;
   const TITLE_MAX = 150;
   const TITLE_WHOLE = 90;    // shorter than this and the fact IS its own title
@@ -640,9 +934,6 @@
     if (plain.length <= TITLE_WHOLE) return { titleTo: plain.length, restFrom: plain.length };
     // A LINE BREAK outranks everything and ignores TITLE_MIN: a short first line
     // ("**What changed:**") is a heading, which is precisely what a title is.
-    // Gating it behind the minimum length is what made a 7-line bullet headline
-    // render as "What changed: Card text" — the newline vanished into the title
-    // and the first bullet was decapitated into the body (B1).
     const nl = plain.indexOf('\n');
     if (nl > 0 && nl <= TITLE_MAX) return { titleTo: nl, restFrom: nl + 1 };
     // Otherwise a sentence end / dash / colon, first one wins.
@@ -652,32 +943,28 @@
     // lede where half of one reads as a truncation.
     const clause = scanBoundary(segs, CLAUSE, TITLE_MIN * 3, TITLE_CLAUSE, true);
     if (clause) return { titleTo: clause.titleTo + 1, restFrom: clause.restFrom };
-    // And failing THAT, lead with as much as reads as one thought, and let the
-    // body continue it — better than printing one 240-character block.
+    // And failing THAT, lead with as much as reads as one thought.
     const cut = plain.lastIndexOf(' ', TITLE_FALLBACK);
     if (cut < TITLE_MIN) return { titleTo: plain.length, restFrom: plain.length };
     return { titleTo: cut, restFrom: cut + 1 };
   }
 
   /**
-   * A card's text tiers.
+   * A record's text tiers.
    *
    * `clamp` is the LIST mode: the snippet arrives already flattened to one line
-   * by the server, every card must be one height, and a leading `- ` on a line
+   * by the server, every row must be one height, and a leading `- ` on a line
    * that can no longer show a list is noise — so markers are stripped.
    *
-   * The DETAIL view is the opposite case on every count. It renders the fact's
-   * real multi-line body, nothing is clamped, and the record's own structure is
-   * the point — so it keeps its markers and its line breaks, exactly as
-   * `richBody` does for Why/How two blocks further down the SAME page. Passing
-   * `true` here unconditionally is what made one page strip the bullets in the
-   * head card and print them in the next block (B1).
+   * The DETAIL view is the opposite case on every count: real multi-line body,
+   * nothing clamped, the record's own structure is the point — so it keeps its
+   * markers and its line breaks.
    */
   function factText(raw, clamp) {
     const segs = segmentsOf(raw, clamp);
     const { titleTo, restFrom } = titleSplit(segs);
     const nodes = [];
-    const title = el('div', { class: clamp ? 'fact-title clamp-2' : 'fact-title pre' });
+    const title = el('div', { class: clamp ? 'fact-title clamp-2' : 'd3 pre' });
     renderSegments(title, sliceSegments(segs, 0, titleTo));
     nodes.push(title);
     const plain = plainOf(segs);
@@ -718,7 +1005,7 @@
 
   function errorCard(data) {
     return el('div', { class: 'card' }, [
-      el('div', { class: 'fact-title', text: 'Could not read this view.' }),
+      el('div', { class: 'd3', text: 'Could not read this view.' }),
       el('div', { class: 'snippet', text: String(data && data.error || 'unknown error') }),
     ]);
   }
@@ -726,39 +1013,36 @@
   // ---- the pinned health strip (every view) -----------------------------
   //
   // `?strip=1` deliberately: the strip is on EVERY view, and the full health
-  // route runs all 14 doctor checks (one of which probes the agent CLI as a
+  // route runs the whole doctor check list (one check probes the agent CLI as a
   // subprocess). Paying that on every navigation to draw one line would make
   // the whole viewer feel broken.
-  async function paintStrip() {
-    const data = await api('/health?strip=1');
+  function applyStrip(s) {
     const strip = $('#health-strip');
-    const text = $('#health-strip-text');
-    const fix = $('#health-strip-fix');
-    if (data.error) {
-      strip.dataset.state = 'warn';
-      text.textContent = 'health could not be read: ' + data.error;
-      return data;
-    }
-    const s = data.strip || {};
     if (s.state === 'warn') strip.dataset.state = s.severity === 'memory-off' ? 'bad' : 'warn';
     else if (s.state === 'queued') strip.dataset.state = 'queued';
     else strip.dataset.state = 'ok';
-    text.textContent = s.text + (s.action ? ' — run `' + s.action + '`' : '');
-    fix.classList.remove('hidden');
+    $('#health-strip-text').textContent = s.text + (s.action ? ' — run `' + s.action + '`' : '');
+  }
+
+  async function paintStrip() {
+    const data = await api('/health?strip=1');
+    const strip = $('#health-strip');
+    if (data.error) {
+      strip.dataset.state = 'warn';
+      $('#health-strip-text').textContent = 'health could not be read: ' + data.error;
+      return data;
+    }
+    applyStrip(data.strip || {});
+    $('#health-strip-fix').classList.remove('hidden');
     return data;
   }
 
   // The health VIEW has the doctor table, so its strip is the authoritative
   // one — repaint the pinned line from it rather than leaving the cheaper
-  // quick-check wording sitting above a table that contradicts it (B1).
+  // quick-check wording sitting above a table that contradicts it.
   function repaintStripFrom(data) {
     if (!data || !data.strip) return;
-    const strip = $('#health-strip');
-    const s = data.strip;
-    if (s.state === 'warn') strip.dataset.state = s.severity === 'memory-off' ? 'bad' : 'warn';
-    else if (s.state === 'queued') strip.dataset.state = 'queued';
-    else strip.dataset.state = 'ok';
-    $('#health-strip-text').textContent = s.text + (s.action ? ' — run `' + s.action + '`' : '');
+    applyStrip(data.strip);
   }
 
   // ---- views ------------------------------------------------------------
@@ -767,9 +1051,69 @@
   // flight at once whenever a query outruns the debounce — and responses are
   // not ordered. Without this token the SLOWER, OLDER response can land last
   // and repaint the list with results for a prefix the user already finished
-  // typing. Search is the landing feature; showing stale hits for it is the one
-  // wrongness a browse UI cannot get away with.
+  // typing.
   let factsSeq = 0;
+
+  // The overview states the corpus. The most impressive true thing about this
+  // product — every durable fact still here — was never on screen; now it is the
+  // largest type on the page, with the fraction currently listed underneath it.
+  function paintOverview(data, q, tier) {
+    const figure = $('#ov-figure');
+    const label = $('#ov-label');
+    const sub = $('#ov-sub');
+    const shown = data && data.facts ? data.facts.length : 0;
+    const total = readTotal(data);
+    const tail = tier ? ' · tier ' + tier + ' only' : '';
+    if (data && data.mode === 'search') {
+      // The figure is the MATCH COUNT, not the page of it. Showing `count` here
+      // rendered "50 matches" for a 500-hit query, in the largest type on the
+      // page — the one number a user has no way to check.
+      const hits = total !== null ? total : (typeof data.count === 'number' ? data.count : shown);
+      label.textContent = 'Search';
+      figure.textContent = group(hits);
+      clear(sub);
+      sub.append('match' + (hits === 1 ? '' : 'es') + ' for ');
+      sub.append(el('b', { text: '“' + (data.query || q) + '”' }));
+      if (hits > shown) {
+        sub.append(' — showing the first ');
+        sub.append(el('b', { text: group(shown) }));
+        sub.append(', ranked by trust' + tail + '.');
+      } else {
+        sub.append(' — keyword, ranked by trust' + tail + '.');
+      }
+      return;
+    }
+    label.textContent = tier ? 'Durable memory · tier ' + tier : 'Durable memory';
+    figure.textContent = total !== null ? group(total) : group(shown);
+    clear(sub);
+    if (total !== null && total > shown) {
+      sub.append('facts on disk, none forgotten. Listing the newest ');
+      sub.append(el('b', { text: group(shown) }));
+      sub.append(' — search reaches all of them.');
+    } else if (total !== null) {
+      sub.append('facts on disk, none forgotten — all of them listed below.');
+    } else {
+      sub.append('facts listed, newest first. Search reaches the whole store.');
+    }
+  }
+
+  function factRow(f) {
+    const row = el('a', { class: 'row', href: '/fact/' + f.id });
+    row.append(el('span', { class: 'glyph tier-' + f.tier, text: f.tier, title: 'tier ' + f.tier }));
+    const main = el('div', { class: 'row-main' });
+    for (const node of factText(f.snippet, true)) main.append(node);
+    const meta = el('div', { class: 'meta' });
+    if (f.trust) meta.append(el('span', { class: 'trust trust-' + f.trust, text: f.trust + ' trust' }));
+    if (f.state) meta.append(badge(f.state, 'state'));
+    if (f.write_source) meta.append(el('span', { text: f.write_source }));
+    if (meta.childElementCount) main.append(meta);
+    row.append(main);
+    row.append(el('div', { class: 'row-side' }, [
+      f.date ? el('span', { text: f.date }) : null,
+      el('span', { class: 'id', text: f.id }),
+    ]));
+    return row;
+  }
 
   async function viewFacts() {
     const seq = ++factsSeq;
@@ -783,20 +1127,32 @@
     if (seq !== factsSeq) return; // a newer query went out while this one flew
     clear(out);
     if (data.error) { out.append(errorCard(data)); return; }
-    stamp(data, data.mode === 'search' ? data.count + ' hit(s) for “' + data.query + '”' : 'newest ' + data.count);
+    // The stamp counts what the QUERY found, not what this response carried —
+    // otherwise the freshness line contradicts the headline figure above it.
+    const found = readTotal(data);
+    stamp(data, data.mode === 'search'
+      ? (found !== null ? found : data.count) + ' hit(s) for “' + data.query + '”'
+      : 'newest ' + data.count);
+    paintOverview(data, q, tier);
     if (!data.facts.length) {
       out.append(el('p', { class: 'empty', text: q
         ? 'Nothing matches “' + q + '”. Try fewer words — search is keyword, not fuzzy.'
         : 'No memory captured here yet. It fills as you work; `cmk remember` captures one by hand.' }));
       return;
     }
-    for (const f of data.facts) {
-      const card = el('a', { class: 'card', href: '/fact/' + f.id });
-      for (const node of factText(f.snippet, true)) card.append(node);
-      card.append(factMeta(f));
-      out.append(card);
+    const rows = el('div', { class: 'rows' });
+    for (const f of data.facts) rows.append(factRow(f));
+    out.append(rows);
+    // Keyed off the TOTAL, not off `clamped` (which only means the `?limit=`
+    // someone typed was above the cap): the honest question is whether there
+    // are records this list does not show, and that is true at the DEFAULT
+    // limit on any real corpus.
+    const total = readTotal(data);
+    if (total !== null && total > data.count) {
+      out.append(el('p', { class: 'note', text:
+        'Showing the first ' + group(data.count) + ' of ' + group(total) +
+        (data.mode === 'search' ? ' — refine the search to narrow it.' : ' — search reaches all of them.') }));
     }
-    if (data.clamped) out.append(el('p', { class: 'muted', text: 'Showing the first ' + data.limit + ' — refine the search to narrow it.' }));
   }
 
   async function viewFact(id) {
@@ -810,17 +1166,23 @@
     }
     stamp(data, 'fact ' + data.fact.id);
     const f = data.fact;
-    out.append(el('div', { class: 'chips', style: 'margin-bottom:14px' },
+    out.append(el('div', { class: 'chips', style: 'margin-bottom:18px' },
       [el('a', { class: 'chip', href: '/facts', text: '← all memory' })]));
-    const head = el('div', { class: 'card' });
+
+    const head = el('div', { class: 'record-head' });
     for (const node of factText(f.headline || f.snippet, false)) head.append(node);
-    head.append(factMeta(f));
+    const meta = el('div', { class: 'meta' });
+    meta.append(el('span', { class: 'glyph tier-' + f.tier, text: f.tier, title: 'tier ' + f.tier }));
+    if (f.trust) meta.append(el('span', { class: 'trust trust-' + f.trust, text: f.trust + ' trust' }));
+    if (f.state) meta.append(badge(f.state, 'state'));
+    if (f.date) meta.append(el('span', { text: f.date }));
+    if (f.write_source) meta.append(el('span', { text: f.write_source }));
+    meta.append(el('span', { class: 'mono', text: f.id }));
+    head.append(meta);
     out.append(head);
 
-    // Trust is two numbers, not one label: the declared tier (high/medium/low,
-    // in the meta row above) and the LEARNED score with the count of outcome
-    // signals behind it. Showing the evidence count matters because the search
-    // blend only lets the score move ranking once there is enough of it.
+    // Trust is two numbers, not one label: the declared tier and the LEARNED
+    // score with the count of outcome signals behind it.
     if (typeof f.trust_score === 'number') {
       out.append(el('div', { class: 'block' }, [
         el('h3', { text: 'Trust' }),
@@ -857,12 +1219,9 @@
     ]));
 
     // §24.1.3 — the read-only answer to the field's #1 viewer demand. Copy it,
-    // run it in your shell; the safe write path stays the only writer.
-    //
-    // An ARCHIVED record gets a state note instead of buttons: `cmk forget` and
-    // `cmk trust` do not apply to a fact that has already left the live corpus,
-    // and offering them anyway is three controls that look actionable and are
-    // not (I1). Commands render only where they work.
+    // run it in your shell; the safe write path stays the only writer. An
+    // ARCHIVED record gets a state note instead of buttons: the commands do not
+    // apply to a fact that has left the live corpus.
     if (data.state_note) {
       const note = el('div', { class: 'block' }, [el('h3', { text: 'State' })]);
       const card = el('div', { class: 'card' });
@@ -882,10 +1241,9 @@
     cmds.append(copyRow('forget this fact', data.commands.forget));
     cmds.append(copyRow('read it in the terminal', data.commands.get));
 
-    // The trust ladder, shown as a TEMPLATE rather than one echoed command —
-    // the old single line re-stated the CURRENT level, so pasting it changed
-    // nothing (M8). Every level is offered; the one the fact is already at is
-    // marked and has no copy button, because there is nothing to run.
+    // The trust ladder as a TEMPLATE rather than one echoed command. Every level
+    // is offered; the one the fact is already at is marked and has no copy
+    // button, because there is nothing to run.
     const trust = el('div', { class: 'block' }, [
       el('h3', { text: 'Re-rate it' }),
       el('div', { class: 'body', text: 'Currently ' + (data.commands.trust_current || 'unrated') + '. Copy the level you want:' }),
@@ -906,7 +1264,7 @@
 
   async function viewHealth() {
     const out = $('#health-out');
-    const data = await api('/health'); // the FULL route — this is the one view that wants the doctor
+    const data = await api('/health'); // the FULL route — the one view that wants the doctor
     clear(out);
     if (data.error) { out.append(errorCard(data)); return; }
     repaintStripFrom(data); // the doctor-informed verdict wins over the quick check
@@ -916,8 +1274,8 @@
       // §24.1 point 8: there is no conflict-queue SCREEN in wave 1, so the
       // count + the verb that resolves it are surfaced rather than hidden.
       const q = el('div', { class: 'card' });
-      q.append(el('div', { class: 'fact-title', text: 'Waiting on you' }));
-      q.append(el('div', { class: 'snippet', text:
+      q.append(el('div', { class: 'd3', text: 'Waiting on you' }));
+      q.append(el('div', { class: 'snippet', style: 'margin-top:6px', text:
         [data.queues.conflicts ? data.queues.conflicts + ' conflicting capture(s)' : null,
          data.queues.review ? data.queues.review + ' item(s) awaiting review' : null]
           .filter(Boolean).join(' · ') + ' — resolved from your shell:' }));
@@ -931,10 +1289,10 @@
     if (data.active_warnings.length) {
       const list = el('div', { class: 'block' }, [el('h3', { text: 'Active warnings' })]);
       for (const w of data.active_warnings) {
-        const c = el('div', { class: 'card' });
-        c.append(el('div', { class: 'fact-title', text: w.title }));
+        const c = el('div', { class: 'card', style: 'margin-bottom:12px' });
+        c.append(el('div', { class: 'd3', text: w.title }));
         c.append(el('div', { class: 'meta' }, [
-          badge(w.severity, w.severity === 'advisory' ? 'trust-low' : 'state'),
+          badge(w.severity, w.severity === 'advisory' ? 'st-skip' : 'state'),
           el('span', { text: w.strikes + ' consecutive failure(s)' }),
           el('span', { text: 'since ' + (w.brokenSince || '—') }),
         ]));
@@ -944,8 +1302,7 @@
       out.append(list);
     }
 
-    // One ROW per check. The three-column table wrapped the CHECK column onto
-    // three lines while a third of WHAT-IT-FOUND sat empty.
+    // One ROW per check, in one bounded surface.
     const list = el('div', { class: 'hlist' });
     for (const c of data.checks) {
       const row = el('div', { class: 'hrow' });
@@ -974,12 +1331,12 @@
     if (data.error) { out.append(errorCard(data)); return; }
     stamp(data, data.count + ' decision(s)');
     if (!data.count) {
-      out.append(el('p', { class: 'empty', text: 'No decisions journaled yet. They accumulate as decisions get captured — `cmk remember --type project --why …` writes one.' }));
+      out.append(el('p', { class: 'empty measure', text: 'No decisions journaled yet. They accumulate as decisions get captured — `cmk remember --type project --why …` writes one.' }));
       return;
     }
     for (const d of data.decisions) {
       const box = el('div', { class: 'decision' + (d.retracted ? ' retracted' : '') });
-      box.append(el('h3', { text: d.title || d.id }));
+      box.append(el('div', { class: 'd3', text: d.title || d.id }));
       const meta = el('div', { class: 'meta' });
       if (d.when) meta.append(el('span', { text: d.when }));
       if (d.retracted) meta.append(badge('retracted', 'state'));
@@ -990,28 +1347,122 @@
     }
   }
 
-  // ---- the graph --------------------------------------------------------
+  // ---- the graph: the instrument ----------------------------------------
   //
-  // A small force layout, hand-rolled because pulling in a library would break
-  // the zero-dependency contract for something this simple. Deterministic seed
-  // so the same corpus lays out the same way twice — a graph that reshuffles on
-  // every refresh is unreadable.
-  const TRUST_COLOR = { high: 'var(--ok)', medium: 'var(--warn)', low: 'var(--ink-3)' };
-  const LABEL_AT = 3;      // the degree at which a node earns a STANDING label
-  const LABEL_CHARS = 32;  // a fact slug runs ~60 chars and collides with its neighbour
+  // A small force layout, hand-rolled because a library would break the
+  // zero-dependency contract for something this simple. Deterministic seed, so
+  // the same corpus lays out the same way twice.
+  //
+  // Three things changed from the previous pass, and each is load-bearing:
+  //
+  //  1. REPULSION SCALES WITH DEGREE. A constant charge cannot produce
+  //     cluster/dandelion structure — it produces an even mesh, mathematically.
+  //     A hub now pushes its own breathing room and its leaves fan around it.
+  //  2. RADIUS SCALES WITH DEGREE, UNCAPPED (sqrt, so 40 links is legible not
+  //     absurd). The cap flattened the only ranking the picture had.
+  //  3. HUE IS COMMUNITY — three slots plus a neutral, no more. Trust moved to a
+  //     RIM ARC: full ring / two-thirds / one-third. Shape survives every kind
+  //     of colour blindness and frees hue for the thing hue is good at.
+  const COMMUNITY = ['var(--c1)', 'var(--c2)', 'var(--c3)'];
+  const NEUTRAL = 'var(--c0)';
+  const TRUST_ARC = { high: 1, medium: 0.62, low: 0.28 };
+  const LABEL_AT = 3;
+  const LABEL_CHARS = 30;
+  const NS = 'http://www.w3.org/2000/svg';
+  const svgEl = (tag, attrs) => {
+    const n = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    return n;
+  };
+  const svgTitle = (text) => { const t = document.createElementNS(NS, 'title'); t.textContent = text; return t; };
+
+  /** A rim arc, opening at 12 o'clock and running clockwise. */
+  function arcPath(r, frac) {
+    const a0 = -Math.PI / 2;
+    const a1 = a0 + 2 * Math.PI * Math.min(frac, 0.9999);
+    const large = frac > 0.5 ? 1 : 0;
+    const p = (a) => (r * Math.cos(a)).toFixed(2) + ' ' + (r * Math.sin(a)).toFixed(2);
+    return 'M ' + p(a0) + ' A ' + r.toFixed(2) + ' ' + r.toFixed(2) + ' 0 ' + large + ' 1 ' + p(a1);
+  }
+
+  /** Connected components — the only community structure this data can honestly
+      support at 4% link density, and it is stable across refreshes. */
+  function communities(nodes, edges) {
+    const parent = new Map(nodes.map((n) => [n.id, n.id]));
+    const find = (x) => { while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x))); x = parent.get(x); } return x; };
+    for (const e of edges) {
+      const a = find(e.a.id), b = find(e.b.id);
+      if (a !== b) parent.set(a, b);
+    }
+    const sizes = new Map();
+    for (const n of nodes) {
+      const root = find(n.id);
+      n.root = root;
+      sizes.set(root, (sizes.get(root) || 0) + 1);
+    }
+    const ranked = [...sizes.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+    const slot = new Map();
+    ranked.forEach(([root], i) => { if (i < COMMUNITY.length) slot.set(root, i); });
+    let other = 0;
+    for (const n of nodes) {
+      n.slot = slot.has(n.root) ? slot.get(n.root) : -1;
+      if (n.slot === -1) other++;
+    }
+    return { sizes: ranked.slice(0, COMMUNITY.length).map(([root, size], i) => ({ i, root, size })), other };
+  }
+
+  let isolated = null;
+
+  function applyIsolation(svg) {
+    for (const node of svg.querySelectorAll('[data-slot]')) {
+      const on = isolated === null || node.getAttribute('data-slot') === String(isolated);
+      node.classList.toggle('dim', !on);
+    }
+    for (const b of $('#rail').querySelectorAll('.key[data-slot]')) {
+      b.setAttribute('aria-pressed', String(isolated !== null && b.getAttribute('data-slot') === String(isolated)));
+    }
+  }
+
+  function railPeek(n) {
+    const rail = $('#rail');
+    let box = rail.querySelector('#peek');
+    if (!n) { if (box) box.remove(); return; }
+    if (!box) {
+      box = el('div', { id: 'peek' });
+      // ABOVE the static "Reading it" key, never appended last: the peek is the
+      // live answer to pointing at a node, and on a rail that only just fits it
+      // was landing below the rail's own fold — the affordance produced no
+      // visible feedback at all. The key is reference material and can sit at
+      // the bottom; feedback cannot.
+      const key = rail.querySelector('#rail-key');
+      if (key) rail.insertBefore(box, key); else rail.append(box);
+    }
+    clear(box);
+    box.append(el('h3', { text: 'Pointed at' }));
+    box.append(el('div', { class: 'peek-title', text: String(n.label || n.id).replace(/\.md.*$/, '') }));
+    const meta = el('div', { class: 'peek-meta' });
+    const line = [n.kind === 'anchor' ? 'doc anchor' : 'fact', n.tier ? 'tier ' + n.tier : null,
+      n.trust ? n.trust + ' trust' : null, n.superseded ? 'superseded' : null,
+      (n.deg || 0) + ' link' + (n.deg === 1 ? '' : 's')].filter(Boolean).join(' · ');
+    meta.append(el('div', { text: line }));
+    meta.append(el('div', { class: 'mono', text: n.id }));
+    box.append(meta);
+  }
 
   async function viewGraph() {
     const svg = $('#graph');
-    const note = $('#graph-note');
+    const rail = $('#rail');
     const data = await api('/graph');
     clear(svg);
-    if (data.error) { note.textContent = data.error; return; }
+    clear(rail);
+    isolated = null;
+    if (data.error) { rail.append(el('p', { class: 'hint', text: data.error })); return; }
     stamp(data, data.nodes.length + ' nodes · ' + data.edges.length + ' edges');
 
-    // Drop the unlinked. A degree-0 node carries no relationship, so the force
-    // layout only ever pushed it to the wall — the result was a picture-frame
-    // of orphan dots around the actual shape. They are still COUNTED in the
-    // note below; nothing disappears silently.
+    // Drop the unlinked. A degree-0 node carries no relationship, so the layout
+    // only ever pushed it to the wall — a picture-frame of orphan dots around
+    // the actual shape. They are still COUNTED in the rail; nothing disappears
+    // silently.
     const degree = new Map();
     for (const e of data.edges) {
       degree.set(e.src, (degree.get(e.src) || 0) + 1);
@@ -1020,38 +1471,63 @@
     const linked = data.nodes.filter((n) => degree.get(n.id));
     const unlinked = data.nodes.length - linked.length;
 
-    note.textContent =
-      data.fact_count + ' fact(s)' +
-      (data.truncated ? ' — showing the newest ' + data.node_limit : '') +
-      (data.anchor_count ? ' · ' + data.anchor_count + ' doc anchor(s)' : '') +
-      (data.dangling_count ? ' · ' + data.dangling_count + ' dangling link(s)' : '') +
-      (data.archived_count ? ' · ' + data.archived_count + ' superseded predecessor(s)' : '') +
-      (unlinked ? ' · ' + unlinked + ' unlinked, not drawn' : '');
+    // The corpus block goes up first, so a sparse canvas never reads as
+    // "nothing here" — the number of facts is stated before the picture.
+    const counts = el('div', {}, [
+      el('h3', { text: 'Corpus' }),
+      el('span', { class: 'd1', text: group(data.fact_count || data.nodes.length) }),
+      el('div', { class: 'corpus-sub', text: 'facts on disk' + (data.truncated ? ' · newest ' + data.node_limit + ' considered' : '') }),
+    ]);
+    const dl = el('dl');
+    const stat = (k, v) => { dl.append(el('dt', { text: k })); dl.append(el('dd', { text: group(v) })); };
+    stat('drawn', linked.length);
+    stat('links', data.edges.length);
+    if (data.anchor_count) stat('doc anchors', data.anchor_count);
+    if (data.archived_count) stat('superseded', data.archived_count);
+    if (data.dangling_count) stat('dangling', data.dangling_count);
+    if (unlinked) stat('unlinked, not drawn', unlinked);
+    counts.append(dl);
+    rail.append(counts);
+
     if (!linked.length) {
-      note.textContent = 'Nothing to draw yet — the graph fills as facts link to each other.';
+      rail.append(el('p', { class: 'hint', text: 'Nothing to draw yet — the graph fills as facts link to each other.' }));
       return;
     }
 
+    // The box is measured ONCE, at layout time, and nothing re-reads it: there
+    // is no resize handler, by design (a relayout would move every node under
+    // the pointer). With `dvh` the box CAN change afterwards — a mobile URL bar
+    // collapsing is the realistic case — and the SVG then letterboxes inside
+    // the new box (default `preserveAspectRatio: meet`). That is the accepted
+    // trade: a slightly padded picture beats a picture that jumps.
+    // The fallbacks are for a canvas measured before layout; they match the
+    // instrument's own floor rather than any historical fixed height.
     const W = svg.clientWidth || 900;
-    const H = svg.clientHeight || 560;
+    const H = svg.clientHeight || 440;
     let seed = 42;
     const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
 
-    const nodes = linked.map((n) => ({ ...n, x: rnd() * W, y: rnd() * H, vx: 0, vy: 0 }));
+    const nodes = linked.map((n) => ({ ...n, x: W * (0.25 + rnd() * 0.5), y: H * (0.25 + rnd() * 0.5), vx: 0, vy: 0, deg: 0 }));
     const index = new Map(nodes.map((n) => [n.id, n]));
     const edges = data.edges.map((e) => ({ ...e, a: index.get(e.src), b: index.get(e.dst) })).filter((e) => e.a && e.b);
-    for (const e of edges) { e.a.deg = (e.a.deg || 0) + 1; e.b.deg = (e.b.deg || 0) + 1; }
+    for (const e of edges) { e.a.deg++; e.b.deg++; }
 
-    // A few hundred iterations is plenty at this scale and costs milliseconds.
-    for (let step = 0; step < 320; step++) {
-      const k = 1 - step / 340;
+    const groups = communities(nodes, edges);
+
+    // Per-node charge. THIS is the line that makes clusters: a hub carries a
+    // larger charge, so it clears a hollow around itself and its leaves settle
+    // into a fan instead of a lattice.
+    for (const n of nodes) n.q = 1500 + 1400 * Math.sqrt(n.deg);
+    const PAD = 34;
+    for (let step = 0; step < 380; step++) {
+      const k = 1 - step / 400;
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const a = nodes[i], b = nodes[j];
           let dx = a.x - b.x, dy = a.y - b.y;
           let d2 = dx * dx + dy * dy;
           if (d2 < 1) { dx = rnd() - 0.5; dy = rnd() - 0.5; d2 = 1; }
-          const f = 2600 / d2;
+          const f = Math.sqrt(a.q * b.q) / d2;
           const d = Math.sqrt(d2);
           a.vx += (dx / d) * f; a.vy += (dy / d) * f;
           b.vx -= (dx / d) * f; b.vy -= (dy / d) * f;
@@ -1060,90 +1536,165 @@
       for (const e of edges) {
         const dx = e.b.x - e.a.x, dy = e.b.y - e.a.y;
         const d = Math.max(Math.hypot(dx, dy), 1);
-        const f = (d - 110) * 0.02;
+        // A hub's spokes are allowed to sit further out, so the fan has room.
+        const rest = 84 + 5 * Math.sqrt(Math.max(e.a.deg, e.b.deg));
+        const f = (d - rest) * 0.021;
         e.a.vx += (dx / d) * f; e.a.vy += (dy / d) * f;
         e.b.vx -= (dx / d) * f; e.b.vy -= (dy / d) * f;
       }
       for (const n of nodes) {
-        n.vx += (W / 2 - n.x) * 0.002;
-        n.vy += (H / 2 - n.y) * 0.002;
-        n.x = Math.min(W - 24, Math.max(24, n.x + n.vx * k * 0.35));
-        n.y = Math.min(H - 24, Math.max(24, n.y + n.vy * k * 0.35));
+        n.vx += (W / 2 - n.x) * 0.0025;
+        n.vy += (H / 2 - n.y) * 0.0025;
+        n.x = Math.min(W - PAD, Math.max(PAD, n.x + n.vx * k * 0.32));
+        n.y = Math.min(H - PAD, Math.max(PAD, n.y + n.vy * k * 0.32));
         n.vx *= 0.72; n.vy *= 0.72;
       }
     }
 
-    const NS = 'http://www.w3.org/2000/svg';
-    const svgEl = (tag, attrs) => {
-      const n = document.createElementNS(NS, tag);
-      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
-      return n;
-    };
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     const defs = document.createElementNS(NS, 'defs');
-    const marker = svgEl('marker', { id: 'arrow', viewBox: '0 0 10 10', refX: '18', refY: '5', markerWidth: '7', markerHeight: '7', orient: 'auto-start-reverse' });
-    marker.append(svgEl('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: 'var(--bad)' }));
+    const marker = svgEl('marker', { id: 'arrow', viewBox: '0 0 10 10', refX: '17', refY: '5', markerWidth: '6.5', markerHeight: '6.5', orient: 'auto-start-reverse' });
+    marker.append(svgEl('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: 'var(--g-bad)' }));
     defs.append(marker);
+    // A quiet measured grid. At 70 nodes the canvas is mostly empty, and empty
+    // space reads as unfinished unless something says the space is intentional.
+    const pattern = svgEl('pattern', { id: 'grid', width: '32', height: '32', patternUnits: 'userSpaceOnUse' });
+    pattern.append(svgEl('circle', { cx: '1', cy: '1', r: '1', fill: 'var(--g-ink-3)', 'fill-opacity': '.14' }));
+    defs.append(pattern);
     svg.append(defs);
+    svg.append(svgEl('rect', { x: 0, y: 0, width: W, height: H, fill: 'url(#grid)' }));
 
     for (const e of edges) {
       const superseded = e.type === 'superseded_by';
+      const slot = e.a.slot === e.b.slot ? e.a.slot : -1;
       const line = svgEl('line', {
         class: superseded ? 'edge edge-super' : 'edge',
+        'data-slot': slot,
         x1: e.a.x, y1: e.a.y, x2: e.b.x, y2: e.b.y,
-        stroke: superseded ? 'var(--bad)' : 'var(--ink-3)',
-        'stroke-width': superseded ? 1.8 : 1,
+        stroke: superseded ? 'var(--g-bad)' : 'var(--g-ink-3)',
+        'stroke-width': superseded ? 1.7 : 1,
         'stroke-dasharray': e.resolved ? '' : '3 3',
       });
       // Supersession is the one DIRECTED relationship on this canvas: the arrow
       // always points from the old fact at the one that replaced it.
       if (superseded) line.setAttribute('marker-end', 'url(#arrow)');
-      const edgeTitle = document.createElementNS(NS, 'title');
-      edgeTitle.textContent = e.src + ' —' + e.type + '→ ' + e.dst;
-      line.append(edgeTitle);
+      line.append(svgTitle(e.src + ' —' + e.type + '→ ' + e.dst));
       svg.append(line);
     }
+
     for (const n of nodes) {
       const anchor = n.kind === 'anchor';
-      const r = anchor ? 5 + Math.min(6, (n.deg || 0)) : 5 + Math.min(7, (n.deg || 0) * 1.4);
-      const g = svgEl('g', { class: 'node', transform: 'translate(' + n.x + ',' + n.y + ')' });
-      const dot = svgEl('circle', {
-        r,
-        fill: anchor ? 'var(--accent)' : (TRUST_COLOR[n.trust] || 'var(--ink-3)'),
-        stroke: n.superseded ? 'var(--bad)' : 'var(--sunken)',
-        'stroke-width': n.superseded ? 2 : 1.5,
-        opacity: n.superseded ? 0.7 : 1,
-      });
-      const title = document.createElementNS(NS, 'title');
-      title.textContent = n.label + (n.tier ? ' · ' + n.tier : '') + (n.trust ? ' · ' + n.trust + ' trust' : '') + (n.superseded ? ' · superseded' : '');
-      dot.append(title);
-      g.append(dot);
-      // Standing labels are earned by degree; every other label is drawn hidden
-      // and revealed on hover/focus by CSS. Labelling all of them at once is
-      // what made the canvas a hedge of overlapping text.
-      const standing = anchor || (n.deg || 0) >= LABEL_AT;
+      const r = 4 + 2.4 * Math.sqrt(n.deg);              // uncapped, sqrt-scaled
+      const fill = n.slot >= 0 ? COMMUNITY[n.slot] : NEUTRAL;
+      const g = svgEl('g', { class: 'node', 'data-slot': n.slot, transform: 'translate(' + n.x.toFixed(1) + ',' + n.y.toFixed(1) + ')' });
+
+      // Shape carries KIND: a doc anchor is a diamond, a fact is a dot.
+      const body = anchor
+        ? svgEl('rect', { x: -r, y: -r, width: r * 2, height: r * 2, transform: 'rotate(45)', rx: 1.5, fill })
+        : svgEl('circle', { r: r.toFixed(2), fill });
+      body.setAttribute('fill-opacity', n.superseded ? 0.55 : 1);
+      body.append(svgTitle(n.label + (n.tier ? ' · ' + n.tier : '') + (n.trust ? ' · ' + n.trust + ' trust' : '') + (n.superseded ? ' · superseded' : '')));
+      g.append(body);
+
+      // Trust is the RIM ARC — full ring, two thirds, one third. No hue.
+      const frac = TRUST_ARC[n.trust];
+      if (frac) {
+        g.append(svgEl('path', {
+          d: arcPath(r + 3.4, frac), fill: 'none',
+          stroke: n.superseded ? 'var(--g-bad)' : 'var(--g-rim)',
+          'stroke-opacity': n.superseded ? 0.9 : 0.72,
+          'stroke-width': 1.6, 'stroke-linecap': 'round',
+        }));
+      }
+
+      const standing = anchor || n.deg >= LABEL_AT;
       let cls = 'lbl';
       if (standing) cls += ' lbl-on';
       if (anchor) cls += ' anchor-label';
-      const label = svgEl('text', { class: cls, x: r + 5, y: 4 });
-      // An anchor id is already short (`Task-260`, `D-419`); a fact slug is not,
-      // and two of them side by side is the overlap the halos cannot rescue.
-      // The full string stays in the hover title on the dot.
+      const label = svgEl('text', { class: cls, x: (r + 7).toFixed(1), y: 4 });
       const full = anchor ? n.id.replace(/^anchor:/, '') : String(n.label).replace(/\.md.*$/, '');
       // Slice CODE POINTS, not UTF-16 units: a label ending on an astral char
-      // (an emoji in a slug) would otherwise be cut mid-surrogate and render as
-      // U+FFFD.
+      // would otherwise be cut mid-surrogate and render as U+FFFD.
       const cps = Array.from(full);
       label.textContent = cps.length > LABEL_CHARS ? cps.slice(0, LABEL_CHARS - 1).join('') + '…' : full;
       g.append(label);
+
+      // Pointing at a node fills the rail's peek block; the block does not exist
+      // until then. Clicking still navigates to the record — unchanged.
+      g.addEventListener('pointerenter', () => railPeek(n));
+      g.addEventListener('pointerleave', () => railPeek(null));
       if (!anchor) {
         const link = svgEl('a', { href: '/fact/' + n.id });
+        link.addEventListener('focus', () => railPeek(n));
+        link.addEventListener('blur', () => railPeek(null));
         link.append(g);
         svg.append(link);
       } else {
         svg.append(g);
       }
     }
+
+    // ---- the rail: legend, click to isolate ----
+    const legend = el('div', {}, [el('h3', { text: 'Clusters' })]);
+    const keys = el('div', { class: 'keys' });
+    const letters = ['A', 'B', 'C'];
+    groups.sizes.forEach((c) => {
+      const btn = el('button', { type: 'button', class: 'key', 'data-slot': String(c.i), 'aria-pressed': 'false' }, [
+        el('span', { class: 'swatch', style: 'background:' + COMMUNITY[c.i] }),
+        el('span', { text: 'cluster ' + letters[c.i] }),
+        el('span', { class: 'n', text: group(c.size) }),
+      ]);
+      btn.addEventListener('click', () => {
+        isolated = isolated === c.i ? null : c.i;
+        applyIsolation(svg);
+      });
+      keys.append(btn);
+    });
+    if (groups.other) {
+      const btn = el('button', { type: 'button', class: 'key', 'data-slot': '-1', 'aria-pressed': 'false' }, [
+        el('span', { class: 'swatch', style: 'background:' + NEUTRAL }),
+        el('span', { text: 'other clusters' }),
+        el('span', { class: 'n', text: group(groups.other) }),
+      ]);
+      btn.addEventListener('click', () => { isolated = isolated === -1 ? null : -1; applyIsolation(svg); });
+      keys.append(btn);
+    }
+    legend.append(keys);
+    legend.append(el('p', { class: 'hint', text: 'Three hues is the honest limit on a dark all-pairs canvas; past that, structure is carried by position and labels. Click a cluster to isolate it.' }));
+    rail.append(legend);
+
+    const key = el('div', { id: 'rail-key' }, [el('h3', { text: 'Reading it' })]);
+    const staticKeys = el('div', { class: 'keys' });
+    const rimKey = (frac, text) => {
+      const sw = document.createElementNS(NS, 'svg');
+      sw.setAttribute('width', '14'); sw.setAttribute('height', '14'); sw.setAttribute('viewBox', '-7 -7 14 14');
+      sw.setAttribute('aria-hidden', 'true');
+      sw.append(svgEl('circle', { r: 2.4, fill: 'var(--g-ink-3)' }));
+      sw.append(svgEl('path', { d: arcPath(5.2, frac), fill: 'none', stroke: 'var(--g-rim)', 'stroke-width': 1.6, 'stroke-linecap': 'round' }));
+      const row = el('div', { class: 'key-static' });
+      row.append(sw);
+      row.append(el('span', { text }));
+      return row;
+    };
+    staticKeys.append(rimKey(1, 'full rim — high trust'));
+    staticKeys.append(rimKey(0.62, 'two thirds — medium'));
+    staticKeys.append(rimKey(0.28, 'one third — low'));
+    staticKeys.append(el('div', { class: 'key-static' }, [
+      el('span', { class: 'swatch diamond', style: 'background:var(--g-ink-2)' }),
+      el('span', { text: 'diamond — doc anchor' }),
+    ]));
+    const arrowSw = document.createElementNS(NS, 'svg');
+    arrowSw.setAttribute('width', '14'); arrowSw.setAttribute('height', '14'); arrowSw.setAttribute('viewBox', '0 0 14 14');
+    arrowSw.setAttribute('aria-hidden', 'true');
+    arrowSw.append(svgEl('line', { x1: 1, y1: 7, x2: 9, y2: 7, stroke: 'var(--g-bad)', 'stroke-width': 1.7 }));
+    arrowSw.append(svgEl('path', { d: 'M 9 3.5 L 13 7 L 9 10.5 z', fill: 'var(--g-bad)' }));
+    staticKeys.append(el('div', { class: 'key-static' }, [arrowSw, el('span', { text: 'arrow — points at the successor' })]));
+    staticKeys.append(el('div', { class: 'key-static' }, [
+      el('span', { class: 'swatch', style: 'background:var(--g-ink-2);width:16px;height:6px;border-radius:2px' }),
+      el('span', { text: 'size — number of links' }),
+    ]));
+    key.append(staticKeys);
+    rail.append(key);
   }
 
   // ---- routing ----------------------------------------------------------
@@ -1155,8 +1706,6 @@
       const on = a.dataset.nav === view || (view === 'fact' && a.dataset.nav === 'facts');
       if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     }
-    // The search toolbar belongs to the facts view only.
-    $('.toolbar').classList.toggle('hidden', view !== 'facts');
   }
 
   function currentRoute() {
@@ -1200,9 +1749,8 @@
     debounce = setTimeout(() => { if (currentRoute().view === 'facts') viewFacts(); else go('/facts'); }, 220);
   });
   $('#tier').addEventListener('change', () => { if (currentRoute().view === 'facts') viewFacts(); else go('/facts'); });
-  // Manual refresh, and nothing automatic: no filesystem watch on the server,
-  // no server-sent-events client here. Live refresh is Task 259 — deliberately
-  // not wave 1, and a test asserts this page has not grown one by accident.
+  // Manual refresh, and nothing automatic: no filesystem watch on the server, no
+  // server-sent-events client here.
   $('#refresh').addEventListener('click', render);
 
   $('#project-path').textContent = location.host;

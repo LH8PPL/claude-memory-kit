@@ -240,8 +240,9 @@ const U_HABIT = 'U-D6YL7RBC';
 const P_OLD = 'P-GDZU5542'; // superseded BY P_NEW (archived)
 const P_NEW = 'P-NJD6HT3P';
 
-function seedFact({ id, tier, slug, body, related, root }) {
+function seedFact({ id, tier, slug, body, related, root, expiresAt }) {
   const r = writeFact({
+    ...(expiresAt ? { expiresAt } : {}),
     projectRoot,
     userDir,
     tier,
@@ -402,6 +403,12 @@ describe('viewer — JSON API routes (255.2)', () => {
     expect(body.query).toBeNull();
     expect(typeof body.generated_at).toBe('string');
     expect(body.count).toBe(body.facts.length);
+    // The corpus denominator rides on the SAME payload as the rows (I3/I4):
+    // the page's 56px hero used to come from `/api/graph`'s `fact_count`, which
+    // counts a DIFFERENT population (no expiry filter) and cost a whole second
+    // route — COUNT + edges + an archive walk — to paint one headline.
+    expect(typeof body.total).toBe('number');
+    expect(body.total).toBeGreaterThanOrEqual(body.count);
 
     const byId = new Map(body.facts.map((f) => [f.id, f]));
     expect(byId.get(P_ALPHA).tier).toBe('P');
@@ -426,9 +433,46 @@ describe('viewer — JSON API routes (255.2)', () => {
     expect(body.facts.map((f) => f.id)).toContain(P_ALPHA);
     expect(body.facts.map((f) => f.id)).not.toContain(L_LOCAL);
 
+    expect(body.total).toBeGreaterThanOrEqual(body.count);
+
     const none = await getJson(base, '/api/facts?q=zzzznotpresent');
     expect(none.body.count).toBe(0);
     expect(none.body.facts).toEqual([]);
+    expect(none.body.total).toBe(0);
+  });
+
+  it('I3/I4 — `total` is the FULL population in both modes, so the hero is honest', async () => {
+    // The redesign promoted a number to 56px type, and it was the wrong one:
+    // browse read `/api/graph`'s `fact_count` (a different filter set, a whole
+    // extra route per page-load) and SEARCH showed `count` — the rows returned
+    // — so a 500-hit query rendered "50 matches" as the biggest thing on
+    // screen. `total` counts the same population the rows come from, unlimited;
+    // `count` stays the rows on the wire.
+    const browse = await getJson(base, '/api/facts?limit=2');
+    expect(browse.body.count).toBe(2);
+    expect(browse.body.total).toBeGreaterThan(browse.body.count);
+    // …and it is the whole live corpus, not the page.
+    const all = await getJson(base, '/api/facts');
+    expect(browse.body.total).toBe(all.body.count);
+
+    // The tier filter narrows the denominator too — a filtered list under an
+    // unfiltered headline is the same lie one level down.
+    const tiered = await getJson(base, '/api/facts?tier=P&limit=1');
+    const tieredAll = await getJson(base, '/api/facts?tier=P');
+    expect(tiered.body.count).toBe(1);
+    expect(tiered.body.total).toBe(tieredAll.body.count);
+    expect(tiered.body.total).toBeLessThan(all.body.count);
+
+    // SEARCH: seed more matches than the limit asks for, and the total must
+    // reach past the limit rather than reporting the page size.
+    for (const [i, id] of ['P-2FGHJKMN', 'P-3PQRSTVW', 'P-4XYZ2345', 'P-5679ABCD'].entries()) {
+      seedFact({ id, tier: 'P', slug: `zebrafish-${i}`, body: `A zebrafish note number ${i}.` });
+    }
+    const hits = await getJson(base, '/api/facts?q=zebrafish&limit=2');
+    expect(hits.body.mode).toBe('search');
+    expect(hits.body.count).toBe(2);
+    expect(hits.body.total).toBe(4);
+    expect(hits.body.total).toBeGreaterThan(hits.body.count);
   });
 
   it('/api/facts?tier= filters to one tier, in both modes', async () => {
@@ -627,6 +671,46 @@ describe('viewer — JSON API routes (255.2)', () => {
     expect(body.nodes.some((n) => n.kind === 'anchor' && n.id === 'anchor:D-414')).toBe(true);
   });
 
+  it('M4 — the corpus is ONE population: an EXPIRED fact is outside both 56px figures', async () => {
+    // The redesign puts a 56px "Corpus / facts on disk" figure in the graph
+    // rail and a 56px total on the facts view. They came from different
+    // populations: `/api/facts` filters `(expires_at IS NULL OR expires_at >
+    // now)`, `/api/graph` counted `deleted_at IS NULL` and nothing else. On any
+    // corpus with one expired fact the same product states two different corpus
+    // sizes in the same type size — and the graph's was the larger one, naming
+    // records no search on the page can reach.
+    const before = await getJson(base, '/api/graph');
+    const factsBefore = await getJson(base, '/api/facts?limit=200');
+    expect(before.body.fact_count).toBe(factsBefore.body.total);
+
+    const EXPIRED = 'P-KVZ7WM3N';
+    seedFact({
+      id: EXPIRED,
+      tier: 'P',
+      slug: 'held-until-the-cut',
+      body: 'True right up until the release shipped.',
+      expiresAt: '2020-01-01',
+    });
+
+    const after = await getJson(base, '/api/graph');
+    const factsAfter = await getJson(base, '/api/facts?limit=200');
+    // The expired fact is on disk and in the index — and in neither figure.
+    expect(factsAfter.body.facts.map((f) => f.id)).not.toContain(EXPIRED);
+    expect(after.body.fact_count).toBe(before.body.fact_count);
+    expect(after.body.fact_count).toBe(factsAfter.body.total);
+    // …and it is not DRAWN either. The budget test below pins
+    // `nodes(fact, live) === fact_count` at cap; counting a population the node
+    // query does not draw from would make that invariant false the moment a
+    // real corpus had an expired fact in it.
+    expect(after.body.nodes.some((n) => n.id === EXPIRED)).toBe(false);
+
+    // Over-mutation guard: excluding one record excludes exactly one. Every
+    // other node the graph drew before is still there.
+    expect(after.body.nodes.map((n) => n.id).sort()).toEqual(
+      before.body.nodes.map((n) => n.id).sort(),
+    );
+  });
+
   it('the graph budget: AT-CAP nodes are returned whole, OVER-CAP truncates and says so', async () => {
     const total = (await getJson(base, '/api/graph')).body.fact_count;
     expect(total).toBeGreaterThan(2);
@@ -746,9 +830,9 @@ describe('viewer — JSON API routes (255.2)', () => {
   });
 
   it('/api/health?strip=1 answers the pinned line WITHOUT running the doctor', async () => {
-    // The strip renders on every view; paying 14 checks (one of them a
-    // subprocess probe) per navigation to draw one line is the difference
-    // between a viewer that feels instant and one that feels broken.
+    // The strip renders on every view; paying the full doctor check list (one
+    // of them a subprocess probe) per navigation to draw one line is the
+    // difference between a viewer that feels instant and one that feels broken.
     const { status, body } = await getJson(base, '/api/health?strip=1');
     expect(status).toBe(200);
     expect(body.strip).toBeTruthy();
@@ -1055,43 +1139,159 @@ describe('viewer — the HTML page (255.3)', () => {
 describe('viewer — the visual pass (260)', () => {
   let html;
   let css;
+  let bareCss;
   let script;
   beforeEach(async () => {
     const r = await boot();
     html = await (await fetch(r.url)).text();
     css = html.match(/<style\b[^>]*>([\s\S]*?)<\/style\b[^>]*>/i)[1];
+    // Comment-stripped, and the sheet EVERY rule-shaped assertion below reads:
+    // the token block's own prose names the selectors, properties and values it
+    // is describing (`:root`, the media queries, `data-theme`, the rejected
+    // font family, the old `border-color: currentColor` shape), so matching
+    // against the raw sheet picks the prose up as if it were code — the M4
+    // class, and the reason the D-432 polarity flip first went green against
+    // the wrong block entirely. Three ad-hoc copies of this stripper had already
+    // appeared in this file; one definition, one place to fix (M6). The single
+    // deliberate exception is the "zero fetched bytes" scan in the fonts test,
+    // which is a claim about the served bytes and says so at its own line.
+    bareCss = css.replace(/\/\*[\s\S]*?\*\//g, '');
     script = html.match(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/i)[1];
   });
 
   it('(3) defines a real surface ladder — page ≠ panel ≠ sunken, in BOTH themes', () => {
     // The diagnosis was a 2% delta (#fbfaf8 page on #ffffff panels), which left
     // borders doing 100% of the work and nothing reading as a surface.
-    const root = css.match(/:root\s*\{([\s\S]*?)\}/)[1];
+    //
+    // POLARITY FLIPPED 2026-08-08 (D-432): dark is the `:root` DEFAULT and light
+    // is the media-query block. Every assertion below is the same contract with
+    // the two roles swapped — not a weakened one. Deleting either block still
+    // fails, and the M4 whole-ladder comparison is unchanged.
+    const root = bareCss.match(/:root\s*\{([\s\S]*?)\}/)[1];
     for (const token of ['--ground', '--panel', '--sunken', '--line', '--ink', '--ink-2', '--ink-3']) {
-      expect(root, `light theme is missing ${token}`).toContain(token + ':');
+      expect(root, `the default (dark) theme is missing ${token}`).toContain(token + ':');
     }
     const hex = (block, name) =>
       (block.match(new RegExp('\\' + name + ':\\s*(#[0-9a-f]{6})', 'i')) || [])[1];
     expect(hex(root, '--ground')).not.toBe(hex(root, '--panel'));
 
-    // Dark is DESIGNED, not an inversion: its own ladder, redefined.
-    const dark = css.match(/@media\s*\(prefers-color-scheme:\s*dark\)\s*\{\s*:root\s*\{([\s\S]*?)\}/);
-    expect(dark, 'no dark-theme token block').toBeTruthy();
+    // Light is DESIGNED, not an inversion: its own ladder, redefined.
+    const light = bareCss.match(/@media\s*\(prefers-color-scheme:\s*light\)\s*\{\s*:root\s*\{([\s\S]*?)\}/);
+    expect(light, 'no light-theme token block').toBeTruthy();
     for (const token of ['--ground', '--panel', '--sunken', '--line', '--ink', '--ink-3']) {
-      expect(dark[1], `dark theme is missing ${token}`).toContain(token + ':');
+      expect(light[1], `light theme is missing ${token}`).toContain(token + ':');
     }
-    expect(hex(dark[1], '--ground')).not.toBe(hex(dark[1], '--panel'));
-    // Dark is a DESIGN, not an inversion — so compare the whole ladder, not one
-    // token: every surface and ink must differ from its light counterpart (M4).
+    expect(hex(light[1], '--ground')).not.toBe(hex(light[1], '--panel'));
+    // Neither theme is an inversion of the other — so compare the whole ladder,
+    // not one token: every surface and ink must differ from its counterpart (M4).
     for (const token of ['--ground', '--panel', '--sunken', '--line', '--ink', '--ink-2', '--ink-3']) {
-      expect(hex(dark[1], token), `${token} is identical in both themes`).not.toBe(hex(root, token));
+      expect(hex(light[1], token), `${token} is identical in both themes`).not.toBe(hex(root, token));
     }
+  });
+
+  it('(I3) an explicit `data-theme` wins in BOTH directions, and cannot drift', () => {
+    // D-432 serves each theme on two signals — the system preference and an
+    // explicit `data-theme` — which means each palette is written TWICE. The AA
+    // test can only compute the block it parses, so a `data-theme` copy could
+    // drift out of contrast coverage silently: an override that ships an
+    // unmeasured palette is the composition gap this closes.
+    const tokens = (block) =>
+      Object.fromEntries(
+        [...block.matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]),
+      );
+    const blockAfter = (re) => {
+      const m = bareCss.match(re);
+      expect(m, `no block matching ${re}`).toBeTruthy();
+      return tokens(m[1]);
+    };
+    // Both directions exist: light over a dark default, dark over a light system.
+    const explicitLight = blockAfter(/:root\[data-theme="light"\]\s*\{([\s\S]*?)\n  \}/);
+    const explicitDark = blockAfter(/:root\[data-theme="dark"\]\s*\{([\s\S]*?)\n  \}/);
+    const mediaLight = blockAfter(
+      /@media\s*\(prefers-color-scheme:\s*light\)[\s\S]*?:root\s*\{([\s\S]*?)\n    \}/,
+    );
+    const defaultDark = blockAfter(/:root\s*\{([\s\S]*?)\n  \}/);
+
+    // The explicit light override IS the media-query light palette, token for token.
+    expect(explicitLight).toEqual(mediaLight);
+    // …and the DARK override must declare the same SET of tokens — value drift is
+    // checked below, but until this line the guard was one-directional on KEYS:
+    // a token added to `:root` + the media-light block + `[data-theme="light"]`
+    // and forgotten in `[data-theme="dark"]` passed every other assertion here,
+    // and rendered its LIGHT value inside a dark page for the one reader who is
+    // on an OS-light machine with the dark toggle on. The two sets are identical
+    // today, and both palettes cover exactly the theme-varying tokens.
+    expect(
+      Object.keys(explicitDark).sort(),
+      '[data-theme="dark"] and the light palette declare different token SETS',
+    ).toEqual(Object.keys(mediaLight).sort());
+    // The explicit dark override re-asserts the default; it declares a SUBSET
+    // (the theme-varying tokens only — `--g-*`, rhythm and fonts do not vary),
+    // and every token it does declare must match the default exactly.
+    expect(Object.keys(explicitDark).length).toBeGreaterThan(15);
+    for (const [name, value] of Object.entries(explicitDark)) {
+      expect(defaultDark[name], `${name} drifted between :root and [data-theme="dark"]`).toBe(value);
+    }
+    // …and it must actually cover the palette, not a token or two of it.
+    for (const token of ['--ground', '--panel', '--sunken', '--ink', '--ink-3', '--accent', '--tint']) {
+      expect(explicitDark, `[data-theme="dark"] is missing ${token}`).toHaveProperty(token);
+      expect(explicitLight, `[data-theme="light"] is missing ${token}`).toHaveProperty(token);
+    }
+    // The attribute selector out-specifies the media block by construction
+    // (0,2,0 vs 0,1,0) — assert it is not accidentally nested INSIDE the media
+    // query, where a dark-preferring machine would never see it.
+    const mediaBlock = bareCss.match(/@media\s*\(prefers-color-scheme:\s*light\)\s*\{([\s\S]*?)\n  \}/);
+    expect(mediaBlock[1]).not.toContain('data-theme');
+  });
+
+  it('(I1b) every `--X-rgb` carries the channels of its OWN `--X` — every block, every pair', () => {
+    // The ONE badge rule is `rgba(<hue>-rgb, var(--tint))` under a hairline of
+    // the same channels (§24.1.2), so a hue is written TWICE: once as the hex
+    // the text is painted in, once as the channels its wash is mixed from. The
+    // two are only related by a human keeping them in step — and the dark port
+    // shipped `--ink-3: #a59b8c` beside `--ink-3-rgb: 157,147,132`, which is
+    // the channels of #9d9384: the value the AA test REJECTED at 4.23:1. So the
+    // one token lifted for contrast was painting its own badge wash out of the
+    // rejected hue, in both dark blocks, with every test green — the AA test
+    // reads the hex and never sees the channels.
+    //
+    // Every pair, in every block that declares one: with each palette written
+    // four times (two themes x two signals), a per-token spot check is exactly
+    // the shape that misses the copy nobody looked at.
+    const channels = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(',');
+    const bad = [];
+    let pairs = 0;
+    for (const [, sel, body] of bareCss.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+      const where = sel.trim().replace(/\s+/g, ' ');
+      const tok = Object.fromEntries(
+        [...body.matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]),
+      );
+      for (const [name, value] of Object.entries(tok)) {
+        if (!name.endsWith('-rgb')) continue;
+        // A badge VARIANT aliases (`--hue-rgb: var(--ok-rgb)`) — there is no
+        // literal to compare, and the alias is the shape that cannot drift.
+        if (!/^\d{1,3},\s*\d{1,3},\s*\d{1,3}$/.test(value)) continue;
+        const base = name.slice(0, -'-rgb'.length);
+        const hex = tok[base];
+        if (!hex || !/^#[0-9a-f]{6}$/i.test(hex)) {
+          bad.push(`${where}: ${name} has no literal ${base} beside it`);
+          continue;
+        }
+        pairs += 1;
+        const got = value.replace(/\s+/g, '');
+        const want = channels(hex);
+        if (got !== want) bad.push(`${where}: ${name} = ${got} but ${base} = ${hex} (= ${want})`);
+      }
+    }
+    expect(bad, `a hue's channels disagree with its own hex:\n  ${bad.join('\n  ')}`).toEqual([]);
+    // …and the scan actually reached the palettes, rather than passing on zero.
+    expect(pairs, 'the rgb-pair scan found almost nothing — the sheet shape moved').toBeGreaterThanOrEqual(40);
   });
 
   it('(I1) every text/surface pair clears WCAG AA 4.5:1 — in BOTH themes', () => {
     // The visual pass first shipped 15 failing pairs in light, the worst at
     // 2.93:1 — and `--ink-3` alone carries the meta row, .micro, #freshness,
-    // #graph-note, .muted, .empty, inactive nav and the READ-ONLY pill. The
+    // .muted, .empty, inactive nav and the READ-ONLY pill. The
     // target is written down in design §24.1.2; this computes it, so lightening
     // a token to taste fails the suite instead of shipping.
     //
@@ -1109,9 +1309,14 @@ describe('viewer — the visual pass (260)', () => {
     };
     const over = (fg, alpha, bg) => fg.map((c, i) => c * alpha + bg[i] * (1 - alpha));
 
+    // POLARITY FLIPPED 2026-08-08 (D-432): the `:root` default block is now the
+    // DARK palette and the media-query block is LIGHT. Both are still computed —
+    // the contract is "AA in both themes", and which one is the default does not
+    // change it. (The `data-theme` copies are pinned to these by I3, so a copy
+    // cannot ship an unmeasured palette.)
     const themes = {
-      light: css.match(/:root\s*\{([\s\S]*?)\n  \}/)[1],
-      dark: css.match(/@media\s*\(prefers-color-scheme:\s*dark\)[\s\S]*?:root\s*\{([\s\S]*?)\n    \}/)[1],
+      dark: bareCss.match(/:root\s*\{([\s\S]*?)\n  \}/)[1],
+      light: bareCss.match(/@media\s*\(prefers-color-scheme:\s*light\)[\s\S]*?:root\s*\{([\s\S]*?)\n    \}/)[1],
     };
     const failures = [];
     for (const [theme, block] of Object.entries(themes)) {
@@ -1137,13 +1342,53 @@ describe('viewer — the visual pass (260)', () => {
         }
       }
       // Badge text on its own tint, over each surface a badge appears on.
-      for (const hue of ['ok', 'warn', 'bad', 'accent', 'tier-p', 'tier-u', 'ink-3']) {
+      // `tier-l` is in the list because it is a badge/glyph hue exactly like
+      // `tier-p`/`tier-u` (`.tier-L` sets `--hue`/`--hue-rgb` from it). It was
+      // omitted while it read `var(--accent)` and was AA-safe by aliasing; the
+      // D-432 port made all three tiers literal hexes and it fell out of
+      // coverage silently — the CHANGELOG's "every pair in both themes" claim
+      // was one hue short of true.
+      for (const hue of ['ok', 'warn', 'bad', 'accent', 'tier-p', 'tier-l', 'tier-u', 'ink-3']) {
         for (const [sn, s] of [['panel', panel], ['ground', ground]]) {
           check(`badge ${hue} on ${sn}`, tok(hue), over(tok(hue), tint, s));
         }
       }
       // The search-hit mark: ink-2 over the accent wash, on a card.
       check('search hit (ink-2 on accent wash)', tok('ink-2'), over(tok('accent'), 0.22, panel));
+    }
+
+    // The archive tokens the `.trust` word and the plain-hue text land on are
+    // NOT badges — `.trust-high` / `.trust-medium` paint the hue directly on a
+    // row inside a panel, and links paint `--accent` on the page. The badge loop
+    // above measures each hue on its own tint, which is a DIFFERENT (harder)
+    // pair, so it can pass while the bare-text use of the same hue fails. With
+    // dark now the default and every hue re-picked (D-432), pin the bare use too.
+    for (const [theme, block] of Object.entries(themes)) {
+      const tok = (name) => srgb(block.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`))[1]);
+      for (const hue of ['ok', 'warn', 'bad', 'accent']) {
+        for (const [sn, s] of [['panel', tok('panel')], ['ground', tok('ground')]]) {
+          const r = contrast(tok(hue), s);
+          if (r < AA) failures.push(`${theme}: ${hue} as TEXT on ${sn} = ${r.toFixed(2)}:1`);
+        }
+      }
+    }
+
+    // The INSTRUMENT is its own colour space (`--g-*`), fixed in both themes —
+    // and the Task-268 redesign put real 11-12.5px text in it: the rail's
+    // headings and dl, the corpus sub-line, the legend counts, the peek meta,
+    // the SVG labels. The archive tokens above cannot see any of it, so a dark
+    // canvas could be lightened to taste with the AA test still green.
+    const gBlock = bareCss.match(/:root\s*\{([\s\S]*?)\n  \}/)[1];
+    const gTok = (name) => {
+      const m = gBlock.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
+      expect(m, `no --${name} token`).toBeTruthy();
+      return srgb(m[1]);
+    };
+    for (const ink of ['g-ink', 'g-ink-2', 'g-ink-3']) {
+      for (const canvas of ['g-canvas', 'g-canvas-2']) {
+        const r = contrast(gTok(ink), gTok(canvas));
+        if (r < AA) failures.push(`instrument: ${ink} on ${canvas} = ${r.toFixed(2)}:1`);
+      }
     }
     expect(failures, `contrast below AA ${AA}:1:\n  ${failures.join('\n  ')}`).toEqual([]);
 
@@ -1161,31 +1406,31 @@ describe('viewer — the visual pass (260)', () => {
   });
 
   it('(2) badges are TINTED, not outlined — one rule, literal rgba, no color-mix()', () => {
-    const badge = css.match(/\.badge\s*\{([\s\S]*?)\}/);
+    const badge = bareCss.match(/\.badge\s*\{([\s\S]*?)\}/);
     expect(badge, 'no .badge rule').toBeTruthy();
     expect(badge[1]).toMatch(/background:\s*rgba\(/);
     expect(badge[1]).toMatch(/border:\s*1px solid rgba\(/);
     // The old shape: `border-color: currentColor` on every pill variant.
-    expect(css).not.toMatch(/border-color:\s*currentColor/);
+    expect(bareCss).not.toMatch(/border-color:\s*currentColor/);
     // color-mix() support was flagged unverified in the survey; both reference
     // implementations use literal rgba pairs, and so do we.
-    expect(css).not.toMatch(/color-mix\(/);
+    expect(bareCss).not.toMatch(/color-mix\(/);
   });
 
   it('(1/4) the card has a title tier, a CSS clamp and a bounded measure', () => {
-    expect(css).toMatch(/\.fact-title\s*\{/);
-    expect(css).toMatch(/-webkit-line-clamp/);
+    expect(bareCss).toMatch(/\.fact-title\s*\{/);
+    expect(bareCss).toMatch(/-webkit-line-clamp/);
     // Clamping in CSS keeps the whole string in the DOM (and the a11y tree)
     // rather than asking the server for more "…".
     expect(script).toMatch(/clamp-2/);
-    const measure = css.match(/--measure:\s*(\d+)px/);
+    const measure = bareCss.match(/--measure:\s*(\d+)px/);
     expect(measure, 'no --measure token').toBeTruthy();
     expect(Number(measure[1])).toBeLessThanOrEqual(820);
     expect(html).toMatch(/id="facts-out"[^>]*class="measure"/);
 
     // Four sizes + ONE uppercase micro-label — asserted INSIDE the micro rule,
     // not anywhere in the sheet (M4).
-    const micro = css.match(/\.micro[^{]*\{([^}]*)\}/);
+    const micro = bareCss.match(/\.micro[^{]*\{([^}]*)\}/);
     expect(micro, 'no .micro rule').toBeTruthy();
     expect(micro[1]).toMatch(/text-transform:\s*uppercase/);
     expect(micro[1]).toMatch(/letter-spacing:\s*\.12em/);
@@ -1202,52 +1447,133 @@ describe('viewer — the visual pass (260)', () => {
     // it something it did not anticipate.
     const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const rule = (sel) => {
-      const m = css.match(new RegExp(`(?:^|\\n)\\s*${escapeRe(sel)}\\s*[^{]*\\{([^}]*)\\}`));
+      const m = bareCss.match(new RegExp(`(?:^|\\n)\\s*${escapeRe(sel)}\\s*[^{]*\\{([^}]*)\\}`));
       expect(m, `no ${sel} rule`).toBeTruthy();
       return m[1];
     };
     expect(rule('.meta')).toMatch(/font-variant-numeric:\s*tabular-nums/);
     expect(rule('#freshness')).toMatch(/font-variant-numeric:\s*tabular-nums/);
-    expect(rule('#graph-note')).toMatch(/font-variant-numeric:\s*tabular-nums/);
+    // The graph note moved INTO the instrument rail in the Task-268 redesign.
+    // The contract is that the rail's figures are tabular, not that a
+    // `#graph-note` selector exists — assert the contract, on BOTH of the
+    // rail's number columns (the stat list and the legend's per-cluster count).
+    expect(rule('.rail dd')).toMatch(/font-variant-numeric:\s*tabular-nums/);
+    expect(rule('.key .n')).toMatch(/font-variant-numeric:\s*tabular-nums/);
     // The mono stack carries tabular figures AND slashed-zero for id/hash columns.
-    const mono = css.match(/code,\s*\.mono\s*\{([^}]*)\}/);
+    const mono = bareCss.match(/code,\s*\.mono\s*\{([^}]*)\}/);
     expect(mono, 'no code/.mono rule').toBeTruthy();
     expect(mono[1]).toMatch(/tabular-nums/);
     expect(mono[1]).toMatch(/slashed-zero/);
   });
 
-  it('(5) card padding is greater than card gap — the rhythm was inverted', () => {
-    const pad = css.match(/--pad-card:\s*(\d+)px/);
-    const gap = css.match(/--gap-card:\s*(\d+)px/);
-    expect(pad, 'no --pad-card token').toBeTruthy();
-    expect(gap, 'no --gap-card token').toBeTruthy();
-    expect(Number(pad[1])).toBeGreaterThan(Number(gap[1]));
+  it('(4b) the graph is the hero — it sizes to the window, above the fold', () => {
+    // ORIGINAL BUG: the Task-268 redesign shipped `.instrument { }` with a
+    // FIXED `#graph { height: 620px }` under ~350px of eyebrow + headline +
+    // explanatory paragraph. On a 900px laptop that put the hero BELOW THE
+    // FOLD — you had to scroll down to see the thing the view exists for —
+    // and pinned the rail to `max-height: 620px`, hiding its own legend
+    // behind an internal scrollbar. The user's report: "i want to see the
+    // graph in the page, why do i need to go down and why do i need to move
+    // it so i can see the Reading it?"
+    //
+    // The contract is VIEWPORT-RELATIVE SIZING, not any particular number:
+    // a future redesign may retune the subtraction, but it may not go back
+    // to a fixed pixel box that ignores the window.
+    const instrument = bareCss.match(/\n\s*\.instrument\s*\{([^}]*)\}/);
+    expect(instrument, 'no .instrument rule').toBeTruthy();
+    // Sizes to the window...
+    expect(instrument[1]).toMatch(/height:\s*calc\(100dvh\s*-/);
+    // ...with a `vh` fallback first for engines that do not know `dvh`, and a
+    // floor so a short window cannot collapse the canvas to nothing.
+    expect(instrument[1]).toMatch(/height:\s*calc\(100vh\s*-/);
+    expect(instrument[1]).toMatch(/min-height:\s*\d+px/);
+    expect(instrument[1].indexOf('100vh')).toBeLessThan(instrument[1].indexOf('100dvh'));
+
+    // The canvas fills that box rather than declaring its own fixed height.
+    const graph = bareCss.match(/\n\s*#graph\s*\{([^}]*)\}/);
+    expect(graph, 'no #graph rule').toBeTruthy();
+    expect(graph[1]).toMatch(/height:\s*100%/);
+
+    // The rail stretches with the instrument instead of clipping its legend.
+    const rail = bareCss.match(/\n\s*\.rail\s*\{([^}]*)\}/);
+    expect(rail, 'no .rail rule').toBeTruthy();
+    expect(rail[1]).not.toMatch(/max-height:\s*\d+px/);
+
+    // Stacked (narrow) layout opts OUT: graph and rail become siblings in one
+    // column, so a viewport-height instrument would cramp both.
+    const stacked = bareCss.match(/@media \(max-width: 900px\)\s*\{([\s\S]*?)\n\s{2}\}/);
+    expect(stacked, 'no 900px breakpoint').toBeTruthy();
+    expect(stacked[1]).toMatch(/\.instrument\s*\{[^}]*height:\s*auto/);
+
+    // B1: the subtraction is calibrated against the QUIET health strip. When a
+    // check fails the strip becomes a full-width bar and wraps the freshness
+    // stamp onto its own line — the status line grows ~45px and the instrument
+    // overflows into exactly the scrollbar this rule exists to prevent, a beat
+    // after load (the strip paints when the health read lands). So the loud
+    // states must subtract MORE, and the two numbers must stay ordered.
+    const quiet = Number(instrument[1].match(/calc\(100dvh\s*-\s*(\d+)px\)/)[1]);
+    const loud = bareCss.match(
+      /body:has\(#health-strip\[data-state="warn"\]\)[\s\S]{0,200}?\{([^}]*)\}/,
+    );
+    expect(loud, 'no warn/bad instrument-height override').toBeTruthy();
+    expect(loud[1]).toMatch(/height:\s*calc\(100vh\s*-/);
+    expect(loud[1]).toMatch(/height:\s*calc\(100dvh\s*-/);
+    expect(Number(loud[1].match(/calc\(100dvh\s*-\s*(\d+)px\)/)[1])).toBeGreaterThan(quiet);
+    // …and it must not reach the stacked layout, where the instrument is
+    // `height: auto` — a `:has()` selector out-specifies the media-query rule.
+    const guarded = bareCss.match(/@media \(min-width: 901px\)\s*\{([\s\S]*?)\n\s{2}\}/);
+    expect(guarded, 'the :has() override is not gated above the stacked breakpoint').toBeTruthy();
+    expect(guarded[1]).toContain('#health-strip[data-state="warn"]');
+    expect(guarded[1]).toContain('#health-strip[data-state="bad"]');
+
+    // M2: the negative margin that claws back `main`'s footer padding is for
+    // windows tall enough for the instrument to fill — below the floor the page
+    // scrolls anyway and the rule just eats the footer.
+    const tall = bareCss.match(/@media \(min-height: \d+px\)\s*\{([\s\S]*?)\n\s{2}\}/);
+    expect(tall, 'the graph margin rule is not inside a min-height media block').toBeTruthy();
+    expect(tall[1]).toMatch(/section\[data-view="graph"\]\s*\{[^}]*margin-bottom:\s*-\d+px/);
+  });
+
+  it('(5) the record rhythm is sane — rows share a boundary, so nothing floats', () => {
+    // ORIGINAL BUG: card padding (13px) was SMALLER than the gap between cards
+    // (9px), so cards crowded each other more than their own contents.
+    //
+    // The Task-268 redesign replaced floating cards with ROWS inside one
+    // bounded surface, which makes that failure structurally impossible —
+    // there is no inter-card gap left to invert. The surviving contract is
+    // that a row has real internal padding and a hairline between rows.
+    const row = bareCss.match(/\n\s*\.row\s*\{([^}]*)\}/);
+    expect(row, 'no .row rule').toBeTruthy();
+    const padY = Number((row[1].match(/padding:\s*(\d+)px/) || [])[1]);
+    expect(padY, 'the row has no vertical padding').toBeGreaterThanOrEqual(10);
+    expect(row[1]).toMatch(/border-top:\s*1px solid/);
+    expect(bareCss).toMatch(/\.rows\s*\{[^}]*overflow:\s*hidden/);
   });
 
   it('(6) the header is sticky + blurred and the tabs are real pills, not a seam trick', () => {
     // Scoped INSIDE the rule: `header {[\s\S]*?position: sticky` would happily
     // match a `position: sticky` in some later, unrelated rule (M4).
-    const header = css.match(/(?:^|\n)\s*header\s*\{([^}]*)\}/);
+    const header = bareCss.match(/(?:^|\n)\s*header\s*\{([^}]*)\}/);
     expect(header, 'no header rule').toBeTruthy();
     expect(header[1]).toMatch(/position:\s*sticky/);
     expect(header[1]).toMatch(/backdrop-filter:/);
     // The seam trick: a tab that fakes "in front" with `border-bottom: none`.
-    expect(css).not.toMatch(/border-bottom:\s*none/);
-    expect(css).toMatch(/nav a\[aria-current="page"\]\s*\{[\s\S]*?background:\s*rgba\(var\(--accent-rgb\)/);
+    expect(bareCss).not.toMatch(/border-bottom:\s*none/);
+    expect(bareCss).toMatch(/nav a\[aria-current="page"\]\s*\{[\s\S]*?background:\s*rgba\(var\(--accent-rgb\)/);
   });
 
   it('(7) the health strip is a PILL when ok and a bar only when it is not', () => {
-    const strip = css.match(/#health-strip\s*\{([\s\S]*?)\}/);
+    const strip = bareCss.match(/#health-strip\s*\{([\s\S]*?)\}/);
     expect(strip, 'no #health-strip rule').toBeTruthy();
     expect(strip[1]).toMatch(/display:\s*inline-flex/);
-    const loud = css.match(
+    const loud = bareCss.match(
       /#health-strip\[data-state="warn"\][\s\S]{0,200}?\{([\s\S]*?)\}/,
     );
     expect(loud[1]).toMatch(/display:\s*flex/);
     expect(loud[1]).toMatch(/width:\s*100%/);
     // The SHAPE changed; the state semantics did not (§24.1.1 B1 fold).
     for (const state of ['ok', 'warn', 'queued', 'bad']) {
-      expect(css).toContain(`#health-strip[data-state="${state}"]`);
+      expect(bareCss).toContain(`#health-strip[data-state="${state}"]`);
     }
     expect(script).toMatch(/severity === 'memory-off' \? 'bad' : 'warn'/);
   });
@@ -1261,11 +1587,11 @@ describe('viewer — the visual pass (260)', () => {
     //
     // Every rule that grants the bar treatment must be keyed to warn or bad
     // ONLY; none of them may name `queued`.
-    // Comments are stripped first: the CSS comment ABOVE the bar rule explains
-    // why queued is excluded, and matching selector text against the raw sheet
-    // picks that prose up as if it were a selector.
-    const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');
-    const barRules = [...bare.matchAll(/([^{}]*?)\{([^}]*?)\}/g)]
+    // Comments are stripped first (`bareCss`, hoisted into the beforeEach): the
+    // CSS comment ABOVE the bar rule explains why queued is excluded, and
+    // matching selector text against the raw sheet picks that prose up as if it
+    // were a selector.
+    const barRules = [...bareCss.matchAll(/([^{}]*?)\{([^}]*?)\}/g)]
       .filter(([, , body]) => /width:\s*100%/.test(body) && /display:\s*flex/.test(body))
       .map(([, sel]) => sel.trim())
       .filter((sel) => sel.includes('#health-strip'));
@@ -1275,7 +1601,7 @@ describe('viewer — the visual pass (260)', () => {
       expect(sel).toMatch(/warn|bad/);
     }
     // …and `queued` must still be styled (colour), just not shaped like an alarm.
-    const queued = css.match(/#health-strip\[data-state="queued"\]\s*\{([\s\S]*?)\}/);
+    const queued = bareCss.match(/#health-strip\[data-state="queued"\]\s*\{([\s\S]*?)\}/);
     expect(queued, 'queued lost its styling entirely').toBeTruthy();
     expect(queued[1]).not.toMatch(/width:\s*100%/);
     expect(queued[1]).toMatch(/background:\s*rgba\(/);
@@ -1286,15 +1612,21 @@ describe('viewer — the visual pass (260)', () => {
     // relaxed. They are still COUNTED — nothing disappears silently.
     expect(script).toMatch(/const linked = data\.nodes\.filter/);
     expect(script).toMatch(/unlinked, not drawn/);
+    // I6: the hover peek is LIVE feedback and goes ABOVE the static "Reading
+    // it" key. Appended last, it landed below the rail's own fold on a rail
+    // that just fits — pointing at a node then produced nothing visible at all.
+    expect(script).toMatch(/rail\.insertBefore\(box,\s*key\)/);
+    expect(script).toMatch(/el\('div', \{ id: 'rail-key' \}/);
+
     // A standing label is earned by degree; the rest appear on hover/focus.
     expect(script).toMatch(/LABEL_AT/);
-    expect(css).toMatch(/#graph text\.lbl\s*\{[\s\S]*?opacity:\s*0/);
-    expect(css).toMatch(/#graph \.node:hover text\.lbl/);
+    expect(bareCss).toMatch(/#graph text\.lbl\s*\{[\s\S]*?opacity:\s*0/);
+    expect(bareCss).toMatch(/#graph \.node:hover text\.lbl/);
     // Halos, so a label survives being drawn over a dot.
-    expect(css).toMatch(/paint-order:\s*stroke/);
+    expect(bareCss).toMatch(/paint-order:\s*stroke/);
     // Supersession is the one directed claim on the canvas — it reads louder.
-    const base = Number(css.match(/#graph \.edge\s*\{\s*stroke-opacity:\s*([\d.]+)/)[1]);
-    const sup = Number(css.match(/#graph \.edge-super\s*\{\s*stroke-opacity:\s*([\d.]+)/)[1]);
+    const base = Number(bareCss.match(/#graph \.edge\s*\{\s*stroke-opacity:\s*([\d.]+)/)[1]);
+    const sup = Number(bareCss.match(/#graph \.edge-super\s*\{\s*stroke-opacity:\s*([\d.]+)/)[1]);
     expect(sup).toBeGreaterThan(base);
   });
 
@@ -1344,7 +1676,14 @@ describe('viewer — the visual pass (260)', () => {
 
     // clamp=false is the DETAIL view.
     const [title, body] = factText(headline, false);
-    expect(title.className).toMatch(/fact-title/);
+    // The detail title must PRE-WRAP (that is what makes its line breaks
+    // render). `.pre` is the class that DOES it — so assert both halves, or the
+    // classname is a label with nothing behind it.
+    expect(title.className).toMatch(/(^|\s)pre(\s|$)/);
+    expect(bareCss).toMatch(/\.pre\s*\{[^}]*white-space:\s*pre-wrap/);
+    // …and the title sits in the display tier the redesign introduced (d3 =
+    // 20px record title), not in the list's 14.5px `.fact-title`.
+    expect(title.className).toMatch(/(^|\s)d3(\s|$)/);
     // The short first line IS the title — it must not swallow the newline and
     // annex the head of the first bullet.
     expect(title.textContent).toBe('What changed:');
@@ -1403,7 +1742,7 @@ describe('viewer — the visual pass (260)', () => {
   });
 
   it('motion is guarded and the focus ring is keyboard-only', () => {
-    const guard = css.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\n  \}/);
+    const guard = bareCss.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\n  \}/);
     expect(guard, 'no prefers-reduced-motion guard').toBeTruthy();
     expect(guard[1]).toMatch(/transition-duration:[^;]*!important/);
     expect(guard[1]).toMatch(/animation-duration:[^;]*!important/);
@@ -1411,19 +1750,35 @@ describe('viewer — the visual pass (260)', () => {
     // is a `*` rule — so a new one cannot escape it.
     expect(guard[1]).toMatch(/\*,\s*\*::before,\s*\*::after/);
 
-    expect(css).toMatch(/:focus-visible\s*\{[\s\S]*?outline:/);
+    expect(bareCss).toMatch(/:focus-visible\s*\{[\s\S]*?outline:/);
     // A mouse click must not leave a ring behind.
-    expect(css).toMatch(/:focus\s*\{\s*outline:\s*none/);
-    expect(css).not.toMatch(/[^-]:focus\s*\{[^}]*outline:\s*2px/);
+    expect(bareCss).toMatch(/:focus\s*\{\s*outline:\s*none/);
+    expect(bareCss).not.toMatch(/[^-]:focus\s*\{[^}]*outline:\s*2px/);
   });
 
   it('the fonts are SYSTEM fonts, with the survey’s two corrections held', () => {
-    expect(css).toMatch(/--ui:\s*system-ui,\s*-apple-system,\s*"Segoe UI"/);
-    expect(css).toMatch(/--mono:\s*ui-monospace,\s*SFMono-Regular/);
-    // Correction (2): system-ui on Windows 11 resolves to Segoe UI, not the
-    // Variable face — naming it in the stack is the common wrong answer.
-    expect(css).not.toContain('Segoe UI Variable');
-    // Zero fetched bytes: no @font-face, no @import, nothing external.
+    // Anchored to the `--ui:` DECLARATION, not to "somewhere in the sheet":
+    // an unanchored match survives deleting the token it is supposed to pin.
+    expect(bareCss).toMatch(/--ui:\s*system-ui,\s*-apple-system,\s*"Segoe UI"/);
+    expect(bareCss).toMatch(/--display:\s*system-ui,\s*-apple-system,\s*"Segoe UI"/);
+    expect(bareCss).toMatch(/--mono:\s*ui-monospace,\s*SFMono-Regular/);
+    // The survey's second correction, and the one design §24.1.2 ratifies:
+    // `system-ui` on Windows 11 resolves to Segoe UI, NOT the Variable face
+    // (Firefox bug 1732404, RESOLVED WONTFIX — Windows reports Segoe UI as its
+    // menu font), so naming the Variable family buys an inconsistent face on
+    // the machines that happen to have it and nothing anywhere else. The
+    // Task-268 redesign named it first and deleted this line; the contract is
+    // in the spec, so the spec wins and the guard comes back.
+    // …on the comment-stripped sheet: the token block's own prose NAMES the
+    // family it is rejecting ("the Segoe UI *Variable* families deliberately NOT
+    // named"), and that line is one asterisk away from failing this assertion
+    // for saying the right thing. A rule about CSS reads CSS (M6).
+    expect(bareCss).not.toContain('Segoe UI Variable');
+    // The ONE assertion here that stays on the RAW sheet, deliberately: "zero
+    // fetched bytes" is a claim about the bytes the browser receives, and a
+    // CDN URL or an @import parked in a comment is exactly the thing worth
+    // failing on — it is a fetch one uncomment away. (Same reasoning as the
+    // 404-page test, which scans a whole served body for `http(s)://`.)
     expect(css).not.toMatch(/@font-face|@import|url\(\s*['"]?https?:/i);
   });
 

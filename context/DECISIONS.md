@@ -16249,3 +16249,584 @@ _(retracted 2026-07-22)_
 
 **When:** 2026-08-02 · **Fact:** `P-5QaU2CTC`
 **Why:** Consolidated after Q1–Q5 design deliberation. Defines shape, scope, wave-1 priorities, and deferral criteria for implementation.
+
+<!-- decision:P-52ALHVHA -->
+
+## Workflow-file changes are the user's standing decision; assistant proposes, user
+
+**When:** 2026-07-29 · **Fact:** `P-52ALHVHA`
+
+<!-- decision:P-D7X2FL6F -->
+
+## awrshift/claude-memory-kit is the predecessor project that prompted renaming of
+
+**When:** 2026-07-29 · **Fact:** `P-D7X2FL6F`
+
+<!-- decision:P-A7VLXSWR -->
+
+## User challenges deferring finished work to next version when it could be done no
+
+**When:** 2026-07-29 · **Fact:** `P-A7VLXSWR`
+
+<!-- decision:P-JWJ53BSF -->
+
+## v0.6.3 published to npm with provenance; GitHub Release created; sprint board cl
+
+**When:** 2026-07-31 · **Fact:** `P-JWJ53BSF`
+
+<!-- decision:P-UJHVCXHS -->
+
+## Confirmed shape (b)—per-code repair book with confirm-first discipline—for troub
+
+**When:** 2026-08-01 · **Fact:** `P-UJHVCXHS`
+
+<!-- decision:P-66JSVJUH -->
+
+## Prefers checkpoint-based, session-structured work; asks agent to pause at safe s
+
+**When:** 2026-08-02 · **Fact:** `P-66JSVJUH`
+
+<!-- decision:P-HQUS53WX -->
+
+## Archived Facts With Failing Commands
+
+**When:** 2026-08-02 · **Fact:** `P-HQUS53WX`
+**Why:** Facts can contain actionable commands; without state awareness, users paste broken commands thinking they work.
+
+<!-- decision:P-TYKaD6ZV -->
+
+## Core Threat Model: XSS Through Memory Facts
+
+**When:** 2026-08-02 · **Fact:** `P-TYKaD6ZV`
+**Why:** The kit's distinguishing risk is that facts are LLM-authored; adversarial testing seeds attack HTML into rendered facts to verify escaping.
+
+<!-- decision:P-GVWPRDH4 -->
+
+## False-Green Health Strip Pattern
+
+**When:** 2026-08-02 · **Fact:** `P-GVWPRDH4`
+**Why:** Masks real issues; poor health/check UX when components are correct in isolation but fail in composition.
+
+<!-- decision:P-VMW6GTBM -->
+
+## Read-Only Guard Switched to Content Hash Comparison
+
+**When:** 2026-08-02 · **Fact:** `P-VMW6GTBM`
+**Why:** Path-based guards are bypassable; hashing is more robust. HTML-parsing sinks are an XSS vector in fact rendering.
+
+<!-- decision:P-9SY6CCHC -->
+
+## Review assessment: "core security posture is genuinely solid" despite issues fou
+
+**When:** 2026-08-02 · **Fact:** `P-9SY6CCHC`
+
+<!-- decision:P-A6NAHHZH -->
+
+## Task 255 review found 1 Blocking, 3 Important, 7 Minor issues; security testing
+
+**When:** 2026-08-02 · **Fact:** `P-A6NAHHZH`
+
+<!-- decision:P-AUN5D2NZ -->
+
+## Test environment (throwaway tree with context/) left at C:\tmp\rev255 for inspec
+
+**When:** 2026-08-02 · **Fact:** `P-AUN5D2NZ`
+
+<!-- decision:P-DQJZRGET -->
+
+## CodeQL and SonarCloud Only Report on Remote PRs
+
+**When:** 2026-08-02 · **Fact:** `P-DQJZRGET`
+**Why:** Local validation cycles against these tools waste time — they don't report locally. The team learned this pattern through this debugging round.
+
+<!-- decision:P-7YSaPD3V -->
+
+## Diagnose CI Failures Before Rerunning
+
+**When:** 2026-08-02 · **Fact:** `P-7YSaPD3V`
+**Why:** Prevents false negatives—a real bug should never hide under assumption of transience. Protects signal integrity.
+
+<!-- decision:P-96MH9ZKY -->
+
+## Threshold-Based Infrastructure Improvement: Occasional vs. Recurring
+
+**When:** 2026-08-02 · **Fact:** `P-96MH9ZKY`
+**Why:** Balances infrastructure churn against production friction. Occasional blips don't justify code changes; recurring patterns do.
+
+<!-- decision:P-F9JYUSNJ -->
+
+## Fable 5 Dual-Use Safety Flagging Behavior
+
+**When:** 2026-08-02 · **Fact:** `P-F9JYUSNJ`
+**Why:** Understanding this is a model-tier behavior (not misconfiguration) and knowing the workaround prevents confusion in future security reviews.
+
+<!-- decision:P-S5U4FRRK -->
+
+## Research note parking workflow during CI
+
+**When:** 2026-08-02 · **Fact:** `P-S5U4FRRK`
+**Why:** Balances strict validation (catalog correctness) with rapid iteration (preserve work). CI gates on quality but doesn't discard intermediate work.
+
+<!-- decision:P-7GaBa77M -->
+
+## validate-docs enforces catalog consistency
+
+**When:** 2026-08-02 · **Fact:** `P-7GaBa77M`
+**Why:** User designed this validator to keep documentation catalog consistent and discoverable. Catch loose docs before they enter the repo.
+
+<!-- decision:P-D5WM54FS -->
+
+## Validation gate chain and stages
+
+**When:** 2026-08-02 · **Fact:** `P-D5WM54FS`
+**Why:** Future sessions debugging CI failures need to understand the gate structure, stage dependencies, and re-run behavior.
+
+<!-- decision:P-2VYMT3TL -->
+
+## Gate Verification System Architecture
+
+**When:** 2026-08-02 · **Fact:** `P-2VYMT3TL`
+**Why:** Understanding the gate chain's structure and limitations is essential for CI/release work. The inability to run CodeQL/SonarCloud locally means they're always a final remote checkpoint.
+
+<!-- decision:P-ZSZa2P7P -->
+
+## Release Workflow Sequence
+
+**When:** 2026-08-02 · **Fact:** `P-ZSZa2P7P`
+**Why:** This is a choreographed, multi-step release process with implicit ordering. Tag creation is deferred as a separate final step.
+
+<!-- decision:P-7FTM35T2 -->
+
+## Sequential Initiative Numbering
+
+**When:** 2026-08-02 · **Fact:** `P-7FTM35T2`
+**Why:** The sequential numbering reflects release dependencies; understanding the number helps identify what must happen before/after.
+
+<!-- decision:P-67RCC5MJ -->
+
+## CodeQL XSS Filter Regex for Script Tags
+
+**When:** 2026-08-02 · **Fact:** `P-67RCC5MJ`
+**Why:** CodeQL static security scanner flags XSS bypasses. Naïve filters missing whitespace variants can be circumvented. The HTML spec allows whitespace and attributes in end tags, so robust filters must account for them.
+
+<!-- decision:P-5GaLaDPK -->
+
+## cmk view (Task 255) architecture and constraints
+
+**When:** 2026-08-02 · **Fact:** `P-5GaLaDPK`
+**Why:** The viewer's read-only, dependency-free design is a key architectural constraint that shapes future development and integration decisions.
+
+<!-- decision:P-A7ZJG3EQ -->
+
+## v0.6.4 release workflow and task ownership
+
+**When:** 2026-08-02 · **Fact:** `P-A7ZJG3EQ`
+**Why:** Defines the exact release workflow, task ownership, and handoff point. The tag push is user-controlled; this boundary should be maintained in future releases.
+
+<!-- decision:P-SYGRXAHN -->
+
+## PowerShell Silently Corrupts UTF-8 in File Edits
+
+**When:** 2026-08-02 · **Fact:** `P-SYGRXAHN`
+**Why:** Silent data corruption risks shipping corrupted files; diffing alone is an unreliable safeguard.
+
+<!-- decision:P-V6CWVJTW -->
+
+## `gh run list` misses SonarCloud gate; must monitor CI separately for SonarCloud
+
+**When:** 2026-08-02 · **Fact:** `P-V6CWVJTW`
+
+<!-- decision:P-36ZKJBT5 -->
+
+## Release Workflow — Tag-Driven Automation via publish.yml
+
+**When:** 2026-08-02 · **Fact:** `P-36ZKJBT5`
+**Why:** Understanding the release automation sequence is essential for cutting and verifying releases.
+
+<!-- decision:P-H3YQSC9U -->
+
+## Team rule stated explicitly—"diagnose from logs before rerunning, so a real fail
+
+**When:** 2026-08-02 · **Fact:** `P-H3YQSC9U`
+
+<!-- decision:P-S2ENBVCJ -->
+
+## Merge gate sequence: stress test (must pass 5/5) → live-verify (final validation
+
+**When:** 2026-08-02 · **Fact:** `P-S2ENBVCJ`
+
+<!-- decision:P-M5D4HQFB -->
+
+## v0.6.4 release cut complete; all work on main (viewer, health nudge, CI retry, m
+
+**When:** 2026-08-02 · **Fact:** `P-M5D4HQFB`
+
+<!-- decision:P-UQRCYRZa -->
+
+## v0.6.4 Release: cmk view + Health Signals Live
+
+**When:** 2026-08-02 · **Fact:** `P-UQRCYRZa`
+**Why:** Observability milestone — users can inspect their memory and kit can signal its own failures
+
+<!-- decision:P-U7ZFC3PV -->
+
+## PowerShell UTF-8 Corruption in CHANGELOG Handling
+
+**When:** 2026-08-03 · **Fact:** `P-U7ZFC3PV`
+**Why:** Silent tool failures like UTF-8 corruption are expensive to debug repeatedly; capturing this prevents the same mistake recurring.
+
+<!-- decision:P-B6XE3CYL -->
+
+## Git Hooks Resolve to Global CMK via PATH
+
+**When:** 2026-08-03 · **Fact:** `P-B6XE3CYL`
+**Why:** Bare names decouple from local structure but risk version lag when development outpaces the global install.
+
+<!-- decision:P-RRQC9T4C -->
+
+## core-memory-kit v0.6.4 Installed; Dual Memory Layers Active
+
+**When:** 2026-08-03 · **Fact:** `P-RRQC9T4C`
+**Why:** Project was dogfooding v0.6.1 globally while 0.6.2–0.6.4 were built locally. This upgrade closes the gap and makes the dual-layer state explicit going forward.
+
+<!-- decision:P-BDDJFJX5 -->
+
+## Scheduled Tasks Use Absolute Paths; Renaming Requires Re-registration
+
+**When:** 2026-08-03 · **Fact:** `P-BDDJFJX5`
+**Why:** Documents path-dependent configuration and the fix to prevent starvation bugs on rename. Explains the Claude Code slug change to prevent confusion about missing session history.
+
+<!-- decision:P-aLR5W59a -->
+
+## Design Token System and Card Identity Pattern
+
+**When:** 2026-08-03 · **Fact:** `P-aLR5W59a`
+**Why:** Single choice—warm neutrals instead of browser greys—creates most visual impact; per-type tinting differentiates card roles; token system enables consistent dark mode
+
+<!-- decision:P-K9QFE2ED -->
+
+## Reference Design System Location and Access
+
+**When:** 2026-08-03 · **Fact:** `P-K9QFE2ED`
+**Why:** Provides working example of pattern before implementing; allows direct study of animation timing, spacing choices, and token application
+
+<!-- decision:P-4W2VYTB7 -->
+
+## Viewer Visual Diagnosis: Six Design Deficits
+
+**When:** 2026-08-03 · **Fact:** `P-4W2VYTB7`
+**Why:** These are the specific constraints that should drive the next implementation task (viewer visual pass). Each point has a concrete fix that the research references validate.
+
+<!-- decision:P-3RV4XDWT -->
+
+## Root Cause of Visual Plainness
+
+**When:** 2026-08-03 · **Fact:** `P-3RV4XDWT`
+**Why:** Frames the problem correctly; prevents misguided future solutions like adding CSS frameworks
+
+<!-- decision:P-WJF4EQPK -->
+
+## Viewer Page Visual Design Constraints
+
+**When:** 2026-08-03 · **Fact:** `P-WJF4EQPK`
+**Why:** Provides durable design foundation for visual pass without re-deriving; empirically validated by third-party research
+
+<!-- decision:P-CSSVUFU3 -->
+
+## README Structure Targets Field Standard
+
+**When:** 2026-08-03 · **Fact:** `P-CSSVUFU3`
+**Why:** Field standard confirmed across successful tools; improves scannability and matches user's intuition
+
+<!-- decision:P-YP45KJVQ -->
+
+## CLAUDE.md Rule Amended to Prevent README Bloat Recurrence
+
+**When:** 2026-08-03 · **Fact:** `P-YP45KJVQ`
+**Why:** The original rule incentivized bloat; fixing the rule at source is necessary to keep the new structure from rebuilding itself
+
+<!-- decision:P-EVK62ZJL -->
+
+## Feature Section Brevity Enforcement
+
+**When:** 2026-08-03 · **Fact:** `P-EVK62ZJL`
+**Why:** Prevents README bloat; field research across datasette, uv, claude-mem, turso confirms ≤22 words per bullet is standard
+
+<!-- decision:P-VBQUL9US -->
+
+## Memory Fact Validation — Task Reference Exemption
+
+**When:** 2026-08-03 · **Fact:** `P-VBQUL9US`
+**Why:** Distinguishes between drift (inaccurate content) and accurate capture (what was stated, even if the referent isn't created yet)
+
+<!-- decision:P-HH76WYCR -->
+
+## Versioning Policy (D-24): Differentiators per Release Level
+
+**When:** 2026-08-03 · **Fact:** `P-HH76WYCR`
+**Why:** Provides clear decision tree for version bumping; prevents version inflation from incremental refinements
+
+<!-- decision:P-EC2TU5VD -->
+
+## Work Items Require Task Entry Before Implementation
+
+**When:** 2026-08-03 · **Fact:** `P-EC2TU5VD`
+**Why:** Ensures all work is tracked and planned upfront
+
+<!-- decision:P-GNUDVPYD -->
+
+## PowerShell Copy-Item Wildcard Risk in Repo
+
+**When:** 2026-08-03 · **Fact:** `P-GNUDVPYD`
+**Why:** This is the second wildcard-related incident this session (earlier: PowerShell UTF-8 encoding corruption). Wildcard operations can pull in unrelated content from mixed directories, causing silent overwrites that only validators catch.
+
+<!-- decision:P-AMCCLEUS -->
+
+## cmk install Auto-Updates Managed Block Version Stamps
+
+**When:** 2026-08-03 · **Fact:** `P-AMCCLEUS`
+**Why:** Prevents confusion about automatic version changes during upgrades; clarifies that the tool itself modifies these files as part of the upgrade flow.
+
+<!-- decision:P-CECC9FDR -->
+
+## Release Workflow: Structured Gate-Based Process
+
+**When:** 2026-08-03 · **Fact:** `P-CECC9FDR`
+**Why:** Ensures consistent quality, traceability, and non-regressing changes across releases.
+
+<!-- decision:P-PSKLBCG5 -->
+
+## Health Strip Displays Actionable Messages
+
+**When:** 2026-08-03 · **Fact:** `P-PSKLBCG5`
+**Why:** UX principle: clear state + actionable next step enables users to proceed without re-orientation
+
+<!-- decision:P-YEFALJNY -->
+
+## Memory System Captures Work in Real Time
+
+**When:** 2026-08-03 · **Fact:** `P-YEFALJNY`
+**Why:** Enables seamless resumption across sessions; work is self-aware and self-documenting by design
+
+<!-- decision:P-ZDAQQ9MY -->
+
+## Markdown Tokenizer is Security-Critical in Viewer
+
+**When:** 2026-08-03 · **Fact:** `P-ZDAQQ9MY`
+**Why:** Untrusted user/system data flows through the tokenizer; a vulnerability here could leak or corrupt the viewer's rendered output.
+
+<!-- decision:P-7TFXEEXP -->
+
+## Task 260 Viewer Visual Redesign — Completed & Verified
+
+**When:** 2026-08-03 · **Fact:** `P-7TFXEEXP`
+**Why:** This pass was a major visual overhaul with strict constraints (zero new deps, all tests must remain green); completion gates verification and acknowledged trade-offs matter for understanding the current viewer state and what remains polish.
+
+<!-- decision:P-WNNDaV7U -->
+
+## User Verdict is Final Done-Criterion for Visual Work
+
+**When:** 2026-08-03 · **Fact:** `P-WNNDaV7U`
+**Why:** Visual work quality is subjective; the user has the authoritative eye on whether the design feels right.
+
+<!-- decision:P-XAVJDNDM -->
+
+## Design Spec §24.1.2: Muted-Text Contrast Target
+
+**When:** 2026-08-03 · **Fact:** `P-XAVJDNDM`
+**Why:** Prior round trusted reviewer suggestion without measurement; this ensures contrast failures are caught before deployment.
+
+<!-- decision:P-WKGG7YK5 -->
+
+## Line-Breaking Rule for Fact Titles
+
+**When:** 2026-08-03 · **Fact:** `P-WKGG7YK5`
+**Why:** Fact B1 regression was caused by `**What changed:**` fitting its own line, which forced the next split inside the bullet. Treating short lines as heading anchors prevents this.
+
+<!-- decision:P-HL3PTPZL -->
+
+## UTF-8 BOM Injection from PowerShell Round-Trips
+
+**When:** 2026-08-03 · **Fact:** `P-HL3PTPZL`
+**Why:** Environmental hazard matching this morning's CHANGELOG incident; corrupts output silently and unpredictably.
+
+<!-- decision:P-QHF4HGMJ -->
+
+## Viewer Visual Pass Color Tokens
+
+**When:** 2026-08-03 · **Fact:** `P-QHF4HGMJ`
+**Why:** Documenting final token values prevents drift and supports design consistency.
+
+<!-- decision:P-QGEP9HN9 -->
+
+## npm Lock-Only Dependency Bump Technique
+
+**When:** 2026-08-03 · **Fact:** `P-QGEP9HN9`
+**Why:** Silent production dependency additions escape review and violate the "empty dependency diff" contract, risking unintended version locks or supply chain implications for end users
+
+<!-- decision:P-B7JP6QQM -->
+
+## Memory Tier Active Writes Block Git Operations
+
+**When:** 2026-08-03 · **Fact:** `P-B7JP6QQM`
+**Why:** Developers working here need to understand the interaction between the active memory system and git; they can block each other
+
+<!-- decision:P-FYFRFTRY -->
+
+## Recurring Dependency Advisory Maintenance Gap
+
+**When:** 2026-08-05 · **Fact:** `P-FYFRFTRY`
+**Why:** Reactive handling wastes cycles and risks coupling dep fixes to feature releases. A standing cadence (e.g., scheduled `npm audit` or Dependabot-grouped lockfile bump) would catch advisories proactively.
+
+<!-- decision:P-WCMBKDHJ -->
+
+## Semantic Recall Corruption Discovered; Aged-Corpus Harness Built
+
+**When:** 2026-08-05 · **Fact:** `P-WCMBKDHJ`
+**Why:** The harness now gates the CI pipeline and prevents historical fact drift. This reveal confirmed that user-driven questions uncover real issues more reliably than test suites in this codebase.
+
+<!-- decision:P-MLLQAVYC -->
+
+## Task 260 (Viewer) Awaits User Final Verdict
+
+**When:** 2026-08-05 · **Fact:** `P-MLLQAVYC`
+**Why:** The viewer's success is subjective. Keeping the gate ensures quality approval doesn't slip.
+
+<!-- decision:P-6ZGV2FAV -->
+
+## Design Research Memo and MVP Split
+
+**When:** 2026-08-05 · **Fact:** `P-6ZGV2FAV`
+**Why:** Separates aspirational design direction from first-pass constraints.
+
+<!-- decision:P-49EaRTEX -->
+
+## Task 260 and 262 Sequencing
+
+**When:** 2026-08-05 · **Fact:** `P-49EaRTEX`
+**Why:** Task dependencies and decision gates clarify scope and sequencing.
+
+<!-- decision:P-AYR7PHVA -->
+
+## Task Laning Strategy and Trigger Discipline
+
+**When:** 2026-08-05 · **Fact:** `P-AYR7PHVA`
+**Why:** User's core observation is that vague triggers cause deferral and rot. This structure prevents it.
+
+<!-- decision:P-APAWB5FF -->
+
+## User found UI "ugly"; wants to research reference designs before finalizing desi
+
+**When:** 2026-08-03 · **Fact:** `P-APAWB5FF`
+
+<!-- decision:P-GCKYSG6J -->
+
+## User is actively working on visual design improvements for claude-memory-kit vie
+
+**When:** 2026-08-03 · **Fact:** `P-GCKYSG6J`
+
+<!-- decision:P-FALJVHYa -->
+
+## Task 259 (live refresh via SSE) should ship in v0.6.6, not deferred to v0.7.0.
+
+**When:** 2026-08-03 · **Fact:** `P-FALJVHYa`
+
+<!-- decision:P-FYWRD52W -->
+
+## User's verdict on visual quality (reviewing screenshots) is the final done-crite
+
+**When:** 2026-08-03 · **Fact:** `P-FYWRD52W`
+
+<!-- decision:P-ZMDZYUYK -->
+
+## User ran both `--with-semantic` and `register-crons` flags on this project
+
+**When:** 2026-08-05 · **Fact:** `P-ZMDZYUYK`
+
+<!-- decision:P-RNaW3P52 -->
+
+## Earlier in session stated "we always defer things and then it bites us"; strong
+
+**When:** 2026-08-05 · **Fact:** `P-RNaW3P52`
+
+<!-- decision:P-HACXRV7F -->
+
+## Design Handoff Process
+
+**When:** 2026-08-05 · **Fact:** `P-HACXRV7F`
+**Why:** Design handoffs succeed when scope is tight, visual context is clear, and constraints are explicit—tight scope prevents noise; visuals beat code for judgment; explicit constraints prevent rediscovery of accessibility math.
+
+<!-- decision:P-aKLSSTP2 -->
+
+## Viewer Page Design Constraints
+
+**When:** 2026-08-05 · **Fact:** `P-aKLSSTP2`
+**Why:** These constraints are non-negotiable for accessibility and compliance. Treating them as given (not aesthetic choices) ensures the designer optimizes within bounds rather than trying to redesign around them.
+
+<!-- decision:P-AB9U63CA -->
+
+## Visual Redesign for Viewer Page (Issue #268, v0.6.6)
+
+**When:** 2026-08-05 · **Fact:** `P-AB9U63CA`
+**Why:** The structure and constraints are now clear and enforceable via validators, so a fresh design pass can improve the visual layer without risk of breaking the contract.
+
+<!-- decision:P-E6JRSZa6 -->
+
+## Designer Handoff: Request Complete Files, Not Change Lists
+
+**When:** 2026-08-05 · **Fact:** `P-E6JRSZa6`
+**Why:** Two prior design passes failed when structured as suggestions; the interpretation-in-between (translating suggestions to code) introduces failures. Complete files eliminate this step.
+
+<!-- decision:P-64LE9CWJ -->
+
+## Viewer Page HTML Redesign — File Attachments & Priorities
+
+**When:** 2026-08-05 · **Fact:** `P-64LE9CWJ`
+**Why:** Previous guidance listed only 5 files; this is the complete checklist (7 screenshots + 2 refs). Attachment priority prevents re-iteration if tool enforces limits. Dark mode is a designed state (not CSS inversion). Tool quirks (canvas vs code output) are non-obvious and cause wasted iterations.
+
+<!-- decision:P-RQMX733N -->
+
+## Reference design: `cm-viewer-template.html` (repo root) or localhost:37777 live;
+
+**When:** 2026-08-05 · **Fact:** `P-RQMX733N`
+
+<!-- decision:P-SV2FTELE -->
+
+## Wave-2 plan: implement token system + tier-accented cards (P/L/U), inline CSS, z
+
+**When:** 2026-08-05 · **Fact:** `P-SV2FTELE`
+
+<!-- decision:P-FYSSUZPL -->
+
+## CMK View — Memory Viewer Web App
+
+**When:** 2026-08-05 · **Fact:** `P-FYSSUZPL`
+**Why:** Concrete project structure and constraints for viewer maintenance and redesign
+
+<!-- decision:P-QWLDZHBV -->
+
+## Copy-Paste UTF-8 Corruption from Claude Design Sidebar
+
+**When:** 2026-08-05 · **Fact:** `P-QWLDZHBV`
+**Why:** The pasted viewer-page.html had corrupted title and comments. Must use raw bytes, not transit-mangled copy-paste.
+
+<!-- decision:P-HE3JKVMG -->
+
+## Viewer-Page Redesign Implementation: CSS & Token Values
+
+**When:** 2026-08-05 · **Fact:** `P-HE3JKVMG`
+**Why:** These are the concrete specifications of the landed redesign. They define the component's structure and must be preserved through validation.
+
+<!-- decision:P-6DQGY2SY -->
+
+## Viewer-Page Redesign: Multi-Layer Validation Workflow
+
+**When:** 2026-08-05 · **Fact:** `P-6DQGY2SY`
+**Why:** Multi-layer validation prevents regressions and accessibility breaks while shipping new visuals. Real corpus catches rendering issues sample data misses.
+
+<!-- decision:P-KEHEJaPH -->
+
+## Disable Viewer During Stress Test Gates
+
+**When:** 2026-08-05 · **Fact:** `P-KEHEJaPH`
+**Why:** Repeated pattern observed multiple times; resource competition has invalidated stress runs in this project

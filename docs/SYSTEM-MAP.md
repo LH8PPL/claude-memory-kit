@@ -201,6 +201,8 @@ from two ends.
 
 ## 6. The TARGET state — the loop CLOSED ("our Figure 2")
 
+> **External validation + design inputs (2026-08-07, D-428/D-429):** the [research-break note](research/2026-08-07-research-break-two-papers-two-repos.md) lands directly on this section — MRAgent (ICML 2026) proves the active-recall half this loop feeds is strictly stronger than one-shot retrieval; Zero-Mem benchmarks the deterministic-construction half; KiroCrew ships the most complete behavioral learn-loop in the corpus (four lesson sources + a FIFTH loop, auto-skill-creation — see Task 180's prior-art annotation) plus a statistical episodic→semantic promotion path (Task 95's grill inputs). The loop's design reads these first.
+
 _Designed 2026-07-02 from the full research corpus (the U-Mem superimposition the whole arc was for);
 status: **ADOPTED — ADR-0017 (Accepted 2026-07-02, D-252)**. §1 draws what IS; this draws what the kit
 becomes when the open edge closes — every wire below carries a research citation (the table after the
