@@ -245,6 +245,30 @@ const PIPELINES = {
   },
 };
 
+/**
+ * Run `fn` with write-time linking force-ENABLED, whatever the shipped default.
+ *
+ * The benchmark measures the MECHANISM, not the default. Since D-436 the
+ * default is OFF, and `writeFact` consults `linkingEnabled()` independently of
+ * `seedCorpus({autoLink:true})` — so without this the auto-write arm seeds a
+ * corpus with zero edges and scores identically to the unlinked control, while
+ * still being labelled `auto-write`. That is the worst failure shape a
+ * benchmark has: an arm that quietly measures nothing and reports a number.
+ * (It is not hypothetical — it is what this harness did between the default
+ * flip and the B2 review finding, and the assertion in `runLinkBench` now makes
+ * it impossible to repeat silently.)
+ */
+async function withLinkingEnabled(fn) {
+  const prev = process.env.CMK_LINK_FACTS;
+  process.env.CMK_LINK_FACTS = '1';
+  try {
+    return await fn();
+  } finally {
+    if (prev === undefined) delete process.env.CMK_LINK_FACTS;
+    else process.env.CMK_LINK_FACTS = prev;
+  }
+}
+
 // --- Aging ------------------------------------------------------------------
 
 const DRIFT_MARKER = 'BENCH-DRIFT';
@@ -421,14 +445,18 @@ export async function runLinkBench({
             reindexBoot({ projectRoot, userDir, db: seedDb });
           }
         : null;
-    const keyToId = seedCorpus({
-      corpus,
-      projectRoot,
-      userDir,
-      sourceFile: 'fixtures/link-bench/corpus.json',
-      autoLink: variant === 'auto-write',
-      onFactWritten,
-    });
+    // `autoLink` clears writeFact's opt-out; `withLinkingEnabled` turns the
+    // mechanism ON over the shipped default-OFF. BOTH are required.
+    const seed = () =>
+      seedCorpus({
+        corpus,
+        projectRoot,
+        userDir,
+        sourceFile: 'fixtures/link-bench/corpus.json',
+        autoLink: variant === 'auto-write',
+        onFactWritten,
+      });
+    const keyToId = variant === 'auto-write' ? await withLinkingEnabled(seed) : seed();
     try {
       seedDb?.close();
     } catch {
@@ -535,6 +563,19 @@ export async function runLinkBench({
       byQtype,
       perQuery,
     };
+
+    // THE ARM-ALIVE ASSERTION (B2). An `auto-*` variant exists to measure edges
+    // the MECHANISM produced; if it produced none, every number below is the
+    // control's number wearing another label. Fail loudly instead of publishing
+    // it. `unlinked` legitimately has zero; `linked` legitimately has the
+    // fixture's own.
+    if (variant.startsWith('auto-') && report.appliedEdges === 0) {
+      throw new Error(
+        `bench:linking — variant '${variant}' produced ZERO related edges, so it is measuring the ` +
+          `unlinked control under another name. The linker did not run (check CMK_LINK_FACTS / ` +
+          `linkingEnabled) or found nothing above the floor. Refusing to report this as a result.`,
+      );
+    }
 
     if (outPath) {
       mkdirSync(dirname(outPath), { recursive: true });

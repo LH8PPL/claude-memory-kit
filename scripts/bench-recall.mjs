@@ -204,12 +204,18 @@ export function seedCorpus({
   projectRoot,
   userDir,
   sourceFile = 'fixtures/recall-bench/corpus.json',
-  // Task 262: write-time linking defaults ON in production, which would make
-  // every benchmark variant — INCLUDING the unlinked twin the canary compares
-  // against — grow edges the fixture never declared. A benchmark whose control
-  // is contaminated by the thing under test measures nothing, so seeding is
-  // explicitly UNLINKED unless a variant asks for the linker (`autoLink: true`),
-  // which preserves the Task-99 fixture's numbers byte-for-byte.
+  // Task 262: seeding is explicitly UNLINKED unless a variant asks for the
+  // linker (`autoLink: true`), so the unlinked twin the canary compares against
+  // can never be contaminated by the thing under test, and the Task-99 fixture's
+  // numbers stay byte-for-byte unchanged.
+  //
+  // NOTE — this flag only clears writeFact's OPT-OUT. It does NOT turn linking
+  // on: `writeFact` also consults `linkingEnabled()`, which since D-436 returns
+  // FALSE by default. A caller that wants the mechanism to actually run must
+  // ALSO enable the flag (see bench-linking's `withLinkingEnabled`). Getting
+  // this wrong silently produces an arm with zero edges that scores identically
+  // to the control — which is exactly what happened between the default flip
+  // and the B2 review finding.
   autoLink = false,
   // Called after each fact write. The write-time linking variant uses it to
   // refresh the SQLite index between writes, because a fact can only ever link
