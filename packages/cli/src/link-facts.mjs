@@ -49,6 +49,8 @@ import { join } from 'node:path';
 import { appendAuditEntry, nowIso, REASON_CODES } from './audit-log.mjs';
 import {
   tokenJaccardSimilarity,
+  tokenSetOf,
+  jaccardOfTokenSets,
   writeConflictEntry,
   SUBSTRING_NEARDUP_THRESHOLD,
 } from './conflict-queue.mjs';
@@ -298,7 +300,13 @@ export function refreshLinkFloors(db, { modelId = null, now = null } = {}) {
   const items = rows.map((r) => ({ id: r.id, text: r.body }));
 
   try {
-    const j = computeLinkFloor({ items, similarityFn: tokenJaccardSimilarity });
+    // Tokenize the sample ONCE: the derivation draws up to 20,000 pairs, so the
+    // pairwise re-tokenizing form would tokenize the same bodies 40,000 times.
+    const tokens = new Map(items.map((it) => [it.text, tokenSetOf(it.text)]));
+    const j = computeLinkFloor({
+      items,
+      similarityFn: (a, b) => jaccardOfTokenSets(tokens.get(a) ?? tokenSetOf(a), tokens.get(b) ?? tokenSetOf(b)),
+    });
     if (j) {
       out.jaccard = { backend: 'jaccard', corpusSize: items.length, computedAt, ...j };
       writeLinkFloor(db, 'jaccard', out.jaccard);
@@ -381,6 +389,26 @@ function cosineOf(a, b) {
 // --- Candidate selection + banding -----------------------------------------
 
 /**
+ * The candidate set for one tier, tokenized ONCE.
+ *
+ * The lexical backend is quadratic in tokenizations if each comparison
+ * re-tokenizes the candidate body — 2,260 facts scored against 2,260 facts is
+ * 5.1M tokenizations of the same 2,260 strings, which is the difference between
+ * a backfill that finishes and one that does not. A caller scanning the corpus
+ * repeatedly (the backfill) prepares this once and passes it in; a single write
+ * lets `selectLinkCandidates` build it inline, where the cost is one pass.
+ */
+export function prepareLinkCandidates(db, { tier = null, now = Date.now(), lexical = true } = {}) {
+  return liveFactRows(db, { tier, now }).map((r) => ({
+    id: r.id,
+    slug: slugForFactSource(r.source_file),
+    body: r.body ?? '',
+    trust: r.trust,
+    tokens: lexical ? tokenSetOf(r.body ?? '') : null,
+  }));
+}
+
+/**
  * Score `text` against the live same-tier corpus and split the result into the
  * three bands. Pure read — no writes, no side effects.
  *
@@ -392,51 +420,58 @@ export function selectLinkCandidates({
   tier,
   text,
   excludeId = null,
-  similarityFn = tokenJaccardSimilarity,
+  similarityFn: injectedSimilarityFn = null,
   backend = 'jaccard',
   floor,
   nearDupThreshold,
   cap = LINK_CAP,
   now = Date.now(),
+  candidates = null,
 } = {}) {
+  const similarityFn = injectedSimilarityFn ?? tokenJaccardSimilarity;
   const empty = { links: [], nearDups: [], scanned: 0, backend, floor, nearDupThreshold };
   if (typeof text !== 'string' || !text.trim()) return empty;
   if (typeof floor !== 'number' || !Number.isFinite(floor)) return empty;
 
-  const rows = liveFactRows(db, { tier, now });
+  // The LEXICAL fast path applies only when no similarityFn was injected: an
+  // injected fn is the caller's contract (the semantic cosine, or a test seam)
+  // and must be honored verbatim.
+  const lexical = backend === 'jaccard' && !injectedSimilarityFn;
+  const rows = candidates ?? prepareLinkCandidates(db, { tier, now, lexical });
   if (rows.length === 0 || rows.length > MAX_SCAN_FACTS) {
     return { ...empty, scanned: rows.length };
   }
 
-  // Cheap admissible-bound prefilter for the LEXICAL backend: token-Jaccard can
-  // never exceed min(|A|,|B|)/max(|A|,|B|), so a length-mismatched candidate is
-  // rejected without an intersection. Skipped for semantic (a cosine has no
-  // such bound and the dot product is already the cheap operation).
-  const lexical = backend === 'jaccard';
-  const newTokens = lexical ? countTokens(text) : 0;
+  const newTokens = lexical ? tokenSetOf(text) : null;
 
   const scored = [];
   for (const r of rows) {
     if (excludeId && r.id === excludeId) continue;
     const body = r.body ?? '';
     if (!body.trim()) continue;
-    if (lexical && newTokens > 0) {
-      const c = countTokens(body);
-      if (c === 0) continue;
-      const bound = Math.min(newTokens, c) / Math.max(newTokens, c);
-      if (bound < floor) continue;
-    }
     let s;
-    try {
-      s = similarityFn(text, body);
-    } catch {
-      continue;
+    if (lexical && r.tokens) {
+      // Cheap admissible bound first: token-Jaccard can never exceed
+      // min(|A|,|B|)/max(|A|,|B|), so a length-mismatched candidate is rejected
+      // without an intersection at all. (A cosine has no such bound, and the
+      // dot product is already the cheap operation, so semantic skips this.)
+      if (newTokens.size === 0 || r.tokens.size === 0) continue;
+      const bound =
+        Math.min(newTokens.size, r.tokens.size) / Math.max(newTokens.size, r.tokens.size);
+      if (bound < floor) continue;
+      s = jaccardOfTokenSets(newTokens, r.tokens);
+    } else {
+      try {
+        s = similarityFn(text, body);
+      } catch {
+        continue;
+      }
     }
     // `> 0` as well as `>= floor`: a derived floor CAN legitimately be 0 on a
     // corpus whose random pairs share nothing, and a zero-similarity edge is
     // not a relationship under any backend — it is the linker linking at random.
     if (!Number.isFinite(s) || s <= 0 || s < floor) continue;
-    scored.push({ id: r.id, slug: slugForFactSource(r.source_file), score: s, body, trust: r.trust });
+    scored.push({ id: r.id, slug: r.slug, score: s, body, trust: r.trust });
   }
 
   // Deterministic order: score desc, then id asc so a tie never depends on
@@ -455,12 +490,6 @@ export function selectLinkCandidates({
   return { links, nearDups, scanned: rows.length, backend, floor, nearDupThreshold };
 }
 
-const TOKEN_SPLIT = /[\s.,!?;:()[\]{}'"`/\\-]+/u;
-function countTokens(s) {
-  const set = new Set();
-  for (const t of String(s).toLowerCase().split(TOKEN_SPLIT)) if (t) set.add(t);
-  return set.size;
-}
 
 // --- The write-path boundary ------------------------------------------------
 
@@ -499,6 +528,7 @@ export function autoLinkFact({
   mode = 'write',
   similarity = null,
   now = null,
+  candidates = null,
 } = {}) {
   const backend = similarity?.backend ?? 'jaccard';
   const similarityFn = similarity?.similarityFn ?? tokenJaccardSimilarity;
@@ -536,6 +566,7 @@ export function autoLinkFact({
     backend,
     floor: floorRec.floor,
     nearDupThreshold,
+    candidates,
   });
 
   // The near-dup band is a MERGE PROPOSAL, not a link and not a block: the fact
@@ -620,6 +651,76 @@ export function auditAutoLink({ tierRoot, tier, id, decision, now = null }) {
 }
 
 // --- The prepared (async) semantic linker ----------------------------------
+
+/**
+ * The SEMANTIC backend for scoring facts that are BOTH already in the corpus —
+ * the backfill's shape, and a different problem from the write path's.
+ *
+ * THE BUG THIS EXISTS TO PREVENT (found by the sub-task-4 measurement, before
+ * ship): `prepareSemanticSimilarity` embeds ONE incoming text and returns a
+ * closure over THAT vector — its `similarityFn(a, b)` ignores `a` entirely and
+ * scores `b` against the embedded text. That is exactly right for a capture
+ * (one new text vs many candidates) and catastrophically wrong for a backfill,
+ * where a single prepared scorer would compare every fact in the corpus against
+ * whatever probe string happened to prepare it. The scores would be real
+ * numbers, plausibly distributed, and meaningless — the worst failure shape
+ * there is.
+ *
+ * So the backfill gets a SYMMETRIC scorer instead: both sides are looked up in
+ * the content-addressed `embedding_cache` and compared by cosine. Every fact in
+ * the corpus is already embedded there (that is what the semantic index IS), so
+ * this makes ZERO model calls — it is cheaper than the capture path, not more
+ * expensive.
+ *
+ * A pair where either side has no cached vector falls back to token-Jaccard for
+ * that pair — the same honest per-pair degradation Task 143 chose, never a
+ * throw and never a silent zero.
+ *
+ * @returns {{similarityFn:Function, backend:'semantic', modelId:string,
+ *            coverage:number}|null}  null when nothing is cached (the embedder
+ *            was never installed or never synced).
+ */
+export function makeCachedCosineBackend(db, { modelId: wantModel = null } = {}) {
+  let rows;
+  try {
+    rows = db.prepare('SELECT content_sha, model, vector FROM embedding_cache').all();
+  } catch {
+    return null;
+  }
+  if (!rows || rows.length === 0) return null;
+  const modelId = wantModel ?? rows[0].model;
+  const bySha = new Map();
+  for (const r of rows) {
+    if (r.model !== modelId) continue;
+    bySha.set(
+      r.content_sha,
+      new Float32Array(r.vector.buffer, r.vector.byteOffset, r.vector.byteLength / 4),
+    );
+  }
+  if (bySha.size === 0) return null;
+
+  // Memoized per-text lookup: a backfill scores the same candidate bodies once
+  // per considered fact, so hashing each body every time would dominate.
+  const vecOf = new Map();
+  const lookup = (text) => {
+    if (vecOf.has(text)) return vecOf.get(text);
+    const v = bySha.get(embeddingCacheKey(modelId, text)) ?? null;
+    vecOf.set(text, v);
+    return v;
+  };
+
+  return {
+    backend: 'semantic',
+    modelId,
+    coverage: bySha.size,
+    similarityFn: (a, b) => {
+      const va = lookup(a);
+      const vb = lookup(b);
+      if (!va || !vb) return tokenJaccardSimilarity(a, b);
+      return cosineOf(va, vb);
+    },
+  };
+}
 
 /**
  * Build the SEMANTIC similarity backend for one capture, mirroring Task 143's

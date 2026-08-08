@@ -40,7 +40,13 @@ import { hashContent } from './content-hash.mjs';
 import { openIndexDb } from './index-db.mjs';
 import { ERROR_CATEGORIES, errorResult } from './result-shapes.mjs';
 import { nowIso } from './audit-log.mjs';
-import { autoLinkFact, auditAutoLink, readLinkFloor, refreshLinkFloors } from './link-facts.mjs';
+import {
+  autoLinkFact,
+  auditAutoLink,
+  readLinkFloor,
+  refreshLinkFloors,
+  prepareLinkCandidates,
+} from './link-facts.mjs';
 // The `related:` normalizer is graph-index's — the SAME one rebuildEdges and
 // vault-map read, so "does this fact already carry links?" can never disagree
 // with "does this fact produce edges?".
@@ -191,6 +197,27 @@ export function linkBackfill({
                                      evaluated_at = excluded.evaluated_at`,
     );
 
+    // ONE tokenized pass over the corpus for the whole run. Without it each of
+    // the (up to `max`) facts would re-tokenize every candidate body, which on a
+    // 2,260-fact corpus is millions of tokenizations of the same strings — the
+    // difference between a backfill that finishes and one that does not.
+    //
+    // Safe to hoist: linking writes only `related:` FRONTMATTER, so no body this
+    // run touches can change while the run is in flight.
+    const candidates = prepareLinkCandidates(db, { tier, lexical: !similarity });
+    // Score the INDEXED body, not the file body.
+    //
+    // They differ: the indexer trims, while a fact file's body carries the
+    // leading/trailing newlines writeFact wrote. Everything downstream is keyed
+    // on the indexed form — the candidate bodies here, and (load-bearing) the
+    // content-addressed `embedding_cache`, whose key is sha256(model + the
+    // INDEXED body). Passing the file body meant every semantic lookup missed,
+    // every pair silently fell back to token-Jaccard, and those lexical scores
+    // were then judged against a SEMANTIC floor of 0.68 — so `--semantic`
+    // produced exactly zero links while reporting a healthy floor. Found by the
+    // sub-task-4 measurement, which is the only place it was visible.
+    const indexedBody = new Map(candidates.map((c) => [c.id, c.body]));
+
     const bands = { related: 0, nearDup: 0, none: 0 };
     const samples = [];
     let considered = 0;
@@ -207,10 +234,11 @@ export function linkBackfill({
         userDir,
         tier,
         id: fact.id,
-        text: fact.body,
+        text: indexedBody.get(fact.id) ?? fact.body,
         mode: 'backfill',
         similarity,
         now: ts,
+        candidates,
       });
 
       if (decision.nearDups.length > 0) bands.nearDup += 1;

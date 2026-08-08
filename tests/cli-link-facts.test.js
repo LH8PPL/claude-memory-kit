@@ -40,12 +40,14 @@ import {
   selectLinkCandidates,
   linkingEnabled,
   autoLinkFact,
+  makeCachedCosineBackend,
 } from '../packages/cli/src/link-facts.mjs';
 import { writeFact } from '../packages/cli/src/write-fact.mjs';
 import { openIndexDb } from '../packages/cli/src/index-db.mjs';
 import { reindexFull } from '../packages/cli/src/index-rebuild.mjs';
 import { traverseLinks } from '../packages/cli/src/graph-index.mjs';
 import { tokenJaccardSimilarity } from '../packages/cli/src/conflict-queue.mjs';
+import { embeddingCacheKey } from '../packages/cli/src/semantic-backend.mjs';
 import { install } from '../packages/cli/src/install.mjs';
 
 let sandbox;
@@ -621,5 +623,82 @@ describe('Task 262 — the near-dup band routes to the conflict queue (Doors 2, 
       db.close();
     }
     expect(existsSync(join(projectRoot, 'context', 'queues', 'conflicts.md'))).toBe(false);
+  });
+});
+
+// --- F. The symmetric semantic backend (the bug the AFTER measurement found) --
+
+describe('Task 262 — the backfill semantic backend scores BOTH sides (Door 1)', () => {
+  // Two orthogonal unit vectors + one that leans toward the first. Enough to
+  // prove the scorer reads both arguments; the real embedder is the live-test.
+  const VEC = {
+    alpha: [1, 0, 0],
+    beta: [0, 1, 0],
+    nearAlpha: [0.8, 0.6, 0],
+  };
+  const TEXT = {
+    alpha: 'the alpha document body',
+    beta: 'the beta document body',
+    nearAlpha: 'the near-alpha document body',
+  };
+
+  function seedCache(db, modelId = 'test-model') {
+    db.exec(`CREATE TABLE IF NOT EXISTS embedding_cache (
+      content_sha TEXT PRIMARY KEY, model TEXT NOT NULL, vector BLOB NOT NULL);`);
+    const ins = db.prepare('INSERT OR REPLACE INTO embedding_cache (content_sha, model, vector) VALUES (?, ?, ?)');
+    for (const [k, text] of Object.entries(TEXT)) {
+      ins.run(embeddingCacheKey(modelId, text), modelId, Buffer.from(new Float32Array(VEC[k]).buffer));
+    }
+    return modelId;
+  }
+
+  it('F1 similarity depends on BOTH arguments and is symmetric', () => {
+    const db = openIndexDb({ projectRoot });
+    try {
+      seedCache(db);
+      const be = makeCachedCosineBackend(db, { modelId: 'test-model' });
+      expect(be).not.toBeNull();
+      expect(be.backend).toBe('semantic');
+
+      const alphaBeta = be.similarityFn(TEXT.alpha, TEXT.beta);
+      const alphaNear = be.similarityFn(TEXT.alpha, TEXT.nearAlpha);
+
+      // THE REGRESSION THIS PINS: the capture-path scorer closes over ONE
+      // embedded text and ignores its first argument, so a backfill driven by it
+      // would return the same number here regardless of the pair. These must
+      // differ, and they must be the real cosines.
+      expect(alphaBeta).toBeCloseTo(0, 5);
+      expect(alphaNear).toBeCloseTo(0.8, 5);
+      expect(alphaNear).not.toBeCloseTo(alphaBeta, 3);
+
+      // Symmetric — a link between two existing facts has no "new" side.
+      expect(be.similarityFn(TEXT.beta, TEXT.alpha)).toBeCloseTo(alphaBeta, 6);
+      expect(be.similarityFn(TEXT.nearAlpha, TEXT.alpha)).toBeCloseTo(alphaNear, 6);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('F2 an uncached pair degrades to token-Jaccard for that pair, never to zero', () => {
+    const db = openIndexDb({ projectRoot });
+    try {
+      seedCache(db);
+      const be = makeCachedCosineBackend(db, { modelId: 'test-model' });
+      const uncached = 'a body that was never embedded at all';
+      expect(be.similarityFn(TEXT.alpha, uncached)).toBe(
+        tokenJaccardSimilarity(TEXT.alpha, uncached),
+      );
+    } finally {
+      db.close();
+    }
+  });
+
+  it('F3 returns null when nothing is cached (the embedder was never installed)', () => {
+    const db = openIndexDb({ projectRoot });
+    try {
+      expect(makeCachedCosineBackend(db)).toBeNull();
+    } finally {
+      db.close();
+    }
   });
 });

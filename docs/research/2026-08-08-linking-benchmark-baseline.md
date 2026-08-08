@@ -1,8 +1,8 @@
 ---
 date: 2026-08-08
-topic: The relational-recall benchmark, its canary, and the PRE-LINKING baseline (Task 262 sub-task 1 — the measurement ADR-0023's deferral trigger requires)
+topic: The relational-recall benchmark, its canary, the PRE-LINKING baseline, and the AFTER measurement of the automatic linker (Task 262 sub-tasks 1 + 4)
 source: New harness (scripts/bench-linking.mjs) run against a committed fixture corpus; every number below produced by `npm run bench:linking -- --semantic` on this checkout
-tags: [task-262, adr-0023, linking, benchmark, recall, canary, D-429]
+tags: [task-262, adr-0023, linking, benchmark, recall, canary, dilution, D-429, D-433]
 ---
 
 # Linking benchmark — the instrument, the canary, and the BEFORE numbers
@@ -249,3 +249,119 @@ npm run bench:linking -- --aged=false    # skip the aged half (faster; NOT the g
 Reports land in `.bench-logs/<stamp>_*.json` (gitignored); the `_summary.json` carries the canary
 verdict plus every matrix row. Deterministic rungs reproduce exactly; hybrid rungs depend on the
 embedder build.
+
+---
+
+## 7. THE AFTER — what the AUTOMATIC linker actually produces
+
+_Added 2026-08-08 (sub-task 4), same fixture, same script, same build. `npm run bench:linking -- --after --semantic`._
+
+**The headline, stated before the tables because it is the finding:** the automatic linker
+**does not reproduce the hand-placed edges, and on this fixture it makes relational recall
+WORSE than no links at all.** D-433's condition — *"if the graph rung regresses the temporal
+control beyond the pinned band, the mechanism (or its seeding) needs tuning before ship — the
+controls are the judge"* — **fires**.
+
+### 7.1 Two automatic variants, because two things ship
+
+| variant | how the edges got there | facts linked | edges |
+| --- | --- | --- | --- |
+| `unlinked` | none — the BEFORE | 0 | 0 |
+| `auto-write` | write-time linking, index refreshed between writes | 3 | 4 |
+| `auto-backfill` | `cmk autolink` over the finished corpus (semantic) | 14 | 19 |
+| `linked` | hand-placed — the CEILING | 11 | 13 |
+
+`auto-write` is structurally starved on a 50-fact corpus and this is **not** a harness artifact:
+the write path can only link BACKWARD (a fact sees only what the index already held), and no floor
+is derivable at all below `MIN_FLOOR_ITEMS` = 24 facts. So the first half of the corpus links
+nothing by design, and the second half sees at most half the corpus. On the real 2,260-fact corpus
+this constraint costs almost nothing; on a 50-entry fixture it costs most of the opportunity.
+
+`auto-backfill` is the fair test of edge QUALITY: every fact sees every other, and it placed
+**19 edges over 14 facts** against the hand-placed **13 over 11** — comparable density, so what
+follows is about *which* edges, not *how many*.
+
+### 7.2 R@5 — BEFORE → AFTER → ceiling
+
+Fresh and aged agree, so both are shown; per §4(f) they are never compared across.
+
+| pipeline | age | unlinked (BEFORE) | auto-write | auto-backfill | linked (CEILING) |
+| --- | --- | --- | --- | --- | --- |
+| **graph** multi-hop | fresh | 0.333 | **0.222** | **0.222** | 0.778 |
+| **graph-hybrid** multi-hop | fresh | 0.444 | 0.444 | **0.333** | 0.889 |
+| **graph** multi-hop | aged | 0.333 | **0.222** | **0.222** | 0.778 |
+| **graph-hybrid** multi-hop | aged | 0.444 | 0.444 | **0.333** | 0.778 |
+| **graph** overall | fresh | 0.667 | 0.619 | 0.571 | 0.810 |
+| **graph-hybrid** overall | fresh | 0.667 | 0.667 | 0.619 | 0.857 |
+
+**The controls** (fresh, `graph`): `single-hop` 0.800 and `preference` 1.000 are unmoved by every
+variant — no regression there. `temporal` goes 1.000 (unlinked) → 1.000 (auto-write) → **0.750**
+(auto-backfill): the dilution cost §4(e) predicted, now reproduced by automatic edges at −0.25,
+the same magnitude the hand-placed corpus paid.
+
+**Delta against both reference points, on the kit's real default recall (`graph-hybrid`, fresh
+multi-hop):**
+
+- vs the unlinked BEFORE: **−0.111** (0.444 → 0.333) — the automatic linker is a *regression*.
+- vs the hand-placed CEILING: **−0.556** (0.889 → 0.333) — it recovers **0%** of the available gain.
+
+### 7.3 Why — and it is not a tuning knob
+
+The fixture's `multi-hop` questions are built so the answer body **shares no distinctive term with
+its query** (§1.2). By construction the ground-truth edge connects two facts that are *topically*
+related while being *lexically and distributionally* far apart. A similarity-ranked linker — token
+overlap OR embedding cosine — selects on exactly the axis those edges are defined to be weak on. It
+is not mis-tuned; it is measuring the wrong quantity. Lowering the floor would add more of the same
+kind of edge, and §7.2 already shows more edges of that kind making recall worse, not better.
+
+That is a stronger claim than "the numbers came out low," so its limits: this holds **on this
+fixture**, whose 9 multi-hop questions were deliberately constructed to be link-only-reachable. A
+corpus whose real relationships DO track surface similarity would score differently — and §7.5's
+real-corpus sample shows the linker producing edges a human would call correct. What the fixture
+establishes is that "related enough to link" and "related enough to answer a multi-hop question"
+are different relations, and the deterministic linker only has access to the first.
+
+### 7.4 What this says about ADR-0023
+
+ADR-0023 deferred LLM edge derivation (Memora-style `cues:` first in line) behind the trigger
+sub-task 1 fired. Sub-task 4 now adds the other half of the answer: **the deterministic,
+zero-LLM linker was the cheap thing to try first, it is built, and it does not close the gap.**
+The 0.444 → 0.889 headroom §3 measured is real and still unclaimed. The measurement therefore
+points at exactly the candidate the ADR ranked first, for exactly the reason it gave.
+
+### 7.5 What DID work, and is not visible in the table above
+
+Against the **real** dogfood corpus (2,260 facts, token-Jaccard, derived floor **0.1564**), a live
+`cmk remember` about backup discipline auto-linked to `never-overwrite-backups` (0.1591) and
+`user-follows-new-folder-rule-each-test-g-…` (0.1786) — both edges a human would place. The
+dry-run over the whole corpus proposes edges of the same character. So the mechanism produces
+*defensible* links on real data; what it does not do is produce the *specific* links that answer
+this benchmark's multi-hop questions. Both statements are true and neither cancels the other.
+
+### 7.6 Two real defects the AFTER measurement found
+
+Neither was visible to any unit test; both were found only by running the mechanism end-to-end and
+looking at the numbers.
+
+1. **A single prepared semantic scorer is wrong for a backfill.**
+   `prepareSemanticSimilarity` embeds ONE incoming text and returns a closure over that vector —
+   its `similarityFn(a, b)` ignores `a`. Correct for a capture, catastrophic for a backfill, where
+   one prepared scorer would compare every fact in the corpus against whatever probe string
+   prepared it, yielding real, plausibly-distributed, meaningless numbers. Fixed by
+   `makeCachedCosineBackend` (symmetric, both sides from the cache, zero model calls); pinned by a
+   regression test that asserts the score depends on both arguments.
+2. **The backfill scored the FILE body while the embedding cache is keyed on the INDEXED body.**
+   The indexer trims; the file carries writeFact's surrounding newlines. Every semantic lookup
+   missed, every pair silently fell back to token-Jaccard, and those lexical scores were then
+   judged against a **semantic** floor of 0.68 — so `--semantic` produced exactly **zero** links
+   while reporting a healthy floor and a healthy-looking run. This is the separately-correct-
+   jointly-broken class: the cache key was right, the scorer was right, the body was right, and the
+   composition was silent.
+
+### 7.7 Reproducing
+
+```bash
+npm run bench:linking -- --after              # BEFORE + both auto variants + the ceiling
+npm run bench:linking -- --after --semantic   # the same, with the embedder driving BOTH the
+                                              # hybrid rungs and the backfill's linker
+```

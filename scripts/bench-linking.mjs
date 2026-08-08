@@ -70,6 +70,9 @@ import { reindexFull } from '../packages/cli/src/index-rebuild.mjs';
 import { search, SEARCH_MODES } from '../packages/cli/src/search.mjs';
 import { prepareSemanticBackend } from '../packages/cli/src/semantic-backend.mjs';
 import { traverseLinks } from '../packages/cli/src/graph-index.mjs';
+import { reindexBoot } from '../packages/cli/src/index-rebuild.mjs';
+import { linkBackfill } from '../packages/cli/src/link-backfill.mjs';
+import { makeCachedCosineBackend } from '../packages/cli/src/link-facts.mjs';
 import { eachFact } from '../packages/cli/src/fact-store.mjs';
 import { ID_PATTERN } from '../packages/cli/src/tier-paths.mjs';
 import {
@@ -83,6 +86,27 @@ const DEFAULT_CORPUS = join(REPO_ROOT, 'fixtures', 'link-bench', 'corpus.json');
 const DEFAULT_QUERIES = join(REPO_ROOT, 'fixtures', 'link-bench', 'queries.json');
 
 export const LINK_QTYPES = Object.freeze(['single-hop', 'multi-hop', 'temporal', 'preference']);
+
+/**
+ * The four corpus variants.
+ *
+ *   linked          the hand-placed edges — the CEILING, and the canary's
+ *                   positive control.
+ *   unlinked        the byte-identical twin with every `related:` removed —
+ *                   the BEFORE, and the honest stand-in for the real corpus.
+ *   auto-write      edges placed by WRITE-TIME linking as the corpus is built,
+ *                   with the index refreshed between writes. Structurally
+ *                   BACKWARD-ONLY: a fact can only ever link to what already
+ *                   existed when it was written, which is the real constraint
+ *                   of the write path, not a limitation of this harness.
+ *   auto-backfill   edges placed by `cmk autolink` over the finished corpus —
+ *                   symmetric, every fact sees every other. This is what an
+ *                   EXISTING corpus (the 2,220 facts the task is about) gets.
+ *
+ * Measuring both auto variants separately is the point: they answer different
+ * questions and they are the two halves of what actually ships.
+ */
+export const VARIANTS = new Set(['linked', 'unlinked', 'auto-write', 'auto-backfill']);
 
 /** The qtype the canary measures, and the metric it measures it on. */
 export const CANARY_QTYPE = 'multi-hop';
@@ -338,6 +362,10 @@ export async function runLinkBench({
   depth = GRAPH_DEFAULT_DEPTH,
   aged = false,
   modelId = null,
+  // Which backend the LINKER scores with (independent of which PIPELINE the
+  // recall is measured on — a corpus can be linked lexically and read back
+  // semantically, and both combinations ship).
+  linkBackend = 'jaccard',
   sandboxRoot = null,
   outPath = null,
   quiet = false,
@@ -349,12 +377,16 @@ export async function runLinkBench({
       `unknown pipeline '${pipeline}' — available: ${Object.keys(PIPELINES).join(', ')}`,
     );
   }
-  if (variant !== 'linked' && variant !== 'unlinked') {
-    throw new Error(`unknown variant '${variant}' — available: linked, unlinked`);
+  if (!VARIANTS.has(variant)) {
+    throw new Error(`unknown variant '${variant}' — available: ${[...VARIANTS].join(', ')}`);
   }
 
   const parsed = JSON.parse(readFileSync(corpusPath, 'utf8'));
-  const corpus = variant === 'unlinked' ? stripLinks(parsed) : parsed;
+  // Every variant except `linked` starts from the corpus with its hand-placed
+  // edges REMOVED. `unlinked` stays that way (the BEFORE); the two `auto-*`
+  // variants let the shipped mechanism put edges back, which is the whole
+  // question — how close does an automatic linker get to hand-placed ones.
+  const corpus = variant === 'linked' ? parsed : stripLinks(parsed);
   const queries = JSON.parse(readFileSync(queriesPath, 'utf8'));
 
   // The aged path needs the REAL bins on PATH and an isolated user tier, so it
@@ -375,12 +407,57 @@ export async function runLinkBench({
       onCommand?.(['install', '--no-hooks']);
       installKit(agedSandbox);
     }
+    // `auto-write` refreshes the SQLite index between writes so each fact is
+    // scored against the corpus that existed BEFORE it — the honest simulation
+    // of a session where captures interleave with reads (reindexBoot is what
+    // every search already runs). Without it the index stays empty for the
+    // whole seed and the write-time linker correctly links nothing, which
+    // would measure the harness rather than the mechanism.
+    let seedDb = null;
+    const onFactWritten =
+      variant === 'auto-write'
+        ? () => {
+            if (!seedDb) seedDb = openIndexDb({ projectRoot });
+            reindexBoot({ projectRoot, userDir, db: seedDb });
+          }
+        : null;
     const keyToId = seedCorpus({
       corpus,
       projectRoot,
       userDir,
       sourceFile: 'fixtures/link-bench/corpus.json',
+      autoLink: variant === 'auto-write',
+      onFactWritten,
     });
+    try {
+      seedDb?.close();
+    } catch {
+      /* best-effort */
+    }
+
+    // `auto-backfill` runs the SHIPPED verb's core over the finished corpus:
+    // index it, then let `linkBackfill` consider every fact exactly as
+    // `cmk autolink` would.
+    let backfill = null;
+    if (variant === 'auto-backfill') {
+      const bfDb = openIndexDb({ projectRoot });
+      let similarity = null;
+      try {
+        reindexFull({ projectRoot, userDir, db: bfDb });
+        if (linkBackend === 'semantic') {
+          // Sync the vectors first, then score from the CACHE on both sides —
+          // the capture-path scorer would compare the whole corpus against one
+          // probe (see makeCachedCosineBackend). Zero model calls after sync.
+          const prep = await prepareSemanticBackend({ db: bfDb, query: 'link', ...(modelId ? { modelId } : {}) });
+          if (!prep.ok) throw new Error(`semantic link backend unavailable: ${prep.reason}`);
+          similarity = makeCachedCosineBackend(bfDb, modelId ? { modelId } : {});
+          if (!similarity) throw new Error('semantic link backend: no vectors cached after sync');
+        }
+      } finally {
+        bfDb.close();
+      }
+      backfill = linkBackfill({ projectRoot, userDir, tier: 'P', max: 10000, similarity });
+    }
 
     let aging = null;
     if (aged) {
@@ -435,11 +512,22 @@ export async function runLinkBench({
     const report = {
       ts: new Date().toISOString(),
       variant,
+      linkBackend: variant.startsWith('auto') ? linkBackend : null,
       pipeline,
       depth: pipeline === 'graph' ? depth : null,
       aged,
       corpusSize: corpus.entries.length,
+      // The DECLARED links (the fixture's). For the auto variants the fixture
+      // declares none — what matters there is `appliedEdges`, counted off the
+      // rebuilt edges table, i.e. off what actually landed on disk.
       linkedFacts: corpus.entries.filter((e) => (e.related ?? []).length > 0).length,
+      appliedEdges: db.prepare("SELECT COUNT(*) AS n FROM edges WHERE type = 'related'").get().n,
+      appliedSources: db
+        .prepare("SELECT COUNT(DISTINCT src) AS n FROM edges WHERE type = 'related'")
+        .get().n,
+      ...(backfill
+        ? { backfill: { linked: backfill.linked, edges: backfill.edges, floor: backfill.floor, bands: backfill.bands } }
+        : {}),
       queryCount: queries.queries.length,
       unresolvedKeys,
       ...(aging ? { aging } : {}),
@@ -549,7 +637,8 @@ function printReport(report, outPath) {
   const tag = `${report.variant}/${report.pipeline}${report.pipeline === 'graph' ? `@d${report.depth}` : ''}${report.aged ? '/aged' : '/fresh'}`;
   console.log(`\nbench:linking — ${tag}`);
   console.log(
-    `corpus: ${report.corpusSize} entries (${report.linkedFacts} carry links) · queries: ${report.queryCount}\n`,
+    `corpus: ${report.corpusSize} entries (${report.linkedFacts} declared links · ` +
+      `${report.appliedSources} facts carry ${report.appliedEdges} related edges on disk) · queries: ${report.queryCount}\n`,
   );
   console.log('  scope          count   R@5     R@10    NDCG@10');
   const row = (label, agg, count) =>
@@ -633,22 +722,31 @@ if (isMain) {
   // and the default run must be reproducible on a machine without one.
   const pipelines = ['keyword', 'agentic', 'graph'];
   if (has('semantic')) pipelines.push('hybrid', 'graph-hybrid');
+  // `--after` adds the two AUTOMATIC variants beside the BEFORE and the
+  // ceiling, so one run prints the whole before/after/ceiling comparison
+  // ADR-0023's trigger asks for.
+  // The linker's own backend follows --semantic: with the embedder present the
+  // shipped `cmk autolink --semantic` path is what gets measured.
+  const linkBackend = has('semantic') ? 'semantic' : 'jaccard';
+  const variants = has('after')
+    ? ['unlinked', 'auto-write', 'auto-backfill', 'linked']
+    : ['unlinked', 'linked'];
   const matrix = [];
   for (const aged of runAged ? [false, true] : [false]) {
-    for (const variant of ['unlinked', 'linked']) {
+    for (const variant of variants) {
       for (const pipeline of pipelines) {
         const outPath = join(outDir, `${stamp}_${variant}-${pipeline}-${aged ? 'aged' : 'fresh'}.json`);
-        matrix.push(await runLinkBench({ variant, pipeline, depth, aged, outPath }));
+        matrix.push(await runLinkBench({ variant, pipeline, depth, aged, outPath, linkBackend }));
       }
     }
   }
 
   console.log('\n=== SUMMARY (R@5 per qtype) ===');
-  console.log('  variant   pipeline  age     overall  single-hop  multi-hop  temporal  preference');
+  console.log('  variant        pipeline  age     overall  single-hop  multi-hop  temporal  preference');
   for (const r of matrix) {
     const c = (q) => fmt(r.byQtype[q]?.['r@5'] ?? 0);
     console.log(
-      `  ${r.variant.padEnd(9)} ${r.pipeline.padEnd(9)} ${(r.aged ? 'aged' : 'fresh').padEnd(7)} ` +
+      `  ${r.variant.padEnd(14)} ${r.pipeline.padEnd(9)} ${(r.aged ? 'aged' : 'fresh').padEnd(7)} ` +
         `${fmt(r.overall['r@5'])}    ${c('single-hop').padEnd(11)} ${c('multi-hop').padEnd(10)} ` +
         `${c('temporal').padEnd(9)} ${c('preference')}`,
     );

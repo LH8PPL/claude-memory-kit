@@ -3465,22 +3465,41 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
   const userDir = deps.userDir ?? resolveUserDir();
   const log = deps.log ?? console.log;
   const { linkBackfill, BACKFILL_DEFAULT_MAX } = await import('./link-backfill.mjs');
-  const { prepareSemanticLinkBackend } = await import('./link-facts.mjs');
 
   const tier = String(options?.tier ?? 'P').toUpperCase();
   const dryRun = options?.dryRun === true;
   const max = Number(options?.max ?? BACKFILL_DEFAULT_MAX);
 
-  // The semantic backend embeds ONE probe text to build its scorer, so it needs
-  // a text up front. The backfill scores many facts, so we prepare it against an
-  // empty probe only to learn availability, then let the backfill fall back —
-  // i.e. semantic linking in a backfill is opt-in via --semantic, because a
-  // per-fact embed over a whole corpus is a different budget from one capture.
+  // --semantic scores from the CONTENT-ADDRESSED EMBEDDING CACHE, both sides —
+  // never the capture-path scorer, which closes over ONE embedded text and
+  // would compare the whole corpus against a single probe (see
+  // makeCachedCosineBackend's note). Both facts in a backfill pair are already
+  // in the corpus, so this makes zero model calls; it only needs the vectors to
+  // exist, which is what the sync below guarantees.
   let similarity = null;
   if (options?.semantic) {
-    similarity = await prepareSemanticLinkBackend({ projectRoot, text: 'probe' });
-    if (!similarity) {
-      log('cmk autolink: --semantic requested but the embedder is unavailable — using token-Jaccard.');
+    const { makeCachedCosineBackend } = await import('./link-facts.mjs');
+    const { prepareSemanticBackend } = await import('./semantic-backend.mjs');
+    const { openIndexDb } = await import('./index-db.mjs');
+    const db = openIndexDb({ projectRoot });
+    try {
+      // Sync first: a cache with no vectors for this corpus degrades every pair
+      // to token-Jaccard, which would silently make --semantic a no-op.
+      const prep = await prepareSemanticBackend({ db, query: 'link' });
+      if (!prep.ok) {
+        log(`cmk autolink: --semantic unavailable (${prep.reason}) — scoring with token-Jaccard instead.`);
+      } else {
+        similarity = makeCachedCosineBackend(db);
+        if (!similarity) {
+          log('cmk autolink: --semantic requested but no vectors are cached — scoring with token-Jaccard instead.');
+        }
+      }
+    } finally {
+      try {
+        db.close();
+      } catch {
+        /* best-effort */
+      }
     }
   }
 

@@ -101,19 +101,39 @@ const QUEUE_HEADER = '# Conflicts queue\n\n';
 export function tokenJaccardSimilarity(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return 0;
   if (a === b) return 1;
-  const tokenize = (s) =>
-    new Set(
-      s
-        .toLowerCase()
-        .split(/[\s.,!?;:()[\]{}'"`/\\-]+/u)
-        .filter((t) => t.length > 0),
-    );
-  const ta = tokenize(a);
-  const tb = tokenize(b);
+  return jaccardOfTokenSets(tokenSetOf(a), tokenSetOf(b));
+}
+
+/**
+ * The tokenizer half, exported (Task 262).
+ *
+ * The pairwise function above re-tokenizes BOTH sides on every call, which is
+ * exactly right for the conflict queue (a handful of comparisons per write) and
+ * quadratically wrong for the linker's corpus scan — 2,260 facts is 5.1M
+ * tokenizations of the same 2,260 bodies. A caller that scores one text against
+ * a whole corpus tokenizes each body ONCE and calls `jaccardOfTokenSets`.
+ *
+ * Split out rather than copied so the linker and the queue can never disagree
+ * about what a token is (CLAUDE.md shared-module rule).
+ */
+export function tokenSetOf(s) {
+  return new Set(
+    String(s ?? '')
+      .toLowerCase()
+      .split(/[\s.,!?;:()[\]{}'"`/\\-]+/u)
+      .filter((t) => t.length > 0),
+  );
+}
+
+/** Jaccard over two already-tokenized sets. */
+export function jaccardOfTokenSets(ta, tb) {
   if (ta.size === 0 && tb.size === 0) return 1;
   if (ta.size === 0 || tb.size === 0) return 0;
+  // Iterate the SMALLER set: the intersection is the same either way, and the
+  // loop is bounded by min(|A|,|B|) instead of |A|.
+  const [small, large] = ta.size <= tb.size ? [ta, tb] : [tb, ta];
   let intersect = 0;
-  for (const t of ta) if (tb.has(t)) intersect++;
+  for (const t of small) if (large.has(t)) intersect++;
   const union = ta.size + tb.size - intersect;
   return intersect / union;
 }

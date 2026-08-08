@@ -54,6 +54,18 @@ A fact that's floored and *still* failing is never silently deleted: it lands in
 
 The whole process is **observable**: `cmk stats memory-health` reports writes-per-search, empty-search rate, redundant writes, and snapshot pressure with week-over-week trend arrows — so you can see the memory getting healthier (or tell when it isn't).
 
+### Links related facts by itself
+
+A memory of 2,000 islands is 2,000 facts you have to already know the name of. The kit now puts the edges in: every fact written from here on is scored against your corpus at write time and gains up to **3** `related:` edges, which `cmk links`, `cmk expand` and the viewer's graph all walk. No command, no cron.
+
+The threshold is **derived from your own corpus** — the 99th percentile of your facts' random-pair similarity, recomputed whenever the index is fully rebuilt — not a constant borrowed from someone else's data. On a corpus too small or too uniform for that number to mean anything, it links nothing and says so.
+
+A candidate that looks like a near-*duplicate* is deliberately not linked: merging two facts is a decision, so it becomes a proposal in `cmk queue conflicts` instead. And a link never crosses tiers, so a committed project fact can't point at a machine-local one.
+
+For everything written *before* this existed, `cmk autolink` is the catch-up pass — start with `--dry-run` to see what it would do. It is bounded and resumable, so a long corpus is several short runs rather than one that must not be interrupted.
+
+Turn it off with `cmk config set memory.link_facts false`.
+
 ### Stays TRUE as it ages, not just stored
 
 Facts carry a temporal shape ("ongoing state" vs "happened once" vs "planned"), facts with a shelf life expire on their own (`--expires 2026-08-01` → hidden from recall, recoverably archived), and a weekly pass catches state changes: when a newer fact supersedes an older one ("cut-gate in progress" → "published to npm"), the old state's validity window closes so recall answers with the *current* state — history intact, and the next session opens with a one-line note of what was resolved.

@@ -2232,6 +2232,100 @@ NOT adopted** — it would couple the Obsidian export format into `graph-index.r
 edges-table-parser touch) and depends on Obsidian 1.4+ property-link behavior not verifiable against
 primary source in-sandbox; the map already renders `related` as links without that risk.
 
+### 9.7 Write-time fact linking — `related:` populated automatically (Task 262, ADR-0023's DEFER resolved by measurement; D-433)
+
+§9.5 ACTIVATED the edges the kit writes. It could not create the ones it does not. The
+measurement that opens Task 262: **2,220 facts, 89 linked (4.0%), 175 edges** — and the
+breakdown indicts the WRITER, not the users. `project` facts (auto-extract, 97% of the corpus)
+are **3.7%** linked; hand-written types run 8.3%–33%. Linking was always a human habit and we
+automated the writing without automating the habit. Mechanically: auto-extract sees only its own
+turn and never searches the corpus, so it cannot know the other end exists, while `writeFact` has
+accepted a `related` option since Task 7 and nothing ever passed it.
+
+**The mechanism** ([`link-facts.mjs`](../packages/cli/src/link-facts.mjs), attached inside
+`writeFact` — the ONE boundary every fact create already flows through). On each create the
+incoming body is scored against the live SAME-TIER fact corpus and split into three bands:
+
+| band | condition | action |
+| --- | --- | --- |
+| near-duplicate | `score >= nearDupThreshold` | **Not linked.** A merge proposal goes to the conflict queue (§6.8); a human decides. The fact is still captured. |
+| related | `floor <= score < nearDupThreshold` | **Auto-applied**, capped at 3 out-links, highest score first. |
+| below | `score < floor` | nothing |
+
+The near-dup ceiling is Task 143's ALREADY-CALIBRATED seam, reused rather than re-derived
+(`SEMANTIC_NEARDUP_THRESHOLD` 0.78 for cosine, the lexical 0.5 for token-Jaccard).
+
+**The floor is DERIVED at index time and is never a constant.** 0.78 is only meaningful relative to
+bge-base's own random-pair p99 of 0.773; swap the model or the backend and a hard-coded number means
+nothing. So the floor is the **p99 of THIS corpus's own random-pair similarity distribution under
+THIS backend**, computed from a deterministic seeded sample (≤600 facts, ≤20,000 pairs), stored with
+full provenance (`backend`, `quantile`, `pairs`, `sampledItems`, `median`, `max`, `corpusSize`,
+`computedAt`) under `meta['link_floor:<backend>']` — derived state in the rebuildable index exactly
+like `edges` (ADR-0002). Recomputed on every `reindexFull`, and re-derived on the boot path when the
+live-fact count has drifted >50% from the sample it was built on. _Measured on the dogfood corpus
+(2,260 facts, token-Jaccard): floor **0.1564**, median 0.0724, max 0.3636 over 20,000 pairs — the
+near-dup band sits above anything random pairs reach._
+
+**Two DERIVED degeneracy guards.** Linking is refused outright when the distribution cannot separate
+signal from noise: (a) `floor >= nearDupThreshold` (everything looks like everything — the related
+band is empty); (b) `floor <= median` (the p99 and the middle of the distribution coincide, so "top
+1% of random pairs" describes the whole corpus). Both are the D-433 dilution risk answered at its
+source. Linking nothing is the honest outcome; the fact still lands.
+
+**Backend-degrading**, with `backend` recorded on every applied link:
+
+- **token-Jaccard** — always available, no optional dependency. The default on the write path.
+- **cosine over the content-addressed `embedding_cache`** — when the embedder is installed. Two
+  shapes, and the difference is load-bearing: a CAPTURE embeds the one incoming text and scores it
+  against cached candidates (`prepareSemanticSimilarity`, Task 143's shape); a BACKFILL compares two
+  facts that are BOTH already in the corpus, so it uses `makeCachedCosineBackend` — a **symmetric**
+  scorer reading both sides from the cache, making **zero model calls**. Using the capture-path
+  scorer for a backfill is a real defect, not a style point: it closes over one embedded text and
+  ignores its first argument, so every fact in the corpus would be compared against whatever probe
+  string prepared it, producing plausible, well-distributed, meaningless numbers.
+
+**Opportunistic, never scheduled** (grill Q6/Q7 — the cron cannot be load-bearing: `register-crons`
+is optional and the registered task carries `StopOnIdleEnd`/`DisallowStartIfOnBatteries`, which is
+D-298's starvation visible in configuration). Linking runs where writes already happen. **Capture >
+linking, always**: a missing index, a missing floor, a locked db or a throwing backend all degrade
+to "write the fact unlinked and let the backfill catch it". The write path is therefore
+**backward-only by construction** — a fact can only link to what the index already held when it was
+written.
+
+**The backfill** ([`link-backfill.mjs`](../packages/cli/src/link-backfill.mjs), `cmk autolink`) is
+the pass over the corpus that already exists, and ADR-0020 governs it. The smallest durable unit is
+ONE fact; each persists before the next is considered; and **the resume point is derived from the
+ARTIFACTS**, never a watermark sidecar (the two-writer hazard ADR-0002 forbids). Two artifacts
+answer "has this fact been considered?" — its markdown carries `related:` (LINKED), or a `link_eval`
+row keyed by `(id, content_sha)` matches (CONSIDERED, nothing above the floor). `link_eval` lives in
+the REBUILDABLE index deliberately: losing it to a full reindex costs a re-consideration, which is
+idempotent work, never lost work, and never a second source of truth about the markdown. Keying it
+by content sha means an EDITED fact is reconsidered automatically. The backfill never queues a
+near-dup (both facts already exist and were both accepted, often months apart) and never touches a
+fact that already carries links.
+
+**Flag + observability.** `CMK_LINK_FACTS` > `context/settings.json` `memory.link_facts` > default
+ON. Every applied link writes an `auto-linked` audit entry carrying `mode` (`write`|`backfill`),
+`backend`, the derived `floor`, `scanned`, and one `{id, slug, score, band}` per edge — which is what
+makes the A/B measurable after the fact.
+
+**Invariants.** Links are METADATA: the body is never reordered or rewritten, and Poison_Guard
+screens it upstream unchanged. A caller-supplied `related` always wins. Links never cross tiers, so a
+committed project fact can never reference a machine-local one. And a link write touches exactly one
+file, which is what makes the over-mutation guarantee checkable byte-for-byte.
+
+**MEASURED OUTCOME — the mechanism does NOT yet reach the ceiling, and on the Task-262 fixture it
+REGRESSES the measured type.** See [the AFTER measurement](../docs/research/2026-08-08-linking-benchmark-baseline.md)
+§7. The BEFORE/AFTER/ceiling on `graph-hybrid` multi-hop R@5 (fresh): unlinked **0.444** → automatic
+**0.333** → hand-placed **0.889**, with the temporal control losing 0.25 on the `graph` rung. The
+edges the linker produces are *lexically/semantically similar* facts; the fixture's ground-truth
+edges connect facts that are *topically related but share little surface*, which similarity of any
+kind is the wrong instrument for. **D-433's condition therefore fires: the controls are the judge,
+and they say tune before making this the default.** The mechanism, the flag, the derived floor and
+the backfill all ship; the DEFAULT-ON decision is the lead's, and the honest reading of the numbers
+is that a similarity-only linker is not the edge-authoring mechanism ADR-0023 deferred — an
+LLM-derived `cues:` (the ADR's own first-in-line candidate) is what the measurement now points at.
+
 ## 10. MCP server (Layer 4b — optional)
 
 **Eleven tools as of Task 108b (2026-06-08, [ADR-0014](../docs/adr/0014-unify-cli-mcp-shared-core.md)).** The MCP surface now reaches **full parity** with the `cmk` CLI over shared cores (`remember-core.mjs` / `read-core.mjs`); a `validate-cli-mcp-parity` guard ([`scripts/validate-cli-mcp-parity.mjs`](../scripts/validate-cli-mcp-parity.mjs), wired into `npm test`) fails the build on drift. `cmk install` registers the server in `.mcp.json` + allowlists `mcp__cmk__*`, so the model drives every memory op prompt-free (D-85; R2/D-80 resolved — see §16.57).

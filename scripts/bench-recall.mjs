@@ -199,7 +199,24 @@ function sha1(text) {
  *                          is the honest stand-in — the same shape the aged
  *                          harness writes.
  */
-export function seedCorpus({ corpus, projectRoot, userDir, sourceFile = 'fixtures/recall-bench/corpus.json' }) {
+export function seedCorpus({
+  corpus,
+  projectRoot,
+  userDir,
+  sourceFile = 'fixtures/recall-bench/corpus.json',
+  // Task 262: write-time linking defaults ON in production, which would make
+  // every benchmark variant — INCLUDING the unlinked twin the canary compares
+  // against — grow edges the fixture never declared. A benchmark whose control
+  // is contaminated by the thing under test measures nothing, so seeding is
+  // explicitly UNLINKED unless a variant asks for the linker (`autoLink: true`),
+  // which preserves the Task-99 fixture's numbers byte-for-byte.
+  autoLink = false,
+  // Called after each fact write. The write-time linking variant uses it to
+  // refresh the SQLite index between writes, because a fact can only ever link
+  // to what was already indexed when it was written — the real, one-directional
+  // constraint of the write path.
+  onFactWritten = null,
+}) {
   mkdirSync(join(projectRoot, 'context', 'memory'), { recursive: true });
   mkdirSync(userDir, { recursive: true });
   const keyToId = new Map();
@@ -219,6 +236,7 @@ export function seedCorpus({ corpus, projectRoot, userDir, sourceFile = 'fixture
         sourceSha1: sha1(entry.body),
         createdAt: entry.createdAt,
         ...(entry.related?.length ? { related: entry.related } : {}),
+        autoLink,
         projectRoot,
         userDir,
       });
@@ -227,6 +245,7 @@ export function seedCorpus({ corpus, projectRoot, userDir, sourceFile = 'fixture
       }
       keyToId.set(entry.key, r.id);
       keyToPath.set(entry.key, r.path);
+      onFactWritten?.(r, entry);
     } else {
       const tierRoot = entry.tier === 'U' ? userDir : join(projectRoot, 'context');
       const padPath = join(tierRoot, entry.scratchpad);
