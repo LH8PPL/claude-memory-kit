@@ -329,7 +329,12 @@ export function rebuildEdges(db, { projectRoot, userDir } = {}) {
       }
     }
     if (!dst || src === dst) return; // drop empty + self-edges
-    edges.set(`${src} ${dst} ${type}`, { src, dst, type, dst_resolved: resolved });
+    // NUL joins the key parts, written as an ESCAPE and never as a raw byte
+    // (a literal NUL is invisible in every editor and makes grep classify the
+    // whole file as binary — Task 264(a), the second instance of that class):
+    // `dst` may still be an unresolved wikilink slug, which can carry spaces
+    // and punctuation, so the separator must be a character no part can hold.
+    edges.set(`${src}\u0000${dst}\u0000${type}`, { src, dst, type, dst_resolved: resolved });
   };
 
   for (const { id, frontmatter, body } of facts) {
@@ -480,7 +485,7 @@ export function traverseLinks(db, id, { depth = 1, direction = 'both' } = {}) {
       )
       .all({ id, depth: d });
     for (const r of rows) {
-      const key = `${dir} ${r.from_id} ${r.to_id} ${r.type}`;
+      const key = `${dir}\u0000${r.from_id}\u0000${r.to_id}\u0000${r.type}`;
       if (seen.has(key)) continue;
       seen.add(key);
       out.push({ ...r, direction: dir });
