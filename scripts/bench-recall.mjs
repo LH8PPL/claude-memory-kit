@@ -49,6 +49,10 @@ import { openIndexDb } from '../packages/cli/src/index-db.mjs';
 import { reindexFull } from '../packages/cli/src/index-rebuild.mjs';
 import { search, SEARCH_MODES, reciprocalRankFusion } from '../packages/cli/src/search.mjs';
 import { prepareSemanticBackend, rerankResults } from '../packages/cli/src/semantic-backend.mjs';
+import {
+  parse as parseFrontmatter,
+  format as formatFrontmatter,
+} from '../packages/cli/src/frontmatter.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = join(dirname(__filename), '..');
@@ -175,10 +179,31 @@ function sha1(text) {
   return createHash('sha1').update(text, 'utf8').digest('hex');
 }
 
-function seedCorpus({ corpus, projectRoot, userDir }) {
+/**
+ * Seed a benchmark corpus through the kit's REAL write paths into a sandbox.
+ *
+ * Exported (Task 262) so the linking benchmark seeds identically rather than
+ * re-rolling the same writeFact/appendScratchpadBullet walk — the shared-module
+ * discipline applied to the bench harness. Two OPTIONAL entry fields are
+ * honored, both no-ops for a corpus that omits them (the Task-99 recall fixture
+ * does, so its numbers are unchanged):
+ *
+ *   related: [slug, ...]   passed through to writeFact's `related` option, which
+ *                          becomes `related:` frontmatter and therefore `related`
+ *                          rows in the edges table at reindex.
+ *   supersededBy: key      patched into the written fact's frontmatter in a
+ *                          SECOND pass, because the successor's id is not known
+ *                          until every fact has been written. writeFact has no
+ *                          `superseded_by` option (a fact is normally superseded
+ *                          by merge-facts, which MOVES it), so the on-disk form
+ *                          is the honest stand-in — the same shape the aged
+ *                          harness writes.
+ */
+export function seedCorpus({ corpus, projectRoot, userDir, sourceFile = 'fixtures/recall-bench/corpus.json' }) {
   mkdirSync(join(projectRoot, 'context', 'memory'), { recursive: true });
   mkdirSync(userDir, { recursive: true });
   const keyToId = new Map();
+  const keyToPath = new Map();
   corpus.entries.forEach((entry, i) => {
     if (entry.kind === 'fact') {
       const r = writeFact({
@@ -189,10 +214,11 @@ function seedCorpus({ corpus, projectRoot, userDir }) {
         body: entry.body,
         writeSource: 'user-explicit',
         trust: entry.trust,
-        sourceFile: 'fixtures/recall-bench/corpus.json',
+        sourceFile,
         sourceLine: i + 1,
         sourceSha1: sha1(entry.body),
         createdAt: entry.createdAt,
+        ...(entry.related?.length ? { related: entry.related } : {}),
         projectRoot,
         userDir,
       });
@@ -200,6 +226,7 @@ function seedCorpus({ corpus, projectRoot, userDir }) {
         throw new Error(`seed fact ${entry.key} failed: ${r.errors?.join('; ')}`);
       }
       keyToId.set(entry.key, r.id);
+      keyToPath.set(entry.key, r.path);
     } else {
       const tierRoot = entry.tier === 'U' ? userDir : join(projectRoot, 'context');
       const padPath = join(tierRoot, entry.scratchpad);
@@ -214,7 +241,7 @@ function seedCorpus({ corpus, projectRoot, userDir }) {
         section: entry.section,
         text: entry.text,
         provenance: {
-          source: 'fixtures/recall-bench/corpus.json',
+          source: sourceFile,
           source_line: i + 1,
           sha1: sha1(entry.text),
           write: 'user-explicit',
@@ -230,6 +257,22 @@ function seedCorpus({ corpus, projectRoot, userDir }) {
       keyToId.set(entry.key, r.id);
     }
   });
+
+  // Second pass: supersession. The successor's id only exists after every fact
+  // is written, so the backward pointer is patched in afterwards. Frontmatter
+  // goes through the shared parser/formatter, never a hand-rolled string splice.
+  for (const entry of corpus.entries) {
+    if (!entry.supersededBy) continue;
+    const path = keyToPath.get(entry.key);
+    const successorId = keyToId.get(entry.supersededBy);
+    if (!path || !successorId) {
+      throw new Error(`seed supersession ${entry.key} -> ${entry.supersededBy}: unresolved`);
+    }
+    const parsed = parseFrontmatter(readFileSync(path, 'utf8'));
+    parsed.frontmatter.superseded_by = successorId;
+    writeFileSync(path, formatFrontmatter(parsed), 'utf8');
+  }
+
   return keyToId;
 }
 
