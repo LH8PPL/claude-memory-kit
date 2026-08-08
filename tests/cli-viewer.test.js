@@ -1075,7 +1075,14 @@ describe('viewer — the HTML page (255.3)', () => {
     // js/bad-tag-filter: a filter that only knows lowercase `<script>` is the
     // classic bypass shape — held to the same standard even though this file
     // is kit-authored).
-    const script = html.match(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/i)[1];
+    // EVERY inline script, not the first one. The page grew a second script
+    // (the pre-paint theme stamp, in `<head>`) with the Task-268 toggle, and a
+    // scan anchored on `match(...)[1]` would have silently narrowed to it —
+    // leaving the whole renderer, the part that actually touches untrusted
+    // content, unscanned while staying green.
+    const script = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/gi)]
+      .map((m) => m[1])
+      .join('\n');
     const SINKS = [
       'innerHTML',
       'outerHTML',
@@ -1105,9 +1112,14 @@ describe('viewer — the HTML page (255.3)', () => {
     // empty window. RUNTIME behaviour is covered by live-verify's real fetches
     // against the real bin, and the visual pass needs a human with a browser —
     // stated rather than implied.
-    const m = html.match(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/i);
-    expect(m).toBeTruthy();
-    expect(() => new Function(m[1])).not.toThrow();
+    const blocks = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/gi)].map(
+      (m) => m[1],
+    );
+    // Both of them: the pre-paint theme stamp in `<head>` and the page script.
+    // A SyntaxError in the stamp is the worse of the two — it aborts before the
+    // page script ever runs.
+    expect(blocks.length).toBeGreaterThanOrEqual(1);
+    for (const block of blocks) expect(() => new Function(block)).not.toThrow();
   });
 
   it('a deep link to any view serves the same page (client-side routing)', async () => {
@@ -1156,7 +1168,13 @@ describe('viewer — the visual pass (260)', () => {
     // deliberate exception is the "zero fetched bytes" scan in the fonts test,
     // which is a claim about the served bytes and says so at its own line.
     bareCss = css.replace(/\/\*[\s\S]*?\*\//g, '');
-    script = html.match(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/i)[1];
+    // ALL inline scripts, joined — the page carries two since the Task-268
+    // toggle (the pre-paint theme stamp in `<head>`, then the page script), and
+    // `match(...)[1]` would have quietly retargeted every assertion below onto
+    // the ten-line stamp.
+    script = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/gi)]
+      .map((m) => m[1])
+      .join('\n');
   });
 
   it('(3) defines a real surface ladder — page ≠ panel ≠ sunken, in BOTH themes', () => {
@@ -1164,9 +1182,14 @@ describe('viewer — the visual pass (260)', () => {
     // borders doing 100% of the work and nothing reading as a surface.
     //
     // POLARITY FLIPPED 2026-08-08 (D-432): dark is the `:root` DEFAULT and light
-    // is the media-query block. Every assertion below is the same contract with
-    // the two roles swapped — not a weakened one. Deleting either block still
-    // fails, and the M4 whole-ladder comparison is unchanged.
+    // is the override. Every assertion below is the same contract with the two
+    // roles swapped — not a weakened one. Deleting either block still fails, and
+    // the M4 whole-ladder comparison is unchanged.
+    //
+    // RETARGETED with the toggle: light used to be served by a
+    // `prefers-color-scheme` media block and again by `[data-theme="light"]`;
+    // the page now stamps `data-theme` before the first paint on every load, so
+    // there is exactly ONE light block and it is the attribute one.
     const root = bareCss.match(/:root\s*\{([\s\S]*?)\}/)[1];
     for (const token of ['--ground', '--panel', '--sunken', '--line', '--ink', '--ink-2', '--ink-3']) {
       expect(root, `the default (dark) theme is missing ${token}`).toContain(token + ':');
@@ -1176,7 +1199,7 @@ describe('viewer — the visual pass (260)', () => {
     expect(hex(root, '--ground')).not.toBe(hex(root, '--panel'));
 
     // Light is DESIGNED, not an inversion: its own ladder, redefined.
-    const light = bareCss.match(/@media\s*\(prefers-color-scheme:\s*light\)\s*\{\s*:root\s*\{([\s\S]*?)\}/);
+    const light = bareCss.match(/:root\[data-theme="light"\]\s*\{([\s\S]*?)\n  \}/);
     expect(light, 'no light-theme token block').toBeTruthy();
     for (const token of ['--ground', '--panel', '--sunken', '--line', '--ink', '--ink-3']) {
       expect(light[1], `light theme is missing ${token}`).toContain(token + ':');
@@ -1189,59 +1212,74 @@ describe('viewer — the visual pass (260)', () => {
     }
   });
 
-  it('(I3) an explicit `data-theme` wins in BOTH directions, and cannot drift', () => {
-    // D-432 serves each theme on two signals — the system preference and an
-    // explicit `data-theme` — which means each palette is written TWICE. The AA
-    // test can only compute the block it parses, so a `data-theme` copy could
-    // drift out of contrast coverage silently: an override that ships an
-    // unmeasured palette is the composition gap this closes.
-    const tokens = (block) =>
+  it('(I3) each palette is written ONCE — dark is `:root`, light is the only override', () => {
+    // ORIGINAL SHAPE (D-432, the dark port): FOUR blocks — `:root` dark, a
+    // `@media (prefers-color-scheme: light)` copy, and a `[data-theme]` copy of
+    // each — because each theme was served on two signals. Each palette was
+    // therefore written twice, and this test's job was to pin copy to copy so a
+    // `data-theme` copy could not drift out of the AA test's coverage.
+    //
+    // RETARGETED with the toggle (Task 268 rider): the page now STAMPS
+    // `data-theme` on `<html>` before the first paint, on every load, always.
+    // That makes the media block unreachable — and worse than unreachable, it
+    // is CSS asserting the exact policy D-432 reversed (that the OS decides) —
+    // while `[data-theme="dark"]` overrides nothing `:root` does not already
+    // say. Both are gone.
+    //
+    // This is not a weakened guard, on either half. The duplicate-palette drift
+    // class is now unrepresentable rather than policed, which is strictly
+    // better than a test for it. And what replaces the copy-to-copy comparison
+    // is STRONGER: the light override is checked against the DARK PALETTE
+    // ITSELF, so a token added to `:root` and forgotten in light fails here —
+    // which the old both-copies-agree form could not see, because both copies
+    // could omit the same token and agree perfectly.
+    const decls = (body) =>
       Object.fromEntries(
-        [...block.matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]),
+        [...body.matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]),
       );
-    const blockAfter = (re) => {
-      const m = bareCss.match(re);
-      expect(m, `no block matching ${re}`).toBeTruthy();
-      return tokens(m[1]);
-    };
-    // Both directions exist: light over a dark default, dark over a light system.
-    const explicitLight = blockAfter(/:root\[data-theme="light"\]\s*\{([\s\S]*?)\n  \}/);
-    const explicitDark = blockAfter(/:root\[data-theme="dark"\]\s*\{([\s\S]*?)\n  \}/);
-    const mediaLight = blockAfter(
-      /@media\s*\(prefers-color-scheme:\s*light\)[\s\S]*?:root\s*\{([\s\S]*?)\n    \}/,
+    const blocks = [...bareCss.matchAll(/\n {2}(:root[^{\n]*?)\s*\{([\s\S]*?)\n {2}\}/g)].map(
+      (m) => ({ sel: m[1], body: m[2], tok: decls(m[2]) }),
     );
-    const defaultDark = blockAfter(/:root\s*\{([\s\S]*?)\n  \}/);
-
-    // The explicit light override IS the media-query light palette, token for token.
-    expect(explicitLight).toEqual(mediaLight);
-    // …and the DARK override must declare the same SET of tokens — value drift is
-    // checked below, but until this line the guard was one-directional on KEYS:
-    // a token added to `:root` + the media-light block + `[data-theme="light"]`
-    // and forgotten in `[data-theme="dark"]` passed every other assertion here,
-    // and rendered its LIGHT value inside a dark page for the one reader who is
-    // on an OS-light machine with the dark toggle on. The two sets are identical
-    // today, and both palettes cover exactly the theme-varying tokens.
+    // The whole structure, in one line: two root blocks, dark first (it is the
+    // identity) and light second (it is the override, and must out-specify it).
     expect(
-      Object.keys(explicitDark).sort(),
-      '[data-theme="dark"] and the light palette declare different token SETS',
-    ).toEqual(Object.keys(mediaLight).sort());
-    // The explicit dark override re-asserts the default; it declares a SUBSET
-    // (the theme-varying tokens only — `--g-*`, rhythm and fonts do not vary),
-    // and every token it does declare must match the default exactly.
-    expect(Object.keys(explicitDark).length).toBeGreaterThan(15);
-    for (const [name, value] of Object.entries(explicitDark)) {
-      expect(defaultDark[name], `${name} drifted between :root and [data-theme="dark"]`).toBe(value);
+      blocks.map((b) => b.sel),
+      'the root-block structure moved — re-read §24.1.2 before retargeting this',
+    ).toEqual([':root', ':root[data-theme="light"]']);
+    const [dark, light] = blocks;
+
+    // `color-scheme` is not a custom property, and it is what makes the UA's own
+    // furniture — scrollbars, form controls, the canvas behind an overscroll —
+    // agree with the page instead of flashing white under it.
+    expect(dark.body).toMatch(/color-scheme:\s*dark light/);
+    expect(light.body).toMatch(/color-scheme:\s*light dark/);
+
+    // The theme-varying palette is DERIVED from the dark block rather than
+    // listed here: `--g-*` (the instrument keeps its material in both themes),
+    // the community hues, the rhythm and the font stacks do not vary; every
+    // other custom property in `:root` does.
+    const invariant = (n) =>
+      /^--g-/.test(n) ||
+      /^--c[0-3](-rgb)?$/.test(n) ||
+      ['--measure', '--shell', '--r-card', '--r-ctl', '--r-pill', '--ui', '--display', '--mono'].includes(n);
+    const palette = Object.keys(dark.tok).filter((n) => !invariant(n)).sort();
+    expect(
+      palette.length,
+      'the theme-varying palette all but vanished — the sheet shape moved',
+    ).toBeGreaterThan(20);
+    expect(
+      Object.keys(light.tok).sort(),
+      'the light override and the dark palette declare different token SETS — a token added to one and forgotten in the other renders its OTHER theme’s value',
+    ).toEqual(palette);
+
+    // …and each of them is declared EXACTLY twice in the whole sheet: once dark,
+    // once light. This is the line that keeps the duplication from coming back
+    // — a third copy anywhere (a re-added media block, a `[data-theme="dark"]`
+    // re-assertion) is a palette the AA test does not compute.
+    for (const name of palette) {
+      const n = [...bareCss.matchAll(new RegExp(`(?<![-a-z0-9])${name}:`, 'g'))].length;
+      expect(n, `${name} is declared ${n}x in the sheet — expected exactly 2 (dark + light)`).toBe(2);
     }
-    // …and it must actually cover the palette, not a token or two of it.
-    for (const token of ['--ground', '--panel', '--sunken', '--ink', '--ink-3', '--accent', '--tint']) {
-      expect(explicitDark, `[data-theme="dark"] is missing ${token}`).toHaveProperty(token);
-      expect(explicitLight, `[data-theme="light"] is missing ${token}`).toHaveProperty(token);
-    }
-    // The attribute selector out-specifies the media block by construction
-    // (0,2,0 vs 0,1,0) — assert it is not accidentally nested INSIDE the media
-    // query, where a dark-preferring machine would never see it.
-    const mediaBlock = bareCss.match(/@media\s*\(prefers-color-scheme:\s*light\)\s*\{([\s\S]*?)\n  \}/);
-    expect(mediaBlock[1]).not.toContain('data-theme');
   });
 
   it('(I1b) every `--X-rgb` carries the channels of its OWN `--X` — every block, every pair', () => {
@@ -1285,7 +1323,13 @@ describe('viewer — the visual pass (260)', () => {
     }
     expect(bad, `a hue's channels disagree with its own hex:\n  ${bad.join('\n  ')}`).toEqual([]);
     // …and the scan actually reached the palettes, rather than passing on zero.
-    expect(pairs, 'the rgb-pair scan found almost nothing — the sheet shape moved').toBeGreaterThanOrEqual(40);
+    // The floor was 40 while each palette was written four times (two themes x
+    // two signals). The toggle collapsed that to one block per palette, so the
+    // true count is 24 — 15 pairs in `:root` (9 archive hues + the instrument's
+    // six) and 9 in the light override. The floor tracks the real number: it is
+    // "did the scan reach both palettes", and a stale 40 would have made this
+    // line fail for a reason that has nothing to do with a hue's channels.
+    expect(pairs, 'the rgb-pair scan found almost nothing — the sheet shape moved').toBeGreaterThanOrEqual(24);
   });
 
   it('(I1) every text/surface pair clears WCAG AA 4.5:1 — in BOTH themes', () => {
@@ -1310,13 +1354,14 @@ describe('viewer — the visual pass (260)', () => {
     const over = (fg, alpha, bg) => fg.map((c, i) => c * alpha + bg[i] * (1 - alpha));
 
     // POLARITY FLIPPED 2026-08-08 (D-432): the `:root` default block is now the
-    // DARK palette and the media-query block is LIGHT. Both are still computed —
-    // the contract is "AA in both themes", and which one is the default does not
-    // change it. (The `data-theme` copies are pinned to these by I3, so a copy
-    // cannot ship an unmeasured palette.)
+    // DARK palette. Both themes are still computed — the contract is "AA in both
+    // themes", and which one is the default does not change it. Light moved from
+    // the `prefers-color-scheme` block to `[data-theme="light"]` when the toggle
+    // shipped; I3 pins that there is exactly one block per palette, so this
+    // cannot silently end up measuring one theme twice or missing a copy.
     const themes = {
       dark: bareCss.match(/:root\s*\{([\s\S]*?)\n  \}/)[1],
-      light: bareCss.match(/@media\s*\(prefers-color-scheme:\s*light\)[\s\S]*?:root\s*\{([\s\S]*?)\n    \}/)[1],
+      light: bareCss.match(/:root\[data-theme="light"\]\s*\{([\s\S]*?)\n  \}/)[1],
     };
     const failures = [];
     for (const [theme, block] of Object.entries(themes)) {
@@ -1355,6 +1400,15 @@ describe('viewer — the visual pass (260)', () => {
       }
       // The search-hit mark: ink-2 over the accent wash, on a card.
       check('search hit (ink-2 on accent wash)', tok('ink-2'), over(tok('accent'), 0.22, panel));
+      // The theme toggle is the one CONTROL in the header chrome, and it is the
+      // only element whose text sits on a wash of a DIFFERENT ink than itself
+      // (`--ink-2` over an `--ink-3` tint) — so neither the plain-text loop nor
+      // the badge loop above measures the pair it actually renders. The header
+      // is a translucent `--panel` over `--ground`, so the real composite lies
+      // between these two; both are held to AA rather than picking one.
+      for (const [sn, s] of [['panel', panel], ['ground', ground]]) {
+        check(`theme toggle (ink-2 on ink-3 tint over ${sn})`, tok('ink-2'), over(tok('ink-3'), tint, s));
+      }
     }
 
     // The archive tokens the `.trust` word and the plain-hue text land on are
@@ -1799,6 +1853,173 @@ describe('viewer — the visual pass (260)', () => {
     for (const sink of ['innerHTML', 'outerHTML', 'insertAdjacentHTML', 'document.write', 'srcdoc', 'setHTML', 'createContextualFragment', 'DOMParser']) {
       expect(script, `${sink} appeared in the visual pass`).not.toContain(sink);
     }
+  });
+});
+
+/**
+ * Task 268 rider — the THEME TOGGLE, and dark for EVERYONE (the D-432 completion).
+ *
+ * D-432 decided the page is dark by default. The port delivered that as `:root`
+ * dark under a `@media (prefers-color-scheme: light)` override — which means
+ * every reader on a light-preferring OS (the maintainer included) still got the
+ * light page and never saw the design the decision commissioned. Their verdict
+ * on the shipped page was "looks the same to me", and the ask was a button.
+ *
+ * So the system preference no longer decides the INITIAL state: the page stamps
+ * `data-theme` on `<html>` before the first paint — the stored choice if there
+ * is one, dark otherwise — and a button in the header flips it.
+ *
+ * There is no DOM environment here (the §24.1.7 zero-dependency contract), and
+ * the rest of this file works around that with structural assertions over the
+ * served bytes. The theme module does not need that concession: it is small and
+ * touches exactly two host objects (`document.documentElement` and
+ * `localStorage`), both of which a test can fake — so it is COMPILED AND RUN
+ * here, and these are behavioural assertions rather than greps.
+ */
+describe('viewer — the theme toggle (268 rider, D-432)', () => {
+  let html;
+  let bareCss;
+  let headScript;
+  let mainScript;
+  beforeEach(async () => {
+    const r = await boot();
+    html = await (await fetch(r.url)).text();
+    bareCss = html
+      .match(/<style\b[^>]*>([\s\S]*?)<\/style\b[^>]*>/i)[1]
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+    const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/gi)].map(
+      (m) => m[1],
+    );
+    expect(scripts.length, 'expected exactly two inline scripts: the stamp, then the page').toBe(2);
+    [headScript, mainScript] = scripts;
+    // A stamp that runs after the body has painted is not a stamp — it is a
+    // flash. Pin the ORDER in the served bytes, which is the only thing that
+    // decides it.
+    expect(html.indexOf(headScript)).toBeLessThan(html.indexOf('<body'));
+  });
+
+  /**
+   * Compile and run the real head script against a fake `document` +
+   * `localStorage`. Nothing is stubbed out of the module itself — the bytes the
+   * browser gets are the bytes that run here.
+   */
+  const runTheme = ({ stored = null, getThrows = false, setThrows = false } = {}) => {
+    const root = { dataset: {} };
+    const store = new Map();
+    if (stored !== null) store.set('cmk-viewer-theme', stored);
+    const localStorage = {
+      getItem: (k) => {
+        if (getThrows) throw new Error('storage is blocked in this profile');
+        return store.has(k) ? store.get(k) : null;
+      },
+      setItem: (k, v) => {
+        if (setThrows) throw new Error('storage is blocked in this profile');
+        store.set(k, v);
+      },
+    };
+    const win = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      headScript,
+    )(win, { documentElement: root }, localStorage);
+    return { win, store, theme: () => root.dataset.theme ?? null };
+  };
+
+  it('stamps DARK before the first paint when nothing is stored — the OS does not decide', () => {
+    expect(runTheme().theme()).toBe('dark');
+    // …and it reaches that answer WITHOUT consulting the system preference.
+    // This is the half D-432 under-delivered: the port left the default to a
+    // `prefers-color-scheme` block, so a light-OS reader never saw the dark
+    // design at all. Both halves are asserted — the script must not ask, and
+    // the sheet must not answer.
+    expect(headScript).not.toMatch(/matchMedia|prefers-color-scheme/);
+    expect(bareCss).not.toMatch(/prefers-color-scheme/);
+  });
+
+  it('a stored choice wins — and only a choice this page could have written', () => {
+    expect(runTheme({ stored: 'light' }).theme()).toBe('light');
+    expect(runTheme({ stored: 'dark' }).theme()).toBe('dark');
+    // Anything else is not a choice this page made. Stamping it through would
+    // put an attribute on `<html>` that no CSS block answers — the dark `:root`
+    // rendering under a value that reads like a third theme — so it falls back
+    // to the identity instead.
+    for (const junk of ['', 'purple', 'DARK', 'null', '{}', ' light']) {
+      expect(runTheme({ stored: junk }).theme(), `stored ${JSON.stringify(junk)}`).toBe('dark');
+    }
+  });
+
+  it('storage being unavailable costs the reader nothing — dark, not a crash', () => {
+    // A private-mode / blocked-storage profile throws on `getItem` ITSELF. An
+    // uncaught throw here aborts the head script and takes the stamp with it,
+    // which is the one failure that would leave the page unstyled-looking.
+    expect(() => runTheme({ getThrows: true })).not.toThrow();
+    expect(runTheme({ getThrows: true }).theme()).toBe('dark');
+  });
+
+  it('toggle() flips the page AND persists the choice, and the next load reads it back', () => {
+    const t = runTheme();
+    expect(t.theme()).toBe('dark');
+    expect(t.win.cmkTheme.toggle(), 'toggle() returns the theme it moved to').toBe('light');
+    expect(t.theme(), 'the DOM did not follow the toggle').toBe('light');
+    expect(t.store.get('cmk-viewer-theme'), 'the choice was not persisted').toBe('light');
+    expect(t.win.cmkTheme.toggle()).toBe('dark');
+    expect(t.theme()).toBe('dark');
+    expect(t.store.get('cmk-viewer-theme')).toBe('dark');
+    // The ROUND TRIP, not two halves of it: a fresh load fed what the last
+    // click wrote must land on that theme.
+    expect(runTheme({ stored: 'light' }).theme()).toBe('light');
+  });
+
+  it('a failed WRITE still flips the page — persistence is best-effort, the flip is not', () => {
+    const t = runTheme({ setThrows: true });
+    expect(() => t.win.cmkTheme.toggle()).not.toThrow();
+    expect(t.theme(), 'the click did nothing because storage refused to remember it').toBe('light');
+  });
+
+  it("the storage key is STABLE, and written down ONCE", () => {
+    expect(runTheme().win.cmkTheme.KEY).toBe('cmk-viewer-theme');
+    // A rename silently forgets the choice of every reader who already made
+    // one — they get the default back and no explanation. And a SECOND literal
+    // of the same key is a second source of truth for one durable value, which
+    // is how a read and a write drift apart in one direction only.
+    expect(
+      html.split('cmk-viewer-theme').length - 1,
+      'the storage key appears more than once in the page',
+    ).toBe(1);
+  });
+
+  it('the button is IN the chrome beside the read-only pill, and it says a WORD', () => {
+    const brand = html.match(/<div class="brand">([\s\S]*?)<\/div>/);
+    expect(brand, 'no .brand header block').toBeTruthy();
+    const btn = brand[1].match(/<button[^>]*id="theme-toggle"[^>]*>([\s\S]*?)<\/button>/);
+    expect(btn, 'no #theme-toggle button inside the header chrome').toBeTruthy();
+    expect(btn[0]).toMatch(/type="button"/);
+    // A lone glyph is not a label. A small quiet moon in the corner is exactly
+    // the affordance nobody finds — the control carries WORDS.
+    expect(btn[1].replace(/<[^>]*>/g, '').trim()).toMatch(/^[A-Za-z][A-Za-z ]{2,}$/);
+    // …and the accessible name says what the CLICK DOES, not only where we are.
+    expect(btn[0]).toMatch(/aria-label="Switch to the (light|dark) theme"/);
+  });
+
+  it('the page script wires the button through the one theme module', () => {
+    expect(mainScript).toMatch(/#theme-toggle/);
+    expect(mainScript).toMatch(/addEventListener\('click'/);
+    expect(mainScript).toMatch(/cmkTheme\.toggle\(\)/);
+    // The label follows the state it flips. A button still reading "Light"
+    // after the page has gone light is a control that lies about what it does,
+    // and it lies to a screen reader in the same breath.
+    expect(mainScript).toMatch(/aria-label/);
+    // The page script owns no second copy of the theme logic — no direct
+    // stamp, no direct write. One module, one writer.
+    expect(mainScript).not.toMatch(/localStorage/);
+    // …and it reaches the module through `window.`, GUARDED. Every view on this
+    // page is rendered from this one script, so a bare `cmkTheme.…` would throw
+    // a ReferenceError and blank the whole viewer if the stamp ever failed to
+    // define it — costing the reader their memory to save a button.
+    expect(mainScript).toMatch(/if\s*\(window\.cmkTheme\)/);
+    expect(mainScript).not.toMatch(/(?<!window\.)\bcmkTheme\./);
   });
 });
 
