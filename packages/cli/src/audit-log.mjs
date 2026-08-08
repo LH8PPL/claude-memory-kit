@@ -35,6 +35,7 @@ export const REASON_CODES = Object.freeze({
   DUPLICATE_ELSEWHERE: 'duplicate-elsewhere', // writeFact: different path + same id
   RECURRENCE: 'recurrence', // writeFact: a duplicate write = the same canonical fact re-surfaced → recurrence_count bumped (Task 151.1, ADR-0016 — the capped-recurrence promotion signal)
   INDEX_REBUILD_FAILED: 'index-rebuild-failed', // writeFact: the fact landed on disk but the best-effort INDEX.md rebuild threw (e.g. a detached auto-extract child killed mid-rebuild). Surfaces what was previously a SILENTLY swallowed catch (D-152) so a lagging committed INDEX is diagnosable; the next reindex/cmk reindex self-heals.
+  AUTO_LINKED: 'auto-linked', // write-time linking (Task 262, ADR-0023): the new fact's `related:` frontmatter was auto-populated. `extra` carries the backend, the DERIVED floor, and one {id, slug, score, band} per applied edge — the observability the flag's A/B measurement reads.
   USER_REQUESTED: 'user-requested', // forget: user-initiated tombstone
   CURATED_MERGE: 'curated-merge', // mergeFacts: explicit merge of A + B → C
   TEMPORAL_SUPERSEDE: 'temporal-supersede', // validity-window: a newer fact superseded an older CURRENT-STATE claim → window closed at the newer created_at (Task 66.2, D-259)

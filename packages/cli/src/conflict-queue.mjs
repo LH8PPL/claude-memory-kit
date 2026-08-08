@@ -76,6 +76,13 @@ const TRUST_LEVELS = Object.freeze({
 // Callers can always override via the `similarityThreshold` option.
 const DEFAULT_SUBSTRING_THRESHOLD = 0.5;
 const DEFAULT_SEMANTIC_THRESHOLD = 0.85;
+
+/**
+ * The lexical near-dup ceiling, exported for Task 262's write-time linker so the
+ * three-band split REUSES this calibrated seam instead of inventing a second
+ * near-dup number. Same value, one definition (CLAUDE.md shared-module rule).
+ */
+export const SUBSTRING_NEARDUP_THRESHOLD = DEFAULT_SUBSTRING_THRESHOLD;
 const QUEUE_RELATIVE = ['queues', 'conflicts.md'];
 const QUEUE_HEADER = '# Conflicts queue\n\n';
 

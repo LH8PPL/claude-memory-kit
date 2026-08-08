@@ -28,6 +28,11 @@ import { checkPoisonGuard, logPoisonGuardRejection } from './poison-guard.mjs';
 // ONE boundary every fact create flows through, so it is where "is the INDEX
 // still in step with the archive?" is actually knowable as an EVENT.
 import { appendHealthTransition, HEALTH_CODES } from './health-log.mjs';
+// Task 262 (ADR-0023 / D-433) — write-time linking. The `related` option has
+// been accepted here since Task 7 and nothing ever passed it; this is the
+// module that passes it.
+import { autoLinkFact, auditAutoLink, linkingEnabled } from './link-facts.mjs';
+import { openIndexDb } from './index-db.mjs';
 
 // Task 191 (ADR-0017 Phase 1b): 'judgment' is a LOOP-BORN type — written by
 // judgment.mjs (earned method-preferences with an evidence log), never by the
@@ -298,6 +303,53 @@ export function bumpFactRecurrence({ id, projectRoot, userDir, now, source } = {
   return { action: 'not-found', id };
 }
 
+/**
+ * Task 262 — run the write-time linker for one create, or return null.
+ *
+ * Returns null (link nothing) for every one of: the flag is off, the caller
+ * already supplied `related`, the caller opted out (`autoLink: false` — the
+ * fixture-seeding and backfill paths), or ANY failure at all. It is
+ * deliberately impossible for this function to throw: it is called from the
+ * middle of a successful capture.
+ *
+ * `_linkFn` is the test seam (parity with `_reindexFn`); `linkSimilarity` is the
+ * prepared SEMANTIC backend an async caller may inject (the Task-143
+ * prepareNearDupGuard shape — the async model work happens in a caller that can
+ * afford it, and a plain sync `similarityFn` is what crosses into this path).
+ */
+function maybeAutoLink({ opts, factOpts, id, createdAt }) {
+  try {
+    if (opts.autoLink === false) return null;
+    if (opts.related !== undefined) return null; // an explicit `related` wins
+    if (!opts.projectRoot) return null; // no project → no index → nothing to link against
+    if (!linkingEnabled({ projectRoot: opts.projectRoot })) return null;
+    const linkFn = opts._linkFn ?? autoLinkFact;
+    const db = openIndexDb({ projectRoot: opts.projectRoot });
+    try {
+      return linkFn({
+        db,
+        projectRoot: opts.projectRoot,
+        userDir: opts.userDir,
+        tier: opts.tier,
+        id,
+        text: factOpts.body,
+        mode: 'write',
+        similarity: opts.linkSimilarity ?? null,
+        now: createdAt,
+      });
+    } finally {
+      try {
+        db.close();
+      } catch {
+        /* best-effort */
+      }
+    }
+  } catch {
+    // Capture > linking, always. A linking failure is never a capture failure.
+    return null;
+  }
+}
+
 export function writeFact(opts = {}) {
   const errors = validateOptions(opts);
   if (errors.length > 0) {
@@ -455,9 +507,32 @@ export function writeFact(opts = {}) {
     };
   }
 
+  // Task 262 (ADR-0023 / D-433) — WRITE-TIME LINKING, opportunistically attached
+  // to the one boundary every fact create already flows through. `related` has
+  // been an accepted option since Task 7 and nothing ever passed it; this is
+  // what passes it. Computed BEFORE the file is written, against an index that
+  // by definition does not yet contain this fact (so a self-link is impossible).
+  //
+  // Three invariants, all load-bearing:
+  //   - CAPTURE > LINKING. Every failure mode (no index, no derived floor, a
+  //     locked db, a throwing backend) degrades to "write the fact unlinked";
+  //     the backfill catches it later. A capture is never blocked or failed.
+  //   - AN EXPLICIT `related` WINS. A caller that passed links is stating them;
+  //     the linker never overwrites a human/tool decision.
+  //   - LINKING IS METADATA. It touches `related:` and nothing else — the body
+  //     is neither reordered nor rewritten, and Poison_Guard has already
+  //     screened it above, unchanged.
+  const linkDecision = maybeAutoLink({ opts, factOpts, id, createdAt });
+  if (linkDecision?.related?.length) factOpts.related = linkDecision.related;
+
   mkdirSync(factDir, { recursive: true });
   const frontmatter = buildFrontmatterObject(factOpts, { id, createdAt });
   writeFileSync(path, format({ frontmatter, body: `\n${factOpts.body}\n` }), 'utf8');
+  // Door 5, AFTER the file lands: an audit line always describes a link that
+  // exists on disk.
+  if (linkDecision) {
+    auditAutoLink({ tierRoot, tier: opts.tier, id, decision: linkDecision, now: createdAt });
+  }
 
   // Keep INDEX.md consistent on every create — the index is a derived view of
   // the fact files, so the writer owns keeping it current. Without this, a fresh

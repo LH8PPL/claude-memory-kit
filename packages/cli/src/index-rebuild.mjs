@@ -54,6 +54,14 @@ import { stripBom } from './read-json.mjs';
 import { listFactFiles } from './fact-store.mjs';
 import { initTrustScore } from './trust-score.mjs';
 import { rebuildEdges, edgesBuilt } from './graph-index.mjs';
+import { refreshLinkFloors, readLinkFloor } from './link-facts.mjs';
+
+// Task 262: how far the live-fact count may drift from the count a stored
+// linking floor was derived on before the boot path re-derives it. 50% is one
+// doubling / halving — big enough that a normal session's captures never
+// trigger a re-derivation, small enough that a floor can't describe a corpus
+// twice its size.
+const LINK_FLOOR_DRIFT_RATIO = 0.5;
 import {
   VALID_TIERS,
   SCRATCHPADS_BY_TIER,
@@ -651,10 +659,40 @@ export function reindexBoot({ projectRoot, userDir, db, now }) {
     }
   }
 
+  // Task 262: the write-time linking floor on the BOOT path. A floor that only
+  // ever appeared on `reindex --full` would mean a fresh install writes unlinked
+  // facts forever (nothing runs a full reindex on its own — the D-298 class), so
+  // it is derived here when ABSENT, and re-derived when the corpus has grown or
+  // shrunk by more than LINK_FLOOR_DRIFT_RATIO since it was computed (a floor
+  // derived from a 40-fact corpus is not the floor of a 400-fact one). Both
+  // conditions terminate: a corpus under MIN_FLOOR_ITEMS derives nothing and
+  // re-checks only when files actually changed, which is the cheap no-op case.
+  let linkFloors = null;
+  try {
+    const existing = readLinkFloor(db, 'jaccard');
+    let stale = !existing;
+    if (existing && changed) {
+      const { n } = db
+        .prepare(
+          `SELECT COUNT(*) AS n FROM observations
+            WHERE deleted_at IS NULL AND superseded_by IS NULL AND source_file LIKE '%memory/%'`,
+        )
+        .get();
+      const base = Math.max(1, existing.corpusSize ?? 1);
+      stale = Math.abs(n - base) / base > LINK_FLOOR_DRIFT_RATIO;
+    }
+    if (stale && (changed || !existing)) {
+      linkFloors = refreshLinkFloors(db, { now: new Date(ts).toISOString() });
+    }
+  } catch {
+    // best-effort: no floor simply means the next writes land unlinked
+  }
+
   return {
     filesScanned,
     filesReindexed,
     observationsAffected,
+    linkFloors,
     filesPruned,
     observationsPruned,
     transcriptFiles: transcripts.files,
@@ -803,9 +841,26 @@ export function reindexFull({ projectRoot, userDir, db, now }) {
     );
   }
 
+  // Task 262: RE-DERIVE the write-time linking floors from the corpus that was
+  // just indexed. The floor must never be a constant (grill Q3) — it is the p99
+  // of THIS corpus's own random-pair similarity under THIS backend, so it moves
+  // when the corpus does and is meaningless copied from another repo or another
+  // embedder. Derived state in the same rebuildable index as `edges` (ADR-0002),
+  // recomputed on every full reindex. Best-effort by the same rule as the edge
+  // rebuild: no floor simply means the next writes land unlinked.
+  let linkFloors = null;
+  try {
+    linkFloors = refreshLinkFloors(db, { now: new Date(ts).toISOString() });
+  } catch (err) {
+    process.stderr.write(
+      `cmk reindex: link-floor derivation (full) failed: ${err?.message ?? err}\n`,
+    );
+  }
+
   return {
     filesScanned,
     observationsAffected,
+    linkFloors,
     transcriptFiles: transcripts.files,
     transcriptChunks: transcripts.chunks,
     edgeCount,
