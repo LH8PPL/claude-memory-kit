@@ -95,13 +95,24 @@ export const FLOOR_MAX_ITEMS = 600;
 export const FLOOR_MAX_PAIRS = 20_000;
 
 /**
- * Above this many live same-tier facts the linear write-time scan stops being
- * a rounding error on a write that already reindexes. We link nothing rather
- * than silently spend an unbounded budget on the capture path.
+ * The hard ceiling on the write-time scan. Above it, link nothing rather than
+ * spend an unbounded budget on the capture path.
  *
- * Ship trigger for the bounded-candidate path (an FTS/vec prefilter instead of
- * a full scan): the first corpus that crosses it. At 2,260 facts the dogfood
- * repo is an order of magnitude below.
+ * MEASURED COST, because the first version of this comment guessed and the
+ * guess was wrong. On the 2,260-fact dogfood corpus a real `cmk remember`
+ * takes **11.6 s without linking and 14.4 s with it — +2.8 s per capture**, and
+ * it grows linearly: the scan tokenizes every candidate body on every write.
+ * That is NOT a rounding error on a write that already reindexes, which is what
+ * this comment used to claim.
+ *
+ * So this constant is a backstop, not the answer. The real fix is a bounded
+ * CANDIDATE path — an FTS OR-query over the incoming text's rarest tokens (or a
+ * vec KNN when semantic is present) to narrow to ~200 candidates before any
+ * tokenization — which would make the cost independent of corpus size.
+ *
+ * **Ship trigger:** before write-time linking is made default-ON for users with
+ * corpora in the thousands. At 2,260 facts the cost is already user-visible;
+ * 20,000 is where it becomes absurd, and the ceiling only stops that.
  */
 export const MAX_SCAN_FACTS = 20_000;
 
