@@ -1,6 +1,15 @@
-// @doors: 1
-// Door 2 N/A: dry-run mode (the only mode tests run) makes NO filesystem or scheduler changes. Production registration is dry-run-locked-out from tests per CLAUDE.md autopilot stop rule "anything that touches the user's system beyond the repo" — production paths are exercised manually by the user at install time.
-// Door 3 N/A: dry-run mode never calls spawnSync. Production paths shell to crontab/launchctl/schtasks which is platform-tested by the maintainer at install (cross-OS CI matrix is Task 40 / v0.1.x).
+// @doors: 1, 2, 3
+// Door 2 (state) is asserted through the injected `writeFile` seam only — the VBS
+//   shim write (Task 215) and the settings repair (Task 265) are pinned by capturing
+//   what WOULD be written/spawned. NO test ever mutates real host-scheduler state:
+//   registration is dry-run or fake-spawn locked per the CLAUDE.md autopilot stop rule
+//   ("anything that touches the user's system beyond the repo"). The real registration
+//   is the maintainer's own step.
+// Door 3 (external calls) is asserted via the injected `spawn` seam: the absolute
+//   System32 schtasks.exe + its verbatim argv, and the follow-up PowerShell
+//   Set-ScheduledTask argv (Task 167.E / 203 / 265). The real crontab/launchctl/
+//   schtasks binaries are exercised by the maintainer at install (cross-OS CI
+//   matrix is Task 40 / v0.1.x).
 // Door 4 N/A: no message-queue interaction.
 // Door 5 N/A: register-crons returns its result struct rather than emitting NDJSON.
 
@@ -17,10 +26,20 @@ import {
   detectPlatform,
   buildWindowsSchtasks,
   buildWindowlessShim,
+  buildWindowsSettingsPowerShell,
+  inspectWindowsTaskSettings,
+  WINDOWS_TASK_SETTINGS,
+  WINDOWS_SETTINGS_SWITCHES,
   CRON_ENTRY_NAME,
   DEFAULT_SCHEDULE,
   WEEKLY_ENTRY_NAME,
 } from '../packages/cli/src/register-crons.mjs';
+import { readFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
+
+const FIXTURE_DIR = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'fixtures', 'schtasks');
+const readTaskXml = (name) => readFileSync(join(FIXTURE_DIR, name), 'utf8');
 
 // D-341 (2026-07-18): SonarCloud's A3S context collector constant-folds
 // fixture path literals THROUGH the source-under-test's
@@ -390,6 +409,366 @@ describe('Task 33 — register-crons', () => {
       expect(r.action).toBe('dry-run');
       expect(r.output).toContain('<string>/usr/local/bin/node</string>');
       expect(r.output).not.toMatch(/<string>"/); // no ProgramArgument starts with a literal quote
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Task 265 (D-424) — the scheduler flags that made D-298's starvation physical.
+//
+// The evidence (fixtures/schtasks/cmk-daily-distill-pre-265.xml, captured off a
+// real machine): every task `register-crons` creates carried
+//   DisallowStartIfOnBatteries=true  → never STARTS on battery
+//   StopIfGoingOnBatteries=true      → KILLED the moment the user unplugs
+//   StopOnIdleEnd=true               → killed when the idle condition ends
+//   RestartOnIdle=false              → and never retried
+// i.e. the whole Layer-6 maintenance tier was unreliable by construction on the
+// hardware most users have. Verified against the Task Scheduler schema (schema
+// defaults: DisallowStartIfOnBatteries/StopIfGoingOnBatteries/StopOnIdleEnd all
+// default TRUE) AND empirically against `New-ScheduledTaskSettingsSet`, whose
+// no-argument defaults reproduce the bad posture exactly — which is how the
+// kit's OWN best-effort `Set-ScheduledTask` call (Task 167.E / 203) was itself
+// re-stamping the hostile flags on every registration.
+// ---------------------------------------------------------------------------
+describe('Task 265 — the registered task must survive a developer laptop', () => {
+  const winCommand = [
+    `"${opaqueWinRoot('C', 'Program Files', 'nodejs', 'node.exe')}"`,
+    `"${opaqueWinRoot('C', 'kit', 'bin', 'cmk-daily-distill.mjs')}"`,
+    `"${opaqueWinRoot('C', 'proj')}"`,
+  ].join(' ');
+
+  describe('WINDOWS_TASK_SETTINGS — the desired posture (Door 1)', () => {
+    it('declares the five flags that decide whether a nightly job actually runs', () => {
+      expect(WINDOWS_TASK_SETTINGS).toEqual({
+        // Pre-265, already correct (Task 167.E / D-207 + Task 203 / D-298):
+        StartWhenAvailable: true, // a run missed while the machine was off catches up
+        WakeToRun: true, // the machine wakes at 23:00 rather than skipping the run
+        // Task 265 / D-424 — the three that made the job un-runnable on a laptop:
+        DisallowStartIfOnBatteries: false, // an unplugged laptop must still distill
+        StopIfGoingOnBatteries: false, // unplugging mid-run must not kill it
+        StopOnIdleEnd: false, // returning to the keyboard must not kill it
+      });
+    });
+
+    it('is frozen — the posture is a single source of truth, not a mutable default', () => {
+      expect(Object.isFrozen(WINDOWS_TASK_SETTINGS)).toBe(true);
+    });
+  });
+
+  describe('buildWindowsSettingsPowerShell — the Door 3 payload', () => {
+    it('emits a switch for EVERY declared setting, and declares a setting for every switch', () => {
+      // Both directions, per the validate-agent-adapter-parity discipline: a flag
+      // added to the posture without a switch would silently never be applied, and
+      // a switch with no declared setting would be an unexplained mutation.
+      expect(Object.keys(WINDOWS_SETTINGS_SWITCHES).sort())
+        .toEqual(Object.keys(WINDOWS_TASK_SETTINGS).sort());
+      const ps = buildWindowsSettingsPowerShell(CRON_ENTRY_NAME);
+      for (const sw of Object.values(WINDOWS_SETTINGS_SWITCHES)) {
+        expect(ps).toContain(sw);
+      }
+    });
+
+    it('carries the three Task-265 switches alongside the two pre-existing ones', () => {
+      const ps = buildWindowsSettingsPowerShell(CRON_ENTRY_NAME);
+      // Empirically verified on Windows PowerShell 5.1: this exact switch set
+      // yields DisallowStartIfOnBatteries=False, StopIfGoingOnBatteries=False,
+      // StopOnIdleEnd=False, StartWhenAvailable=True, WakeToRun=True.
+      expect(ps).toContain('-AllowStartIfOnBatteries');
+      expect(ps).toContain('-DontStopIfGoingOnBatteries');
+      expect(ps).toContain('-DontStopOnIdleEnd');
+      expect(ps).toContain('-StartWhenAvailable');
+      expect(ps).toContain('-WakeToRun');
+      expect(ps).toContain('New-ScheduledTaskSettingsSet');
+      expect(ps).toContain('Set-ScheduledTask');
+    });
+
+    it('targets the named task and fails the whole script loudly rather than half-applying', () => {
+      const ps = buildWindowsSettingsPowerShell(WEEKLY_ENTRY_NAME);
+      expect(ps).toContain(`'${WEEKLY_ENTRY_NAME}'`);
+      expect(ps).not.toContain(CRON_ENTRY_NAME);
+      // -ErrorAction Stop + a catch that exits non-zero is what makes the caller's
+      // settingsApplied flag meaningful (a silent partial apply would report true).
+      expect(ps).toContain('-ErrorAction Stop');
+      expect(ps).toMatch(/catch \{ exit 1 \}/);
+    });
+
+    it('does NOT set RestartOnIdle — with StopOnIdleEnd off there is nothing to restart', () => {
+      // Decision trail: the task entry offered "set RestartOnIdle: true" as an
+      // alternative. Rejected — MS docs are explicit that terminate-and-restart
+      // needs BOTH StopOnIdleEnd AND RestartOnIdle true; not being killed at all
+      // is strictly better than being killed and restarted from zero.
+      expect(buildWindowsSettingsPowerShell(CRON_ENTRY_NAME)).not.toContain('-RestartOnIdle');
+    });
+  });
+
+  describe('registerCron(win32) — the settings repair is issued on every registration (Door 3)', () => {
+    const okSpawn = () => ({ status: 0, stdout: 'SUCCESS', stderr: '' });
+
+    it('the PowerShell argv carries the battery + idle-end switches', () => {
+      const calls = [];
+      const r = registerCron({
+        command: winCommand, entryName: CRON_ENTRY_NAME, platform: 'win32',
+        spawn: (exe, args) => { calls.push({ exe, args }); return okSpawn(); },
+      });
+      expect(r.action).toBe('registered');
+      const psCall = calls.find((c) => /powershell\.exe$/i.test(c.exe));
+      expect(psCall).toBeDefined();
+      const script = psCall.args.join(' ');
+      expect(script).toContain('-AllowStartIfOnBatteries');
+      expect(script).toContain('-DontStopIfGoingOnBatteries');
+      expect(script).toContain('-DontStopOnIdleEnd');
+      // …without dropping what 167.E + 203 already earned.
+      expect(script).toContain('-StartWhenAvailable');
+      expect(script).toContain('-WakeToRun');
+    });
+
+    it('the settings repair runs on RE-registration too — that is the whole migration story', () => {
+      // Existing installs carry the bad flags. There is no separate migration
+      // command: `/Create /F` re-creates the task and the settings call re-stamps
+      // it, so re-running `cmk register-crons` IS the repair. Pin that the repair
+      // is unconditional on a successful create, not first-run-only.
+      const scripts = [];
+      for (let i = 0; i < 3; i += 1) {
+        const calls = [];
+        registerCron({
+          command: winCommand, entryName: CRON_ENTRY_NAME, platform: 'win32',
+          spawn: (exe, args) => { calls.push({ exe, args }); return okSpawn(); },
+        });
+        const create = calls.find((c) => /schtasks\.exe$/i.test(c.exe));
+        expect(create.args).toContain('/F'); // force-overwrite = idempotent re-create
+        scripts.push(calls.find((c) => /powershell\.exe$/i.test(c.exe)).args.join(' '));
+      }
+      expect(new Set(scripts).size).toBe(1); // byte-identical every time
+    });
+
+    it('reports settingsApplied:true when the repair lands (Door 1)', () => {
+      const r = registerCron({
+        command: winCommand, entryName: CRON_ENTRY_NAME, platform: 'win32', spawn: okSpawn,
+      });
+      expect(r.action).toBe('registered');
+      expect(r.settingsApplied).toBe(true);
+    });
+
+    it('reports settingsApplied:false — but stays action:registered — when the repair fails', () => {
+      // The registration itself succeeded; the flags did not get fixed. Silently
+      // swallowing that is how a user ends up with a registered-but-starving task
+      // and no signal (the D-298 false-green class). Registration must not fail —
+      // the lazy roll is the guarantee — but the outcome must be visible.
+      let n = 0;
+      const r = registerCron({
+        command: winCommand, entryName: CRON_ENTRY_NAME, platform: 'win32',
+        spawn: () => { n += 1; return n === 1 ? okSpawn() : { status: 1, stdout: '', stderr: 'PS boom' }; },
+      });
+      expect(r.action).toBe('registered');
+      expect(r.settingsApplied).toBe(false);
+    });
+
+    it('reports settingsApplied:false when the PowerShell spawn THROWS', () => {
+      let n = 0;
+      const r = registerCron({
+        command: winCommand, entryName: CRON_ENTRY_NAME, platform: 'win32',
+        spawn: () => { n += 1; if (n === 1) return okSpawn(); throw new Error('no powershell'); },
+      });
+      expect(r.action).toBe('registered');
+      expect(r.settingsApplied).toBe(false);
+    });
+
+    it('issues NO settings call when the /Create itself failed', () => {
+      const calls = [];
+      const r = registerCron({
+        command: winCommand, entryName: CRON_ENTRY_NAME, platform: 'win32',
+        spawn: (exe, args) => { calls.push({ exe, args }); return { status: 1, stdout: '', stderr: 'denied' }; },
+      });
+      expect(r.action).toBe('error');
+      expect(calls.filter((c) => /powershell\.exe$/i.test(c.exe))).toHaveLength(0);
+    });
+  });
+
+  describe('--dry-run shows the EXACT registration, flags included (Door 1)', () => {
+    it('win32 dry-run returns settingsCommand with every switch and spawns nothing (Door 3)', () => {
+      const calls = [];
+      const r = registerCron({
+        command: winCommand, entryName: CRON_ENTRY_NAME, platform: 'win32', dryRun: true,
+        spawn: (exe, args) => { calls.push({ exe, args }); return { status: 0 }; },
+      });
+      expect(r.action).toBe('dry-run');
+      expect(r.executed).toBe(false);
+      expect(calls).toHaveLength(0); // Door 3: nothing spawned
+      expect(r.settingsCommand).toContain('-AllowStartIfOnBatteries');
+      expect(r.settingsCommand).toContain('-DontStopIfGoingOnBatteries');
+      expect(r.settingsCommand).toContain('-DontStopOnIdleEnd');
+      expect(r.settingsCommand).toContain(CRON_ENTRY_NAME);
+      // The schtasks half is unchanged and still shown.
+      expect(r.command).toContain('/SC DAILY');
+      // A dry run applied nothing, so it must not claim it did.
+      expect(r.settingsApplied).toBeUndefined();
+    });
+
+    it('the dry-run settings command is byte-identical to what the real path spawns', () => {
+      // Otherwise --dry-run is a lie: it would show one thing and register another.
+      const calls = [];
+      registerCron({
+        command: winCommand, entryName: CRON_ENTRY_NAME, platform: 'win32',
+        spawn: (exe, args) => { calls.push({ exe, args }); return { status: 0, stdout: 'SUCCESS', stderr: '' }; },
+      });
+      const spawnedScript = calls.find((c) => /powershell\.exe$/i.test(c.exe)).args.at(-1);
+      const dry = registerCron({
+        command: winCommand, entryName: CRON_ENTRY_NAME, platform: 'win32', dryRun: true,
+      });
+      expect(dry.settingsCommand).toContain(spawnedScript);
+    });
+
+    it('a win32 dry-run writes NOTHING to disk, yet still shows the shim it WOULD use (Door 2)', () => {
+      // Found while wiring the flags into --dry-run: the win32 branch wrote the
+      // VBS shim BEFORE the dry-run return, so `cmk register-crons --dry-run`
+      // created context/.locks/ + a .vbs in the user's repo. A dry run that
+      // mutates state cannot be the "inspect before granting host permissions"
+      // affordance it is documented as (design §8.6.2).
+      const writes = [];
+      const sandbox = mkdtempSync(join(tmpdir(), 'cmk-cron-dryrun-'));
+      const r = registerCron({
+        command: winCommand, entryName: CRON_ENTRY_NAME, platform: 'win32', dryRun: true,
+        projectRoot: sandbox,
+        writeFile: (path, content) => writes.push({ path, content }),
+      });
+      expect(r.action).toBe('dry-run');
+      expect(writes).toHaveLength(0);
+      // …and the real filesystem is untouched too (the seam could be bypassed).
+      expect(existsSync(join(sandbox, 'context', '.locks'))).toBe(false);
+      // The DISPLAY must not regress: the user still sees the wscript shim /TR
+      // they will actually get, not the direct command.
+      expect(r.command).toContain('wscript.exe //B //Nologo');
+      expect(r.command).toContain(`${CRON_ENTRY_NAME}-run.vbs`);
+    });
+
+    it('the POSIX legs carry no settingsCommand — the flags are a schtasks concern only', () => {
+      for (const platform of ['linux', 'darwin']) {
+        const r = registerCron({ command: 'node bin.mjs', platform, dryRun: true });
+        expect(r.action).toBe('dry-run');
+        expect(r.settingsCommand).toBeUndefined();
+      }
+    });
+  });
+
+  describe('inspectWindowsTaskSettings — the detection hook Task 47 will wire into HC-5 (Door 1)', () => {
+    it('flags the REAL pre-265 task definition captured off a live machine', () => {
+      const v = inspectWindowsTaskSettings(readTaskXml('cmk-daily-distill-pre-265.xml'));
+      expect(v.verdict).toBe('needs-repair');
+      const bad = v.problems.map((p) => p.setting).sort();
+      expect(bad).toEqual([
+        'DisallowStartIfOnBatteries', 'StopIfGoingOnBatteries', 'StopOnIdleEnd',
+      ]);
+      // StartWhenAvailable + WakeToRun already landed (167.E / 203) — not re-flagged.
+      expect(bad).not.toContain('StartWhenAvailable');
+      expect(bad).not.toContain('WakeToRun');
+      // Each problem carries enough for a doctor message to be specific.
+      const battery = v.problems.find((p) => p.setting === 'DisallowStartIfOnBatteries');
+      expect(battery).toEqual({ setting: 'DisallowStartIfOnBatteries', actual: true, expected: false });
+    });
+
+    it('passes the repaired post-265 definition', () => {
+      const v = inspectWindowsTaskSettings(readTaskXml('cmk-daily-distill-post-265.xml'));
+      expect(v).toEqual({ verdict: 'ok', problems: [] });
+    });
+
+    it('treats an ABSENT element as its schema default, not as absent-so-fine', () => {
+      // schtasks omits elements equal to the schema default, and those defaults are
+      // exactly the hostile ones. Reading "absent" as "no problem" would false-green
+      // the check on the very tasks it exists to catch.
+      const bare = '<Task><Settings></Settings></Task>';
+      const v = inspectWindowsTaskSettings(bare);
+      expect(v.verdict).toBe('needs-repair');
+      expect(v.problems.map((p) => p.setting).sort()).toEqual([
+        'DisallowStartIfOnBatteries', 'StartWhenAvailable', 'StopIfGoingOnBatteries',
+        'StopOnIdleEnd', 'WakeToRun',
+      ]);
+    });
+
+    it('reports ONLY the setting that is wrong — the other four stay unreported (over-mutation guard)', () => {
+      // Seed all five correct, break exactly one, assert 4 remain unflagged.
+      const good = readTaskXml('cmk-daily-distill-post-265.xml');
+      for (const [setting, expected] of Object.entries(WINDOWS_TASK_SETTINGS)) {
+        const broken = good.replace(
+          new RegExp(`<${setting}>[^<]*</${setting}>`),
+          `<${setting}>${String(!expected)}</${setting}>`,
+        );
+        expect(broken).not.toBe(good); // the fixture really does declare it
+        const v = inspectWindowsTaskSettings(broken);
+        expect(v.verdict).toBe('needs-repair');
+        expect(v.problems).toEqual([{ setting, actual: !expected, expected }]);
+      }
+    });
+
+    it('returns verdict:unreadable — never a false needs-repair — for input it cannot parse', () => {
+      for (const junk of ['', '   ', 'ERROR: The system cannot find the file specified.', null, undefined, 42]) {
+        const v = inspectWindowsTaskSettings(junk);
+        expect(v.verdict).toBe('unreadable');
+        expect(v.problems).toEqual([]);
+      }
+    });
+
+    it('tolerates the UTF-16 BOM + CRLF that `schtasks /query /XML` actually emits', () => {
+      // D-306's class: the real payload is not the clean string a test invents.
+      const raw = readTaskXml('cmk-daily-distill-pre-265.xml');
+      const withBom = `﻿${raw.replace(/\n/g, '\r\n')}`;
+      expect(inspectWindowsTaskSettings(withBom).verdict).toBe('needs-repair');
+    });
+  });
+
+  // The unit tests above all call registerCron() in-process. This one drives the
+  // REAL bin as a subprocess — the "unit-green ≠ works-on-real-input" gap the
+  // live-test rule exists for. It is safe to run anywhere and in CI because
+  // --dry-run registers nothing: the host scheduler is never touched, the run
+  // happens in a throwaway cwd with MEMORY_KIT_USER_DIR isolated, and the
+  // preceding Door-2 test pins that a dry run writes no files either.
+  describe('live: the real `cmk register-crons --dry-run` bin', () => {
+    it('prints the exact registration a user would get, flags included', () => {
+      const sandbox = mkdtempSync(join(tmpdir(), 'cmk-cron-live-'));
+      const userDir = mkdtempSync(join(tmpdir(), 'cmk-cron-userdir-'));
+      const bin = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'packages', 'cli', 'bin', 'cmk.mjs');
+      const out = execFileSync(process.execPath, [bin, 'register-crons', '--dry-run'], {
+        cwd: sandbox,
+        env: { ...process.env, MEMORY_KIT_USER_DIR: userDir },
+        encoding: 'utf8',
+        timeout: 30_000,
+      });
+      // Both jobs are shown, and neither was executed.
+      expect(out).toContain('daily-distill');
+      expect(out).toContain('weekly-curate');
+      expect(out).toContain('dry-run');
+      if (process.platform === 'win32') {
+        // Task 265: the flags are visible in the dry run, per job.
+        expect(out).toContain('-AllowStartIfOnBatteries');
+        expect(out).toContain('-DontStopIfGoingOnBatteries');
+        expect(out).toContain('-DontStopOnIdleEnd');
+        expect(out.match(/-DontStopOnIdleEnd/g)).toHaveLength(2); // daily + weekly
+        expect(out).toContain('/SC DAILY');
+        expect(out).toContain('/SC WEEKLY');
+        // Door 2: a dry run left no trace in the sandbox project.
+        expect(existsSync(join(sandbox, 'context', '.locks'))).toBe(false);
+      } else {
+        expect(out).not.toMatch(/Batteries|IdleEnd|ScheduledTask/i);
+      }
+    });
+  });
+
+  describe('cross-platform: the POSIX legs have no equivalent posture to regress', () => {
+    it('the linux cron line is a plain 5-field entry with no scheduler-posture machinery', () => {
+      // cron has no battery or idle conditions to inherit; the only Windows-shaped
+      // concept must not leak into the crontab pipe.
+      const r = registerCron({ command: 'node bin.mjs', platform: 'linux', dryRun: true });
+      expect(r.command).toMatch(/0 23 \* \* \* node bin\.mjs # cmk-daily-distill/);
+      expect(r.command).not.toMatch(/Batteries|IdleEnd|ScheduledTask|powershell/i);
+    });
+
+    it('the macOS plist declares no battery/idle/throttling keys', () => {
+      // launchd exposes no power- or user-activity-conditional keys at all (verified
+      // against launchd.plist(5)); StartCalendarInterval already coalesces missed
+      // runs to next wake, which is StartWhenAvailable's behaviour for free. Leaving
+      // ProcessType unset keeps the job out of the throttled Background class.
+      const r = registerCron({ command: '"/usr/bin/node" "/kit/bin/d.mjs" "/proj"', platform: 'darwin', dryRun: true });
+      expect(r.output).toContain('<key>StartCalendarInterval</key>');
+      expect(r.output).not.toMatch(/Batteries|IdleEnd|ProcessType|LowPriorityIO/i);
     });
   });
 });
