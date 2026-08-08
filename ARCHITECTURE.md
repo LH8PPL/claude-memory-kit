@@ -102,7 +102,7 @@ Two scheduled jobs keep the system healthy without manual intervention (register
 | Daily memory distillation (`cmk daily-distill`) | 23:00 daily | Extracts durable facts from today's session log into MEMORY.md. |
 | Weekly memory curator (`cmk weekly-curate`) | Sun 09:00 | Prunes resolved threads, merges duplicates, drops stale entries. |
 
-Registered via `cmk register-crons`. Translates to crontab entries (Linux), LaunchAgents (macOS), or Task Scheduler tasks (Windows). Idempotent — re-running overwrites existing entries cleanly. See [`packages/cli/src/register-crons.mjs`](packages/cli/src/register-crons.mjs) for the platform mapping.
+Registered via `cmk register-crons`. Translates to crontab entries (Linux), LaunchAgents (macOS), or Task Scheduler tasks (Windows). Idempotent — re-running overwrites existing entries cleanly, which also makes it the repair path when a registration's settings are wrong. On Windows the registration is two steps: the task itself, then the scheduler conditions that decide whether it ever runs (design §8.6.5). See [`packages/cli/src/register-crons.mjs`](packages/cli/src/register-crons.mjs) for the platform mapping.
 
 ### Bootstrap import (day-one memory)
 

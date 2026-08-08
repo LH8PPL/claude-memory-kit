@@ -187,7 +187,10 @@ export function inspectWindowsTaskSettings(xml) {
   for (const [setting, expected] of Object.entries(WINDOWS_TASK_SETTINGS)) {
     // Element names are unique across settingsType + idleSettingsType, so a flat
     // element match is unambiguous (StopOnIdleEnd nests under IdleSettings).
-    const m = new RegExp(`<${setting}>\\s*([^<]*?)\\s*</${setting}>`).exec(xml);
+    // Deliberately no `\s*` around the capture: `\s*([^<]*?)\s*` is ambiguous
+    // (whitespace matches both sides) — the polynomial-backtracking shape. One
+    // greedy bounded class + trim() is unambiguous and does the same job.
+    const m = new RegExp(`<${setting}>([^<]*)</${setting}>`).exec(xml);
     const actual = m ? m[1].trim().toLowerCase() === 'true' : WINDOWS_SETTING_SCHEMA_DEFAULTS[setting];
     if (actual !== expected) problems.push({ setting, actual, expected });
   }
