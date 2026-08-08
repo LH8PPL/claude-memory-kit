@@ -24,7 +24,7 @@
 
 **The lesson worth keeping:** the failing test was not noise to be silenced by adding an exclusion — it was the guardrail firing, and reading it as "add the verb to the list" would have shipped the real hazard. When a generic test fails on a NEW verb, ask what the test was protecting before you tell it about the exception. _Relates Task 262, D-192/D-193 (memory-delete discipline), D-366 (account for records before naming the loss)._
 
-## 2026-08-08 — D-436 · ISSUE — The automatic linker SHIPS but does not earn its default: measured, it REGRESSES the type it was built for
+## 2026-08-08 — D-436 · DECISION — Write-time linking ships DEFAULT-OFF: measured, it REGRESSES the type it was built for
 
 **Task 262 sub-tasks 2-4 are built, tested and live-verified — and the AFTER measurement says the mechanism does not work for its stated purpose on the benchmark that was built to judge it.** Filing this as the finding rather than burying it in a task annotation, because the honest reading changes what should ship.
 
@@ -36,7 +36,14 @@
 
 **What this settles for ADR-0023.** Its DEFER ranked LLM edge derivation (Memora-style `cues:`) first in line. Sub-task 1 fired the trigger; sub-task 4 now adds the other half — **the cheap deterministic alternative was tried, built, and does not close the gap.** The measurement points back at the ADR's own first-ranked candidate, for the reason the ADR gave.
 
-**Open for the lead (not decided here):** whether write-time linking ships **default-ON**. It is behind `CMK_LINK_FACTS` / `memory.link_facts` and currently defaults ON per the task's intent; the measurement argues for default-OFF (or opt-in) until an edge source that beats the unlinked baseline exists. The code, the flag, the derived floor and the backfill all stand either way — the flag was built precisely so this call is one line. _Relates D-433, ADR-0023, Task 262, Task 143._
+**DECIDED — default-OFF (lead-ratified 2026-08-08).** Ratified on a TWO-EVIDENCE basis, both measured, neither a matter of taste:
+
+1. **It regresses the qtype it was built for** — the numbers above.
+2. **It costs unbudgeted write-path latency** — `cmk remember` 11.6 s → 14.4 s on the real 2,260-fact corpus, **+2.8 s per capture**, growing linearly with corpus size, on the same synchronous path the detached auto-extract child runs under the §8.5 hook ceiling. That composition is **unverified**, which is its own reason not to switch it on for everyone.
+
+**What ships:** the mechanism, the flag, the derived floor and the backfill, all complete. `cmk autolink` (dry-run by default, `--apply` to write) is the deliberate opt-in and needs no configuration; `memory.link_facts: true` / `CMK_LINK_FACTS=1` turns the write path on for anyone who wants it. Flipping the default back is one line in `linkingEnabled`, pinned by test C1 so that flip always breaks a test.
+
+**The user may overrule at the morning review** — this is the lead's call on the implementer's evidence, recorded as decided rather than left hanging. _Relates D-433, ADR-0023, Task 262, Task 143._
 
 ## 2026-08-08 — D-435 · BUG/FIX — Two silent composition defects in the linker, both invisible to unit tests, both found only by running the measurement
 

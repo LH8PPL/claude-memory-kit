@@ -156,7 +156,29 @@ export function slugForFactSource(sourceFile) {
  *   1. `CMK_LINK_FACTS` = 0/false/off → OFF, = 1/true/on → ON. The A/B switch:
  *      sub-task 4 measures OFF vs ON on ONE build.
  *   2. `context/settings.json` → `memory.link_facts` (boolean).
- *   3. default ON — the task's intent is that facts link themselves.
+ *   3. **default OFF.**
+ *
+ * WHY OFF, when the task's stated intent was "facts link themselves" (D-436,
+ * lead-ratified 2026-08-08 on a two-evidence basis — MEASURED, not cautious):
+ *
+ *   1. It REGRESSES the thing it was built for. On the Task-262 fixture,
+ *      `graph-hybrid` multi-hop R@5 goes unlinked 0.444 → automatic 0.333,
+ *      against a hand-placed ceiling of 0.889 — it recovers 0% of the available
+ *      gain and costs 0.111, and the temporal control loses 0.25. Not a
+ *      threshold to tune: the ground-truth edges join facts that are topically
+ *      related but lexically far apart, which is the axis a similarity-ranked
+ *      linker is weakest on, so a lower floor buys more of the edges that
+ *      already made recall worse.
+ *   2. It costs UNBUDGETED write-path latency. Measured on the real 2,260-fact
+ *      corpus with the real bin: `cmk remember` 11.6 s → 14.4 s, **+2.8 s per
+ *      capture**, growing linearly with the corpus, on the same synchronous path
+ *      the detached auto-extract child runs under the §8.5 hook ceiling.
+ *
+ * The mechanism, the flag, the derived floor and the backfill all SHIP and are
+ * complete. `cmk autolink` (dry-run by default, `--apply` to write) is the
+ * deliberate opt-in, and `memory.link_facts: true` turns the write path on for
+ * anyone who wants it. Flipping this default back is one line — the honest
+ * posture is that it has not yet earned being on for everyone.
  */
 export function linkingEnabled({ projectRoot } = {}) {
   const env = process.env.CMK_LINK_FACTS;
@@ -167,7 +189,7 @@ export function linkingEnabled({ projectRoot } = {}) {
     fallback: null,
   })?.memory?.link_facts;
   if (typeof configured === 'boolean') return configured;
-  return true;
+  return false;
 }
 
 // --- The floor --------------------------------------------------------------

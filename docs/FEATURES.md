@@ -56,15 +56,17 @@ The whole process is **observable**: `cmk stats memory-health` reports writes-pe
 
 ### Links related facts by itself
 
-A memory of 2,000 islands is 2,000 facts you have to already know the name of. The kit now puts the edges in: every fact written from here on is scored against your corpus at write time and gains up to **3** `related:` edges, which `cmk links`, `cmk expand` and the viewer's graph all walk. No command, no cron.
+A memory of 2,000 islands is 2,000 facts you have to already know the name of. The kit can put the edges in: a fact is scored against your corpus and gains up to **3** `related:` edges, which `cmk links`, `cmk expand` and the viewer's graph all walk.
+
+**It is OFF by default, and that is a measured decision, not caution.** On our own relational-recall benchmark the automatic edges made multi-hop recall *worse* than no edges at all (0.444 → 0.333 against a 0.889 ceiling with hand-placed links), and write-time linking costs about **2.8 s per capture** on a 2,260-fact corpus. Similarity is simply the wrong instrument for "these two facts belong together": the pairs worth linking are often the ones that share the fewest words. The mechanism ships complete so you can use it and measure it yourself — it just has not earned being on for everyone.
 
 The threshold is **derived from your own corpus** — the 99th percentile of your facts' random-pair similarity, recomputed whenever the index is fully rebuilt — not a constant borrowed from someone else's data. On a corpus too small or too uniform for that number to mean anything, it links nothing and says so.
 
 A candidate that looks like a near-*duplicate* is deliberately not linked: merging two facts is a decision, so it becomes a proposal in `cmk queue conflicts` instead. And a link never crosses tiers, so a committed project fact can't point at a machine-local one.
 
-For everything written *before* this existed, `cmk autolink` is the catch-up pass. Running it bare is a **dry run** — it shows you what it would do and changes nothing; writing takes an explicit `--apply`. It is bounded and resumable, so a long corpus is several short runs rather than one that must not be interrupted.
+**`cmk autolink` is the way in.** Running it bare is a **dry run** — it shows you what it would do and changes nothing; writing takes an explicit `--apply`. To also link new facts as they are captured, turn the write path on with `cmk config set memory.link_facts true`. It is bounded and resumable, so a long corpus is several short runs rather than one that must not be interrupted.
 
-Turn it off with `cmk config set memory.link_facts false`.
+Turn the write path on with `cmk config set memory.link_facts true` (or `CMK_LINK_FACTS=1` for one command); `cmk autolink` needs no flag.
 
 ### Stays TRUE as it ages, not just stored
 

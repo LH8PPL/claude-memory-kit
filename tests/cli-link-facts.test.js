@@ -131,6 +131,13 @@ function pinFloor(db, floor = 0.15) {
   });
 }
 
+/** Merge keys into the project tier's settings.json, preserving siblings. */
+function writeSettings(patch) {
+  const p = join(projectRoot, 'context', 'settings.json');
+  const cur = existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : {};
+  writeFileSync(p, JSON.stringify({ ...cur, ...patch }, null, 2), 'utf8');
+}
+
 function auditLines() {
   const p = join(projectRoot, 'context', '.locks', 'audit.log');
   if (!existsSync(p)) return [];
@@ -356,21 +363,26 @@ describe('Task 262 — three bands, cap 3 out-links (Door 1)', () => {
 // --- C. The flag -----------------------------------------------------------
 
 describe('Task 262 — the A/B flag (Door 1)', () => {
-  it('C1 defaults ON', () => {
+  // The DEFAULT is the contract this block exists to pin, and it is OFF
+  // (D-436, lead-ratified on the measured two-evidence basis: write-time
+  // linking regresses the qtype it was built for, and costs +2.8 s per capture
+  // on a 2,260-fact corpus). Flipping this default is a decision, and a
+  // decision should break a test.
+  it('C1 defaults OFF — the mechanism ships complete, but opt-in', () => {
+    expect(linkingEnabled({ projectRoot })).toBe(false);
+  });
+
+  it('C2 settings memory.link_facts=true is the deliberate opt-in', () => {
+    writeSettings({ memory: { link_facts: true } });
     expect(linkingEnabled({ projectRoot })).toBe(true);
   });
 
-  it('C2 env CMK_LINK_FACTS=0 wins over everything (the A/B switch)', () => {
+  it('C3 env CMK_LINK_FACTS wins over settings, in BOTH directions', () => {
+    writeSettings({ memory: { link_facts: true } });
     process.env.CMK_LINK_FACTS = '0';
     expect(linkingEnabled({ projectRoot })).toBe(false);
-  });
 
-  it('C3 settings memory.link_facts=false disables it; env=1 overrides back on', () => {
-    const p = join(projectRoot, 'context', 'settings.json');
-    const cur = existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : {};
-    cur.memory = { ...(cur.memory ?? {}), link_facts: false };
-    writeFileSync(p, JSON.stringify(cur, null, 2), 'utf8');
-    expect(linkingEnabled({ projectRoot })).toBe(false);
+    writeSettings({ memory: { link_facts: false } });
     process.env.CMK_LINK_FACTS = '1';
     expect(linkingEnabled({ projectRoot })).toBe(true);
   });
@@ -379,6 +391,13 @@ describe('Task 262 — the A/B flag (Door 1)', () => {
 // --- D. The writeFact integration ------------------------------------------
 
 describe('Task 262 — writeFact auto-links on the real write path (Doors 1, 2, 5)', () => {
+  // These tests exercise the MECHANISM, which since D-436 is opt-in — so they
+  // opt in explicitly. D0 below is the one that pins the DEFAULT behaviour of
+  // the real write path, and it deliberately sets nothing.
+  beforeEach(() => {
+    process.env.CMK_LINK_FACTS = '1';
+  });
+
   // The probe body every D-test writes. Deliberately NOT byte-identical to any
   // seeded fact: an identical body is the SAME content-addressed id, which
   // writeFact correctly answers with `skipped: duplicate` before linking is ever
@@ -423,6 +442,21 @@ describe('Task 262 — writeFact auto-links on the real write path (Doors 1, 2, 
     pinFloor(db);
     db.close();
   }
+
+  it('D0 with NO configuration at all the write path links NOTHING (the shipped default)', () => {
+    delete process.env.CMK_LINK_FACTS; // the beforeEach above opted in; undo it
+    seedLinkableCorpus();
+    const r = writeFact({
+      tier: 'P', type: 'project', slug: 'default-off',
+      title: 'Default off', body: PROBE,
+      writeSource: 'user-explicit', trust: 'high',
+      sourceFile: 'test', sourceLine: 1, sourceSha1: 'x',
+      projectRoot, userDir,
+    });
+    expect(r.action).toBe('created');
+    expect(readFileSync(r.path, 'utf8')).not.toMatch(/^related:/m);
+    expect(auditLines().filter((e) => e.action === 'auto-linked').length).toBe(0);
+  });
 
   it('D1 a new fact lands with `related:` slugs + an auto-linked audit entry', () => {
     seedLinkableCorpus();
@@ -560,6 +594,11 @@ describe('Task 262 — writeFact auto-links on the real write path (Doors 1, 2, 
 // --- E. Band 3 — the conflict queue ----------------------------------------
 
 describe('Task 262 — the near-dup band routes to the conflict queue (Doors 2, 5)', () => {
+  // Opt in: the near-dup routing is part of the write-time mechanism (D-436).
+  beforeEach(() => {
+    process.env.CMK_LINK_FACTS = '1';
+  });
+
   it('E1 a near-dup candidate queues a proposal AND the fact is still captured', () => {
     for (let i = 0; i < 30; i++) {
       seedFact({ slug: `qnoise-${i}`, title: `QNoise ${i}`, body: vocabBody(i, 0) });

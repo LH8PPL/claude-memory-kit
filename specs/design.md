@@ -2304,8 +2304,10 @@ by content sha means an EDITED fact is reconsidered automatically. The backfill 
 near-dup (both facts already exist and were both accepted, often months apart) and never touches a
 fact that already carries links.
 
-**Flag + observability.** `CMK_LINK_FACTS` > `context/settings.json` `memory.link_facts` > default
-ON. Every applied link writes an `auto-linked` audit entry carrying `mode` (`write`|`backfill`),
+**Flag + observability.** `CMK_LINK_FACTS` > `context/settings.json` `memory.link_facts` > **default
+OFF** (D-436, lead-ratified 2026-08-08 — see the measured outcome below; the write path is opt-in,
+`cmk autolink` is the no-configuration entry point). Every applied link writes an `auto-linked`
+audit entry carrying `mode` (`write`|`backfill`),
 `backend`, the derived `floor`, `scanned`, and one `{id, slug, score, band}` per edge — which is what
 makes the A/B measurable after the fact.
 
@@ -2320,11 +2322,18 @@ REGRESSES the measured type.** See [the AFTER measurement](../docs/research/2026
 **0.333** → hand-placed **0.889**, with the temporal control losing 0.25 on the `graph` rung. The
 edges the linker produces are *lexically/semantically similar* facts; the fixture's ground-truth
 edges connect facts that are *topically related but share little surface*, which similarity of any
-kind is the wrong instrument for. **D-433's condition therefore fires: the controls are the judge,
-and they say tune before making this the default.** The mechanism, the flag, the derived floor and
-the backfill all ship; the DEFAULT-ON decision is the lead's, and the honest reading of the numbers
-is that a similarity-only linker is not the edge-authoring mechanism ADR-0023 deferred — an
-LLM-derived `cues:` (the ADR's own first-in-line candidate) is what the measurement now points at.
+kind is the wrong instrument for. **D-433's condition therefore fires: the controls are the judge.**
+
+**The ratified outcome (D-436):** the mechanism, the flag, the derived floor and the backfill all
+ship complete — and the write path ships **OFF by default**, on two measured grounds: the recall
+regression above, and an unbudgeted **+2.8 s per capture** on a 2,260-fact corpus (11.6 s → 14.4 s,
+real bin) that grows linearly and lands on the same synchronous path the detached auto-extract child
+runs under the §8.5 hook ceiling — a composition this task did NOT verify. `cmk autolink` is the
+no-configuration entry point; `memory.link_facts: true` turns the write path on. The honest reading
+of the numbers is that a similarity-only linker is not the edge-authoring mechanism ADR-0023
+deferred — an LLM-derived `cues:` (the ADR's own first-in-line candidate) is what the measurement
+now points at, and the bounded-candidate path (design note on `MAX_SCAN_FACTS`) is what the latency
+points at.
 
 ## 10. MCP server (Layer 4b — optional)
 
