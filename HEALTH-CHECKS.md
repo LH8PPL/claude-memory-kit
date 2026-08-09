@@ -21,6 +21,8 @@ The yes/no checks `cmk doctor` runs against the kit installation. Most have a se
 | HC-15 | Semantic vectors match their own facts | `hc15VectorMapping` (`verifyVectorMapping()` in [packages/cli/src/semantic-backend.mjs](packages/cli/src/semantic-backend.mjs), Task 261 / D-421): samples up to 50 live facts, re-derives `sha256(model
 body)` from each body, and **byte-compares the content-addressed cache entry against the vector physically stored in that fact's vec slot** — deliberately independent of the kit's own `vec_map` bookkeeping, so an error in the map is caught too. Cheap by design: no embedder is loaded and no model call is made (one indexed lookup + one blob compare per row), so it can run on every `cmk doctor`. **FAILS** with the mismatch count and the offending fact ids, recovery `cmk reindex --full` (which rebuilds the mapping offline — the embedding cache is content-addressed, so nothing is re-embedded). **SKIPs** when there is nothing to audit: no index, no semantic layer (the embedder is optional), or nothing mapped yet. A body not yet embedded under the current model is reported as `unverifiable`, never as corruption |
 
+| HC-16 | Every fact on disk is reachable in the index | `hc16FactReachability` ([packages/cli/src/doctor.mjs](packages/cli/src/doctor.mjs), Task 270 / D-427): walks every fact file in the P/L/U tiers and answers the membership question no other check asks — **did this fact make it into the index at all?** Two unreachable shapes: an id that fails `ID_PATTERN` (or is missing entirely), which `index-rebuild` skips as `invalid or missing id` so no rebuild can ever index it; and a valid-id fact with no row in `observations`, a genuine index lag. **FAILS** naming the offending files, with a shape-aware recovery — `cmk install` for a bad id (it repairs the id in place, content-addressed, leaving a `legacy_id` breadcrumb), `cmk reindex` for a lag. Prescribing a reindex for a bad id would send the user round a loop that cannot converge, so the check never does. **SKIPs** when there are no fact files yet. Composed with its neighbours, not overlapping them: HC-4 compares INDEX.md's entry *count* against the file count (the committed markdown surface), and HC-15 audits whether an *already-indexed* fact's vector is its own — between them sat this population, a durable fact no DB-backed route could see, whose only symptom was a total off by one |
+
 **Severity on a fresh project:** HC-2, HC-3, and HC-5 report **SKIP**, not FAIL, when there's simply nothing to check yet — no distill built (HC-2), no Claude Code session captured here yet (HC-3), or cron not registered (HC-5, which is *optional*: the kit falls back to lazy-on-read compression). A clean install therefore reads `pass · 0 fail · skip` and `cmk doctor` exits `0`. These flip to **FAIL** only on a genuine problem: a *stale* distill (recent.md exists but > 2 days old), or transcripts that exist but stopped firing (> 3 days).
 
 ## Self-repair
@@ -187,6 +189,23 @@ HC-14 reports failure codes the kit **recorded about itself** — it probes noth
 **Repair:** `cmk reindex --full` (also reachable as `cmk repair --index`). It rebuilds the vector mapping from scratch **offline and fast** — the embedding cache is keyed by content, so nothing is re-computed and no model is loaded. As of v0.6.5 the kit also repairs this silently on its own: an index written under the old, broken scheme is rebuilt the first time semantic search runs, without you doing anything.
 
 **SKIP means there is nothing to audit** — no search index yet, or semantic search isn't in use on this project (the embedder is optional; keyword search never has this failure mode).
+
+### HC-16 — Every fact on disk is reachable in the index
+
+**What can go wrong that nothing else would notice.** A fact file can be perfectly durable on disk and completely invisible to every way you have of finding it. If its `id` isn't a valid kit id, the index rebuild skips it — silently, by design, because a corrupt neighbour shouldn't break a rebuild — and from then on the fact is absent from search, the viewer, the graph, and every other route that reads the database. Nothing errors. This happened for real (D-427): a write supplied an id containing `8`, a character the kit's alphabet excludes, and the write path accepted it and reported success. **The only symptom was a count that read 3 instead of 4.**
+
+That is the worst shape this project can produce, because a fact you cannot find is indistinguishable from a fact you lost — and the kit's whole promise is that it doesn't lose facts.
+
+**How it verifies.** It walks every fact file in your tiers and asks two questions per file: is this id one the indexer will accept, and does a row for it actually exist in the index? The first question is answered against the very same pattern the indexer skips on, so the check can never disagree with the thing it is auditing.
+
+**Repair depends on which shape it found**, and the check tells you which:
+
+- **A bad or missing id** → `cmk install`. It repairs the id in place, deriving a real one from the fact's own content and leaving a `legacy_id` breadcrumb so the original is never just discarded. A reindex cannot help here — the parser rejects the id before indexing ever begins.
+- **A valid id with no index row** → `cmk reindex`. This is an ordinary index lag.
+
+**As of v0.6.6 the write path no longer creates the first shape at all**: `writeFact` validates any explicitly-supplied id and derives a real one when it can't be used, so this check now mostly guards facts written by older versions or edited by hand.
+
+**SKIP means there are no fact files yet** — nothing to verify, never a FAIL on an empty project.
 
 ## When recall goes wrong — the three-level diagnostic (not an HC; a checklist)
 

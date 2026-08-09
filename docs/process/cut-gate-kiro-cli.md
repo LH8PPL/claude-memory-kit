@@ -112,7 +112,7 @@ cmk doctor
 
 - [ ] **★ KCG1 — install prints the Kiro success summary.** The `cmk install --ide kiro` output names the wired surfaces (mcp + steering + agents-md + skills + ide-hooks + trusted-commands + **cli-agent**). **PASS:** `cli-agent` is in the list. **FAIL:** the CLI agent leg didn't wire.
 
-- [ ] **★ KCG1b — `cmk doctor` clean (agent-aware HC-1).** `cmk doctor` → **0 fail** on a fresh install — **15 checks now** (HC-1..HC-15; HC-9 version-drift, HC-10 compaction-liveness, **HC-11 backend-CLI-present v0.4.5** — PASS when `kiro-cli` is on PATH, the effective backend for a kiro-cli install; see ★ KCG-BK1, §7b). HC-1 must PASS naming the CLI-agent surface (`~/.kiro/agents/cmk.json`) — not false-fail on a missing `.claude/settings.json`.
+- [ ] **★ KCG1b — `cmk doctor` clean (agent-aware HC-1).** `cmk doctor` → **0 fail** on a fresh install — **16 checks now** (HC-1..HC-16; HC-9 version-drift, HC-10 compaction-liveness, **HC-11 backend-CLI-present v0.4.5** — PASS when `kiro-cli` is on PATH, the effective backend for a kiro-cli install; see ★ KCG-BK1, §7b). HC-1 must PASS naming the CLI-agent surface (`~/.kiro/agents/cmk.json`) — not false-fail on a missing `.claude/settings.json`.
 
 - [ ] **★ KCG2 — the agent config landed in the RIGHT place (D-198).** This is THE check D-198 exists for.
       ```powershell

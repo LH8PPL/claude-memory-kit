@@ -121,14 +121,15 @@ describe('Task 37 — runDoctor (cmk doctor health checks)', () => {
     // Contract update Task 248: HC-13 (stray-tier backstop, D-389/D-394) joined.
     // Contract update Task 250: HC-14 (active health warnings, D-412) joined.
     // Contract update Task 261: HC-15 (semantic vector mapping, D-421) joined.
-    it('emits exactly 15 checks with id HC-1..HC-15 in order', async () => {
+    // Contract update Task 270: HC-16 (fact reachability, D-427) joined.
+    it('emits exactly 16 checks with id HC-1..HC-16 in order', async () => {
       const r = await runDoctor({ projectRoot, userDir });
       expect(r.action).toBe('completed');
-      expect(r.checks.length).toBe(15);
+      expect(r.checks.length).toBe(16);
       const ids = r.checks.map((c) => c.id);
       expect(ids).toEqual([
         'HC-1', 'HC-2', 'HC-3', 'HC-4', 'HC-5', 'HC-6', 'HC-7', 'HC-8', 'HC-9', 'HC-10', 'HC-11', 'HC-12', 'HC-13',
-        'HC-14', 'HC-15',
+        'HC-14', 'HC-15', 'HC-16',
       ]);
       // Every check has the canonical shape. `warn` joined the status enum in
       // Task 245 (advisory: repair shown, exit code untouched) and HC-13 uses it.
@@ -139,6 +140,96 @@ describe('Task 37 — runDoctor (cmk doctor health checks)', () => {
         expect(c).toHaveProperty('message');
         expect(['pass', 'warn', 'fail', 'skip']).toContain(c.status);
       }
+    });
+  });
+
+  // Task 270 (D-427). HC-16 answers a question no other check asks: did the
+  // fact make it INTO the index at all? HC-4 compares INDEX.md's entry COUNT
+  // against the file count (the committed markdown surface, not the DB), and
+  // HC-15 audits whether an INDEXED fact's vector is its own. Between them sat
+  // the population this task found: a fact file that is durably on disk, that
+  // no DB-backed route can see, and that nothing counted as missing.
+  describe('HC-16 — every fact on disk is reachable in the index (Task 270 / D-427)', () => {
+    // The exact shape of the live finding: an id outside the base32 alphabet.
+    const BAD_ID = 'P-5678ABCD'; // validate-test-ids: ignore
+
+    function seedRawFact(slug, frontmatterLines, body = 'a durable fact body') {
+      const dir = join(projectRoot, 'context', 'memory');
+      mkdirSync(dir, { recursive: true });
+      const p = join(dir, `${slug}.md`);
+      writeFileSync(p, `---\n${frontmatterLines.join('\n')}\n---\n\n${body}\n`, 'utf8');
+      return p;
+    }
+
+    const goodFrontmatter = (id) => [
+      `id: ${id}`,
+      'type: project',
+      'title: A fact',
+      'created_at: 2026-08-06T10:00:00Z',
+      'write_source: user-explicit',
+      'trust: high',
+      'source_file: t',
+      'source_line: 1',
+      'source_sha1: abc',
+    ];
+
+    it('PASSes on a project whose facts all carry valid ids', async () => {
+      const { writeFact } = await import('../packages/cli/src/write-fact.mjs');
+      writeFact({
+        tier: 'P', type: 'project', slug: 'reachable', title: 'Reachable',
+        body: 'this fact is perfectly normal', writeSource: 'user-explicit', trust: 'high',
+        sourceFile: 't', sourceLine: 1, sourceSha1: 'abc', projectRoot,
+      });
+      const r = await runDoctor({ projectRoot, userDir });
+      const hc16 = r.checks.find((c) => c.id === 'HC-16');
+      expect(hc16.status).toBe('pass');
+    });
+
+    it('FAILs and names a fact whose id fails ID_PATTERN — the D-427 orphan shape', async () => {
+      seedRawFact('project_orphan', goodFrontmatter(BAD_ID));
+      const r = await runDoctor({ projectRoot, userDir });
+      const hc16 = r.checks.find((c) => c.id === 'HC-16');
+      expect(hc16.status).toBe('fail');
+      // Names the FILE, so the user can find it without knowing the mechanism.
+      expect(hc16.message).toContain('project_orphan.md');
+      // `cmk install` is what runs the id repair (recoverMemory) — the reindex
+      // it would otherwise suggest cannot fix an id the parser rejects.
+      expect(hc16.recoveryCommand).toBe('cmk install');
+    });
+
+    it('FAILs on a fact with NO id at all (the same unreachable population)', async () => {
+      seedRawFact('project_noid', goodFrontmatter('').filter((l) => !l.startsWith('id:')));
+      const r = await runDoctor({ projectRoot, userDir });
+      const hc16 = r.checks.find((c) => c.id === 'HC-16');
+      expect(hc16.status).toBe('fail');
+      expect(hc16.message).toContain('project_noid.md');
+    });
+
+    it('SKIPs when there are no fact files yet — never a FAIL on an empty project', async () => {
+      const r = await runDoctor({ projectRoot, userDir });
+      const hc16 = r.checks.find((c) => c.id === 'HC-16');
+      expect(hc16.status).toBe('skip');
+    });
+
+    // The over-mutation guard's read-only sibling: a check that reports one bad
+    // fact must not misreport its healthy neighbours.
+    it('counts only the unreachable fact, leaving valid neighbours out of the tally', async () => {
+      const { writeFact } = await import('../packages/cli/src/write-fact.mjs');
+      for (const slug of ['n_one', 'n_two', 'n_three']) {
+        writeFact({
+          tier: 'P', type: 'project', slug, title: slug,
+          body: `body for ${slug}`, writeSource: 'user-explicit', trust: 'high',
+          sourceFile: 't', sourceLine: 1, sourceSha1: 'abc', projectRoot,
+        });
+      }
+      seedRawFact('project_orphan', goodFrontmatter(BAD_ID));
+      const r = await runDoctor({ projectRoot, userDir });
+      const hc16 = r.checks.find((c) => c.id === 'HC-16');
+      expect(hc16.status).toBe('fail');
+      expect(hc16.message).toMatch(/\b1\b/);
+      expect(hc16.message).not.toContain('n_one');
+      expect(hc16.message).not.toContain('n_two');
+      expect(hc16.message).not.toContain('n_three');
     });
   });
 
