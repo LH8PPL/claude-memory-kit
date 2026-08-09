@@ -44,11 +44,11 @@ import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 import { nowIso } from './audit-log.mjs';
 import { listFactFiles, tiersFor } from './fact-store.mjs';
-// Task 270 (HC-16): the fact-reachability check reads raw frontmatter and
-// judges ids against the SAME canonical pattern index-rebuild skips on — so the
-// check can never disagree with the thing it is auditing.
-import { resolveTierRoot, resolveFactDir, ID_PATTERN } from './tier-paths.mjs';
-import { parse as parseFrontmatterText } from './frontmatter.mjs';
+// Task 270 (HC-16): the fact-reachability check asks index-rebuild's OWN parser
+// whether each file is indexable — so the check can never disagree with the
+// thing it is auditing.
+import { resolveTierRoot, resolveFactDir } from './tier-paths.mjs';
+import { parseObservationsFromFactFile } from './index-rebuild.mjs';
 import { detectStaleLocks } from './lock-discipline.mjs';
 import { cronSentinelPath } from './lazy-compress.mjs';
 import { isCompactionNeeded } from './compaction-state.mjs';
@@ -1199,126 +1199,101 @@ async function hc15VectorMapping({ projectRoot, sample = HC15_SAMPLE }) {
 // Deliberately composed, not duplicated: this check never re-derives vector
 // mapping (HC-15's job) and never counts INDEX.md lines (HC-4's job).
 //
-// Two unreachable shapes, one check:
-//   1. an id that fails ID_PATTERN (or is missing) — `index-rebuild`'s parser
-//      skips these as 'invalid or missing id', so they can never be indexed by
-//      any rebuild. `cmk reindex` is NOT the fix; the id itself must be
-//      repaired, which `cmk install` (recoverMemory) does.
-//   2. a valid-id fact with no row in `observations` — a genuine index lag,
-//      which `cmk reindex` does fix.
-// The recovery command names whichever applies, because prescribing a reindex
-// for shape 1 would send the user round a loop that cannot converge.
+// WHAT IT ASKS, AND WHAT IT DELIBERATELY DOES NOT. The question is "would the
+// indexer ACCEPT this fact?" — NOT "is this fact in the database right now?",
+// and the difference is the whole design. The SQLite index is rebuilt LAZILY on
+// read, so a fact written a moment ago and not yet searched has no row, and that
+// is the normal, healthy steady state after EVERY write. A membership test
+// against `observations` therefore fails on a perfectly healthy project —
+// verified live during Task 270: install → remember → search → remember, and the
+// second fact read as "INVISIBLE … indistinguishable from a lost one" when the
+// very next search surfaces it fine. That check would have taught users to
+// ignore this one, which is worse than not having it.
 //
-// SKIP, never FAIL, when there is nothing to judge: no fact dirs, or no index
-// yet (shape 2 is unknowable without one — but shape 1 is still reported,
-// since a bad id is bad with or without a database).
-async function hc16FactReachability({ projectRoot, userDir }) {
+// So the verdict comes from `parseObservationsFromFactFile` — the EXACT parser
+// `index-rebuild` uses. A file that parser SKIPS can never be indexed by any
+// rebuild, however many times you reindex: a bad or missing id (the D-427
+// shape), missing `write_source`/`trust`/`created_at`, unparseable frontmatter.
+// That is the durable-but-unfindable population. Everything else self-heals on
+// the next read and is none of this check's business. Asking the auditee its own
+// question is also what keeps the check from ever drifting away from the
+// behavior it audits.
+//
+// Recovery is shape-aware: an unusable ID is what `cmk install` repairs in place
+// (content-addressed, D-394); any other skip reason is a malformed file for the
+// user to fix. Prescribing `cmk reindex` for either would send them round a loop
+// that cannot converge, so this check never does.
+//
+// SKIP, never FAIL, when there are no fact files to judge.
+function hc16FactReachability({ projectRoot, userDir }) {
   const name = 'Every fact on disk is reachable in the index';
-  const unreachable = []; // {filename, reason}
-  const validIds = new Map(); // id → filename
+  const unreachable = []; // {filename, reason, badId}
   let scanned = 0;
 
   for (const tier of tiersFor({ projectRoot, userDir })) {
-    const factDir = resolveFactDir(tier, resolveTierRoot({ tier, projectRoot, userDir }));
+    const tierRoot = resolveTierRoot({ tier, projectRoot, userDir });
+    const factDir = resolveFactDir(tier, tierRoot);
     if (!existsSync(factDir)) continue;
     let filenames;
     try {
       filenames = listFactFiles(factDir);
     } catch {
-      continue; // an unreadable dir is HC-4's and the walker's problem, not a fact verdict
+      continue; // an unreadable dir is the walker's problem, not a fact verdict
     }
     for (const filename of filenames) {
       scanned += 1;
-      // listFactFiles + parse DIRECTLY rather than `eachFactIn`: the shared
-      // walker SKIPS a file with a missing/unparseable id silently, and that
-      // silently-skipped set is precisely the population being counted here.
-      // fact-store's own docs sanction this ("a caller that needs to COUNT or
-      // WARN about malformed input keeps that in its own predicate").
-      let frontmatter;
-      let parseError;
+      const path = join(factDir, filename);
+      let verdict;
       try {
-        ({ frontmatter, parseError } = parseFrontmatterText(readFileSync(join(factDir, filename), 'utf8')));
+        verdict = parseObservationsFromFactFile({
+          path,
+          content: readFileSync(path, 'utf8'),
+          tier,
+          projectRoot,
+          userDir,
+        });
       } catch (err) {
-        unreachable.push({ filename, reason: `unreadable: ${err?.message ?? err}` });
+        unreachable.push({ filename, reason: `unreadable: ${err?.message ?? err}`, badId: false });
         continue;
       }
-      if (!frontmatter || parseError) {
-        unreachable.push({ filename, reason: parseError ? 'unparseable frontmatter' : 'no frontmatter' });
-        continue;
-      }
-      const id = frontmatter.id == null ? null : String(frontmatter.id);
-      if (id === null) {
-        unreachable.push({ filename, reason: 'no id' });
-      } else if (!ID_PATTERN.test(id)) {
-        unreachable.push({ filename, reason: `id '${id}' is not a valid kit id` });
-      } else {
-        validIds.set(id, filename);
-      }
+      if (!verdict.skipped) continue;
+      // `invalid or missing id` is index-rebuild's own wording for the one shape
+      // `cmk install` can repair; anything else is a malformed file.
+      unreachable.push({
+        filename,
+        reason: verdict.skipped,
+        badId: /invalid or missing id/i.test(verdict.skipped),
+      });
     }
   }
 
   if (scanned === 0) {
     return { id: 'HC-16', name, status: 'skip', message: 'no fact files yet — nothing to verify' };
   }
-
-  // Shape 1 is decided above and needs no database. Shape 2 does.
-  const badIdCount = unreachable.length;
-  let missingFromIndex = [];
-  let indexChecked = false;
-  try {
-    // Dynamic, like HC-15: index-db pulls the better-sqlite3 native binding,
-    // and a machine where that binding is broken is exactly the machine that
-    // most needs `cmk doctor` to still run (HC-8 reports that separately).
-    const { openIndexDb, getIndexDbPath } = await import('./index-db.mjs');
-    if (existsSync(getIndexDbPath(projectRoot))) {
-      const db = openIndexDb({ projectRoot });
-      try {
-        const rows = db.prepare('SELECT id FROM observations').all();
-        const indexed = new Set(rows.map((r) => r.id));
-        indexChecked = true;
-        for (const [id, filename] of validIds) {
-          if (!indexed.has(id)) missingFromIndex.push({ filename, reason: `id ${id} has no row in the index` });
-        }
-      } finally {
-        try {
-          db.close();
-        } catch {
-          /* best-effort */
-        }
-      }
-    }
-  } catch {
-    // An unreadable/locked index makes shape 2 unknowable. Shape 1 still stands
-    // — never let a database hiccup suppress a bad id we already proved.
-    missingFromIndex = [];
-    indexChecked = false;
-  }
-
-  const all = [...unreachable, ...missingFromIndex];
-  if (all.length === 0) {
+  if (unreachable.length === 0) {
     return {
       id: 'HC-16',
       name,
       status: 'pass',
-      message:
-        `${scanned} fact file(s) on disk, all with valid ids` +
-        (indexChecked ? ' and all present in the index' : ' (index not built yet — membership unverified)'),
+      message: `${scanned} fact file(s) on disk, all indexable`,
     };
   }
 
-  const shown = all.slice(0, 5).map((u) => `${u.filename} (${u.reason})`).join('; ');
-  const more = all.length > 5 ? ` (+${all.length - 5} more)` : '';
+  const repairable = unreachable.some((u) => u.badId);
+  const shown = unreachable.slice(0, 5).map((u) => `${u.filename} (${u.reason})`).join('; ');
+  const more = unreachable.length > 5 ? ` (+${unreachable.length - 5} more)` : '';
   return {
     id: 'HC-16',
     name,
     status: 'fail',
     message:
-      `${all.length} of ${scanned} fact file(s) are on disk but INVISIBLE to search, the viewer, and the graph: ` +
-      `${shown}${more} — a durable fact nothing can find is indistinguishable from a lost one. ` +
-      (badIdCount > 0
-        ? '`cmk install` repairs an unusable id in place (content-addressed, keeping a legacy_id breadcrumb); a reindex cannot, because the parser rejects the id before indexing it.'
-        : '`cmk reindex` rebuilds the index from the fact files.'),
-    recoveryCommand: badIdCount > 0 ? 'cmk install' : 'cmk reindex',
+      `${unreachable.length} of ${scanned} fact file(s) can never be indexed, so they are invisible to search, ` +
+      `the viewer and the graph: ${shown}${more} — a durable fact nothing can find is indistinguishable from a ` +
+      'lost one. ' +
+      (repairable
+        ? '`cmk install` repairs an unusable id in place (content-addressed, keeping a legacy_id breadcrumb); a reindex cannot, because the parser rejects the file before indexing it.'
+        : 'These files need their frontmatter fixed; a reindex cannot help, because the parser rejects them before indexing.'),
+    ...(repairable ? { recoveryCommand: 'cmk install' } : {}),
   };
 }
 
@@ -1406,7 +1381,7 @@ export async function runDoctor({
   const c15 = await hc15VectorMapping({ projectRoot, sample: vectorSample });
   // Task 270 (D-427): the membership half — HC-15 asks whether an indexed
   // fact's vector is its own; this asks whether the fact is indexed at all.
-  const c16 = await hc16FactReachability({ projectRoot, userDir: resolvedUserDir });
+  const c16 = hc16FactReachability({ projectRoot, userDir: resolvedUserDir });
 
   return {
     action: 'completed',

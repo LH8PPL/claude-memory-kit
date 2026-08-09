@@ -27,6 +27,7 @@ import {
 import { tmpdir, homedir } from 'node:os';
 import { join } from 'node:path';
 import { runDoctor } from '../packages/cli/src/doctor.mjs';
+import { generateId } from '../packages/canonicalize/src/index.mjs';
 import { install } from '../packages/cli/src/install.mjs';
 import { markCronRegistered } from '../packages/cli/src/lazy-compress.mjs';
 
@@ -183,6 +184,7 @@ describe('Task 37 — runDoctor (cmk doctor health checks)', () => {
       const r = await runDoctor({ projectRoot, userDir });
       const hc16 = r.checks.find((c) => c.id === 'HC-16');
       expect(hc16.status).toBe('pass');
+      expect(hc16.message).toContain('indexable');
     });
 
     it('FAILs and names a fact whose id fails ID_PATTERN — the D-427 orphan shape', async () => {
@@ -209,6 +211,45 @@ describe('Task 37 — runDoctor (cmk doctor health checks)', () => {
       const r = await runDoctor({ projectRoot, userDir });
       const hc16 = r.checks.find((c) => c.id === 'HC-16');
       expect(hc16.status).toBe('skip');
+    });
+
+    // REGRESSION GUARD for a false alarm this check shipped with and the live
+    // probe caught (Task 270). The SQLite index is rebuilt LAZILY on read, so a
+    // freshly-written fact legitimately has no `observations` row until the next
+    // search. An earlier draft asserted DB membership and therefore FAILED on a
+    // healthy project — install → remember → search → remember reported the
+    // second fact as "INVISIBLE … indistinguishable from a lost one" when the
+    // very next search surfaced it fine. A check that cries wolf on the normal
+    // steady state is worse than no check, so the verdict now comes from the
+    // index PARSER (can this ever be indexed?), never from index membership.
+    it('does NOT fail a valid fact that is merely not in the index yet (lazy-index steady state)', async () => {
+      const { writeFact } = await import('../packages/cli/src/write-fact.mjs');
+      writeFact({
+        tier: 'P', type: 'project', slug: 'freshly-written', title: 'Fresh',
+        body: 'written just now and never searched for', writeSource: 'user-explicit',
+        trust: 'high', sourceFile: 't', sourceLine: 1, sourceSha1: 'abc', projectRoot,
+      });
+      // Deliberately no search / no reindex --full: this is the state a project
+      // is in immediately after every single capture.
+      const r = await runDoctor({ projectRoot, userDir });
+      const hc16 = r.checks.find((c) => c.id === 'HC-16');
+      expect(hc16.status).toBe('pass');
+    });
+
+    // A valid id is not sufficient — index-rebuild also skips a fact missing the
+    // provenance trio, and those never self-heal either.
+    it('FAILs a fact with a valid id but missing write_source/trust/created_at', async () => {
+      seedRawFact('project_thin', [
+        `id: ${generateId('P', 'thin fact body')}`,
+        'type: project',
+        'title: Thin',
+      ]);
+      const r = await runDoctor({ projectRoot, userDir });
+      const hc16 = r.checks.find((c) => c.id === 'HC-16');
+      expect(hc16.status).toBe('fail');
+      expect(hc16.message).toContain('project_thin.md');
+      // NOT the id-repair recovery — `cmk install` cannot fix a missing field.
+      expect(hc16.recoveryCommand).toBeUndefined();
     });
 
     // The over-mutation guard's read-only sibling: a check that reports one bad
