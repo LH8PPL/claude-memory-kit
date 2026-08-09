@@ -336,18 +336,18 @@ Each parent task ships as a PR titled `[<task #>] <description>` (e.g., `[7] Per
   - Estimate: M · Depends: 46
   - **Motivation**: even with `cmk install --with-semantic` opt-in at install time, users who skipped it (or whose memsearch broke) need a runtime path to fix. Currently `cmk doctor` prints the command; user runs it manually. This task adds a prompt that the user can `[y/N]` to invoke the same install command.
 - [x] 47.0 **Handed over by Task 265 (D-439) — the durable home for a bad/failed scheduler posture.** 265 fixed the flags and reports a failed repair, but **only to the console**: HC-5 still passes on the `cron-registered` sentinel alone, so a registration whose settings never applied is invisible to `cmk doctor` (the D-298 heartbeat-not-outcome shape, one check over). 47 already reads `schtasks /query /XML` for its cron-TARGET-exists check above — read ONCE and ask both questions, passing the XML to the ready-made pure predicate **`inspectWindowsTaskSettings(xml)`** in [`register-crons.mjs`](../packages/cli/src/register-crons.mjs) (`{verdict: 'ok'|'needs-repair'|'unreadable', problems}`; `unreadable` so a check that cannot tell SKIPs rather than FAILs). **Done when:** ☑ a task carrying the pre-v0.6.6 battery/idle flags is reported by `cmk doctor` with `cmk register-crons` as the recovery; ☑ `verdict:'unreadable'` maps to SKIP, never FAIL; ☑ win32-only — the POSIX legs have no equivalent posture (design §8.6.5). **Wiring note:** `schtasks /query /XML` emits UTF-16 with a BOM and CRLF — decode before calling (the D-306 class).
-- [ ] 47.1 Add `--repair` flag to `cmk doctor`
+- [x] 47.1 Add `--repair` flag to `cmk doctor`
   - For each failed HC with `requiresInstall: true`: prompt user via readline interface
   - Show the full impact ("Without this, X feature is disabled") before the prompt
   - On y: invoke the recovery command via spawnSync; report result
   - On n: continue with the next failed HC; record the skip
-- [ ] 47.2 Add `--yes` flag for non-interactive auto-repair
+- [x] 47.2 Add `--yes` flag for non-interactive auto-repair
   - Useful for CI/scripted environments where the user has already consented
   - Logs every install to `.locks/doctor-repair.log` NDJSON for audit
-- [ ] 47.3 Wire the `promptUser` parameter that Task 37 dropped (M3 deferral)
+- [x] 47.3 Wire the `promptUser` parameter that Task 37 dropped (M3 deferral)
   - `runDoctor({...promptUser})` now actively used when `--repair` is passed
   - Forward-compat hooks rot — adding the parameter alongside the actual consumer per CLAUDE.md
-- [ ]* 47.4 Tests
+- [x]* 47.4 Tests
   - Test `--repair` with mocked prompt: y triggers install, n skips
   - Test `--yes` runs all install commands without prompting
   - Test NDJSON audit-log entries for each repair attempt
@@ -357,12 +357,12 @@ Each parent task ships as a PR titled `[<task #>] <description>` (e.g., `[7] Per
   - → **LANED v0.6.6 (2026-08-07, D-431)** — rides 47, same call.
   - Estimate: S · Depends: 46, 47
   - The "any repair requiring `pip install` / `npm install` MUST ASK the user first" rule currently lives in design §14 as an unsourced assertion. Task 37's skill-review (I1, 2026-05-28) flagged the citation drift (it was originally cited as NFR-9 which is actually "Memory poisoning defense baseline").
-- [ ] 48.1 Add the NFR to `requirements.md` (next available NFR number)
+- [x] 48.1 Add the NFR to `requirements.md` (next available NFR number) — **NFR-10**
   - Text: "Consent gate for system-level installs. The kit shall NEVER invoke a system-level install command (`pip install`, `npm install`, `winget install`, etc.) without explicit user consent. Consent is provided either at install-time via an opt-in flag (e.g., `cmk install --with-semantic`) OR at runtime via an interactive prompt (e.g., `cmk doctor --repair` y/N)."
-- [ ] 48.2 Update design §14 citation from "design §14 amendment" to the new NFR
-- [ ] 48.3 Add the rule to CLAUDE.md "Engineering discipline" binding rules
+- [x] 48.2 Update design §14 citation from "design §14 amendment" to the new NFR
+- [ ] 48.3 Add the rule to CLAUDE.md "Engineering discipline" binding rules — **LEFT FOR THE MAINTAINER (2026-08-09):** the implementing agent is barred from editing `CLAUDE.md` (it governs the agent's own behavior), so this one line is the human's to apply. Proposed text is in the PR body.
   - Section: "Critical: never auto-invoke system installers — see NFR-N"
-- [ ]* 48.4 Tests
+- [x]* 48.4 Tests
   - Test that no production code path calls `pip install` / `npm install` / `winget install` without a consent gate above it
   - Validator (`scripts/validate-install-consent.mjs`) — structural enforcement
   - _Requirements: NFR-N (the new one); design §14_
