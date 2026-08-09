@@ -20,6 +20,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   utimesSync,
   writeFileSync,
@@ -236,6 +237,64 @@ describe('Task 37 — runDoctor (cmk doctor health checks)', () => {
       expect(hc16.status).toBe('pass');
     });
 
+    // B1 — HC-16 scans the USER tier too, and its recovery must actually reach
+    // it. `cmk persona import` writes the whole bundle (`fragments/` included)
+    // with plain writeFileSync, bypassing writeFact's id boundary, so a bundle
+    // exported from a pre-boundary corpus can carry an unusable id onto a
+    // different machine. Before D-445 `recoverMemory` repaired ['P','L'] only,
+    // so HC-16 would flag such a fact, prescribe `cmk install`, install would
+    // repair nothing, and doctor would fail forever — the non-convergent loop
+    // HC-16's own contract refuses to create.
+    it('FAILs a bad-id fact in the USER tier (the persona-import population)', async () => {
+      const fragments = join(userDir, 'fragments');
+      mkdirSync(fragments, { recursive: true });
+      writeFileSync(
+        join(fragments, 'user_imported-persona-fact.md'),
+        `---\n${goodFrontmatter(BAD_ID).join('\n')}\n---\n\na fact that rode in on a persona bundle\n`,
+        'utf8',
+      );
+      const r = await runDoctor({ projectRoot, userDir });
+      const hc16 = r.checks.find((c) => c.id === 'HC-16');
+      expect(hc16.status).toBe('fail');
+      expect(hc16.message).toContain('user_imported-persona-fact.md');
+      expect(hc16.recoveryCommand).toBe('cmk install');
+    });
+
+    it('and the prescribed `cmk install` recovery actually repairs it (no fail-forever loop)', async () => {
+      const fragments = join(userDir, 'fragments');
+      mkdirSync(fragments, { recursive: true });
+      const p = join(fragments, 'user_imported-persona-fact.md');
+      writeFileSync(
+        p,
+        `---\n${goodFrontmatter(BAD_ID).join('\n')}\n---\n\na fact that rode in on a persona bundle\n`,
+        'utf8',
+      );
+      const { recoverMemory } = await import('../packages/cli/src/memory-recovery.mjs');
+      const report = recoverMemory({ projectRoot, userDir });
+      expect(report.action).toBe('completed');
+      expect(report.repaired.map((x) => x.tier)).toContain('U');
+
+      // The convergence assertion: the very next doctor run passes.
+      const after = await runDoctor({ projectRoot, userDir });
+      expect(after.checks.find((c) => c.id === 'HC-16').status).toBe('pass');
+      expect(readFileSync(p, 'utf8')).toContain('legacy_id:');
+    });
+
+    // The >5 truncation branch — an unexercised format path is where a crash
+    // hides on the day it finally matters.
+    it('truncates the named list at 5 and counts the remainder', async () => {
+      for (let i = 0; i < 7; i++) {
+        seedRawFact(`project_bad${i}`, goodFrontmatter(BAD_ID), `body number ${i}`);
+      }
+      const r = await runDoctor({ projectRoot, userDir });
+      const hc16 = r.checks.find((c) => c.id === 'HC-16');
+      expect(hc16.status).toBe('fail');
+      expect(hc16.message).toContain('7 of 7');
+      expect(hc16.message).toContain('(+2 more)');
+      // exactly five named
+      expect((hc16.message.match(/project_bad\d\.md/g) || [])).toHaveLength(5);
+    });
+
     // A valid id is not sufficient — index-rebuild also skips a fact missing the
     // provenance trio, and those never self-heal either.
     it('FAILs a fact with a valid id but missing write_source/trust/created_at', async () => {
@@ -271,6 +330,66 @@ describe('Task 37 — runDoctor (cmk doctor health checks)', () => {
       expect(hc16.message).not.toContain('n_one');
       expect(hc16.message).not.toContain('n_two');
       expect(hc16.message).not.toContain('n_three');
+    });
+  });
+
+  // I3 — the D-377 "41st location" class, applied to CODE strings.
+  // `validate-docs --only counts` resolves count claims in living DOCS against
+  // the live registry, but it cannot see a string literal inside a .mjs — and
+  // that is exactly where two stale claims were found (`cmk --help` saying
+  // "HC-1..HC-15", a viewer comment saying "all 14 doctor checks"). A prose rule
+  // would rot the same way, so the count claim that remains in code is pinned
+  // here against what runDoctor ACTUALLY returns. The viewer comment was made
+  // count-free instead — the cheapest fix for a number nobody needs.
+  describe('I3 — code-string HC counts track the live registry', () => {
+    it('the `cmk doctor` --help description names the real highest HC number', async () => {
+      const r = await runDoctor({ projectRoot, userDir });
+      const highest = Math.max(...r.checks.map((c) => Number(c.id.replace('HC-', ''))));
+      const src = readFileSync(
+        join(process.cwd(), 'packages', 'cli', 'src', 'subcommands.mjs'),
+        'utf8',
+      );
+      const claim = src.match(/run health checks HC-1\.\.HC-(\d+)/);
+      expect(claim, 'the doctor --help description should carry an HC range').not.toBeNull();
+      expect(Number(claim[1])).toBe(highest);
+    });
+
+    // D-445 / the B1 live probe. `runDoctorCli` hardcoded
+    // `join(homedir(), '.core-memory-kit')`, which ignores MEMORY_KIT_USER_DIR —
+    // the kit's own sandbox/override mechanism. So every USER-TIER check (HC-16's
+    // new arm, HC-7's stale locks) audited a different directory than the one
+    // `cmk install` repairs. The probe caught it exactly: install fixed the
+    // planted U-tier orphan while doctor reported "no fact files yet".
+    //
+    // Scoped deliberately to the doctor entry point, which is what this task
+    // touched. 17 OTHER sites in subcommands.mjs still hardcode the same join —
+    // a pre-existing shared-module violation, reported rather than swept here.
+    it('the doctor CLI resolves the user tier through the SHARED resolver, not an inline homedir join', () => {
+      const src = readFileSync(
+        join(process.cwd(), 'packages', 'cli', 'src', 'subcommands.mjs'),
+        'utf8',
+      );
+      const body = src.slice(
+        src.indexOf('async function runDoctorCli('),
+        src.indexOf('async function runDoctorCli(') + 1200,
+      );
+      expect(body).toContain('defaultUserDir()');
+      expect(body).not.toContain("join(homedir(), '.core-memory-kit')");
+    });
+
+    it('no kit source file claims a stale literal doctor-check COUNT', async () => {
+      const r = await runDoctor({ projectRoot, userDir });
+      const live = r.checks.length;
+      const srcDir = join(process.cwd(), 'packages', 'cli', 'src');
+      const stale = [];
+      for (const f of readdirSync(srcDir).filter((f) => f.endsWith('.mjs'))) {
+        for (const m of readFileSync(join(srcDir, f), 'utf8').matchAll(
+          /\b(\d{1,3})\s+doctor checks\b/g,
+        )) {
+          if (Number(m[1]) !== live) stale.push(`${f}: "${m[0]}" (live is ${live})`);
+        }
+      }
+      expect(stale).toEqual([]);
     });
   });
 

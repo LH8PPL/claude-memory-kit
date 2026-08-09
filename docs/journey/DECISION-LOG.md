@@ -12,6 +12,18 @@
 
 > **Older entries live in the archive.** **D-1 … D-306** — every decision made BEFORE the v0.5.0 cut — were relocated to [`DECISION-LOG-archive-pre-v0.5.md`](DECISION-LOG-archive-pre-v0.5.md) on 2026-07-28 (Task 249), byte-identical and in the same newest-at-top order. **This file holds D-307 onward** (D-307 IS the "tag v0.5.0 now" decision). Both files are `D-nnn` anchor sources for `validate-docs`'s `references` family — it globs `docs/journey/DECISION-LOG*.md` — so a citation to any entry, archived or live, still resolves.
 
+## 2026-08-09 — D-445 · DECISION — `recoverMemory` repairs the USER tier too, because HC-16 scans it (Task 270; SETTLED)
+
+**The defect review found:** HC-16 scans P/L/U, but `recoverMemory` repaired `['P','L']` only — so a bad-id fact in `~/.core-memory-kit/fragments/` FAILED HC-16 with `recoveryCommand: 'cmk install'`, install repaired nothing, and doctor failed forever. A non-convergent repair loop, and precisely the thing HC-16's own contract refuses to create (it declines to prescribe `cmk reindex` for exactly this reason).
+
+**The population is real, reachable, and arrives from ANOTHER MACHINE.** `cmk persona import` writes the whole bundle — `fragments/` included, which IS the U tier's fact dir — with plain `writeFileSync` (`persona-portability.mjs` `applyBundleAtomic`), bypassing `writeFact` and therefore the id boundary this task just built. A persona exported from a pre-boundary corpus can carry an unusable id onto a machine that never had the bug.
+
+**Chosen: extend the repair (arm b), not narrow the check (arm a).** Arm (a) — bounding HC-16 to P/L — was smaller, and rejected: it would leave the kit knowingly unguarded on the ONE tier with a documented raw-write entry point, which is where the D-427 shape is now most likely to arrive. The cost of (b) turned out to be small because the plumbing already existed: `install.mjs` was already passing `userDir` into `recoverMemory`, `repairFactDir` is tier-agnostic (it takes factDir/tier/tierRoot), and `reindex` already accepts `{tier:'U', userDir}`.
+
+**The STRAY half stays P/L, deliberately.** The old note said the U tier "is not stray-prone", which is true and unchanged: a stray tier is a project-relative fork, and the user tier has no project-relative path to fork. That is a different question from whether its fact files can hold an unusable id — they can, so the ID-REPAIR half now runs there and the stray-scan half does not. Guarded on `userDir` being supplied, so a caller that omits it never reaches for `homedir()` (the D-69 class).
+
+Pinned by a convergence test — plant the U-tier orphan, run the prescribed recovery, assert the very NEXT doctor run passes — because "the recovery command actually converges" is the property that failed, not "a repair function exists".
+
 ## 2026-08-09 — D-444 · BUG — HC-16 shipped a false alarm on the healthy steady state, and only the LIVE probe caught it (Task 270)
 
 **The defect, in my own new code.** HC-16's first draft asked "is this fact in the `observations` table?" — a membership test. It passed every unit test and was wrong: **the SQLite index is rebuilt LAZILY on read**, so a fact written a moment ago and not yet searched legitimately has no row. The live probe walked the ordinary sequence — `cmk install` → `cmk remember` → `cmk search` → `cmk remember` — and HC-16 reported the second, perfectly healthy fact as *"INVISIBLE to search, the viewer, and the graph … indistinguishable from a lost one"*, prescribing a reindex for a fact the next search would have surfaced anyway. It also FAILed immediately after `cmk install`'s own repair pass, because `reindex()` rebuilds INDEX.md/MAP.md and not the database.

@@ -82,8 +82,10 @@ function graduateOne({ id, text, prov, tier, projectRoot, userDir, now }) {
 /**
  * Graduate oldest high-trust bullets out of `text` until it fits `capBytes`.
  *
- * @returns {{ text: string, graduated: string[] }} the new scratchpad content
- *   (graduated bullets removed) and the ids that were graduated.
+ * @returns {{ text: string, graduated: string[], graduatedFactIds: Record<string,string> }}
+ *   the new scratchpad content (graduated bullets removed), the BULLET ids that
+ *   graduated, and bulletId → the id the fact file actually received (they differ
+ *   when writeFact repaired an unusable bullet id — Task 270 / D-443).
  */
 export function graduateForCapRelief({
   text,
@@ -114,7 +116,7 @@ export function graduateForCapRelief({
   const totalGraduatable = entries.reduce((sum, e) => sum + bulletBytes(e), 0);
   const startBytes = Buffer.byteLength(text, 'utf8');
   if (startBytes - totalGraduatable > capBytes) {
-    return { text, graduated: [] };
+    return { text, graduated: [], graduatedFactIds: {} };
   }
 
   // Oldest first: graduate aged durable facts before recent ones. The just-
@@ -125,6 +127,11 @@ export function graduateForCapRelief({
 
   const removeIdx = new Set();
   const graduated = [];
+  // Task 270 (M5 / D-443): bulletId → the id the fact file ACTUALLY got. These
+  // differ exactly when writeFact repaired an unusable bullet id, and that is
+  // the case where an audit entry keyed on the bullet id alone names an id no
+  // fact file carries — unjoinable at the moment it matters most.
+  const graduatedFactIds = {};
   const createdPaths = []; // files writeFact NEWLY created (for transactional rollback)
   let curBytes = Buffer.byteLength(text, 'utf8');
   for (const e of entries) {
@@ -145,6 +152,7 @@ export function graduateForCapRelief({
     removeIdx.add(e.bulletIdx);
     removeIdx.add(e.commentIdx);
     graduated.push(e.id);
+    if (res.id) graduatedFactIds[e.id] = res.id;
     curBytes -= bulletBytes(e);
   }
 

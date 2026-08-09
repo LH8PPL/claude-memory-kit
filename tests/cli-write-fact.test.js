@@ -900,6 +900,81 @@ describe('Task 7 — writeFact() boundary', () => {
       expect(files).toHaveLength(4);
     });
 
+    // I2 — the never-silent invariant is ABSOLUTE, not create-path-only. A bad
+    // id whose regenerated content-id already exists takes a dedup early-return,
+    // and those used to escape carrying the substitution: the caller got back an
+    // id it never passed, with nothing saying so and no audit line. That is
+    // exactly the property D-443 + design §3.3.1 declare impossible.
+    describe('I2 — every exit carries the repair, not just `created`', () => {
+      const seedBody = 'a body that will be written twice over';
+
+      it('regenerated id hits SAME-PATH dedup → skipped still carries the trio + audit', () => {
+        const first = writeFact(validOptions({ projectRoot, slug: 'dupe', body: seedBody }));
+        expect(first.action).toBe('created');
+
+        const second = writeFact(
+          validOptions({ projectRoot, slug: 'dupe', body: seedBody, id: BAD_ID }),
+        );
+        expect(second.action).toBe('skipped');
+        expect(second.skipReason).toBe('duplicate');
+        expect(second.id).toBe(first.id); // an id the caller never passed
+        expect(second.idRepaired).toBe(true);
+        expect(second.previousId).toBe(BAD_ID);
+
+        const repair = readAuditLog(join(projectRoot, 'context')).filter(
+          (e) => e.reasonCode === 'fact-id-repaired',
+        );
+        expect(repair).toHaveLength(1);
+        expect(repair[0].extra.previousId).toBe(BAD_ID);
+      });
+
+      it('regenerated id hits DUPLICATE-ELSEWHERE → skipped still carries the trio + audit', () => {
+        const first = writeFact(validOptions({ projectRoot, slug: 'orig', body: seedBody }));
+        const second = writeFact(
+          validOptions({ projectRoot, slug: 'other-slug', body: seedBody, id: BAD_ID }),
+        );
+        expect(second.action).toBe('skipped');
+        expect(second.skipReason).toBe('duplicate-elsewhere');
+        expect(second.id).toBe(first.id);
+        expect(second.idRepaired).toBe(true);
+        expect(second.previousId).toBe(BAD_ID);
+        expect(
+          readAuditLog(join(projectRoot, 'context')).filter(
+            (e) => e.reasonCode === 'fact-id-repaired',
+          ),
+        ).toHaveLength(1);
+      });
+
+      it('regenerated id hits a COLLISION → the error still carries the trio', () => {
+        writeFact(validOptions({ projectRoot, slug: 'taken', body: 'the original body here' }));
+        const clash = writeFact(
+          validOptions({ projectRoot, slug: 'taken', body: 'a DIFFERENT body', id: BAD_ID }),
+        );
+        expect(clash.action).toBe('error');
+        expect(clash.errorCategory).toBe('collision');
+        // The error reports an id the caller never passed — say so.
+        expect(clash.idRepaired).toBe(true);
+        expect(clash.previousId).toBe(BAD_ID);
+      });
+    });
+
+    // M4 — an empty-string id is a value the caller SUPPLIED, and it is falsy.
+    // Gating the trio on `legacyId`'s truthiness made this one case silent.
+    it('M4: an EMPTY-STRING explicit id is repaired and recorded, never silently dropped', () => {
+      const result = writeFact(validOptions({ projectRoot, slug: 'empty-id', id: '' }));
+      expect(result.action).toBe('created');
+      expect(result.id).toMatch(ID_PATTERN);
+      expect(result.idRepaired).toBe(true);
+      expect(result.previousId).toBe('');
+      const { frontmatter } = parseFrontmatter(result.path);
+      expect(frontmatter.legacy_id).toBe('');
+      expect(
+        readAuditLog(join(projectRoot, 'context')).filter(
+          (e) => e.reasonCode === 'fact-id-repaired',
+        ),
+      ).toHaveLength(1);
+    });
+
     it('a non-string / structurally-wrong explicit id is repaired the same way', () => {
       // The MCP/import shape: an id that is not even the right type.
       const result = writeFact(validOptions({ projectRoot, id: 12345 }));

@@ -598,7 +598,7 @@ Spec: design §10.
 
 ### Health check (HC)
 
-One of 16 yes/no diagnostics run by [[`cmk doctor`]]. Each has a documented self-repair path. HC-1..HC-16 cover hooks/distill/transcripts/INDEX/cron; HC-6 detects whether Anthropic's native Auto Memory is active; HC-7 checks for stale lock files; HC-13 is the advisory [[Stray tier]] backstop; HC-14 is the advisory active-kit-health-warnings backstop; HC-15 audits that each fact's semantic vector really is its own (design §9.3.2). (The two memsearch checks were removed in Task 120.)
+One of 16 yes/no diagnostics run by [[`cmk doctor`]]. Each has a documented self-repair path. HC-1..HC-16 cover hooks/distill/transcripts/INDEX/cron; HC-6 detects whether Anthropic's native Auto Memory is active; HC-7 checks for stale lock files; HC-13 is the advisory [[Stray tier]] backstop; HC-14 is the advisory active-kit-health-warnings backstop; HC-16 catches a fact on disk that can never be indexed (unusable id / unparseable frontmatter), the invisible-but-durable population; HC-15 audits that each fact's semantic vector really is its own (design §9.3.2). (The two memsearch checks were removed in Task 120.)
 
 Spec: design §14.
 

@@ -173,7 +173,7 @@ function buildFrontmatterObject(opts, computed) {
     // derived a real one instead. Same field name + position the memory-recovery
     // repair path writes (`applyIdRepair`), so a repaired-at-write fact and a
     // repaired-at-install fact leave identical forensics on disk.
-    ...(computed.legacyId ? { legacy_id: computed.legacyId } : {}),
+    ...(computed.idRepaired ? { legacy_id: computed.legacyId } : {}),
     // Task 254 (Obsidian vault view — shape a, forward-only): the fact's own id
     // as an Obsidian `aliases`, so a `[[P-XXXX]]` id reference (the kit's
     // cross-reference currency — used across fact bodies + the `superseded_by`
@@ -356,7 +356,7 @@ function maybeAutoLink({ opts, factOpts, id, createdAt }) {
 }
 
 /**
- * Task 270 (D-427) — THE ID BOUNDARY. Decide the fact's id from what the caller
+ * Task 270 (D-427 the bug; D-443 the decision) — THE ID BOUNDARY. Decide the fact's id from what the caller
  * supplied, never trusting it blind.
  *
  * The bug this closes: `opts.id ?? generateId(...)` took a caller's id on faith,
@@ -390,19 +390,26 @@ function maybeAutoLink({ opts, factOpts, id, createdAt }) {
  * the file keeps a `legacy_id` breadcrumb (the same field `applyIdRepair`
  * writes), and an audit entry records it.
  *
- * @returns {{id: string, legacyId: string|null}}
+ * M4: `idRepaired` is an explicit BOOLEAN, never the truthiness of `legacyId`.
+ * A caller passing `id: ''` supplied a real (and unusable) value, and an empty
+ * string is falsy — gating the never-silent trio on `legacyId` alone would have
+ * made that one case silent, which is the exact property this function exists
+ * to guarantee. Absent (`undefined`/`null`) is the ONLY "caller supplied
+ * nothing" state.
+ *
+ * @returns {{id: string, legacyId: string|null, idRepaired: boolean}}
  */
 function resolveFactId(supplied, tier, body) {
   if (supplied === undefined || supplied === null) {
-    return { id: generateId(tier, body), legacyId: null };
+    return { id: generateId(tier, body), legacyId: null, idRepaired: false };
   }
   if (typeof supplied === 'string' && ID_PATTERN.test(supplied)) {
-    return { id: supplied, legacyId: null };
+    return { id: supplied, legacyId: null, idRepaired: false };
   }
   // Anything else — wrong alphabet, wrong length, wrong type entirely — is an
   // id no read path could ever resolve. Derive the real one; keep the original
   // visible rather than discarding it.
-  return { id: generateId(tier, body), legacyId: String(supplied) };
+  return { id: generateId(tier, body), legacyId: String(supplied), idRepaired: true };
 }
 
 export function writeFact(opts = {}) {
@@ -495,12 +502,37 @@ export function writeFact(opts = {}) {
 
   // Use the sanitized body/title for id, frontmatter, and the file body.
   const factOpts = { ...opts, body, title };
-  const { id, legacyId } = resolveFactId(opts.id, opts.tier, body);
+  const { id, legacyId, idRepaired } = resolveFactId(opts.id, opts.tier, body);
   const createdAt = opts.createdAt ?? nowIso();
   const tierRoot = resolveTierRoot(opts);
   const factDir = resolveFactDir(opts.tier, tierRoot);
   const filename = `${opts.type}_${opts.slug}.md`;
   const path = join(factDir, filename);
+
+  // Task 270 (D-443/D-444), Door 5 — I2: the repair is audited HERE, at the
+  // decision point, not on the `created` path. The id substitution is a fact
+  // about the WRITE ATTEMPT and is equally true when the write then dedups or
+  // collides; auditing it only on the create path meant the three early returns
+  // below escaped the never-silent invariant that D-443 and design §3.3.1
+  // declare absolute. Deliberately NOT gated on `opts.audit` — that flag exists
+  // to suppress a redundant `created` entry, never a data-integrity event.
+  if (idRepaired) {
+    try {
+      appendAuditEntry(tierRoot, {
+        ts: createdAt,
+        action: 'fact-id-repaired',
+        tier: opts.tier,
+        id,
+        reasonCode: REASON_CODES.FACT_ID_REPAIRED,
+        paths: { after: path },
+        extra: { previousId: legacyId, at: 'write-fact' },
+      });
+    } catch {
+      // best-effort; the substitution still rides the returned result
+    }
+  }
+  // Every exit from here on carries the repair trio when a repair happened.
+  const repairFields = idRepaired ? { idRepaired: true, previousId: legacyId } : {};
 
   const existingIdAtPath = readExistingFactId(path);
   if (existingIdAtPath !== null) {
@@ -523,7 +555,7 @@ export function writeFact(opts = {}) {
       // the durable count (MemoryOS/MemOS/honcho: the count IS a score term). No
       // overlay write here — it would only be reseeded away by the reindex that the
       // file change triggers. Durable-by-construction.
-      return { action: 'skipped', skipReason: 'duplicate', id, path, recurrenceCount };
+      return { action: 'skipped', skipReason: 'duplicate', id, path, recurrenceCount, ...repairFields };
     }
     return errorResult({
       category: ERROR_CATEGORIES.COLLISION,
@@ -532,6 +564,7 @@ export function writeFact(opts = {}) {
       ],
       id,
       path,
+      ...repairFields,
     });
   }
 
@@ -559,6 +592,7 @@ export function writeFact(opts = {}) {
       path,
       duplicateAt: elsewhere,
       recurrenceCount,
+      ...repairFields,
     };
   }
 
@@ -581,7 +615,7 @@ export function writeFact(opts = {}) {
   if (linkDecision?.related?.length) factOpts.related = linkDecision.related;
 
   mkdirSync(factDir, { recursive: true });
-  const frontmatter = buildFrontmatterObject(factOpts, { id, createdAt, legacyId });
+  const frontmatter = buildFrontmatterObject(factOpts, { id, createdAt, legacyId, idRepaired });
   writeFileSync(path, format({ frontmatter, body: `\n${factOpts.body}\n` }), 'utf8');
   // Door 5, AFTER the file lands: an audit line always describes a link that
   // exists on disk.
@@ -671,37 +705,5 @@ export function writeFact(opts = {}) {
     }
   }
 
-  // Task 270 (D-427), Door 5. A supplied id we could not use is a data-integrity
-  // event, so it is logged UNCONDITIONALLY — deliberately not gated on
-  // `opts.audit`, unlike the `created` entry above. `audit:false` exists so a
-  // caller with richer create semantics (merge-facts → CURATED_MERGE) avoids a
-  // redundant duplicate; it was never meant to suppress a different, rarer, and
-  // strictly more important event. A SILENT id substitution is the same class of
-  // failure as the silent orphan this task removes.
-  //
-  // Same action + reasonCode the install-time repair uses, so one audit query
-  // (`fact-id-repaired`) finds every id repair the kit has ever performed,
-  // whichever path performed it.
-  if (legacyId) {
-    try {
-      appendAuditEntry(tierRoot, {
-        ts: createdAt,
-        action: 'fact-id-repaired',
-        tier: opts.tier,
-        id,
-        reasonCode: REASON_CODES.FACT_ID_REPAIRED,
-        paths: { after: path },
-        extra: { previousId: legacyId, at: 'write-fact' },
-      });
-    } catch {
-      // best-effort; the fact is already durably on disk with a usable id
-    }
-  }
-
-  return {
-    action: 'created',
-    id,
-    path,
-    ...(legacyId ? { idRepaired: true, previousId: legacyId } : {}),
-  };
+  return { action: 'created', id, path, ...repairFields };
 }

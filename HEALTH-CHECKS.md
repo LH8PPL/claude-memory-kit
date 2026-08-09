@@ -204,6 +204,8 @@ That is the worst shape this project can produce, because a fact you cannot find
 
 **Repair.** When an unusable id is among the findings, the fix is `cmk install`: it repairs the id in place, deriving a real one from the fact's own content and leaving a `legacy_id` breadcrumb so the original is never just discarded. Any other reason — a missing `write_source`, `trust` or `created_at`, or frontmatter that will not parse — is a file to correct by hand, and the check names it. **`cmk reindex` is never the answer here** and the check will not suggest it: the parser rejects these files *before* indexing begins, so rebuilding the index cannot reach them.
 
+The check covers your **project, local and user tiers**. The user tier matters more than it looks: `cmk persona import` writes an exported persona — `fragments/` included — straight to disk, so a fact carrying an unusable id can arrive from another machine entirely. `cmk install` repairs all three tiers, so the command this check prescribes actually resolves what it reports.
+
 **As of v0.6.6 the write path no longer creates the first shape at all**: `writeFact` validates any explicitly-supplied id and derives a real one when it can't be used, so this check now mostly guards facts written by older versions or edited by hand.
 
 **SKIP means there are no fact files yet** — nothing to verify, never a FAIL on an empty project.

@@ -775,7 +775,7 @@ const API = {
 
     // `?strip=1` answers the PINNED LINE ONLY, and this split is load-bearing
     // rather than tidy: the strip is on every view, so a page navigation would
-    // otherwise run all 14 doctor checks — including a subprocess probe of the
+    // otherwise run the FULL doctor sweep — every HC, including a subprocess probe of the
     // user's agent CLI — just to draw one line. The strip's inputs (the health
     // log tail + two queue reads) are cheap file reads; the doctor is the
     // expensive part, and only the health VIEW actually needs it.

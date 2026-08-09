@@ -422,7 +422,11 @@ Implementation lives in `cmk` CLI's shared library (`@lh8ppl/cmk-canonicalize` p
 
 **Why regenerate rather than reject** (decided by caller-mapping every explicit-id caller, not by preference): the sole production caller passing an explicit id is `graduation.mjs`, whose bullet matcher is deliberately loose and whose comment delegates alphabet validity to the writer. A reject there would make `graduateForCapRelief` fail `CAP_EXCEEDED` *after* its feasibility gate had already committed to graduating that bullet — so one legacy bad-alphabet bullet would wedge `MEMORY.md` at its cap permanently. Regeneration also reuses the mechanism the install-time repair path already chose for this exact shape (§13.2's `classifyFactId` → `repairable`), so the write path and the repair path agree instead of diverging.
 
-**Never silent:** the result carries `idRepaired` + `previousId`, the file keeps a `legacy_id` breadcrumb (the same field the §13.2 repair writes), and a `fact-id-repaired` audit entry is appended — deliberately NOT gated on the `audit:false` opt-out, since that flag exists to suppress a redundant `created` entry, never a data-integrity event. **HC-16** (§14) is the backstop for facts written before this boundary existed.
+**Never silent, on EVERY exit:** the result carries `idRepaired` + `previousId`, the file keeps a `legacy_id` breadcrumb (the same field the §13.2 repair writes), and a `fact-id-repaired` audit entry is appended — deliberately NOT gated on the `audit:false` opt-out, since that flag exists to suppress a redundant `created` entry, never a data-integrity event.
+
+The invariant is absolute rather than create-path-only, and that distinction is load-bearing: a repaired id can still dedup against an existing fact or collide at its destination, and those early returns hand the caller an id it never passed. So the audit is written at the id-DECISION point, and every exit — `created`, both `skipped` shapes, and the `collision` error — carries the trio. An empty-string id is treated as a supplied (and unusable) value rather than an absent one, because the falsy-`legacyId` shortcut would have made exactly that case silent.
+
+**HC-16** (§14) is the backstop for facts written before this boundary existed — across P, L **and U**, since `cmk persona import` writes `fragments/` as raw bytes and can carry a pre-boundary id in from another machine; `cmk install`'s repair pass covers the same three tiers so the prescription converges (D-445).
 
 ### 3.4 Consolidation / merge semantics
 

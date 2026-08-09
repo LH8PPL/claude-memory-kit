@@ -2360,7 +2360,15 @@ export function formatDoctorReport(checks, durationMs) {
 
 async function runDoctorCli(/* options */) {
   const projectRoot = resolvePath(process.cwd());
-  const userDir = join(homedir(), '.core-memory-kit');
+  // Task 270 (D-445): the SHARED resolver, not an inline `homedir()` join —
+  // that hardcoded form ignores `MEMORY_KIT_USER_DIR`, so every user-tier check
+  // audited the wrong directory whenever the override was set (which is how the
+  // kit is sandboxed and tested). Found by the B1 live probe: a planted U-tier
+  // orphan was repaired by `cmk install` — which resolves the tier correctly —
+  // while `cmk doctor` reported "no fact files yet", so HC-16's whole U-tier
+  // arm was invisible from the CLI. HC-7 (stale locks) reads the same tier.
+  const { defaultUserDir } = await import('./tier-paths.mjs');
+  const userDir = defaultUserDir();
   try {
     const r = await runDoctor({ projectRoot, userDir });
     if (r.action === 'error') {
@@ -3766,7 +3774,7 @@ export const subcommands = [
   },
   {
     name: 'doctor',
-    description: 'run health checks HC-1..HC-15; print structured report with self-repair commands',
+    description: 'run health checks HC-1..HC-16; print structured report with self-repair commands',
     milestone: 37,
     action: runDoctorCli,
   },
