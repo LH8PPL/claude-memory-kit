@@ -42,12 +42,20 @@ function check(label, ok, detail = '') {
 }
 
 /** One raw HTTP request. Raw on purpose: `fetch` refuses to send a Host
- *  override or a TRACE method, and both are under test here. */
+ *  override or a TRACE method, and both are under test here.
+ *
+ *  `agent: false` — a FRESH socket per request, never the global pool. Node's
+ *  global agent keeps sockets alive and the server drops an idle one after 5s,
+ *  so any check separated from the previous one by a slow step (`cmk repair`,
+ *  `cmk doctor` — both spawn a subprocess and take longer than that) can grab a
+ *  socket the server has already closed and fail with ECONNRESET. That is the
+ *  script racing itself, and it would read as "the viewer died", which is
+ *  exactly the wrong thing for a gate to say. */
 function http(url, { method = 'GET', headers = {} } = {}) {
   const u = new URL(url);
   return new Promise((resolve, reject) => {
     const req = httpRequest(
-      { host: u.hostname, port: u.port, path: u.pathname + u.search, method, headers, timeout: 20_000 },
+      { host: u.hostname, port: u.port, path: u.pathname + u.search, method, headers, timeout: 20_000, agent: false },
       (res) => {
         let body = '';
         res.on('data', (c) => (body += c));
@@ -137,6 +145,24 @@ async function main() {
       '--type', 'project', '--title', 'toolchain pinning',
     ], { cwd: proj, env });
     runCmk(['remember', 'The deploy target is the eu-west region'], { cwd: proj, env });
+    // Task 269: a corpus of ONE page cannot prove paging. Four more facts —
+    // written through the real bin, two of them sharing a distinctive word so
+    // the SEARCH pager has more than one hit to page through.
+    runCmk([
+      'remember', 'The toolchain upgrade cadence is quarterly',
+      '--why', 'a dependency advisory caught us three times in one week',
+      '--type', 'project', '--title', 'toolchain cadence',
+    ], { cwd: proj, env });
+    // Deliberately NOT about the toolchain: the journal search below has to be
+    // able to NARROW, and a journal where every entry matches the query proves
+    // nothing about filtering.
+    runCmk([
+      'remember', 'The lockfile is committed, never regenerated during a release',
+      '--why', 'a regenerated lockfile silently changed a transitive dependency',
+      '--type', 'project', '--title', 'lockfile policy',
+    ], { cwd: proj, env });
+    runCmk(['remember', 'Backups run at 03:00 UTC to the cold bucket'], { cwd: proj, env });
+    runCmk(['remember', 'The staging database is reset every Monday'], { cwd: proj, env });
     runCmk(['digest'], { cwd: proj, env }); // populates context/DECISIONS.md
 
     // A REAL supersession edge, so the graph check below is not vacuous: an
@@ -216,6 +242,81 @@ async function main() {
       '/api/facts?q= finds it through the real FTS index',
       search.status === 200 && search.json.mode === 'search' && search.json.count >= 1,
       `count=${search.json?.count}`,
+    );
+
+    // ---- 2b. PAGING, on the real corpus (Task 269 / D-426) -----------------
+    //
+    // THE assertion this whole extension exists for: a SECOND page must return
+    // DIFFERENT records than the first. Every viewer test before Task 269
+    // asserted on one response that fit under the cap, so a route that could
+    // only ever answer with the first page looked exactly like a route that
+    // could answer with all of them — and 91% of a real corpus was unreachable
+    // by any URL with nothing red anywhere.
+    const p1 = await http(`${base}/api/facts?limit=2`);
+    const p2 = await http(`${base}/api/facts?limit=2&offset=2`);
+    const ids1 = (p1.json.facts ?? []).map((f) => f.id);
+    const ids2 = (p2.json.facts ?? []).map((f) => f.id);
+    check(
+      'PAGING: a second page returns DIFFERENT facts than the first, with no overlap',
+      p1.status === 200 && p2.status === 200 &&
+        ids1.length === 2 && ids2.length === 2 &&
+        ids2.join() !== ids1.join() &&
+        ids2.every((x) => !ids1.includes(x)),
+      `page1=${ids1.join(',')} page2=${ids2.join(',')}`,
+    );
+    check(
+      'PAGING: the envelope states the position honestly — offset, total, reachable, has_more',
+      p1.json.offset === 0 && p2.json.offset === 2 &&
+        p1.json.total === facts.json.total && p1.json.total >= 6 &&
+        p1.json.reachable === p1.json.total &&
+        p1.json.has_more === true,
+      `offset=${p2.json.offset} total=${p1.json.total} reachable=${p1.json.reachable} has_more=${p1.json.has_more}`,
+    );
+    // Walk the WHOLE corpus two at a time and demand a clean partition: the
+    // paged sequence must equal the unpaged one, record for record. A sort
+    // without a tiebreak silently drops and duplicates rows under paging, and
+    // "a fact I cannot reach" is indistinguishable from "a fact we lost".
+    const whole = await http(`${base}/api/facts?limit=200`);
+    const walked = [];
+    for (let off = 0; off < whole.json.count; off += 2) {
+      const pg = await http(`${base}/api/facts?limit=2&offset=${off}`);
+      walked.push(...pg.json.facts.map((f) => f.id));
+    }
+    check(
+      'PAGING: the paged walk equals the unpaged list exactly — nothing skipped, nothing repeated',
+      walked.join(',') === whole.json.facts.map((f) => f.id).join(',') &&
+        new Set(walked).size === whole.json.count,
+      `walked=${walked.length} whole=${whole.json.count}`,
+    );
+    const past = await http(`${base}/api/facts?offset=100000`);
+    const badOffset = await http(`${base}/api/facts?offset=-1`);
+    check(
+      'PAGING: an offset past the end is an empty 200 that still states the corpus; a malformed one is a 400',
+      past.status === 200 && past.json.count === 0 && past.json.total === whole.json.count &&
+        past.json.has_more === false && badOffset.status === 400,
+      `past=${past.status}/${past.json?.count} bad=${badOffset.status}`,
+    );
+
+    // SEARCH + PAGING compose, and a hit carries its relevance band (D-429).
+    const s1 = await http(`${base}/api/facts?q=toolchain&limit=1`);
+    const s2 = await http(`${base}/api/facts?q=toolchain&limit=1&offset=1`);
+    check(
+      'SEARCH+PAGING: searching narrows, paging traverses the remainder, the total is the match set',
+      s1.json.mode === 'search' && s2.json.mode === 'search' &&
+        s1.json.total >= 2 && s2.json.total === s1.json.total &&
+        s1.json.count === 1 && s2.json.count === 1 &&
+        s1.json.facts[0].id !== s2.json.facts[0].id &&
+        s1.json.has_more === true,
+      `total=${s1.json.total} p1=${s1.json.facts?.[0]?.id} p2=${s2.json.facts?.[0]?.id}`,
+    );
+    check(
+      'RELEVANCE: a search hit carries a band and a relative score; a browse row carries neither',
+      ['strong', 'fair', 'weak'].includes(s1.json.facts[0].relevance_band) &&
+        s1.json.facts[0].relevance === 1 && // the top hit is the reference point
+        typeof s2.json.facts[0].relevance === 'number' &&
+        s2.json.facts[0].relevance <= 1 &&
+        p1.json.facts[0].relevance === null && p1.json.facts[0].relevance_band === null,
+      `hit=${s1.json.facts[0].relevance_band}/${s1.json.facts[0].relevance} next=${s2.json.facts[0].relevance} browse=${p1.json.facts[0].relevance}`,
     );
 
     const id = facts.json.facts[0].id;
@@ -324,8 +425,50 @@ async function main() {
       `count=${decisions.json?.count}`,
     );
 
+    // ---- 2c. the journal pages and searches (Task 269) ---------------------
+    const d1 = await http(`${base}/api/decisions?limit=1`);
+    const d2 = await http(`${base}/api/decisions?limit=1&offset=1`);
+    check(
+      'JOURNAL PAGING: a second page is a DIFFERENT decision than the first',
+      d1.status === 200 && d2.status === 200 &&
+        d1.json.count === 1 && d2.json.count === 1 &&
+        d1.json.decisions[0].id !== d2.json.decisions[0].id &&
+        d1.json.offset === 0 && d2.json.offset === 1 &&
+        d1.json.total === decisions.json.total && d1.json.has_more === true,
+      `p1=${d1.json.decisions?.[0]?.id} p2=${d2.json.decisions?.[0]?.id} total=${d1.json.total}`,
+    );
+    // The default stays journal order (the shipped contract); `newest` is what
+    // the PAGE asks for, because page 1 of a real journal in append order is
+    // its OLDEST entries and the tab has always been labelled "newest first".
+    const dNewest = await http(`${base}/api/decisions?order=newest&limit=1`);
+    const dAll = await http(`${base}/api/decisions?limit=200`);
+    check(
+      'JOURNAL ORDER: the default is journal order and `?order=newest` answers from the other end',
+      d1.json.order === 'journal' && dNewest.json.order === 'newest' &&
+        d1.json.decisions[0].id === dAll.json.decisions[0].id &&
+        dNewest.json.decisions[0].id === dAll.json.decisions[dAll.json.count - 1].id,
+      `journal-head=${d1.json.decisions?.[0]?.id} newest-head=${dNewest.json.decisions?.[0]?.id} tail=${dAll.json.decisions?.[dAll.json.count - 1]?.id}`,
+    );
+    const dq = await http(`${base}/api/decisions?q=toolchain`);
+    const dqNone = await http(`${base}/api/decisions?q=zzzznotpresent`);
+    check(
+      'JOURNAL SEARCH: `?q=` narrows the journal and reports the match set as the total',
+      dq.status === 200 && dq.json.mode === 'search' && dq.json.query === 'toolchain' &&
+        dq.json.count >= 1 && dq.json.count < dAll.json.count &&
+        dq.json.total === dq.json.count &&
+        dq.json.decisions.every((d) => /toolchain/i.test(`${d.title} ${d.why ?? ''}`)) &&
+        dqNone.status === 200 && dqNone.json.count === 0 && dqNone.json.total === 0,
+      `hits=${dq.json?.count} of ${dAll.json?.count} none=${dqNone.json?.count}`,
+    );
+
     // ---- 3. READ-ONLY, on the real socket ----------------------------------
-    const paths = ['/', '/api/facts', `/api/fact/${id}`, '/api/graph', '/api/health', '/api/decisions'];
+    const paths = [
+      '/', '/api/facts', `/api/fact/${id}`, '/api/graph', '/api/health', '/api/decisions',
+      // Task 269's new surface area: a paged/searched route is still a GET-only
+      // route. A query parameter must not be a way past the 405 gate.
+      '/api/facts?limit=2&offset=2', '/api/facts?q=toolchain&offset=1',
+      '/api/decisions?offset=1', '/api/decisions?q=toolchain&order=newest',
+    ];
     const methods = ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'TRACE'];
     const refusals = [];
     for (const p of paths) {
@@ -429,9 +572,11 @@ async function main() {
   log('=====================================================');
   const failed = results.filter((r) => !r.ok);
   if (failed.length === 0) {
-    log('The real bin serves all five views read-only on a real corpus, and lets go of the port.');
+    log('The real bin serves all five views read-only on a real corpus, pages past the first');
+    log('screen of facts and decisions, and lets go of the port.');
     log('NOT covered here (needs a human with a browser): the rendered page itself — layout,');
-    log('the graph drawing, the copy buttons, and the actual browser auto-open.');
+    log('the graph drawing, the RENDERED pager and its prev/next links, the relevance pills,');
+    log('the copy buttons, and the actual browser auto-open.');
     process.exit(0);
   }
   log(`${failed.length} check(s) FAILED.`);
