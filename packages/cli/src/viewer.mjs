@@ -62,7 +62,13 @@ import { errorResult, ERROR_CATEGORIES } from './result-shapes.mjs';
 import { openBrowserCommand } from './platform-commands.mjs';
 import { openIndexDb } from './index-db.mjs';
 import { reindexBoot } from './index-rebuild.mjs';
-import { search as searchAction, countKeywordMatches, SEARCH_MODES } from './search.mjs';
+import {
+  search as searchAction,
+  countKeywordMatches,
+  matchDecisionEntries,
+  SEARCH_MODES,
+  SEARCH_MAX_LIMIT,
+} from './search.mjs';
 import { ID_PATTERN, VALID_TIERS } from './tier-paths.mjs';
 import { eachSupersededFact } from './fact-store.mjs';
 import { parseRichFactBody } from './rich-fact.mjs';
@@ -95,6 +101,42 @@ export const VIEWER_DEFAULT_LIMIT = 50;
  * number in the URL bar would be worse than one that shows 200 rows.
  */
 export const VIEWER_MAX_LIMIT = 200;
+
+/**
+ * How deep `?offset=` can reach IN SEARCH MODE (Task 269) — the search engine's
+ * own ceiling, imported rather than copied so the two cannot drift.
+ *
+ * A ranked page is served by asking the engine for `offset + limit` rows and
+ * slicing, NOT by pushing the offset into SQL: the trust blend re-ranks a
+ * candidate window in JS (search.mjs `blendTrustScore`), so an SQL offset would
+ * rank a DIFFERENT window per page and a record could land on two pages or on
+ * none. Fetch-then-slice makes page N a slice of the same ordering page 1 came
+ * from — at the cost of a reachable depth, which the envelope states rather
+ * than hides (`reachable`). BROWSE mode has no such cap: its sort is a plain
+ * stable SQL ORDER BY, so it pages to the last record.
+ */
+export const VIEWER_SEARCH_DEPTH = SEARCH_MAX_LIMIT;
+
+/**
+ * The relevance bands a search hit is coloured by (Task 269 sub-item, D-429 —
+ * mnemory's green/amber/red at ≥0.7 / ≥0.4).
+ *
+ * WHAT THE NUMBER IS, stated because it would otherwise be read as a confidence:
+ * FTS5's bm25 rank is unbounded and negative (more negative = better) and means
+ * nothing across two different queries, so there is no absolute 0..1 score to
+ * report. `relevance` is therefore RELATIVE — a hit's blended score over the
+ * TOP hit's blended score for the same query, in (0, 1]. The top hit is 1.0 by
+ * construction. It answers "how much weaker than the best match is this", which
+ * is the question a colour on a result row can honestly answer.
+ *
+ * Normalized against the top of the WHOLE result set, never per page: a
+ * per-page normalization would repaint every page's first row as a full-strength
+ * match, which is precisely the "a weak match looks strong" defect this closes.
+ */
+export const RELEVANCE_BANDS = Object.freeze({ strong: 0.7, fair: 0.4 });
+
+/** The journal orderings `/api/decisions?order=` accepts. */
+const DECISION_ORDERS = Object.freeze(new Set(['journal', 'newest']));
 
 /** Media types, spelled once. */
 const HTML = 'text/html; charset=utf-8';
@@ -462,6 +504,40 @@ function readLimit(params, { fallback = VIEWER_DEFAULT_LIMIT } = {}) {
     : { limit: n, clamped: false };
 }
 
+/**
+ * Parse `?offset=` — the whole functional fix of Task 269 (D-426: without it,
+ * 91% of the fact corpus and 92% of the journal were unreachable by ANY URL).
+ *
+ * OFFSET, not a cursor, decided at build time. A cursor is the better answer for
+ * an unbounded feed read newest-first; this is a bounded archive read
+ * DELIBERATELY, and three properties settle it: (a) the browse sort is a total
+ * order already (`created_at DESC, id ASC` — the id tiebreak is what makes a
+ * same-millisecond batch pageable at all), so an offset is deterministic;
+ * (b) a RANKED result set has no stable key to carry in a cursor — the blend
+ * re-ranks in JS — while an offset slices one ranking cleanly; and (c) only an
+ * offset can say "records 101–150 of 2,300", and a citeable position is the
+ * stated point (a pager, not an infinite scroll).
+ *
+ * The cost, stated: a fact written WHILE someone pages shifts the window by one,
+ * so a newest-first offset can repeat or skip a record across a live insert. On
+ * an ephemeral read-only viewer over a corpus that changes at human pace that is
+ * the right trade; a cursor would be the fix if it ever stops being.
+ *
+ * Unlike `limit` this REJECTS rather than clamps: an over-cap limit is a typo
+ * with an obvious sane reading (give me the most you will), while an offset past
+ * the end has one too — an empty page — and that is served as a 200. What is
+ * left (negative, fractional, non-numeric) has no reading at all.
+ */
+function readOffset(params) {
+  const raw = params.get('offset');
+  if (raw === null || raw === '') return 0;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 0 || !/^\d+$/.test(raw.trim())) {
+    throw new BadRequest(`offset must be a non-negative integer (got ${JSON.stringify(raw)})`);
+  }
+  return n;
+}
+
 function readTier(params) {
   const tier = params.get('tier');
   if (tier === null || tier === '') return null;
@@ -475,8 +551,24 @@ const ROW_COLUMNS = `
   id, tier, trust, trust_score, signal_count, write_source, heading_path, body,
   source_file, source_line, created_at, expires_at, superseded_by, deleted_at`;
 
+/**
+ * A hit's strength RELATIVE to the best hit for the same query, in (0, 1], plus
+ * the band it falls in (§RELEVANCE_BANDS). Both are `null` outside search mode —
+ * a browse row has no query and therefore no relevance to claim, and the fields
+ * stay PRESENT so a search hit and a browse row remain one shape on the wire
+ * (§24.1.1: the page must not have two renderers).
+ */
+function relevanceOf(score, topScore) {
+  if (!Number.isFinite(score) || !Number.isFinite(topScore) || topScore === 0) {
+    return { relevance: null, relevance_band: null };
+  }
+  const rel = Math.max(0, Math.min(1, score / topScore));
+  const band = rel >= RELEVANCE_BANDS.strong ? 'strong' : rel >= RELEVANCE_BANDS.fair ? 'fair' : 'weak';
+  return { relevance: rel, relevance_band: band };
+}
+
 /** The shape every fact row is rendered in, on every route. One place. */
-function toFactRow(row, { snippet, now } = {}) {
+function toFactRow(row, { snippet, now, relevance = null, relevanceBand = null } = {}) {
   const rich = parseRichFactBody(row.body);
   return {
     id: row.id,
@@ -493,6 +585,8 @@ function toFactRow(row, { snippet, now } = {}) {
     date: row.created_at ? new Date(row.created_at).toISOString().slice(0, 10) : null,
     expires_at: row.expires_at ?? null,
     superseded_by: row.superseded_by ?? null,
+    relevance,
+    relevance_band: relevanceBand,
     ...stateFieldFor(row, now),
   };
 }
@@ -514,12 +608,19 @@ const API = {
   facts(route, ctx) {
     const params = route.params;
     const { limit, clamped } = readLimit(params);
+    const offset = readOffset(params);
     const tier = readTier(params);
     const q = (params.get('q') ?? '').trim();
 
     return withDb(ctx, (db) => {
       let rows;
       let mode;
+      // How far `?offset=` can actually go under this mode. `total` says what
+      // the query matched; `reachable` says how much of it this route can hand
+      // back a page at a time. They differ only in search mode, and only past
+      // the engine's ranking depth — where the honest answer is "refine the
+      // query", not a pager button that returns nothing.
+      let reachable;
       // The DENOMINATOR, on the same payload as the rows (§24.1.1). It counts
       // the population the rows were drawn from — same filters, no LIMIT — so
       // the page can say "the first 50 of N" without asking a second route for
@@ -528,21 +629,45 @@ const API = {
       const now = Date.now();
       if (q) {
         mode = 'search';
+        // Ask for the whole window up to the end of THIS page, then slice — see
+        // VIEWER_SEARCH_DEPTH for why the offset does not go into SQL. Asking
+        // for zero rows is not a legal search, so a beyond-depth offset serves
+        // an empty page rather than sending the engine a limit it would reject.
+        //
+        // The search RUNS either way, even for a page past the reachable depth
+        // whose rows are known to be empty: it is what turns an FTS grammar
+        // error into a 400 instead of letting the unlimited count below throw a
+        // 500 for the same typo. `limit: 1` is the cheapest legal ask (the
+        // engine rejects 0), and its rows are discarded.
+        const want = Math.min(offset + limit, VIEWER_SEARCH_DEPTH);
         const r = searchAction({
           db,
           query: q,
           mode: SEARCH_MODES.KEYWORD,
           scope: 'facts',
-          limit,
+          limit: Math.max(want, 1),
           ...(tier ? { tier } : {}),
         });
         if (r.action === 'error') throw new BadRequest((r.errors ?? ['search failed']).join('; '));
+        const ranked = want > offset ? r.results : [];
+        // The reference point for `relevance` is the top of the WHOLE ranking,
+        // taken BEFORE the page slice — so page 2's first row is scored against
+        // page 1's best hit and a weak match keeps looking weak.
+        const topScore = ranked.length > 0 ? ranked[0].score : null;
+        const page = ranked.slice(offset, offset + limit);
         // Re-read the full rows so a search hit and a browse row are the SAME
         // shape on the wire — the page must not have two renderers.
-        const byId = new Map(hydrate(db, r.results.map((h) => h.id)).map((x) => [x.id, x]));
-        rows = r.results
+        const byId = new Map(hydrate(db, page.map((h) => h.id)).map((x) => [x.id, x]));
+        rows = page
           .filter((h) => byId.has(h.id))
-          .map((h) => toFactRow(byId.get(h.id), { snippet: flatten(h.snippet, 240) }));
+          .map((h) => {
+            const { relevance, relevance_band: band } = relevanceOf(h.score, topScore);
+            return toFactRow(byId.get(h.id), {
+              snippet: flatten(h.snippet, 240),
+              relevance,
+              relevanceBand: band,
+            });
+          });
         // The whole match set, not the page of it: `count` is what the search
         // returned, `total` is what it matched. The search ran first, so any
         // FTS grammar error has already surfaced as a 400 by this point.
@@ -552,6 +677,7 @@ const API = {
           scope: 'facts',
           ...(tier ? { tier } : {}),
         });
+        reachable = Math.min(total, VIEWER_SEARCH_DEPTH);
       } else {
         mode = 'recent';
         rows = db
@@ -561,9 +687,9 @@ const API = {
                AND (expires_at IS NULL OR expires_at > @now)
                ${tier ? 'AND tier = @tier' : ''}
              ORDER BY created_at DESC, id ASC
-             LIMIT @limit`,
+             LIMIT @limit OFFSET @offset`,
           )
-          .all({ now, limit, ...(tier ? { tier } : {}) })
+          .all({ now, limit, offset, ...(tier ? { tier } : {}) })
           .map((row) => toFactRow(row));
         // The SAME filters as the row query — deleted, expired and the active
         // tier — off the same `now`, so the count can never describe a corpus
@@ -576,6 +702,8 @@ const API = {
                ${tier ? 'AND tier = @tier' : ''}`,
           )
           .get({ now, ...(tier ? { tier } : {}) }).n;
+        // A plain stable ORDER BY pages to the last record — nothing to cap.
+        reachable = total;
       }
       return {
         status: 200,
@@ -585,8 +713,15 @@ const API = {
           tier,
           limit,
           clamped,
+          offset,
           count: rows.length,
           total,
+          reachable,
+          // The pager's whole question, answered by the payload rather than
+          // guessed by the page from `count === limit` (which is wrong exactly
+          // once — on a corpus whose size is a multiple of the page size, where
+          // it offers a Next that leads to an empty page).
+          has_more: offset + rows.length < reachable,
           facts: rows,
         },
       };
@@ -818,21 +953,60 @@ const API = {
     };
   },
 
-  /** The append-only journal, in journal order — which IS the chronology. A
-   *  retracted or superseded entry stays visible and flagged; that trail is the
-   *  whole reason this view exists (§24.1.4 v). */
+  /**
+   * The append-only journal. A retracted or superseded entry stays visible and
+   * flagged; that trail is the whole reason this view exists (§24.1.4 v).
+   *
+   * Task 269 gave it the two things a 2,502-entry journal needs to be usable:
+   *
+   *  - `?q=` — a substring search through `matchDecisionEntries`, the SAME
+   *    matcher `cmk search --scope decisions` and `mk_search` run. The journal
+   *    is not in the FTS index (it is a markdown file, not a fact), so this is
+   *    the kit's one decisions backend, reused rather than re-rolled.
+   *  - `?offset=` + `?order=` — paging, and the end of the journal to page from.
+   *    `journal` (oldest→newest, the order the kit APPENDS in) stays the DEFAULT
+   *    because it is the shipped contract and it is the chronological trail this
+   *    view exists to show. But page 1 of a real journal in that order is the
+   *    oldest 50 decisions, which is not what a reader asking "what did we
+   *    decide" wants — so `newest` exists and the page requests it, matching the
+   *    label the tab has always carried.
+   */
   decisions(route, ctx) {
-    const { limit, clamped } = readLimit(route.params, { fallback: VIEWER_MAX_LIMIT });
-    const all = readDecisionsJournal(ctx.projectRoot);
-    const slice = all.slice(0, limit);
+    const params = route.params;
+    const { limit, clamped } = readLimit(params, { fallback: VIEWER_MAX_LIMIT });
+    const offset = readOffset(params);
+    const q = (params.get('q') ?? '').trim();
+    const order = (params.get('order') ?? '') || 'journal';
+    if (!DECISION_ORDERS.has(order)) {
+      throw new BadRequest(`order must be one of journal, newest (got ${JSON.stringify(order)})`);
+    }
+    const journal = readDecisionsJournal(ctx.projectRoot);
+    // Filter FIRST, then order, then page — so `total` is the match set and the
+    // pages partition it. (Reversing before filtering would give the same set;
+    // reversing after paging would give a shuffled one.)
+    const matched = matchDecisionEntries(journal, q).map((m) => m.entry);
+    const ordered = order === 'newest' ? [...matched].reverse() : matched;
+    const slice = ordered.slice(offset, offset + limit);
     return {
       status: 200,
       payload: {
+        mode: q ? 'search' : 'journal',
+        query: q || null,
+        order,
         count: slice.length,
-        total: all.length,
+        total: matched.length,
+        // The journal is a file read whole in memory, so every match is
+        // reachable — unlike a ranked fact search, this has no depth cap.
+        reachable: matched.length,
         limit,
         clamped,
-        truncated: all.length > slice.length,
+        offset,
+        has_more: offset + slice.length < matched.length,
+        // Unchanged meaning: are there matching entries this response does not
+        // carry. It was `all.length > slice.length` when the only reason to be
+        // short was the cap; with paging and a query the same question is asked
+        // of the match set.
+        truncated: matched.length > slice.length,
         decisions: slice.map((d) => ({
           id: d.id,
           title: d.title,
