@@ -168,3 +168,97 @@ describe('Task 53 — package.json bugs URL (both packages)', () => {
     });
   }
 });
+
+// ---------------------------------------------------------------------------
+// Task 266 — dependency-advisory maintenance CADENCE.
+//
+// The measured picture (not the one the task was filed on): between
+// 2026-08-03 and 08-08, five advisories fired and Dependabot's SECURITY
+// updates caught every one — transitives included — within ~60 s of each
+// alert. Detection was never the gap. The gap was FAN-OUT: five advisories
+// became separate PRs spread over two days, so they got re-fixed by hand
+// (PR #343) while Dependabot's own fix PRs (#340, #341) sat open unnoticed.
+//
+// These assertions pin the two halves of the fix:
+//   1. grouping, so a multi-advisory day costs ONE review;
+//   2. the two documented PRECONDITIONS for grouped security updates, whose
+//      absence turns the grouping into a SILENT no-op — the same failure
+//      shape as a `labels:` block naming labels that don't exist.
+// And that the runbook exists where a contributor with a red gate will look.
+const loadNpmUpdate = () => {
+  const doc = yaml.load(read(join(REPO_ROOT, '.github', 'dependabot.yml')));
+  const npm = (doc.updates ?? []).find((u) => u['package-ecosystem'] === 'npm');
+  expect(npm, 'no npm update block in dependabot.yml').toBeTruthy();
+  return npm;
+};
+
+// A group that selects nothing matches nothing. GitHub requires at least one
+// selector key; assert we always carry one rather than trusting the shape.
+const selectorsOf = (group) =>
+  ['patterns', 'dependency-type', 'update-types'].filter((k) => group[k] !== undefined);
+
+describe('Task 266 — advisories arrive grouped, not fanned out', () => {
+  it('npm SECURITY updates are grouped into one PR', () => {
+    const groups = Object.values(loadNpmUpdate().groups ?? {});
+    const security = groups.filter((g) => g['applies-to'] === 'security-updates');
+    expect(security.length, 'no npm group with applies-to: security-updates').toBeGreaterThan(0);
+    for (const g of security) {
+      expect(selectorsOf(g).length, 'security group selects nothing').toBeGreaterThan(0);
+    }
+  });
+
+  it('npm routine VERSION updates are grouped too (a quiet week is one PR)', () => {
+    const groups = Object.values(loadNpmUpdate().groups ?? {});
+    // `applies-to` defaults to version-updates when omitted (GitHub's default).
+    const version = groups.filter((g) => (g['applies-to'] ?? 'version-updates') === 'version-updates');
+    expect(version.length, 'no npm group for version updates').toBeGreaterThan(0);
+    for (const g of version) {
+      expect(selectorsOf(g).length, 'version group selects nothing').toBeGreaterThan(0);
+    }
+  });
+
+  it('the github-actions ecosystem is grouped as well', () => {
+    const doc = yaml.load(read(join(REPO_ROOT, '.github', 'dependabot.yml')));
+    const actions = (doc.updates ?? []).find((u) => u['package-ecosystem'] === 'github-actions');
+    expect(actions, 'no github-actions update block').toBeTruthy();
+    expect(Object.keys(actions.groups ?? {}).length).toBeGreaterThan(0);
+  });
+
+  // The silent-no-op guard. GitHub: "the `directory` must be the path to the
+  // manifest files ... and you should not specify a `target-branch`." Break
+  // either and grouped security updates stop applying with ZERO signal — the
+  // PRs simply go back to arriving one-per-advisory.
+  it('holds both documented preconditions for grouped security updates', () => {
+    const npm = loadNpmUpdate();
+    const dir = npm.directory ?? (npm.directories ?? [])[0];
+    expect(dir, 'npm directory must be the manifest path').toBe('/');
+    expect(
+      npm['target-branch'],
+      'a target-branch silently disables grouped security updates',
+    ).toBeUndefined();
+  });
+});
+
+describe('Task 266 — the advisory runbook is where a red gate sends you', () => {
+  it('SECURITY.md carries the runbook and its three routes', () => {
+    const text = read(join(REPO_ROOT, 'SECURITY.md'));
+    expect(text).toMatch(/When an advisory fires/i);
+    // Route 1 — look for the fix PR Dependabot has probably already opened.
+    expect(text).toMatch(/gh pr list[^\n]*dependabot/i);
+    // Route 2 — a fix that exists lands lock-only, in its own PR.
+    expect(text).toMatch(/package-lock\.json/);
+    // Route 3 — a no-fix advisory goes to the exception registry, never to a
+    // loosened gate.
+    expect(text).toMatch(/osv-scanner\.toml/);
+  });
+
+  it('CONTRIBUTING points a contributor with a red gate at the runbook', () => {
+    // Deliberately NOT a bare /SECURITY\.md/ match — CONTRIBUTING already
+    // links that file for disclosure, so such a test would pass vacuously.
+    expect(read(join(REPO_ROOT, 'CONTRIBUTING.md'))).toMatch(/advisory fires/i);
+  });
+
+  it('the osv-scanner exception registry points back at the runbook', () => {
+    expect(read(join(REPO_ROOT, 'osv-scanner.toml'))).toMatch(/advisory fires/i);
+  });
+});
