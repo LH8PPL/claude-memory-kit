@@ -1772,9 +1772,9 @@ Per-platform mapping:
 | --- | --- | --- |
 | Linux | `crontab` edit | `crontab -l \| (grep -v cmk-daily ; echo "0 23 * * * ...") \| crontab -` — the grep filter ensures the entry exists exactly once regardless of how many times the registration runs |
 | macOS | launchd plist | Write `~/Library/LaunchAgents/com.cmk.daily-distill.plist` (overwrite-on-existing is idempotent), then `launchctl bootstrap gui/$UID <plist>` (or `bootout` + `bootstrap` for true re-load) |
-| Windows | Task Scheduler | `schtasks /Create /TN cmk-daily-distill /SC DAILY /ST 23:00 /TR "node <path>" /F` — the `/F` flag forces overwrite if the task already exists |
+| Windows | Task Scheduler | `schtasks /Create /TN cmk-daily-distill /SC DAILY /ST 23:00 /TR "node <path>" /F` — the `/F` flag forces overwrite if the task already exists — **followed by the §8.6.5 settings call**, which is part of the same registration |
 
-`--dry-run` flag prints the platform-detected command without executing — used by tests + by users who want to inspect before granting host permissions.
+`--dry-run` flag prints the platform-detected command without executing — used by tests + by users who want to inspect before granting host permissions. On Windows it prints BOTH halves of the registration (the `schtasks /Create` and the §8.6.5 settings command), because showing only the first would be a partial account of what the command does. **A dry run writes nothing** — including the Task 215 VBS shim, whose path is computed for display but only written on a real registration (Task 265; before that fix a dry run created `context/.locks/` + the `.vbs` in the user's repo, which contradicted this very paragraph).
 
 `--unregister` flag removes the entry on each platform (`crontab -l | grep -v cmk-daily | crontab -`, `launchctl bootout` + `rm`, `schtasks /Delete /F`).
 
@@ -1796,7 +1796,43 @@ The Python option is preserved in [`tasks.md`](../specs/tasks.md) Task 33.2 alon
 - The 120s cooldown gate (§8.2) is shared with auto-extract + compress-session via `cooldown.mjs`. A `cron`-fired distill that happens to land within 120s of a hook-fired Haiku call legitimately skips with `skipped_reason: 'cooldown'` and retries on the next tick — same envelope as the SessionEnd cooldown semantics.
 - §16.13 (audit-log rotation v0.1.x candidate) lives in `register-crons.mjs` as an additional registered job. v0.1.0 ships ONLY the daily distill; v0.1.x extends `register-crons` with the rotation job once the audit log accumulates enough entries to need it.
 
-**Implements**: FR-19; Task 33 (Layer 6 daily distill cron). Cross-references: §1.4 (data flow includes Daily 23:00 cron), §8.1 (four-layer pipeline), §8.2 (cooldown), §8.5 (timeout composition), §16.13 (audit-log rotation v0.1.x).
+#### 8.6.5 Windows scheduler posture — the flags that decide whether a job runs at all
+
+**Tail-appended 2026-08-08** during Task 265. Registering a job is not the same as the job running. On Windows, a task's `<Settings>` block carries conditions that can prevent it from ever starting; the kit's registrations inherited a set that made the whole Layer-6 tier unreliable by construction on a laptop.
+
+**The evidence** (`schtasks /query /TN cmk-daily-distill /XML`, read off a real machine, committed at [`fixtures/schtasks/cmk-daily-distill-pre-265.xml`](../fixtures/schtasks/cmk-daily-distill-pre-265.xml)):
+
+| Setting | Was | Now | Why it matters |
+| --- | --- | --- | --- |
+| `DisallowStartIfOnBatteries` | `true` | **`false`** | An unplugged laptop never ran the job — at all, ever |
+| `StopIfGoingOnBatteries` | `true` | **`false`** | Unplugging mid-run killed it |
+| `StopOnIdleEnd` | `true` | **`false`** | Returning to the keyboard killed it |
+| `RestartOnIdle` | `false` | `false` (unchanged) | Nothing to restart once the job is no longer killed |
+| `StartWhenAvailable` | `true` | `true` (unchanged) | Task 167.E / D-207 — catch up a run missed while off |
+| `WakeToRun` | `true` | `true` (unchanged) | Task 203 / D-298 — wake at 23:00 rather than skip |
+
+**This is D-298's root cause, not a hypothesis.** The "23:00 compression killed mid-run five nights running with zero forward progress" was Windows terminating the job when the user came back to the machine, with `RestartOnIdle: false` guaranteeing no retry.
+
+**Where the flags come from, and why re-registering never helped.** They are `schtasks /Create`'s own defaults, written into every task the kit has registered since Task 33 — the starvation predates the catch-up work (see `lazy-compress.mjs`'s decision-trail comment on the v0.4.0 dogfood, where the cron never fired and `now.md` reached 410 KB). `schtasks /Create` has no CLI flag for any of these, so the kit applies them with a follow-up PowerShell `Set-ScheduledTask -Settings (New-ScheduledTaskSettingsSet …)` (added by Task 167.E, extended by Task 203). But `-Settings` **replaces the whole settings object**, and `New-ScheduledTaskSettingsSet`'s no-argument defaults ARE the hostile posture — verified empirically on Windows PowerShell 5.1 and against the schema's declared defaults (`DisallowStartIfOnBatteries`/`StopIfGoingOnBatteries`/`StopOnIdleEnd` all default `true`). So the call meant to make missed runs catch up **re-stamped** the battery flags and re-asserted `StopOnIdleEnd` on every registration: it did not introduce the starvation, it kept re-applying it.
+
+**Two corrections to the original diagnosis** (D-424), preserved rather than silently dropped:
+
+- The entry read `IdleSettings/Duration PT10M` as "a 10-minute idle requirement before it may start." It is not one. `RunOnlyIfIdle` is absent from the captured task (schema default `false`), so the job never required idle to start — and Microsoft documents `Duration` + `WaitTimeout` as **deprecated**, "no longer used."
+- Whether `StopOnIdleEnd` actually fires when `RunOnlyIfIdle` is false is **not settled by the primary source**: the docs state it unconditionally ("terminate the task if the idle condition ends") and never condition it on `RunOnlyIfIdle`, while the Task Scheduler UI greys the corresponding checkbox unless the idle condition is enabled. We set it `false` explicitly rather than reason about it — the fix is free and removes the question.
+
+**Alternatives rejected.** (a) `RestartOnIdle: true` — the docs are explicit that terminate-and-restart needs *both* flags true; not being killed beats being killed and restarted from zero. (b) `schtasks /Create /XML` to set everything atomically and drop the PowerShell dependency — it would mean hand-authoring the Principals / Triggers / Actions blocks on a surface that cannot be live-tested here (a real registration is the user's own step), and a malformed XML fails registration outright instead of degrading. The proven `/Create` + settings-call shape stays.
+
+**Contract.** [`register-crons.mjs`](../packages/cli/src/register-crons.mjs) exports `WINDOWS_TASK_SETTINGS` (frozen; the single source of truth for the posture), `buildWindowsSettingsPowerShell(entryName)` (the write side), and `inspectWindowsTaskSettings(xml)` (the read side — pure, schema-default-aware, `{verdict: 'ok'|'needs-repair'|'unreadable', problems}`). Both sides derive from the one constant, so they cannot disagree about what "correct" means.
+
+**Migration — re-registration IS the repair.** Existing installs carry the bad flags; there is no separate migration command and no upgrade hook. `/Create /F` re-creates the task and the settings call is issued unconditionally on every successful create, so running `cmk register-crons` again repairs a bad registration.
+
+**The failed-repair signal is CONSOLE-ONLY, and that is a known gap.** The result carries `settingsApplied`, and a failed settings call prints a warning naming the consequence — so the user who is watching the command see it. But console output scrolls away and nothing durable records it: **`cmk doctor` HC-5 still passes on the `cron-registered` sentinel alone**, which is the same heartbeat-not-outcome shape as D-298's own false-green, one check over. The durable half is **Task 47's** — it gives HC-5 a registered-target check that reads `schtasks /query /XML`, and it consumes `inspectWindowsTaskSettings` from the same read to give the bad-flag state a real home. Until then a repair that fails while nobody is looking is invisible to `doctor`.
+
+**Detection is a separate task.** `inspectWindowsTaskSettings` is deliberately pure and **not yet wired into `cmk doctor`**. Task 47 gives HC-5 a registered-target-exists check that already reads the same `schtasks /query /XML` payload; it reads once and asks both questions there. Wiring note for that task: `schtasks /query /XML` emits UTF-16 with a BOM and CRLF — decode before calling (the D-306 class); `verdict: 'unreadable'` exists so a check that cannot tell SKIPs rather than FAILs.
+
+**Cross-platform: nothing equivalent to fix.** This is a Task Scheduler concern only, and the POSIX legs are pinned by non-regression tests. **cron** (Linux) has no battery or idle conditions — a plain 5-field entry either fires or, if the machine is off, is skipped (§8.2.1's lazy-on-read fallback is what covers that, not a scheduler flag). **launchd** (macOS) exposes no power- or user-activity-conditional keys at all, and `StartCalendarInterval` already coalesces runs missed during sleep to next wake — `StartWhenAvailable`'s behavior for free. The plist deliberately leaves `ProcessType` unset, keeping the job out of the throttled `Background` class.
+
+**Implements**: FR-19; Task 33 (Layer 6 daily distill cron), Task 265 (scheduler posture). Cross-references: §1.4 (data flow includes Daily 23:00 cron), §8.1 (four-layer pipeline), §8.2 (cooldown), §8.2.1 (lazy fallback — why a best-effort scheduler is survivable), §8.5 (timeout composition), §16.13 (audit-log rotation v0.1.x), ADR-0020 (resumable long jobs — the other half of the starvation defense: this makes the cron less bad, it does not make it dependable).
 
 ### 8.7 Weekly curate architecture (Layer 6 — Task 34)
 

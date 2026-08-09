@@ -53,6 +53,172 @@ export const DEFAULT_WEEKLY_SCHEDULE = { hour: 9, minute: 0, dayOfWeek: 0 };
 // Map dayOfWeek (0-6, Sun=0) to schtasks /D abbreviation.
 const WIN_DAY_MAP = { 0: 'SUN', 1: 'MON', 2: 'TUE', 3: 'WED', 4: 'THU', 5: 'FRI', 6: 'SAT' };
 
+// The entry-name charset, shared by every site that validates one. It is what
+// makes an entryName safe to interpolate into a shell line, a plist label, a
+// schtasks /TN and a single-quoted PowerShell string: no quote, no space, no
+// metacharacter can appear. Single source so a widening here can never leave one
+// site accepting what another rejects.
+const ENTRY_NAME_PATTERN = /^[a-zA-Z0-9_.-]+$/;
+
+// ---------------------------------------------------------------------------
+// Task 265 (D-424) — the Windows Task Scheduler posture the kit's jobs need.
+//
+// SINGLE SOURCE OF TRUTH for what a cmk scheduled task must look like. Both the
+// WRITE side (buildWindowsSettingsPowerShell → the registration's settings call)
+// and the READ side (inspectWindowsTaskSettings → the doctor detection hook)
+// derive from this object, so the two can never disagree about what "correct"
+// means.
+//
+// WHY these five, and why the defaults are wrong for us. Task Scheduler's schema
+// defaults (verified against the settingsType / idleSettingsType complex types)
+// are DisallowStartIfOnBatteries=true, StopIfGoingOnBatteries=true,
+// StopOnIdleEnd=true, StartWhenAvailable=false, WakeToRun=false — a posture
+// designed for heavyweight maintenance on a desktop, and hostile to a ~1-minute
+// memory-compression pass on a laptop. `New-ScheduledTaskSettingsSet` reproduces
+// exactly those defaults, and `Set-ScheduledTask -Settings <set>` REPLACES the
+// whole settings object — so the kit's own best-effort catch-up call (Task 167.E
+// / 203) was re-stamping the hostile flags on every single registration. That is
+// D-298's five-night starvation in configuration form (D-424).
+//
+// The evidence, read off a real machine and committed at
+// fixtures/schtasks/cmk-daily-distill-pre-265.xml.
+//
+// Scope note: `RunOnlyIfIdle` is NOT in this set. It defaults to false and the
+// captured task omits it, so the job never required an idle state to START —
+// the entry's "10-minute idle requirement" reading was one step too far
+// (`IdleSettings/Duration` and `WaitTimeout` are documented as DEPRECATED and
+// "no longer used"). StopOnIdleEnd is still set explicitly here: the docs
+// describe it as an unconditional "terminate if the idle condition ends" and do
+// not condition it on RunOnlyIfIdle, so declaring it false removes the question
+// rather than reasoning about it.
+export const WINDOWS_TASK_SETTINGS = Object.freeze({
+  // Task 167.E (D-207): a run missed while the machine was OFF runs on next wake.
+  StartWhenAvailable: true,
+  // Task 203 (D-298): the machine WAKES at 23:00 rather than skipping the run.
+  WakeToRun: true,
+  // Task 265 (D-424): a developer laptop is unplugged most of the time. A
+  // memory-compression pass is light work — refusing to start on battery is
+  // inherited boilerplate, never a considered choice for this job.
+  DisallowStartIfOnBatteries: false,
+  // Task 265 (D-424): unplugging mid-distill must not kill the run.
+  StopIfGoingOnBatteries: false,
+  // Task 265 (D-424): the user returning to the keyboard must not kill the run.
+  // NB deliberately NOT paired with RestartOnIdle:true — the docs are explicit
+  // that terminate-and-restart requires BOTH to be true, and not being killed is
+  // strictly better than being killed and restarted from zero. The distill is
+  // resumable (ADR-0020 / Task 204), which is the real backstop either way.
+  StopOnIdleEnd: false,
+});
+
+// The `New-ScheduledTaskSettingsSet` switch that ACHIEVES each desired value.
+// Every switch here flips its setting AWAY from the cmdlet default, which is why
+// all five are always emitted. Parity with WINDOWS_TASK_SETTINGS is asserted
+// both directions in tests/cli-register-crons.test.js — a setting added without
+// a switch would silently never apply.
+//
+// @internal — exported ONLY so the parity + switch-binding tests can enumerate
+// it. Not part of the module's supported surface: callers wanting the posture
+// read WINDOWS_TASK_SETTINGS, callers wanting the command call
+// buildWindowsSettingsPowerShell(). This mapping may change shape (e.g. if a
+// setting ever needs a valued parameter rather than a switch) without notice.
+export const WINDOWS_SETTINGS_SWITCHES = Object.freeze({
+  StartWhenAvailable: '-StartWhenAvailable',
+  WakeToRun: '-WakeToRun',
+  DisallowStartIfOnBatteries: '-AllowStartIfOnBatteries',
+  StopIfGoingOnBatteries: '-DontStopIfGoingOnBatteries',
+  StopOnIdleEnd: '-DontStopOnIdleEnd',
+});
+
+// Task Scheduler schema defaults for the settings we care about — used by
+// inspectWindowsTaskSettings when an element is ABSENT from a task definition.
+// schtasks omits elements equal to the default, and three of those defaults are
+// exactly the hostile values, so reading "absent" as "fine" would false-green
+// the check on precisely the tasks it exists to catch.
+const WINDOWS_SETTING_SCHEMA_DEFAULTS = Object.freeze({
+  StartWhenAvailable: false,
+  WakeToRun: false,
+  DisallowStartIfOnBatteries: true,
+  StopIfGoingOnBatteries: true,
+  StopOnIdleEnd: true,
+});
+
+/**
+ * Task 265: the PowerShell one-liner that applies WINDOWS_TASK_SETTINGS to an
+ * already-created scheduled task.
+ *
+ * `schtasks /Create` has no CLI flag for any of these (verified — not in its
+ * help); they are settable only via a full task XML or via PowerShell. We keep
+ * the proven `schtasks /Create` + follow-up `Set-ScheduledTask` shape rather
+ * than switching to `/Create /XML`: the XML route would mean authoring the
+ * Principals / Triggers / Actions blocks by hand on a surface that cannot be
+ * live-tested here (registering on the maintainer's machine is their own step),
+ * and a malformed XML fails registration outright instead of degrading.
+ *
+ * `-ErrorAction Stop` + `catch { exit 1 }` is what makes the caller's
+ * `settingsApplied` flag meaningful — without it a partial apply exits 0.
+ *
+ * @param {string} entryName  the task name; already validated against
+ *   /^[a-zA-Z0-9_.-]+$/ at the registerCron boundary, so it cannot carry the
+ *   quote that would break out of the single-quoted PowerShell string.
+ * @returns {string} the `-Command` script
+ */
+export function buildWindowsSettingsPowerShell(entryName) {
+  // The safety of the single-quoted `-TaskName '<entryName>'` below rests on the
+  // charset. registerCron validates it before reaching here, but this function
+  // is EXPORTED — so it carries its own contract rather than trusting that every
+  // future caller happens to validate first.
+  if (typeof entryName !== 'string' || !ENTRY_NAME_PATTERN.test(entryName)) {
+    throw new Error(
+      `buildWindowsSettingsPowerShell: entryName must match ${ENTRY_NAME_PATTERN} (got ${JSON.stringify(entryName)})`,
+    );
+  }
+  const switches = Object.keys(WINDOWS_TASK_SETTINGS)
+    .map((k) => WINDOWS_SETTINGS_SWITCHES[k])
+    .join(' ');
+  return (
+    `try { Set-ScheduledTask -TaskName '${entryName}' ` +
+    `-Settings (New-ScheduledTaskSettingsSet ${switches}) ` +
+    `-ErrorAction Stop | Out-Null } catch { exit 1 }`
+  );
+}
+
+/**
+ * Task 265: does a registered Windows task carry the posture the kit needs?
+ *
+ * PURE — takes the text of a task definition, spawns nothing, touches no disk.
+ * The I/O half (running `schtasks /query /TN <name> /XML ONE` and handing the
+ * text here) belongs to the caller. This is deliberately the seam Task 47 wants:
+ * that task already reads the same XML to check the registered TARGET still
+ * exists, so HC-5 can read once and ask both questions.
+ *
+ * Caller note for that wiring: `schtasks /query /XML` emits UTF-16 with a BOM
+ * and CRLF line endings. Decode it before calling; a leading BOM and CRLFs are
+ * tolerated here regardless (the D-306 class).
+ *
+ * @param {string} xml  a Task Scheduler task definition
+ * @returns {{verdict: 'ok'|'needs-repair'|'unreadable',
+ *            problems: Array<{setting: string, actual: boolean, expected: boolean}>}}
+ *   `unreadable` (never a false `needs-repair`) when the input is not a task
+ *   definition — a doctor check must SKIP on "couldn't tell", not FAIL.
+ */
+export function inspectWindowsTaskSettings(xml) {
+  if (typeof xml !== 'string' || !/<Settings[\s>]/.test(xml)) {
+    return { verdict: 'unreadable', problems: [] };
+  }
+  const problems = [];
+  for (const [setting, expected] of Object.entries(WINDOWS_TASK_SETTINGS)) {
+    // Element names are unique across settingsType + idleSettingsType, so a flat
+    // element match is unambiguous (StopOnIdleEnd nests under IdleSettings).
+    // Deliberately no `\s*` around the capture: `\s*([^<]*?)\s*` is ambiguous
+    // (whitespace matches both sides) — the polynomial-backtracking shape. One
+    // greedy bounded class + trim() is unambiguous and does the same job.
+    const m = new RegExp(`<${setting}>([^<]*)</${setting}>`).exec(xml);
+    const actual = m ? m[1].trim().toLowerCase() === 'true' : WINDOWS_SETTING_SCHEMA_DEFAULTS[setting];
+    if (actual !== expected) problems.push({ setting, actual, expected });
+  }
+  return { verdict: problems.length === 0 ? 'ok' : 'needs-repair', problems };
+}
+
 export function detectPlatform() {
   return process.platform; // 'linux' | 'darwin' | 'win32' (other: bsd etc.)
 }
@@ -232,7 +398,7 @@ export function registerCron(opts = {}) {
   // macOS XML-escapes them in the plist; Linux nests them inside its single-quote
   // `echo '...'` — so `"` is safe on every platform.
   const entryName = opts.entryName ?? CRON_ENTRY_NAME;
-  if (!entryName || typeof entryName !== 'string' || !/^[a-zA-Z0-9_.-]+$/.test(entryName)) {
+  if (!entryName || typeof entryName !== 'string' || !ENTRY_NAME_PATTERN.test(entryName)) {
     errors.push("entryName: must match /^[a-zA-Z0-9_.-]+$/ (used in shell + plist + schtasks identifiers)");
   }
   const {
@@ -322,25 +488,49 @@ export function registerCron(opts = {}) {
     // (no projectRoot, read-only dir), fall back to the direct command (the old
     // visible-window behavior) rather than fail registration. The shim lives in
     // context/.locks/ (gitignored, machine-local runtime plumbing).
+    //
+    // Task 265: the shim is only WRITTEN on a real registration. It used to be
+    // written before the dry-run return, so `cmk register-crons --dry-run`
+    // created `context/.locks/` + a `.vbs` in the user's repo — a dry run that
+    // mutates state cannot be the "inspect before granting host permissions"
+    // affordance design §8.6.2 documents. The path is still COMPUTED for the
+    // dry run so the displayed /TR is the one the user will really get. (A dry
+    // run therefore cannot predict a write FAILURE and its fallback to the
+    // direct command; showing the intended shim beats writing a file.)
     let shimPath;
     if (opts.projectRoot && opts.writeShim !== false) {
       try {
         const locksDir = join(opts.projectRoot, 'context', '.locks');
-        mkdirSync(locksDir, { recursive: true });
         shimPath = join(locksDir, `${entryName}-run.vbs`);
-        (opts.writeFile ?? writeFileSync)(shimPath, buildWindowlessShim(opts.command), 'utf8');
+        if (!dryRun) {
+          mkdirSync(locksDir, { recursive: true });
+          (opts.writeFile ?? writeFileSync)(shimPath, buildWindowlessShim(opts.command), 'utf8');
+        }
       } catch {
         shimPath = undefined; // fall back to the direct (visible) command
       }
     }
     const argv = buildWindowsSchtasks({ command: opts.command, entryName, hour, minute, dayOfWeek, shimPath });
     const displayCmd = `schtasks ${argv.join(' ')}`; // informational (dry-run + result.command)
+    // Task 265: registration is TWO steps, so --dry-run must show both or it is
+    // showing the user something other than what it will do. The settings half is
+    // built here from the same builder the exec path uses — one source, no drift.
+    const settingsScript = buildWindowsSettingsPowerShell(entryName);
+    // Displayed with a BARE `powershell` while the exec below resolves the
+    // ABSOLUTE System32 path. That divergence is deliberate, not drift: the exec
+    // must not be PATH-hijackable (Sonar S4036, same reason as schtasks.exe),
+    // while this string exists to be READ and pasted by a human — an absolute
+    // System32 path would only make it harder to use. The part that must not
+    // diverge is the SCRIPT, and it cannot: both come from `settingsScript`,
+    // and a test asserts the dry-run text contains exactly what gets spawned.
+    const settingsCommand = `powershell -NoProfile -NonInteractive -Command "${settingsScript}"`;
     if (dryRun) {
       return {
         action: 'dry-run',
         platform,
         executed: false,
         command: displayCmd,
+        settingsCommand,
         output: '',
       };
     }
@@ -360,45 +550,40 @@ export function registerCron(opts = {}) {
     const spawn = opts.spawn ?? spawnSync;
     const r = spawn(schtasksExe, argv, { encoding: 'utf8', windowsHide: true, timeout: 10_000 });
 
-    // Task 167.E (D-207) + Task 203 (D-298): set StartWhenAvailable AND WakeToRun
-    // so a missed nightly run isn't silently dropped — and so the distill actually
-    // COMPLETES instead of being killed mid-run.
-    //   - StartWhenAvailable (167.E): a run missed while the machine was OFF runs
-    //     on next wake (catch-up).
-    //   - WakeToRun (203/D-298): the machine WAKES from sleep at 23:00 to run the
-    //     job, so a laptop asleep at 23:00 doesn't kill the distill at minute 3
-    //     (the exact starvation bug — the cron fired + heartbeated, then died
-    //     before finishing, five nights running). Together with the resumable
-    //     distill (Task 204, which banks partial progress) this closes the
-    //     starvation from both ends: wake to run it, and if still cut short,
-    //     resume next time.
-    // schtasks /Create has NO CLI flag for either (verified — not in the help);
-    // they're settable only via XML or PowerShell. We use a follow-up PowerShell
-    // Set-ScheduledTask, BEST-EFFORT: a failure here never fails registration —
-    // the lazy roll (167.A/D) + resumable distill (204) are the guarantees; this
-    // is an OPTIMIZATION. NB: WakeToRun waking a sleeping laptop nightly is a mild
-    // power tradeoff; it's the standard Task Scheduler mechanism for "this job
-    // must run on schedule even if asleep," appropriate for a once-a-day 23:00
-    // maintenance task.
+    // Apply WINDOWS_TASK_SETTINGS — the posture that decides whether this task
+    // ever actually runs (Task 167.E/D-207 catch-up, Task 203/D-298 wake, Task
+    // 265/D-424 battery + idle-end). See the constant for the full rationale.
+    //
+    // schtasks /Create has NO CLI flag for any of them, so this follow-up
+    // PowerShell Set-ScheduledTask is the mechanism. It stays BEST-EFFORT: a
+    // failure here never fails registration — the lazy roll (167.A/D) + the
+    // resumable distill (204) are the guarantees, this is an optimization.
+    //
+    // Task 265 change: the outcome is no longer swallowed. A silently-failed
+    // settings call leaves a registered-but-starving task with no signal, which
+    // is the same false-green class as D-298's fresh-heartbeat/stale-output.
+    // `settingsApplied` reports it without failing the registration.
+    //
+    // NB: WakeToRun waking a sleeping laptop nightly is a mild power tradeoff;
+    // it's the standard Task Scheduler mechanism for "this job must run on
+    // schedule even if asleep," appropriate for a once-a-day 23:00 maintenance
+    // task.
+    let settingsApplied;
     if (r.status === 0) {
       const psExe = join(
         process.env.SystemRoot || process.env.windir || 'C:\\Windows',
         'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe',
       );
-      const psScript =
-        `try { Set-ScheduledTask -TaskName '${entryName}' ` +
-        `-Settings (New-ScheduledTaskSettingsSet -StartWhenAvailable -WakeToRun) ` +
-        `-ErrorAction Stop | Out-Null } catch { exit 1 }`;
       try {
-        spawn(psExe, ['-NoProfile', '-NonInteractive', '-Command', psScript], {
+        const ps = spawn(psExe, ['-NoProfile', '-NonInteractive', '-Command', settingsScript], {
           encoding: 'utf8',
           windowsHide: true,
           timeout: 10_000,
         });
-        // We intentionally ignore the PS exit status — registration already
-        // succeeded; catch-up is best-effort.
+        settingsApplied = ps?.status === 0;
       } catch {
-        // never let the catch-up call abort a successful registration
+        // never let the settings call abort a successful registration
+        settingsApplied = false;
       }
     }
 
@@ -407,6 +592,7 @@ export function registerCron(opts = {}) {
       platform,
       executed: true,
       command: displayCmd,
+      ...(r.status === 0 ? { settingsCommand, settingsApplied } : {}),
       output: (r.stdout || '') + (r.stderr || ''),
       ...(r.status === 0 ? {} : { error: `schtasks exit ${r.status}` }),
     };
@@ -427,7 +613,7 @@ export function registerCron(opts = {}) {
  */
 export function unregisterCron(opts = {}) {
   const entryName = opts.entryName ?? CRON_ENTRY_NAME;
-  if (!entryName || typeof entryName !== 'string' || !/^[a-zA-Z0-9_.-]+$/.test(entryName)) {
+  if (!entryName || typeof entryName !== 'string' || !ENTRY_NAME_PATTERN.test(entryName)) {
     return errorResult({
       category: ERROR_CATEGORIES.SCHEMA,
       errors: ["entryName: must match /^[a-zA-Z0-9_.-]+$/"],

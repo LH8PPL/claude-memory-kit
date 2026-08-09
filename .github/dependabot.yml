@@ -1,16 +1,85 @@
-# Dependabot (Task 53). Weekly dependency-update PRs so CVE fixes land as
-# reviewable changes rather than forcing risky bumps by hand. Covers the
-# npm workspace (root lockfile spans packages/*) + the GitHub Actions pins
-# used by the security/publish/install-matrix workflows.
+# Dependabot (Task 53; cadence reshaped in Task 266).
+#
+# TWO DIFFERENT JOBS share this one file, and conflating them is the first
+# mistake Task 266 unpicked:
+#
+#   VERSION updates  — driven by the `schedule:` blocks below. Routine "a new
+#                      release exists" bumps. Weekly, and now GROUPED, so a
+#                      quiet week costs one review instead of five.
+#
+#   SECURITY updates — NOT scheduled and NOT enabled here. They are a
+#                      repository setting (Settings -> Advanced Security ->
+#                      Dependabot security updates; ENABLED on this repo) and
+#                      they are ALERT-driven, ignoring `schedule:` and exempt
+#                      from `open-pull-requests-limit`. This file only shapes
+#                      them — see the `applies-to: security-updates` groups.
+#
+# AND A SECOND SPLIT, which is the one that actually explains the bad week.
+# Advisories reaching this repo fall into two classes, and only ONE of them is
+# Dependabot's to catch. Measured against the full alert record (16 alerts,
+# enumerated per-state — `state=all` is not a valid filter and silently
+# returns nothing, which is how this was initially got wrong):
+#
+#   (i) ALERTING — Dependabot raises an alert (hono, ip-address, nanoid,
+#       sharp). At its best this is fast: alert #14 `2026-08-04T03:09Z` ->
+#       PR #340 at `03:10Z`; alert #16 `17:48Z` -> PR #341 at `17:49Z`. But an
+#       alert does NOT guarantee a PR — alerts #15, #17 (ip-address, one HIGH)
+#       and #18 (nanoid) produced none. For this class the cost was FAN-OUT:
+#       separate PRs over two days, so #340 (31.7 h open) and #341 (17.0 h
+#       open) sat unnoticed and were closed as superseded two minutes after a
+#       hand-rolled PR #343 re-fixed the same ground. The groups below are the
+#       fix for THIS class.
+#
+#  (ii) NON-ALERTING — `postcss` and `fast-uri` have ZERO Dependabot alerts,
+#       ever. Nothing in this file can help them. They are visible only to
+#       osv-scanner, which scans the whole lockfile against OSV.dev (broader
+#       than GitHub's advisory database). For this class the original task
+#       premise was literally true — they ambush whatever PR is open next —
+#       and their only PROACTIVE signal is the Task-237 daily scheduled scan
+#       in security.yml, which files an issue. That signal had never once
+#       delivered (see the label fix in security.yml).
+#
+# When an advisory fires on YOUR pull request, the runbook is in SECURITY.md,
+# "When an advisory fires (the runbook)".
 version: 2
 updates:
   - package-ecosystem: npm
+    # Two preconditions for grouped SECURITY updates, both load-bearing and
+    # both silent when broken (the PRs just quietly go back to one-per-
+    # advisory): `directory` must be the path to the manifest, and there must
+    # be NO `target-branch`. tests/security-posture.test.js pins both.
     directory: /
     schedule:
       interval: weekly
+    # Applies to version updates only; security PRs are exempt and uncapped.
     open-pull-requests-limit: 5
+    # Dependabot auto-creates its own DEFAULT labels, but a label listed HERE
+    # is applied only if it already exists in the repo — an absent one is
+    # silently ignored, and nothing says why. That is why no Dependabot PR in
+    # this repo carried a label for months: `github-actions` was a custom name
+    # nobody had created. It is gone; `dependencies` stays and now exists
+    # (created 2026-08-09). Nothing below depends on labels anyway — a grouped
+    # PR announces itself in its own title.
     labels:
       - dependencies
+    groups:
+      # A day with N advisories should cost one review, not N.
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+      # Routine bumps: minor + patch ride together. MAJORS are deliberately
+      # left OUT, so each one still arrives as its own PR with its own
+      # breaking-change review — batching a major into a five-package PR is
+      # how a red gate becomes unpickable.
+      npm-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+        patterns:
+          - '*'
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -18,4 +87,15 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - dependencies
-      - github-actions
+    groups:
+      # `applies-to` DEFAULTS to version-updates, so a single group here would
+      # leave action SECURITY updates fanning out one-per-advisory — the exact
+      # thing being fixed on the npm side. Both classes, explicitly.
+      github-actions-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - '*'

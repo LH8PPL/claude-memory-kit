@@ -133,11 +133,13 @@ Then restart Claude Code so the refreshed hooks + MCP server load. (Full update 
 
 ### HC-10 — Scheduled compaction looks dead (informational, no action needed)
 
-This check does NOT require a fix — your memory still self-heals automatically every session (the SessionStart lazy roll is the floor; Task 167). It surfaces that your *optional* scheduled cleanup (`cmk register-crons`) isn't actually firing — usually because the machine is asleep at the scheduled time, or the OS scheduler didn't register the catch-up flag.
+This check does NOT require a fix — your memory still self-heals automatically every session (the SessionStart lazy roll is the floor; Task 167). It surfaces that your *optional* scheduled cleanup (`cmk register-crons`) isn't actually firing.
+
+**On Windows, the usual cause is the scheduler's own conditions rather than anything wrong with the kit.** Before v0.6.6 the kit registered its jobs with Task Scheduler's defaults, which refuse to start a job on battery, kill it if you unplug, and kill it when you return to the keyboard — so on a laptop the nightly job frequently never completed. v0.6.6 registers them without those conditions. Other causes: the machine was asleep at the scheduled time, or the catch-up flag never got set.
 
 If you want the nightly schedule working (a latency optimization, not required):
 
-1. Re-register: `cmk register-crons` (idempotent; on v0.4.1+ it sets the OS catch-up flag so a missed run runs on wake).
+1. Re-register: `cmk register-crons` (idempotent, and this is also the repair — it rewrites the scheduler conditions on an existing registration; on v0.4.1+ it sets the OS catch-up flag so a missed run runs on wake, and on v0.6.6+ the laptop-friendly conditions above).
 2. Or just ignore it — the lazy roll covers compaction on every session start regardless.
 
 HC-10 never asks you to run a manual compaction; that path is automatic.

@@ -877,7 +877,12 @@ function hc10CompactionLiveness({ projectRoot, now }) {
         status: 'fail',
         // The load-bearing message: the heartbeat LIES if read alone. Name the
         // starvation explicitly so the user isn't reassured by a fresh heartbeat.
-        message: `your scheduled compaction heartbeat is fresh but its output is NOT — recent.md is ~${days}d old (cutoff: 2d). The nightly cron is firing but being KILLED before the distill finishes (a laptop asleep at 23:00 is the common cause). Memory still self-heals each session via the lazy roll, so no data is lost; run \`cmk daily-distill\` to refresh now, and consider re-running \`cmk register-crons\` (it registers WakeToRun so the machine wakes for the job).`,
+        // Task 265 (D-439): the named cause used to be "a laptop asleep at
+        // 23:00", which WakeToRun already addressed. The dominant cause on
+        // Windows is the scheduler's own conditions — a task registered before
+        // v0.6.6 refuses to start on battery, stops when you unplug, and is
+        // killed when you return to the keyboard. Re-registering rewrites them.
+        message: `your scheduled compaction heartbeat is fresh but its output is NOT — recent.md is ~${days}d old (cutoff: 2d). The nightly cron is firing but being KILLED before the distill finishes. On Windows the usual cause is the scheduled task's own conditions: registrations made before v0.6.6 refuse to start on battery, stop when you unplug, and are killed the moment you touch the keyboard. Memory still self-heals each session via the lazy roll, so no data is lost; run \`cmk daily-distill\` to refresh now, and re-run \`cmk register-crons\` — it is idempotent and rewrites those conditions (and keeps the wake-for-the-job flag) on an existing registration.`,
         recoveryCommand: 'cmk daily-distill',
       };
     }

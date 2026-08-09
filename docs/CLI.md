@@ -258,6 +258,10 @@ cmk repair --all
 
 Register the daily-distill + weekly-curate jobs with the host scheduler (Linux crontab / macOS launchd / Windows Task Scheduler). Optional — without it, Layer 6 falls back to lazy-on-read compression.
 
+Idempotent, and **re-running it repairs an existing registration**. On Windows the jobs are registered so they run on a laptop: allowed to start on battery, not killed when you unplug, and not killed when you come back to the keyboard — plus the existing catch-up and wake-for-the-run flags. Registrations made before v0.6.6 carry the opposite of the first three, so **if you registered crons on an earlier version, run this again**.
+
+`--dry-run` prints exactly what would be registered — on Windows that is both the `schtasks /Create` line and the settings command — and changes nothing on disk or in the scheduler.
+
 ---
 
 ## Compression (normally automatic)

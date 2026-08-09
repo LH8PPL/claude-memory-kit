@@ -4,7 +4,7 @@
 <!-- Browse this folder as an Obsidian vault. Each [[link]] opens a fact file. -->
 <!-- How to open + the read-vs-write rule: docs/OBSIDIAN.md -->
 
-Facts: 2272
+Facts: 2273
 
 ## feedback
 
@@ -740,6 +740,7 @@ Facts: 2272
 - [[project_mcp-prompt-gate-only-appears-in-non-default-agent-scenario]] — MCP prompt gate only appears in non-default agent scenario
 - [[project_memory-routing-gap-caught-i-was-writing-cltknava]] — Memory routing gap caught — I was writing to harness slug path instead of kit's
 - [[project_task-247-review-checklist]] — Task 247 Review Checklist
+- [[project_minting-process-failure-self-managed-worktree-workaround]] — Minting Process Failure — Self-Managed Worktree Workaround
 - [[project_release-plan-v0-6-0-day-one-memory-v0-7-0-team-layer]] — Release Plan: v0.6.0 (Day-One Memory) & v0.7.0 (Team Layer)
 - [[project_three-tier-model-delegation-pattern]] — Three-Tier Model Delegation Pattern
 - [[project_avoid-duplicating-authoritative-docs-in-temp-locations]] — Avoid Duplicating Authoritative Docs in Temp Locations
