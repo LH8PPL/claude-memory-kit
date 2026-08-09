@@ -41,6 +41,7 @@ import {
   VIEWER_MAX_LIMIT,
   VIEWER_SEARCH_DEPTH,
   RELEVANCE_BANDS,
+  relevanceBandFor,
 } from '../packages/cli/src/viewer.mjs';
 import { search as searchAction, SEARCH_MODES } from '../packages/cli/src/search.mjs';
 import { openIndexDb } from '../packages/cli/src/index-db.mjs';
@@ -2047,10 +2048,21 @@ describe('viewer — the theme toggle (268 rider, D-432)', () => {
 // SECOND page carries DIFFERENT records than the first, and that the pages
 // partition the corpus: nothing repeated, nothing lost.
 
-// The kit's base32 alphabet (tier-paths ID_PATTERN). Ids are GENERATED here
-// rather than hand-written because paging needs more records than a cap, and 30
-// hand-picked literals is 30 chances to typo an `8` into one — the D-427 class.
-const ID_CHARS = '2345679ABCDEFGHJKLMNPQRSTUVWXYZa';
+// The kit's base32 alphabet (tier-paths ID_PATTERN), MINUS the lowercase `a`.
+// Ids are GENERATED here rather than hand-written because paging needs more
+// records than a cap, and 30 hand-picked literals is 30 chances to typo an `8`
+// into one — the D-427 class.
+//
+// WHY `a` IS DROPPED, measured rather than assumed. The kit's alphabet carries
+// both `A` and `a`, so `P-222224ZA` and `P-222224Za` are two different ids whose
+// FACT FILES have the same name on a case-insensitive filesystem — which is
+// Windows and macOS by default. Generating 260 sequential ids produced 7 such
+// pairs, the second file of each silently overwrote the first, and 260 seeded
+// facts became 253 on disk. That is a real property of the kit worth reporting
+// separately (it is the Task-270 durability class: a write that says yes and a
+// read that finds nothing); here it is simply a fixture that must not have it,
+// because a test whose corpus is 7 short measures the wrong thing.
+const ID_CHARS = '2345679ABCDEFGHJKLMNPQRSTUVWXYZ';
 function seqId(prefix, n) {
   let s = '';
   let v = n;
@@ -2059,6 +2071,43 @@ function seqId(prefix, n) {
     v = Math.floor(v / ID_CHARS.length);
   }
   return `${prefix}-${s}`;
+}
+
+/**
+ * A fact file written RAW, where `seedFact` would go through `writeFact`.
+ *
+ * Deliberate, and only for the bulk fixtures: `writeFact` also rewrites
+ * `INDEX.md` and runs its dedup scan on every call, which is O(corpus) per
+ * fact — 260 of them timed the setup out at 88s. These fixtures care about how
+ * the SEARCH RANKING pages, and the ranking is built by the index walk from the
+ * files on disk, which this produces identically. The small fixtures keep using
+ * the real write path.
+ */
+function seedFactFileFast({ id, tier = 'P', slug, body, createdAt }) {
+  const dir = tier === 'U'
+    ? join(userDir, 'memory')
+    : join(projectRoot, tier === 'L' ? 'context.local' : 'context', 'memory');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(
+    join(dir, `${id}.md`),
+    [
+      '---',
+      `id: ${id}`,
+      'type: feedback',
+      `title: ${slug}`,
+      `created_at: ${createdAt}`,
+      'write_source: user-explicit',
+      'trust: high',
+      'source_file: MEMORY.md',
+      'source_line: 1',
+      `source_sha1: ${'a'.repeat(64)}`,
+      '---',
+      '',
+      body,
+      '',
+    ].join('\n'),
+    'utf8',
+  );
 }
 
 /** A journal of N entries, oldest-first — the order the kit APPENDS in. */
@@ -2155,12 +2204,26 @@ describe('viewer — paging (269.1) on /api/facts', () => {
     }
   });
 
-  it('a malformed offset is a 400, exactly like a malformed limit', async () => {
-    for (const bad of ['-1', 'abc', '1.5', '1e3']) {
+  it('a malformed offset is a 400, exactly like a malformed limit — including one too big to be a number', async () => {
+    // The last two are review I2: `/^\d+$/` alone accepted a 20-digit string,
+    // `Number.isInteger(1e20)` is true, and the value then reached
+    // better-sqlite3, which refuses to bind outside int64 — a 500 WITH a stack
+    // on a route whose documented contract says a past-the-end offset is a 200.
+    // Past MAX_SAFE_INTEGER the parsed value is not the number that was typed,
+    // so it is malformed rather than large.
+    for (const bad of ['-1', 'abc', '1.5', '1e3', '9'.repeat(20), String(Number.MAX_SAFE_INTEGER + 2)]) {
       const r = await getJson(base, `/api/facts?offset=${bad}`);
       expect(`offset=${bad} -> ${r.status}`).toBe(`offset=${bad} -> 400`);
       expect(String(r.body.error)).toMatch(/offset/i);
+      expect(String(r.body.error)).not.toMatch(/at .*viewer\.mjs|SqliteError/); // never a stack
     }
+    // …and the largest offset that IS a number is still an honest empty page.
+    const edge = await getJson(base, `/api/facts?offset=${Number.MAX_SAFE_INTEGER}`);
+    expect(edge.status).toBe(200);
+    expect(edge.body.facts).toEqual([]);
+    expect(edge.body.total).toBe(LIVE);
+    const journalEdge = await getJson(base, `/api/decisions?offset=${'9'.repeat(20)}`);
+    expect(journalEdge.status).toBe(400);
     // Absent and empty both mean "the first page", like `limit`.
     expect((await getJson(base, '/api/facts?offset=')).body.offset).toBe(0);
     expect((await getJson(base, '/api/facts?offset=0')).body.offset).toBe(0);
@@ -2219,11 +2282,13 @@ describe('viewer — paging + search compose (269.4) on /api/facts', () => {
     expect(new Set(all).size).toBe(HITS);
   });
 
-  it('a ranked page is a slice of ONE ranking — page 2 is not a re-rank of its own window', async () => {
-    // Fetch-then-slice, deliberately: the blend re-ranks a candidate window in
-    // JS, so paging by re-running the search at an SQL offset would rank a
-    // DIFFERENT window each time and a record could appear on two pages or on
-    // none. Page N must be rows N of the same ordering page 1 came from.
+  it('a ranked page is a slice of ONE ranking — a small set never leaves the first candidate pool', async () => {
+    // NOTE ON WHAT THIS DOES *NOT* PROVE. With 12 hits and a 4-row page, every
+    // request's oversample pool covers the whole match set, so this passes
+    // whatever depth the route asks the engine for — it is a consistency check,
+    // not the partition guarantee. The pool-size bug lives past 3 × page size
+    // and is caught by the 260-hit walk in the block below (review finding 4,
+    // where this test was the vacuous one).
     const whole = await getJson(base, '/api/facts?q=zebrafish&limit=12');
     const p2 = await getJson(base, '/api/facts?q=zebrafish&limit=4&offset=4');
     expect(p2.body.facts.map((f) => f.id)).toEqual(whole.body.facts.slice(4, 8).map((f) => f.id));
@@ -2241,6 +2306,42 @@ describe('viewer — paging + search compose (269.4) on /api/facts', () => {
     expect(past.body.total).toBe(HITS); // the match set is still stated honestly
   });
 
+  it('AT-CAP: the last reachable offset is served normally (VIEWER_SEARCH_DEPTH budget)', async () => {
+    // At `DEPTH - 1` the route still consults the engine and answers from the
+    // full ranking; the depth-capped denominator holds either way. (The corpus
+    // here is smaller than the depth, so the page is empty — what is under test
+    // is which BRANCH runs, and `reachable` is what reports it.)
+    const atCap = await getJson(base, `/api/facts?q=zebrafish&offset=${VIEWER_SEARCH_DEPTH - 1}`);
+    expect(atCap.status).toBe(200);
+    expect(atCap.body.offset).toBe(VIEWER_SEARCH_DEPTH - 1);
+    expect(atCap.body.total).toBe(HITS);
+    expect(atCap.body.reachable).toBe(Math.min(HITS, VIEWER_SEARCH_DEPTH));
+    expect(atCap.body.has_more).toBe(false);
+  });
+
+  it('OVER-CAP: at exactly VIEWER_SEARCH_DEPTH the route stops paging and says so, without lying about the total', async () => {
+    const overCap = await getJson(base, `/api/facts?q=zebrafish&offset=${VIEWER_SEARCH_DEPTH}`);
+    expect(overCap.status).toBe(200);
+    expect(overCap.body.facts).toEqual([]);
+    expect(overCap.body.count).toBe(0);
+    expect(overCap.body.has_more).toBe(false);
+    expect(overCap.body.total).toBe(HITS);
+    expect(overCap.body.reachable).toBe(Math.min(HITS, VIEWER_SEARCH_DEPTH));
+    // The early-out must not become a hole in validation: a bad parameter is
+    // still a 400 on the beyond-depth path, exactly as on the normal one.
+    //
+    // (An FTS *grammar* error is deliberately NOT asserted here. I wrote that
+    // assertion first and it failed, because `prepareFtsQuery` sanitizes every
+    // user query into a quoted term — `"unclosed` becomes `"""unclosed"` and
+    // parses fine. No `?q=` value is known to reach FTS5's parser raw, so the
+    // FTS5ParseError branch in search.mjs is defensive rather than a path a
+    // test can drive from here. The claim was removed rather than weakened.)
+    const badTier = await getJson(base, `/api/facts?q=zebrafish&tier=Z&offset=${VIEWER_SEARCH_DEPTH}`);
+    expect(badTier.status).toBe(400);
+    const badLimit = await getJson(base, `/api/facts?q=zebrafish&limit=nope&offset=${VIEWER_SEARCH_DEPTH}`);
+    expect(badLimit.status).toBe(400);
+  });
+
   it('Door 5 (negative) — paging and searching still write NO recall-log entry', async () => {
     const recall = join(projectRoot, 'context', '.locks', 'recall.log');
     const before = existsSync(recall) ? readFileSync(recall, 'utf8') : null;
@@ -2248,6 +2349,137 @@ describe('viewer — paging + search compose (269.4) on /api/facts', () => {
     await getJson(base, '/api/facts?limit=5&offset=5');
     await getJson(base, '/api/decisions?q=median&offset=1');
     expect(existsSync(recall) ? readFileSync(recall, 'utf8') : null).toBe(before);
+  });
+});
+
+describe('viewer — B1: a ranked walk PARTITIONS a set bigger than the candidate pool', () => {
+  // The blocking finding, and the one fixture shape that can see it.
+  //
+  // The engine OVERSAMPLES: `BLEND_OVERSAMPLE × requested` rows are fetched and
+  // re-ranked in JS. The first cut of paging asked for `offset + limit`, so
+  // page 1 ranked a 3×50 = 150-row pool and page 3 a 3×150 = 450-row one — and
+  // a trust-blended fact past the page-1 pool is INVISIBLE to page 1 and
+  // present for page 3, shifting every row after it. The reviewer reproduced
+  // one id on two pages and one on none (199 unique across a 200-row walk),
+  // and the TOP hit changed between pages, which corrupts the relevance
+  // normalization that is defined against it.
+  //
+  // Every earlier paging test used a fixture SMALLER than one pool, so all of
+  // them passed against the broken code. This one needs > 3 × page size to
+  // exist at all.
+  let base;
+  const HITS = 260; // > 3 × 50; the size the reviewer reproduced on
+  const PAGE = 50;
+  const BOOST_FROM = 200; // well past the 150-row pool a 50-row page ranks
+  const BOOST_N = 11;
+  let seeded;
+  beforeEach(async () => {
+    seeded = [];
+    for (let i = 0; i < HITS; i++) {
+      const id = seqId('P', 3000 + i);
+      seeded.push(id);
+      // UNIFORM bodies — same term count, same length, so bm25 scores them
+      // near-identically and the only thing that can reorder the set is the
+      // trust blend. With a spread of raw scores the blend's 1.225× nudge is
+      // absorbed by the gaps and nothing crosses the pool boundary, which is
+      // how the first version of this fixture passed against the broken code.
+      seedFactFileFast({
+        id,
+        slug: `manatee-${i}`,
+        body: `Manatee manatee manatee note ${String(i).padStart(3, '0')} recorded here.`,
+        createdAt: new Date(Date.parse('2026-07-01T10:00:00Z') + i * 60_000).toISOString(),
+      });
+    }
+    const r = await boot({ doctorOptions: STUB_DOCTOR });
+    base = r.url;
+    // Build the index once, THEN make some rows blend-eligible. The blend gate
+    // needs `signal_count >= BLEND_MIN_SIGNALS`, and without a single row whose
+    // blended rank differs from its bm25 rank the JS re-rank is a no-op and the
+    // pool size cannot matter — i.e. the test would be vacuous again for a
+    // second reason. The boot reindex is incremental (unchanged files are
+    // skipped), so these survive every later request.
+    await getJson(base, '/api/facts?limit=1');
+    const db = openIndexDb({ projectRoot });
+    try {
+      const up = db.prepare('UPDATE observations SET signal_count = 5, trust_score = 0.95 WHERE id = ?');
+      // DEEP in the set, past the 3 × 50 = 150-row pool a first page ranks.
+      // These are exactly the rows a variable-depth pool makes appear from
+      // nowhere on a later page: invisible to page 1, and lifted to the TOP by
+      // the blend once a bigger pool includes them — which shifts every row
+      // after them and is what puts an id on two pages or on none.
+      for (let i = BOOST_FROM; i < BOOST_FROM + BOOST_N; i++) up.run(seeded[i]);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('walking a 260-hit ranked set 50 at a time yields 260 rows and 260 DISTINCT ids — no repeat, no gap', async () => {
+    const walked = [];
+    const tops = [];
+    for (let off = 0; off < HITS; off += PAGE) {
+      const p = await getJson(base, `/api/facts?q=manatee&limit=${PAGE}&offset=${off}`);
+      expect(`offset=${off} -> ${p.status}`).toBe(`offset=${off} -> 200`);
+      expect(p.body.total).toBe(HITS);
+      walked.push(...p.body.facts.map((f) => f.id));
+      if (p.body.facts.length) tops.push(p.body.facts[0]);
+    }
+    // The partition: every seeded fact appears EXACTLY once across the walk.
+    expect(walked).toHaveLength(HITS);
+    expect(new Set(walked).size).toBe(HITS);
+    expect([...new Set(walked)].sort()).toEqual([...seeded].sort());
+  });
+
+  it('…and it is ONE ranking: relevance never rises as you page, so the top hit did not move', async () => {
+    // The same bug seen from the other side. `relevance` is defined against the
+    // top of the whole ranking; if a later page ranks a bigger pool and a new
+    // row wins it, the normalization reference changes mid-walk and a weaker
+    // hit can score ABOVE an earlier one.
+    const rels = [];
+    for (let off = 0; off < HITS; off += PAGE) {
+      const p = await getJson(base, `/api/facts?q=manatee&limit=${PAGE}&offset=${off}`);
+      rels.push(...p.body.facts.map((f) => f.relevance));
+    }
+    expect(rels).toHaveLength(HITS);
+    expect(rels[0]).toBe(1); // the reference point, on page 1 and nowhere else
+    const sorted = [...rels].sort((a, b) => b - a);
+    expect(rels).toEqual(sorted);
+  });
+
+  it('the page size does not change the answer — a 50-walk and a 100-walk agree record for record', async () => {
+    // A constant depth means the ranking is a property of the QUERY, not of how
+    // the reader chose to slice it. Under the old arithmetic the two walks
+    // ranked different pools and diverged.
+    const walk = async (size) => {
+      const out = [];
+      for (let off = 0; off < HITS; off += size) {
+        const p = await getJson(base, `/api/facts?q=manatee&limit=${size}&offset=${off}`);
+        out.push(...p.body.facts.map((f) => f.id));
+      }
+      return out;
+    };
+    expect(await walk(100)).toEqual(await walk(PAGE));
+  });
+
+});
+
+describe('viewer — relevance band thresholds (269.5 budget pair)', () => {
+  it('AT-CAP: the band edges are INCLUSIVE at exactly 0.7 and exactly 0.4', () => {
+    expect(RELEVANCE_BANDS.strong).toBe(0.7);
+    expect(RELEVANCE_BANDS.fair).toBe(0.4);
+    expect(relevanceBandFor(RELEVANCE_BANDS.strong)).toBe('strong');
+    expect(relevanceBandFor(RELEVANCE_BANDS.fair)).toBe('fair');
+    expect(relevanceBandFor(1)).toBe('strong');
+  });
+
+  it('OVER-CAP: a hair under either edge drops a band, and a non-number has no band at all', () => {
+    // The edges are where a colour claim flips, so they are where an off-by-one
+    // comparison would ship a "strong match" pill on a 0.699 hit.
+    expect(relevanceBandFor(0.6999999)).toBe('fair');
+    expect(relevanceBandFor(0.3999999)).toBe('weak');
+    expect(relevanceBandFor(0)).toBe('weak');
+    for (const junk of [null, undefined, NaN, Infinity, '0.9']) {
+      expect(`${String(junk)} -> ${relevanceBandFor(junk)}`).toBe(`${String(junk)} -> null`);
+    }
   });
 });
 

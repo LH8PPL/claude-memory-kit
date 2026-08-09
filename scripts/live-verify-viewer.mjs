@@ -200,6 +200,40 @@ async function main() {
       ].join('\n'),
       'utf8',
     );
+    // A BULK corpus, so the paging walk below is bigger than one page and one
+    // candidate pool. Written as fact FILES rather than through `cmk remember`
+    // — 200 subprocess round-trips would dominate this script's runtime — and
+    // then indexed by the REAL `cmk reindex --full` below, which is the part
+    // that matters here. Same technique the archived predecessor above uses.
+    //
+    // Ids avoid the lowercase `a` in the kit's alphabet on purpose: `P-…ZA` and
+    // `P-…Za` are two valid distinct ids whose FILES collide on a
+    // case-insensitive filesystem (Windows, macOS), and a fixture that quietly
+    // loses records to that would make this walk measure the wrong thing.
+    const BULK_CHARS = '2345679ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const bulkId = (n) => {
+      let s = '';
+      let v = n;
+      for (let i = 0; i < 8; i++) { s = BULK_CHARS[v % BULK_CHARS.length] + s; v = Math.floor(v / BULK_CHARS.length); }
+      return `P-${s}`;
+    };
+    const BULK = 200;
+    const bulkIds = [];
+    for (let i = 0; i < BULK; i++) {
+      const id = bulkId(7000 + i);
+      bulkIds.push(id);
+      writeFileSync(
+        join(factsDir, `${id}.md`),
+        [
+          '---', `id: ${id}`, 'type: project', `title: pelican note ${i}`,
+          `created_at: ${new Date(Date.parse('2026-07-01T09:00:00Z') + i * 60_000).toISOString()}`,
+          'write_source: user-explicit', 'trust: high', 'source_file: MEMORY.md',
+          'source_line: 1', `source_sha1: ${'a'.repeat(64)}`, '---', '',
+          `Pelican pelican pelican note ${String(i).padStart(3, '0')} recorded here.`, '',
+        ].join('\n'),
+        'utf8',
+      );
+    }
     runCmk(['reindex', '--full'], { cwd: proj, env }); // build the edges table
     log(`corpus seeded through the real bins (supersession ${predecessorId} → ${successorId})`);
 
@@ -292,9 +326,13 @@ async function main() {
     const badOffset = await http(`${base}/api/facts?offset=-1`);
     check(
       'PAGING: an offset past the end is an empty 200 that still states the corpus; a malformed one is a 400',
-      past.status === 200 && past.json.count === 0 && past.json.total === whole.json.count &&
+      // Against `total`, NOT the row count: the corpus is larger than
+      // VIEWER_MAX_LIMIT, so a single request's `count` is the capped page and
+      // comparing to it would assert that the cap is the corpus — the exact
+      // confusion this task exists to remove.
+      past.status === 200 && past.json.count === 0 && past.json.total === whole.json.total &&
         past.json.has_more === false && badOffset.status === 400,
-      `past=${past.status}/${past.json?.count} bad=${badOffset.status}`,
+      `past=${past.status}/${past.json?.count} total=${past.json?.total} whole=${whole.json?.total} bad=${badOffset.status}`,
     );
 
     // SEARCH + PAGING compose, and a hit carries its relevance band (D-429).
@@ -308,6 +346,38 @@ async function main() {
         s1.json.facts[0].id !== s2.json.facts[0].id &&
         s1.json.has_more === true,
       `total=${s1.json.total} p1=${s1.json.facts?.[0]?.id} p2=${s2.json.facts?.[0]?.id}`,
+    );
+    // A RANKED walk over a set bigger than one page, against the real bin: the
+    // 200 pelican facts are paged 50 at a time and must partition — every id
+    // exactly once, none twice, none missing.
+    //
+    // WHAT THIS DOES AND DOES NOT COVER, stated because the difference matters:
+    // it catches an offset/slice regression end to end. It does NOT reproduce
+    // the pool-size bug this fix was written for, because that needs a
+    // trust-BLENDED row (`signal_count >= 3`) to reorder the set, and no `cmk`
+    // verb sets signal_count — it accrues from recall feedback. That half is
+    // covered by the unit fixture in tests/cli-viewer.test.js, which seeds the
+    // signal directly and was watched failing (260 rows, 249 distinct) against
+    // the old arithmetic.
+    const walkedHits = [];
+    for (let off = 0; off < BULK; off += 50) {
+      const pg = await http(`${base}/api/facts?q=pelican&limit=50&offset=${off}`);
+      walkedHits.push(...(pg.json.facts ?? []).map((f) => f.id));
+    }
+    check(
+      'RANKED WALK: 200 hits paged 50 at a time partition cleanly — each id exactly once',
+      walkedHits.length === BULK &&
+        new Set(walkedHits).size === BULK &&
+        bulkIds.every((id) => walkedHits.includes(id)),
+      `rows=${walkedHits.length} distinct=${new Set(walkedHits).size} expected=${BULK}`,
+    );
+    const hugeOffset = await http(`${base}/api/facts?offset=${'9'.repeat(20)}`);
+    check(
+      'a 20-digit offset is a stated 400, not a database error — and never a stack',
+      hugeOffset.status === 400 &&
+        /offset/i.test(String(hugeOffset.json?.error)) &&
+        !/SqliteError|at .*viewer\.mjs/.test(hugeOffset.body),
+      `status=${hugeOffset.status} error=${String(hugeOffset.json?.error).slice(0, 120)}`,
     );
     check(
       'RELEVANCE: a search hit carries a band and a relative score; a browse row carries neither',

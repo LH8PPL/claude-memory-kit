@@ -106,14 +106,16 @@ export const VIEWER_MAX_LIMIT = 200;
  * How deep `?offset=` can reach IN SEARCH MODE (Task 269) — the search engine's
  * own ceiling, imported rather than copied so the two cannot drift.
  *
- * A ranked page is served by asking the engine for `offset + limit` rows and
- * slicing, NOT by pushing the offset into SQL: the trust blend re-ranks a
- * candidate window in JS (search.mjs `blendTrustScore`), so an SQL offset would
- * rank a DIFFERENT window per page and a record could land on two pages or on
- * none. Fetch-then-slice makes page N a slice of the same ordering page 1 came
- * from — at the cost of a reachable depth, which the envelope states rather
- * than hides (`reachable`). BROWSE mode has no such cap: its sort is a plain
- * stable SQL ORDER BY, so it pages to the last record.
+ * A ranked page is served by asking the engine for THIS MANY rows on EVERY page
+ * — a constant, never `offset + limit` — and slicing the result. The engine
+ * oversamples and re-ranks in JS (search.mjs `blendTrustScore`), so a variable
+ * ask ranks a different-sized pool per page and a record lands on two pages or
+ * on none; a constant ask pins the pool and makes page N a slice of the same
+ * ordering page 1 came from. Pushing the offset into SQL has the same defect
+ * for the same reason. The cost is this reachable depth, which the envelope
+ * states rather than hides (`reachable`), plus a full-depth search per page.
+ * BROWSE mode has no such cap: its sort is a plain stable SQL ORDER BY, so it
+ * pages to the last record.
  */
 export const VIEWER_SEARCH_DEPTH = SEARCH_MAX_LIMIT;
 
@@ -527,13 +529,31 @@ function readLimit(params, { fallback = VIEWER_DEFAULT_LIMIT } = {}) {
  * with an obvious sane reading (give me the most you will), while an offset past
  * the end has one too — an empty page — and that is served as a 200. What is
  * left (negative, fractional, non-numeric) has no reading at all.
+ *
+ * THE SAFE-INTEGER CEILING (review I2). `/^\d+$/` alone let `?offset=` carry a
+ * 20-digit number: `Number('9'.repeat(20))` is 1e20, which `Number.isInteger`
+ * accepts, so it sailed through to better-sqlite3, which refuses to bind a
+ * value outside int64 — a 500 on a route whose documented contract says an
+ * offset past the end is a 200. The ceiling is `Number.MAX_SAFE_INTEGER` and
+ * the verdict above it is 400, NOT a clamp, on the same reasoning that governs
+ * the rest of this function: past 2^53 the parsed value is no longer the number
+ * that was typed (float64 has already rounded it), so there is nothing to serve
+ * a page of and nothing honest to echo back in `offset`. That is a MALFORMED
+ * offset, not a large one — and every offset that is genuinely a number,
+ * including every one past the end of the corpus, still gets its empty 200.
  */
 function readOffset(params) {
   const raw = params.get('offset');
   if (raw === null || raw === '') return 0;
   const n = Number(raw);
-  if (!Number.isInteger(n) || n < 0 || !/^\d+$/.test(raw.trim())) {
-    throw new BadRequest(`offset must be a non-negative integer (got ${JSON.stringify(raw)})`);
+  if (
+    !/^\d+$/.test(raw.trim()) ||
+    !Number.isSafeInteger(n) ||
+    n < 0
+  ) {
+    throw new BadRequest(
+      `offset must be a non-negative integer no larger than ${Number.MAX_SAFE_INTEGER} (got ${JSON.stringify(raw)})`,
+    );
   }
   return n;
 }
@@ -558,13 +578,25 @@ const ROW_COLUMNS = `
  * stay PRESENT so a search hit and a browse row remain one shape on the wire
  * (§24.1.1: the page must not have two renderers).
  */
+/**
+ * Which band a relevance falls in. Exported as a PURE function so the two
+ * thresholds can be pinned at their exact edges (`0.7` and `0.4` are inclusive
+ * lower bounds) without arranging a corpus that happens to produce them — the
+ * same shape `blendTrustScore` is tested in. Budget pair: design §17.10.
+ */
+export function relevanceBandFor(rel) {
+  if (!Number.isFinite(rel)) return null;
+  if (rel >= RELEVANCE_BANDS.strong) return 'strong';
+  if (rel >= RELEVANCE_BANDS.fair) return 'fair';
+  return 'weak';
+}
+
 function relevanceOf(score, topScore) {
   if (!Number.isFinite(score) || !Number.isFinite(topScore) || topScore === 0) {
     return { relevance: null, relevance_band: null };
   }
   const rel = Math.max(0, Math.min(1, score / topScore));
-  const band = rel >= RELEVANCE_BANDS.strong ? 'strong' : rel >= RELEVANCE_BANDS.fair ? 'fair' : 'weak';
-  return { relevance: rel, relevance_band: band };
+  return { relevance: rel, relevance_band: relevanceBandFor(rel) };
 }
 
 /** The shape every fact row is rendered in, on every route. One place. */
@@ -626,35 +658,65 @@ const API = {
       // the page can say "the first 50 of N" without asking a second route for
       // a number that was never quite the same number.
       let total;
+      // Rows of the ranking/list this window covered — the basis for `has_more`.
+      // Equals `rows.length` in browse mode; in search mode it can exceed it by
+      // however many hits were dropped as unresolvable (see below).
+      let served;
       const now = Date.now();
       if (q) {
         mode = 'search';
-        // Ask for the whole window up to the end of THIS page, then slice — see
-        // VIEWER_SEARCH_DEPTH for why the offset does not go into SQL. Asking
-        // for zero rows is not a legal search, so a beyond-depth offset serves
-        // an empty page rather than sending the engine a limit it would reject.
+        // ASK FOR A CONSTANT DEPTH ON EVERY PAGE, then slice. This is the whole
+        // of "a ranked page is a slice of ONE ranking", and the first cut of it
+        // got the arithmetic wrong in a way worth writing down.
         //
-        // The search RUNS either way, even for a page past the reachable depth
-        // whose rows are known to be empty: it is what turns an FTS grammar
-        // error into a 400 instead of letting the unlimited count below throw a
-        // 500 for the same typo. `limit: 1` is the cheapest legal ask (the
-        // engine rejects 0), and its rows are discarded.
-        const want = Math.min(offset + limit, VIEWER_SEARCH_DEPTH);
+        // Asking for `offset + limit` looks equivalent and is not: the engine
+        // OVERSAMPLES (search.mjs `BLEND_OVERSAMPLE`) and re-ranks the candidate
+        // window in JS, so a request for 50 ranks a 150-row pool and a request
+        // for 100 ranks a 300-row one. A trust-blended fact sitting past the
+        // page-1 pool is invisible to page 1 and present for page 2, which
+        // shifts every row after it — the reviewer reproduced one id on two
+        // pages and one on none across a 200-row walk (199 unique), and the
+        // TOP hit changed between pages, which silently corrupted the relevance
+        // normalization that is defined against it.
+        //
+        // A constant `limit` makes the pool constant (`min(DEPTH × 3, MAX)` is
+        // pinned at the engine ceiling), so every page slices the identical
+        // ranking. The cost is a full-depth search per page — bounded, human-
+        // paced, and the price of a pager that cannot lose a record.
+        const beyondDepth = offset >= VIEWER_SEARCH_DEPTH;
         const r = searchAction({
           db,
           query: q,
           mode: SEARCH_MODES.KEYWORD,
           scope: 'facts',
-          limit: Math.max(want, 1),
+          // Past the reachable depth the rows are known to be empty, so the
+          // search runs at the CHEAPEST legal size the engine accepts (it
+          // rejects 0) and its result is discarded — the early-out costs one
+          // row, not a full-depth ranking. It still RUNS so that both branches
+          // reject identically: whatever `search()` refuses on a normal page it
+          // refuses here, as a 400, instead of the unlimited count below
+          // throwing the same objection as a 500. That is defensive rather than
+          // a demonstrated path — `prepareFtsQuery` sanitizes every user query
+          // into a quoted term, so no `?q=` value is known to reach FTS5's
+          // parser raw (the test says so explicitly rather than asserting a
+          // grammar error it cannot produce).
+          limit: beyondDepth ? 1 : VIEWER_SEARCH_DEPTH,
           ...(tier ? { tier } : {}),
         });
         if (r.action === 'error') throw new BadRequest((r.errors ?? ['search failed']).join('; '));
-        const ranked = want > offset ? r.results : [];
+        const ranked = beyondDepth ? [] : r.results;
         // The reference point for `relevance` is the top of the WHOLE ranking,
         // taken BEFORE the page slice — so page 2's first row is scored against
         // page 1's best hit and a weak match keeps looking weak.
         const topScore = ranked.length > 0 ? ranked[0].score : null;
         const page = ranked.slice(offset, offset + limit);
+        // How much of the ranking this window COVERED, which is not always how
+        // many rows come back: an FTS hit whose observations row is missing is
+        // dropped below (the Task-270 orphan class — a fact whose id the index
+        // cannot resolve). `has_more` must count the window, or the last page
+        // of a set containing one orphan reports "no more" while a record it
+        // never showed sits past it.
+        served = page.length;
         // Re-read the full rows so a search hit and a browse row are the SAME
         // shape on the wire — the page must not have two renderers.
         const byId = new Map(hydrate(db, page.map((h) => h.id)).map((x) => [x.id, x]));
@@ -704,6 +766,8 @@ const API = {
           .get({ now, ...(tier ? { tier } : {}) }).n;
         // A plain stable ORDER BY pages to the last record — nothing to cap.
         reachable = total;
+        // Browse reads the rows themselves, so the window IS what came back.
+        served = rows.length;
       }
       return {
         status: 200,
@@ -720,8 +784,10 @@ const API = {
           // The pager's whole question, answered by the payload rather than
           // guessed by the page from `count === limit` (which is wrong exactly
           // once — on a corpus whose size is a multiple of the page size, where
-          // it offers a Next that leads to an empty page).
-          has_more: offset + rows.length < reachable,
+          // it offers a Next that leads to an empty page). Computed from the
+          // WINDOW, not from `count`, so a dropped orphan hit cannot end the
+          // pager one page early.
+          has_more: offset + served < reachable,
           facts: rows,
         },
       };
@@ -980,6 +1046,12 @@ const API = {
     if (!DECISION_ORDERS.has(order)) {
       throw new BadRequest(`order must be one of journal, newest (got ${JSON.stringify(order)})`);
     }
+    // O(journal) per request, deliberately: the file is parsed whole and the
+    // match is a linear scan, so a page deep in a 2,502-entry journal costs the
+    // same as page 1. That is a markdown file read at human pace, not a query
+    // — and the alternative (indexing the journal) would put a second writer on
+    // a derived store for a list one file read already answers. Revisit if a
+    // journal ever reaches a size where the read itself is felt.
     const journal = readDecisionsJournal(ctx.projectRoot);
     // Filter FIRST, then order, then page — so `total` is the match set and the
     // pages partition it. (Reversing before filtering would give the same set;

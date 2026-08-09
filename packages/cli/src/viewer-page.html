@@ -977,8 +977,14 @@
     }
     nav.append(range);
 
+    // Advance by the PAGE SIZE, not by `count`. They are the same number on
+    // every ordinary page, and they differ exactly when a hit was dropped
+    // because its fact row could not be resolved (the Task-270 orphan class):
+    // stepping by `count` there would re-serve the window it already showed and
+    // walk the reader in circles. The server computes `has_more` from the same
+    // window for the same reason.
     nav.append(data.has_more
-      ? el('a', { class: 'page-btn', href: hrefFor({ offset: offset + count }), text: 'Next →', 'aria-label': 'Next page of ' + noun })
+      ? el('a', { class: 'page-btn', href: hrefFor({ offset: offset + limit }), text: 'Next →', 'aria-label': 'Next page of ' + noun })
       : el('span', { class: 'page-btn-off', text: 'Next →', 'aria-disabled': 'true' }));
     return nav;
   }
@@ -1294,10 +1300,18 @@
     }
   }
 
-  // The three bands the server hands back, and the WORD each one shows. Closed
-  // lookup, so the class name on the next line can only ever come from this
-  // table and never from the payload.
-  const REL_WORDS = { strong: 'strong match', fair: 'fair match', weak: 'weak match' };
+  // The three bands the server hands back, and the class + WORD each one shows.
+  // A Map, not an object literal: the class name must come from THIS table and
+  // never from the payload, and an object lookup gated on truthiness would let
+  // a band of `constructor` or `toString` through the gate and then interpolate
+  // the payload's own string into the class attribute. A Map has no prototype
+  // chain to inherit past, so the lookup is closed by construction rather than
+  // by a comment claiming it is (review M5).
+  const REL = new Map([
+    ['strong', { cls: 'rel-strong', word: 'strong match' }],
+    ['fair', { cls: 'rel-fair', word: 'fair match' }],
+    ['weak', { cls: 'rel-weak', word: 'weak match' }],
+  ]);
 
   function factRow(f) {
     const row = el('a', { class: 'row', href: '/fact/' + f.id });
@@ -1309,11 +1323,11 @@
     // decides whether the row is worth reading at all. The tooltip states what
     // the number IS — relative to the top hit, not an absolute confidence —
     // because a coloured pill invites the stronger reading.
-    const relWord = f.relevance_band ? REL_WORDS[f.relevance_band] : null;
-    if (relWord) {
+    const rel = REL.get(f.relevance_band);
+    if (rel) {
       meta.append(el('span', {
-        class: 'badge rel-' + f.relevance_band,
-        text: relWord,
+        class: 'badge ' + rel.cls,
+        text: rel.word,
         title: 'Relevance ' + Number(f.relevance).toFixed(2) + ' — relative to the strongest match for this query, not an absolute score.',
       }));
     }
