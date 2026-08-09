@@ -4337,6 +4337,9 @@ ONE append-only NDJSON log at `context/.locks/health.log` (the gitignored run-ti
 | `precompact-failing` | degraded | no (2) | `agent-cli-missing` | `cmk doctor` | advise |
 | `index-drift` | advisory | yes (1) | — | `cmk reindex` | **silent** |
 | `mcp-tool-failing` | degraded | no (2) | — | `cmk doctor` | advise |
+| `cron-settings-unapplied` | advisory | yes (1) | — | `cmk register-crons` | confirm |
+
+`cron-settings-unapplied` (Task 47.0) is the registry's first entry added after wave 1, and it is what the seam was built for. §8.6.5's settings call is the second half of a Windows registration, it can fail on its own, and Task 265 could only report that to the **console** — so a registered-but-starving task became invisible the moment the terminal scrolled, with HC-5 still passing on the sentinel. It is **advisory** because cron is optional and the lazy roll is the floor (§8.2.1): the nightly optimization is what broke, not memory. It is **deterministic** because nothing re-runs the settings call — the flags stay wrong until someone registers again, so waiting for a second strike is waiting for a second manual registration that may never come. Its `primaryAction` is the command that also writes its `ok` (the §23 pairing rule): `cmk register-crons` records the outcome on every run, success or failure.
 
 `deterministic` means exactly one thing: **can this condition transiently recover on its own?** A missing binary cannot (it is missing until someone installs it); a spawn timeout can (the machine was busy). `strikeThreshold` is therefore DERIVED from it, not independently chosen, and a test pins the two together so they can never drift apart.
 

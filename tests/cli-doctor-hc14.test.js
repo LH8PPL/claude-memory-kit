@@ -102,6 +102,26 @@ describe('HC-14 — active kit health warnings', () => {
     expect((await hc14()).recoveryCommand).toBe('cmk reindex');
   });
 
+  // Task 47.0 — the integration that gives §8.6.5's console-only signal a home.
+  // Nothing in HC-14 knows what a scheduled task is: register-crons records the
+  // outcome, HC-14 reports it. That is the whole point of the registry seam, and
+  // this test is what proves the two halves actually meet.
+  it('surfaces a failed scheduler-settings repair on ONE strike, with the re-register recovery', async () => {
+    seedHealth(fails(HEALTH_CODES.CRON_SETTINGS_UNAPPLIED, 1));
+    const c = await hc14();
+    expect(c.status).toBe('warn');
+    expect(c.message).toContain(HEALTH_CODES.CRON_SETTINGS_UNAPPLIED);
+    expect(c.recoveryCommand).toBe('cmk register-crons');
+  });
+
+  it('a later successful registration CLEARS it — self-clean is structural, not a cleanup step', async () => {
+    seedHealth([
+      ...fails(HEALTH_CODES.CRON_SETTINGS_UNAPPLIED, 1, 120_000),
+      { ts: new Date(NOW_MS - 60_000).toISOString(), schema: 1, class: HEALTH_CODES.CRON_SETTINGS_UNAPPLIED, outcome: 'ok' },
+    ]);
+    expect((await hc14()).status).toBe('pass');
+  });
+
   it('surfaces the actionable command even when a doctor-only code outranks it', async () => {
     // extract-failing is more severe and sorts first, but its action is the
     // circular one — the repair line should still carry index-drift's.

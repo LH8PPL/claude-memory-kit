@@ -129,6 +129,32 @@ describe('the Warnable-shaped registry', () => {
     expect(SEVERITY_RANK['memory-off']).toBeGreaterThan(SEVERITY_RANK.degraded);
     expect(SEVERITY_RANK.degraded).toBeGreaterThan(SEVERITY_RANK.advisory);
   });
+
+  // Task 47.0 — the class D-439 handed over. Its two non-obvious properties are
+  // pinned explicitly rather than left to the generic shape loop above, because
+  // getting either wrong changes what the user is told.
+  it('registers cron-settings-unapplied as a DETERMINISTIC, one-strike, advisory class', () => {
+    const w = HEALTH_REGISTRY[HEALTH_CODES.CRON_SETTINGS_UNAPPLIED];
+    expect(w).toBeTruthy();
+    // Deterministic: a settings call that did not apply does not un-fail itself.
+    // Nothing re-runs it; the flags stay wrong until someone re-registers. So
+    // one strike, not two — waiting for a second is waiting for a second manual
+    // registration that may never come.
+    expect(w.deterministic).toBe(true);
+    expect(w.strikeThreshold).toBe(1);
+    // ADVISORY, not degraded: cron is optional by design and the lazy roll is
+    // the floor (§8.2.1), so nothing is broken — the nightly OPTIMIZATION is.
+    // Claiming a worse severity would train the user to discount the whisper.
+    expect(w.severity).toBe('advisory');
+    // The repair is a real, idempotent next step — and it is NOT `cmk doctor`,
+    // so HC-14 will actually print it (see hc14's don't-echo-the-command-you-
+    // just-ran rule).
+    expect(w.primaryAction).toBe('cmk register-crons');
+    // `confirm`, not `silent`: re-registering rewrites HOST scheduler state,
+    // which is the user's, not the kit's (ADR-0018 propose-and-approve).
+    expect(w.fixClass).toBe('confirm');
+    expect(w.dependsOn).toEqual([]);
+  });
 });
 
 // --- Door 2 + Door 5: the append -------------------------------------------

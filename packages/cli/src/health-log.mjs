@@ -100,6 +100,7 @@ export const HEALTH_CODES = Object.freeze({
   PRECOMPACT_FAILING: 'precompact-failing',
   INDEX_DRIFT: 'index-drift',
   MCP_TOOL_FAILING: 'mcp-tool-failing',
+  CRON_SETTINGS_UNAPPLIED: 'cron-settings-unapplied',
 });
 
 /**
@@ -181,6 +182,36 @@ export const HEALTH_REGISTRY = Object.freeze({
     fixClass: 'advise',
     strikeThreshold: 2,
     deterministic: false,
+  }),
+  // Task 47.0 — the durable home D-439 asked for. `cmk register-crons` on
+  // Windows is TWO calls: create the task, then apply the settings that decide
+  // whether Windows will ever start it (§8.6.5). The second can fail on its
+  // own, and Task 265 reported that only to the CONSOLE — which scrolls away,
+  // leaving a registered-but-starving task that HC-5's sentinel check reads as
+  // healthy. That is D-298's heartbeat-not-outcome false green, one check over.
+  //
+  // ADVISORY rather than degraded, deliberately: cron is optional by design and
+  // the lazy roll is the floor (§8.2.1), so what is broken is the nightly
+  // OPTIMIZATION, not memory. Overstating it would teach the user to discount
+  // the whisper — which costs more than this warning is worth.
+  //
+  // DETERMINISTIC, so one strike: nothing re-runs the settings call. The flags
+  // stay wrong until someone registers again, so waiting for a second strike is
+  // waiting for a second manual registration that may never come.
+  [HEALTH_CODES.CRON_SETTINGS_UNAPPLIED]: Object.freeze({
+    code: HEALTH_CODES.CRON_SETTINGS_UNAPPLIED,
+    title:
+      'the scheduled memory jobs registered, but their scheduler settings did not apply — Windows may refuse to run them on battery',
+    severity: 'advisory',
+    dependsOn: Object.freeze([]),
+    // A REAL next step, and notably not `cmk doctor` — so HC-14 actually prints
+    // it rather than suppressing the command the user just ran.
+    primaryAction: 'cmk register-crons',
+    // `confirm`, not `silent`: re-registering rewrites HOST scheduler state,
+    // which is the user's and not the kit's (ADR-0018 propose-and-approve).
+    fixClass: 'confirm',
+    strikeThreshold: 1,
+    deterministic: true,
   }),
 });
 

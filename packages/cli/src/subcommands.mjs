@@ -65,6 +65,7 @@ import {
   markCronRegistered,
   unmarkCronRegistered,
 } from './lazy-compress.mjs';
+import { appendHealthEntry, HEALTH_CODES } from './health-log.mjs';
 import {
   registerCron,
   unregisterCron,
@@ -2282,6 +2283,26 @@ export function runRegisterCrons(options /* , command */) {
         `Re-run \`cmk register-crons\` (it is idempotent); if it keeps failing, apply the "settings:" ` +
         `command above by hand in an ordinary PowerShell window.`,
       );
+    }
+    // Task 47.0 (D-439's handover): the console is not a durable surface. The
+    // warning above scrolls away, and HC-5 passes on the `cron-registered`
+    // sentinel alone — so without this the kit forgets, within one screenful,
+    // that it left a registered-but-starving task behind.
+    //
+    // BOTH outcomes are recorded, not just the failure: an `ok` is what resets
+    // the streak, so a user who re-registers successfully stops being warned
+    // without anything having to clean up (D-412's structural self-clean). The
+    // `undefined` case — a dry run, or any POSIX platform, where there was no
+    // settings call to have an outcome — records nothing at all.
+    if (typeof r.settingsApplied === 'boolean') {
+      appendHealthEntry(projectRoot, {
+        class: HEALTH_CODES.CRON_SETTINGS_UNAPPLIED,
+        outcome: r.settingsApplied ? 'ok' : 'fail',
+        // A machine token, never a message (DETAIL_TOKEN_PATTERN): it names
+        // WHICH job, which is the only thing a reader of the log cannot
+        // otherwise recover.
+        detail: job.entryName,
+      });
     }
     if (r.output) console.log(`  output: ${r.output.trim()}`);
   }
