@@ -8,7 +8,7 @@ The yes/no checks `cmk doctor` runs against the kit installation. Most have a se
 | HC-2 | Daily distill is fresh (≤ 2 days) | `context/sessions/recent.md` mtime is within 2 days of `now` |
 | HC-3 | Transcripts are firing (≤ 3 days) | At least one `context/transcripts/*.md` has mtime within 3 days |
 | HC-4 | INDEX.md matches `context/memory/` | `[PUL]-XXXXXXXX.md` filenames in INDEX = fact files on disk (excluding INDEX itself) |
-| HC-5 | Cron jobs registered with host scheduler | `context/.locks/cron-registered` sentinel exists (written by `cmk register-crons`) |
+| HC-5 | Cron jobs registered with host scheduler | The sentinel (`context/.locks/cron-registered`) decides only whether cron is IN USE; the verdict comes from the **host scheduler itself** (`readRegisteredJob()` in [packages/cli/src/scheduler-state.mjs](packages/cli/src/scheduler-state.mjs), Task 47 / D-354). For each of the two jobs it reads the real registration — `schtasks /query /XML` on Windows (following the Task-215 `.vbs` launcher through to the script it actually runs), the tagged `crontab -l` line on Linux, the LaunchAgent plist on macOS — and stats the command. **FAILS** with `cmk register-crons` when the entry is gone or its command no longer exists on disk (the v0.5.4 rename stranded a task on a dead package path for four nights while the old sentinel-only check reported PASS). **WARNs** on Windows when the task carries the pre-v0.6.6 battery/idle posture (§8.6.5) — it runs badly rather than not at all, and cron is an optimization, so it never reddens an exit code. **SKIPs** when cron isn't registered (optional — the lazy roll covers it) or when the scheduler couldn't be read, saying which |
 | HC-6 | Native Anthropic Auto Memory status detected | Inspect `~/.claude/projects/<slug>/memory/`; write single-line JSON snapshot to `context/.locks/native-memory-status.log`. Non-fatal informational. |
 | HC-7 | No stale lock files | `detectStaleLocks(projectRoot, {userDir})` from [packages/cli/src/lock-discipline.mjs](packages/cli/src/lock-discipline.mjs) returns no entries with `stale: true` |
 | HC-8 | Native bindings present (npm 12 readiness) | `require('better-sqlite3')` loads its `.node` binding; when `search.default_mode` is `hybrid`/`semantic`, the embedder import is probed too (distinguishing not-installed from installed-but-binding-broken). Fails with the exact `--allow-scripts` remediation when npm 12 blocked the install script (Task 141a, D-129) |
@@ -79,7 +79,7 @@ Add missing files to INDEX.md, or remove stale entries. Each line is:
 
 Where type is one of `user`, `feedback`, `project`, `reference`.
 
-### HC-5 — Cron jobs missing
+### HC-5 — Cron jobs missing, stranded, or badly configured
 
 Re-run the registration command (idempotent — registers both daily-distill at 23:00 and weekly-curate at Sun 09:00):
 
@@ -87,9 +87,19 @@ Re-run the registration command (idempotent — registers both daily-distill at 
 cmk register-crons
 ```
 
+**Re-registering is the repair for all three failure shapes**, because `/Create /F` recreates the task at its current path and the settings call is re-issued every time:
+
+- **"its registered command is gone"** — the job points at a path that no longer exists. A package rename or a global reinstall moved the kit; registrations use absolute paths deliberately (D-83), so moving the kit strands them. This is the failure that ran silently for four nights before HC-5 could see it (D-354).
+- **"the host scheduler has no such entry"** — the kit thinks cron is registered but the scheduler disagrees.
+- **"the pre-v0.6.6 Task Scheduler posture"** (Windows, advisory) — the task exists and its command is fine, but it carries flags that make Windows refuse to start it on battery and kill it when you return to the keyboard (design §8.6.5). Nothing is lost — the lazy roll still compresses every session — but the nightly job is unreliable until you re-register.
+
+**Run `cmk register-crons` after any global upgrade or reinstall.** That is the one habit that prevents the first shape entirely.
+
 To see what it WOULD do without changing anything: `cmk register-crons --dry-run`.
 
 To remove both entries: `cmk register-crons --unregister`.
+
+If HC-5 SKIPs with *"the host scheduler could not be read"*, nothing is wrong with your memory — the kit simply could not run `schtasks` / `crontab` / read the LaunchAgent to verify, and it says so rather than reporting a registration it did not check.
 
 (HC-6 native-memory detection and HC-7 stale-lock detection are informational / self-evident from the `cmk doctor` output and need no manual repair recipe.)
 

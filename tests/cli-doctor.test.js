@@ -573,9 +573,27 @@ describe('Task 37 — runDoctor (cmk doctor health checks)', () => {
       expect(c6.message).toMatch(/register-crons/); // command still surfaced, as info
     });
 
-    it('HC-6 cron sentinel present → pass', async () => {
+    // Task 47 (D-354) CHANGED THIS CONTRACT ON PURPOSE, and the old assertion
+    // is preserved here as a comment rather than deleted, because the change is
+    // the whole point of the task: this test used to read
+    //
+    //     markCronRegistered(...) → expect(HC-5.status).toBe('pass')
+    //
+    // i.e. "the sentinel the kit wrote is present, therefore cron is healthy" —
+    // exactly the reasoning that let a scheduled task point at a dead package
+    // path for four nights while HC-5 stayed green. The sentinel now decides
+    // only whether cron is IN USE; the health verdict comes from the host.
+    //
+    // It also has to inject the probe. Without one, this test's result depends
+    // on whether the machine running the suite happens to have a real
+    // `cmk-daily-distill` task registered — which is how it first failed.
+    it('HC-5 sentinel present + the host confirms the registration → pass', async () => {
       markCronRegistered({ projectRoot });
-      const r = await runDoctor({ projectRoot, userDir });
+      const r = await runDoctor({
+        projectRoot,
+        userDir,
+        schedulerProbe: () => ({ verdict: 'ok', targetPath: '/x/cmk-daily-distill.mjs', problems: [] }),
+      });
       const c6 = r.checks.find((c) => c.id === 'HC-5');
       expect(c6.status).toBe('pass');
     });
