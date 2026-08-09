@@ -43,6 +43,8 @@ The full engineering discipline, architecture rules, and decision history live i
 
 Every push and PR runs the full suite plus a cross-OS install matrix (Windows / macOS / Linux), coverage thresholds, and the security stack (secret scanning, CVE / supply-chain checks, SAST). See [`.github/workflows/`](.github/workflows/).
 
+**If a security gate goes red on your PR and the dependency isn't one you touched**, a new advisory landed under you — it happens, and it isn't yours to absorb. Don't bump anything inside your feature branch: follow the runbook in [`SECURITY.md`](SECURITY.md#when-an-advisory-fires-the-runbook) ("When an advisory fires"). The short version is *look first* — Dependabot has usually already opened the fix PR.
+
 ## Releasing
 
 Releases are cut by the maintainer via `npm run release -- <patch|minor|major>` and published from CI on a `v*` tag with a signed npm provenance attestation. You don't need to touch versioning in a feature PR — just add your entry to `CHANGELOG.md` under `## [Unreleased]`.
