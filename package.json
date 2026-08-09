@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "lint": "node scripts/validate-test-ids.mjs && node scripts/validate-template.mjs && node scripts/validate-exit-doors.mjs && node scripts/validate-docs.mjs && node scripts/validate-spawn-discipline.mjs && node scripts/validate-numbering-gaps.mjs && node scripts/validate-composition.mjs && node scripts/validate-budget-pairs.mjs && node scripts/validate-prompt-assertions.mjs && node scripts/validate-skill-allowlist.mjs && node scripts/validate-platform-commands.mjs && node scripts/validate-skill-sources.mjs && node scripts/validate-cli-mcp-parity.mjs && node scripts/validate-node-parse.mjs && node scripts/validate-pack-completeness.mjs && node scripts/validate-maintainer-name-confined.mjs && node scripts/validate-agent-adapter-parity.mjs && node scripts/validate-backlog-triggers.mjs && node scripts/validate-node-pin.mjs",
+    "lint": "node scripts/validate-test-ids.mjs && node scripts/validate-template.mjs && node scripts/validate-exit-doors.mjs && node scripts/validate-docs.mjs && node scripts/validate-spawn-discipline.mjs && node scripts/validate-numbering-gaps.mjs && node scripts/validate-composition.mjs && node scripts/validate-budget-pairs.mjs && node scripts/validate-prompt-assertions.mjs && node scripts/validate-skill-allowlist.mjs && node scripts/validate-platform-commands.mjs && node scripts/validate-skill-sources.mjs && node scripts/validate-cli-mcp-parity.mjs && node scripts/validate-node-parse.mjs && node scripts/validate-pack-completeness.mjs && node scripts/validate-maintainer-name-confined.mjs && node scripts/validate-agent-adapter-parity.mjs && node scripts/validate-backlog-triggers.mjs && node scripts/validate-node-pin.mjs && node scripts/validate-install-consent.mjs",
     "test": "npm run lint && vitest run",
     "test:file": "node scripts/test-file.mjs",
     "test:watch": "vitest",
@@ -46,7 +46,8 @@
     "bench:recall": "node scripts/bench-recall.mjs",
     "bench:linking": "node scripts/bench-linking.mjs",
     "live-verify:viewer": "node scripts/live-verify-viewer.mjs",
-    "live-verify:semantic": "node scripts/live-verify-semantic.mjs"
+    "live-verify:semantic": "node scripts/live-verify-semantic.mjs",
+    "lint:install-consent": "node scripts/validate-install-consent.mjs"
   },
   "devDependencies": {
     "@huggingface/transformers": "^4.2.0",

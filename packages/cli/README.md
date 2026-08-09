@@ -171,7 +171,7 @@ You rarely type these yourself — Claude drives the same operations as tools mi
 | `cmk uninstall [--ide claude-code\|kiro\|cursor\|codex]` | Remove one agent's wiring — conservative, never deletes `context/` |
 | `cmk tour` | Walk through YOUR memory — the three tiers, what's actually been captured (real counts + your own fact titles), and how to recall it. Also `/tour` in conversation. |
 | `cmk view [--no-open] [--port <n>]` | Open your memory in a browser — search, fact detail, graph, health, decisions. Read-only, loopback-only, ends with Ctrl-C |
-| `cmk doctor` | Run HC-1..HC-15 health checks; surface a repair command per failure (HC-11 = your agent's backend LLM CLI is on PATH — honest degrade if not) |
+| `cmk doctor [--repair] [--yes]` | Run HC-1..HC-15 health checks; surface a repair command per failure (HC-11 = your agent's backend LLM CLI is on PATH — honest degrade if not). `--repair` offers each fix `[y/N]`, default No — deletes and fill-in-the-blank fixes are always printed for you to run yourself, and with no terminal it prints rather than assumes |
 | `cmk config get <key>` / `cmk config set <key> <value>` / `cmk config show` | Read/write project settings without hand-editing JSON. `config show` = a one-glance readout of your setup (installed-for agent, active backend agent, backend-CLI presence, semantic mode) |
 | `cmk repair --hooks` / `--locks` / `--index` / `--all` | Idempotent self-repair |
 | `cmk search "<query>" [--mode keyword\|semantic\|hybrid] [--scope facts\|transcripts\|decisions]` | Search memory by meaning (hybrid default after `--with-semantic`); `--scope transcripts` = raw session record; `--scope decisions` = the decision journal (history / "what did we reject") |

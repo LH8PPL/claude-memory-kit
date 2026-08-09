@@ -196,12 +196,24 @@ cmk view --no-open       # just print the URL (CI, remote shells, tmux)
 cmk view --port 7777     # pin the port
 ```
 
-### `cmk doctor`
+### `cmk doctor [--repair] [--yes]`
 
 Run the health checks (HC-1..HC-15); reports PASS/WARN/FAIL/SKIP with a repair command per failure (WARN is advisory — the command is shown but the exit code is untouched). HC-8 (npm 12 readiness) verifies the native bindings load and emits the exact `--allow-scripts` remediation when npm blocked an install script. **HC-5 (cron registration)** asks the host scheduler what is actually registered rather than reading back the kit's own sentinel — it FAILS with `cmk register-crons` when a scheduled job's command no longer exists on disk (a global reinstall or a package rename strands it, and the job then fails silently every night), and WARNs on Windows when a task carries the pre-v0.6.6 battery/idle flags that stop it running unplugged. HC-9 flags project-scaffold version drift after a global update — and WARNs when the installed `cmk` itself is behind the npm registry's published `latest` (Task 245: the silent-upgrade-failure class; skipped offline/CI, opt out with `CMK_SKIP_UPDATE_CHECK=1`); HC-10 is an informational scheduled-compaction-liveness heads-up; **HC-11 (backend LLM CLI present)** checks that the CLI of the agent this project runs its automatic engine on (`claude` / `kiro-cli` / `cursor-agent`) is on your PATH — when it's missing, it FAILS with an honest "automatic features degraded, file-only still works" message (never a silent no-op); **HC-12 (deletion propagation)** verifies every tombstoned fact is actually gone from the derived surfaces (the search index + distilled summaries) and names any survivor's exact location — SKIPs as *vacuous* when nothing has been forgotten yet; **HC-15 (semantic vector mapping)** verifies that each fact's stored embedding really is its own — a mis-filed vector makes semantic search return confident, well-scored answers about the wrong facts, and no other check would see it (FAILs with the count and `cmk reindex --full`; SKIPs when semantic search isn't in use). The report ends with an informational **memory-health section** (content quality: fact count + trust distribution, old-and-untouched facts, possible duplicate pairs, pending queue items) — read-only, never affects the exit code.
 ```bash
 cmk doctor
+cmk doctor --repair          # offer to run each failed check's fix, one at a time
+cmk doctor --repair --yes    # apply them without prompting (scripts / CI)
 ```
+
+**`--repair`** (Task 47) walks the failures *after* printing the report and offers each one's recovery command — showing the check's own problem line, the exact command, and a `[y/N]` whose default is **No**. It reports each result honestly and separately: applied · failed · declined · left for you. It never claims the check now passes — the checks ran *before* the repairs, so it tells you to re-run `cmk doctor` to confirm.
+
+Three rules bound what it will actually execute:
+
+- **It never runs a destructive or incomplete recovery.** A fix that deletes something (`Remove-Item` on a stale lock), one that still contains a `<placeholder>` you have to fill in, or one that is an instruction rather than a command, is **always printed for you to run yourself** — with the reason why — including under `--yes`.
+- **No terminal is never an implicit yes.** Piped or in CI, it prints the commands and names `--yes`; it does not prompt, and it does not assume.
+- **Only recognised commands run at all.** The kit's own verbs and the `npm install -g …` line HC-8 emits are executed; anything else is print-only by default, so a recovery a future check invents is never run before someone has decided it should be.
+
+Repairs run the *same* `cmk` you invoked, not whatever is on your PATH — the point is to avoid repairing with the stale global binary HC-9 exists to warn about. Every offer, answer and result is appended to `context/.locks/doctor-repair.log` as NDJSON, including the ones nobody ran.
 
 ### `cmk reindex [--boot|--full]`
 

@@ -57,7 +57,7 @@ function shimText(script = SCRIPT) {
 /**
  * schtasks emits UTF-16 with a BOM and CRLF (the D-306 class). Encoding the
  * fixture that way is the point of the test, not incidental setup: a naive
- * utf8 read of this buffer produces NUL-interleaved mojibake in which every
+ * utf8 read of this buffer produces mojibake padded with NUL bytes in which every
  * regex in the module silently fails to match — which would present as
  * `unreadable`, i.e. a permanent honest-looking SKIP that never checks anything.
  */

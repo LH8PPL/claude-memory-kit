@@ -25,7 +25,9 @@ body)` from each body, and **byte-compares the content-addressed cache entry aga
 
 ## Self-repair
 
-When a check fails, route to its repair step. **Never run install commands silently** — always ASK the user first.
+When a check fails, route to its repair step. **Never run install commands silently** — always ASK the user first ([NFR-10](specs/requirements.md), the consent gate).
+
+**`cmk doctor --repair`** does that walk for you: after the report it offers each failed check's recovery command, one at a time, with a `[y/N]` whose default is No. It refuses to run the ones that delete something or still contain a `<placeholder>` — those it prints for you, with the reason — and with no terminal attached it prints rather than assumes, naming `--yes`. Add `--yes` to apply the offered repairs without prompting in a script; it still never covers the printed-only ones. Plain `cmk doctor` is unchanged and reports only.
 
 ### HC-1 — Stop hook not registered
 

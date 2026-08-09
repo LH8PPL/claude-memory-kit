@@ -4,7 +4,7 @@
 // Door 2 (state): a health check must not change what it measures. The
 //   over-mutation guard below pins that a doctor run leaves the project tier
 //   byte-identical, including on the branches that discovered a problem.
-// Door 3 N/A here BY DESIGN: the scheduler spawn is injected as `schedulerProbe`
+// Door 3 N/A: by design — the scheduler spawn is injected as `schedulerProbe`
 //   so the doctor suite can never touch a real host scheduler. WHAT is spawned
 //   (the absolute System32 schtasks path + its verbatim argv) is pinned one
 //   layer down, in tests/cli-scheduler-state.test.js.

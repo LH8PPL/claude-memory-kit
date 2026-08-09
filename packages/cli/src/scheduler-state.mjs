@@ -54,7 +54,7 @@ const QUERY_TIMEOUT_MS = 10_000;
  * Decode a scheduler's stdout.
  *
  * `schtasks /query /XML` emits UTF-16 with a BOM and CRLF (the D-306 class).
- * Asking Node for `encoding: 'utf8'` would hand us NUL-interleaved mojibake in
+ * Asking Node for `encoding: 'utf8'` would hand us mojibake padded with NUL bytes in
  * which every regex below silently fails to match — presenting as a permanent,
  * innocent-looking `unreadable`, i.e. a check that never checks anything. So we
  * always read BYTES and sniff the BOM here.
