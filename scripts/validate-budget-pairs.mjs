@@ -157,6 +157,20 @@ export const BUDGET_REGISTRY = [
     overCapPattern: 'OVER-CAP clamps and says so',
   },
   {
+    name: 'viewer ranked-paging depth (VIEWER_SEARCH_DEPTH — how far `?offset=` can reach in SEARCH mode, pinned to search.mjs SEARCH_MAX_LIMIT; a ranked page is a slice of ONE constant-depth ranking, so past the depth the route serves an empty page and reports `reachable` < `total` rather than pretending)',
+    sourceRef: 'design §24.1.1 / Task 269 (D-426)',
+    testFile: 'tests/cli-viewer.test.js',
+    atCapPattern: 'AT-CAP: the last reachable offset is served normally',
+    overCapPattern: 'OVER-CAP: at exactly VIEWER_SEARCH_DEPTH the route stops paging',
+  },
+  {
+    name: 'viewer relevance bands (RELEVANCE_BANDS strong ≥ 0.7 / fair ≥ 0.4, inclusive lower bounds, over a relevance normalized against the top hit of the whole ranking — the edges are where a colour claim flips)',
+    sourceRef: 'design §24.1.1 / Task 269 (D-429)',
+    testFile: 'tests/cli-viewer.test.js',
+    atCapPattern: 'AT-CAP: the band edges are INCLUSIVE at exactly 0.7 and exactly 0.4',
+    overCapPattern: 'OVER-CAP: a hair under either edge drops a band',
+  },
+  {
     name: 'viewer graph node budget (`?limit=` over LIVE facts, newest-first; anchor hubs + archived-superseded predecessors ride on top and are counted separately; over-cap sets truncated:true)',
     sourceRef: 'design §24.1 / Task 255 (D-414)',
     testFile: 'tests/cli-viewer.test.js',

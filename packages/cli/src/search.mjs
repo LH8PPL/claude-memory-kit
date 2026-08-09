@@ -63,6 +63,17 @@ export const SEARCH_MODES = Object.freeze({
 export const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 1000;
 
+/**
+ * The engine's own ceiling on how many ranked rows one call can return.
+ *
+ * Exported (Task 269) because a PAGING consumer has to know how deep the ranking
+ * it is slicing actually goes: the viewer pages a search by asking for
+ * `offset + limit` rows and slicing, so its reachable depth IS this number. A
+ * copied literal there would silently drift the day this one moves, and the
+ * symptom would be a pager that claims a page it cannot serve.
+ */
+export const SEARCH_MAX_LIMIT = MAX_LIMIT;
+
 // Task 233: the bounded set of recall-origin tags the recall log accepts on a
 // `search` entry (skill-fire telemetry). Bounded to keep log cardinality small
 // — the CLI (`--source`) coerces unknown values to undefined against this set,
@@ -684,23 +695,50 @@ function flattenSnippet(s) {
 // backend keeps what is genuinely ITS OWN: the match, the snippet, the ranking.
 const DECISIONS_SNIPPET_MAX = 240;
 
+/**
+ * WHAT MATCHES a journal query — the ONE definition of it (Task 269).
+ *
+ * Extracted from `runDecisionsKeywordSearch` when the viewer's `/api/decisions`
+ * grew a `?q=`: a UI that searched the journal by its own rule would be a
+ * SECOND search engine over the same file, and the two would answer differently
+ * the first time either was touched. The CLI (`cmk search --scope decisions`),
+ * `mk_search` and the viewer all match through this function.
+ *
+ * The JOURNAL POSITION rides along because it is meaning, not bookkeeping: the
+ * journal is chronological, so an entry's index is the only ordering the
+ * decisions scope has (its `score` is that index — see the caller). A plain
+ * `filter()` would throw it away and the caller would have to re-derive it with
+ * an `indexOf`, which is both O(n²) and wrong on a journal with a repeated id.
+ *
+ * @param {Array<object>} entries `readDecisionsJournal` output
+ * @param {string} query case-insensitive substring; empty/absent matches ALL
+ * @returns {Array<{entry: object, index: number}>} matches, in journal order
+ */
+export function matchDecisionEntries(entries, query) {
+  const list = Array.isArray(entries) ? entries : [];
+  const needle = String(query ?? '').trim().toLowerCase();
+  const out = [];
+  for (let index = 0; index < list.length; index++) {
+    if (needle && !String(list[index].cleaned ?? '').toLowerCase().includes(needle)) continue;
+    out.push({ entry: list[index], index });
+  }
+  return out;
+}
+
 function runDecisionsKeywordSearch(_db, opts) {
   const entries = readDecisionsJournal(opts.projectRoot); // no journal → []
-  const needle = opts.query.trim().toLowerCase();
   const hits = [];
-  for (let i = 0; i < entries.length; i++) {
-    const e = entries[i];
-    if (!e.cleaned.toLowerCase().includes(needle)) continue;
+  for (const { entry, index } of matchDecisionEntries(entries, opts.query)) {
     hits.push({
-      id: e.id,
-      snippet: flattenSnippet(e.cleaned).slice(0, DECISIONS_SNIPPET_MAX),
+      id: entry.id,
+      snippet: flattenSnippet(entry.cleaned).slice(0, DECISIONS_SNIPPET_MAX),
       source_file: 'context/DECISIONS.md',
-      source_line: e.sourceLine,
-      retracted: e.retracted,
+      source_line: entry.sourceLine,
+      retracted: entry.retracted,
       // `score` is POSITIONAL (the entry index), NOT an FTS relevance rank —
       // the journal is chronological, so a lower score = an earlier decision.
       // Don't fuse/sort this against the facts/transcripts scopes' rank scores.
-      score: i,
+      score: index,
     });
     // NB: `limit` is a CHRONOLOGICAL head, not a relevance top-N — it returns
     // the first N matches in journal (oldest→newest) order, so a strongly
