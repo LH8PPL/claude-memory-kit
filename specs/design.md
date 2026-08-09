@@ -409,6 +409,21 @@ function generateId(tier: 'U' | 'P' | 'L', bullet_text: string): string {
 
 Implementation lives in `cmk` CLI's shared library (`@lh8ppl/cmk-canonicalize` package, MIT) so external tools (e.g. personal-wiki ingest) can compute the same IDs deterministically.
 
+#### 3.3.1 The write boundary validates a SUPPLIED id (Task 270, v0.6.6 — D-427)
+
+`writeFact` accepts an optional explicit `id` (graduation passes one, to preserve a bullet's citation id across the move into the fact store). Until Task 270 it took that id **on trust** — `opts.id ?? generateId(...)` — which made the kit capable of manufacturing a fact it could never find again:
+
+1. a caller supplies an id outside the §3.1 alphabet (the live case: an `8`),
+2. `writeFact` accepts it, returns `action: 'created'`, and lands a real file,
+3. `index-rebuild.parseObservationsFromFactFile` skips it as `invalid or missing id`,
+4. the fact is now durable on disk and **invisible to search, the viewer, the graph, and every other DB-backed route** — with no error anywhere, and a count off by one as the only symptom.
+
+**The rule:** a supplied id that fails `ID_PATTERN` is **REGENERATED**, not rejected — `generateId(tier, body)`, exactly as §3.3 specifies for an unsupplied one.
+
+**Why regenerate rather than reject** (decided by caller-mapping every explicit-id caller, not by preference): the sole production caller passing an explicit id is `graduation.mjs`, whose bullet matcher is deliberately loose and whose comment delegates alphabet validity to the writer. A reject there would make `graduateForCapRelief` fail `CAP_EXCEEDED` *after* its feasibility gate had already committed to graduating that bullet — so one legacy bad-alphabet bullet would wedge `MEMORY.md` at its cap permanently. Regeneration also reuses the mechanism the install-time repair path already chose for this exact shape (§13.2's `classifyFactId` → `repairable`), so the write path and the repair path agree instead of diverging.
+
+**Never silent:** the result carries `idRepaired` + `previousId`, the file keeps a `legacy_id` breadcrumb (the same field the §13.2 repair writes), and a `fact-id-repaired` audit entry is appended — deliberately NOT gated on the `audit:false` opt-out, since that flag exists to suppress a redundant `created` entry, never a data-integrity event. **HC-16** (§14) is the backstop for facts written before this boundary existed.
+
 ### 3.4 Consolidation / merge semantics
 
 When the weekly curator merges bullets `A` (`#P-AAAAAAAA`) and `B` (`#P-BBBBBBBB`) into `C` (new merged text):
@@ -2566,7 +2581,9 @@ Implementation: [`packages/cli/src/memory-recovery.mjs`](../packages/cli/src/mem
 
 ## 14. Failure modes + health checks
 
-Fifteen yes/no checks, run on demand by `cmk doctor`. Each has a documented self-repair path; the authoritative per-check table is [HEALTH-CHECKS.md](../HEALTH-CHECKS.md) — the rows below cover HC-1..HC-9 and are kept for their design rationale, while HC-10 (compaction liveness, Task 167), HC-11 (backend CLI, Task 200), HC-12 (deletion propagation, Task 210), HC-13 (stray tiers, Task 248), HC-14 (active kit health warnings, Task 250) and HC-15 (semantic vector mapping, Task 261 — §9.3.2) live there. (The two memsearch checks — formerly HC-1 "installed" + HC-7 "reachable" — were **removed in Task 120**; the remaining five from requirements.md renumbered to HC-1..HC-5, plus HC-6 native-memory detection per ADR-0011, HC-7 stale-lock detection per PR-B's class-2 lock audit, and HC-8 native-binding health per Task 141a / D-129. The cross-platform-emission audit lives in `validate-platform-commands.mjs`, not a runtime doctor check.)
+Sixteen yes/no checks, run on demand by `cmk doctor`. Each has a documented self-repair path; the authoritative per-check table is [HEALTH-CHECKS.md](../HEALTH-CHECKS.md) — the rows below cover HC-1..HC-9 and are kept for their design rationale, while HC-10 (compaction liveness, Task 167), HC-11 (backend CLI, Task 200), HC-12 (deletion propagation, Task 210), HC-13 (stray tiers, Task 248), HC-14 (active kit health warnings, Task 250), HC-15 (semantic vector mapping, Task 261 — §9.3.2) and HC-16 (fact reachability, Task 270 — §3.3.1) live there.
+
+**The HC-4 / HC-15 / HC-16 division is deliberate** — three checks over the index, each asking a question the others cannot: HC-4 compares INDEX.md's entry *count* against the file count (the committed markdown surface); HC-16 asks whether each fact is *in* the database index at all (membership); HC-15 asks whether an already-indexed fact's *vector* is its own (mapping). D-427 lived in the gap between them. (The two memsearch checks — formerly HC-1 "installed" + HC-7 "reachable" — were **removed in Task 120**; the remaining five from requirements.md renumbered to HC-1..HC-5, plus HC-6 native-memory detection per ADR-0011, HC-7 stale-lock detection per PR-B's class-2 lock audit, and HC-8 native-binding health per Task 141a / D-129. The cross-platform-emission audit lives in `validate-platform-commands.mjs`, not a runtime doctor check.)
 
 | ID | Check | Repair if failed |
 | --- | --- | --- |

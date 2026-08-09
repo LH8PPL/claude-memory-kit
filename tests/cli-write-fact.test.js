@@ -790,8 +790,8 @@ describe('Task 7 — writeFact() boundary', () => {
   // Task 270 (D-427) — an explicitly-supplied id that can never be found again.
   //
   // The bug: `const id = opts.id ?? generateId(...)` took a caller's id on
-  // trust. A fixture id of `P-5678ABCD` (`8` is outside the kit's base32
-  // alphabet) was ACCEPTED, returned `action:'created'`, and landed a real file
+  // trust. A fixture id carrying an `8` (outside the kit's base32
+  // alphabet — see BAD_ID below) was ACCEPTED, returned `action:'created'`, and landed a real file
   // — then `index-rebuild.parseObservationsFromFactFile` skipped it as
   // 'invalid or missing id', so the fact was unreachable through search, the
   // viewer, the graph, and every other DB-backed surface. No error anywhere;
