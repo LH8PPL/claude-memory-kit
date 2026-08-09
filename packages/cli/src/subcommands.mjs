@@ -2200,7 +2200,7 @@ export function runSetNativeMemory(enabled, opts = {}) {
  * command without executing — recommended first run so the user
  * sees what host-config will change before granting permissions.
  */
-function runRegisterCrons(options /* , command */) {
+export function runRegisterCrons(options /* , command */) {
   const dryRun = options?.dryRun === true;
   const unregister = options?.unregister === true;
   // Task 36 B1+B2 fix: emit the FULL cron command as
@@ -2266,6 +2266,23 @@ function runRegisterCrons(options /* , command */) {
     anySuccess = true;
     console.log(`cmk register-crons (${job.label}): ${r.action} on ${r.platform}`);
     console.log(`  command: ${r.command}`);
+    // Task 265 (D-424): registration on Windows is TWO steps — the schtasks
+    // /Create above, then the settings call that decides whether the job ever
+    // actually runs (battery + idle-end + catch-up + wake). Showing only the
+    // first would make --dry-run a partial account of what the command does.
+    if (r.settingsCommand) console.log(`  settings: ${r.settingsCommand}`);
+    // A failed settings call leaves a REGISTERED but starving task. Registration
+    // legitimately still succeeded (the lazy roll is the guarantee), so this is a
+    // warning rather than an error — but it must not be silent, which is the
+    // false-green class D-298 was.
+    if (r.settingsApplied === false) {
+      console.warn(
+        `  warning: the task registered, but its scheduler settings could NOT be applied — ` +
+        `Windows will refuse to start it on battery and may kill it when you return to the keyboard. ` +
+        `Re-run \`cmk register-crons\` (it is idempotent); if it keeps failing, apply the "settings:" ` +
+        `command above by hand in an ordinary PowerShell window.`,
+      );
+    }
     if (r.output) console.log(`  output: ${r.output.trim()}`);
   }
   // Task 35.3: maintain the cron-registered sentinel so lazy-compress
