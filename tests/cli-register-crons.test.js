@@ -36,7 +36,7 @@ import {
 } from '../packages/cli/src/register-crons.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 
 const FIXTURE_DIR = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'fixtures', 'schtasks');
 const readTaskXml = (name) => readFileSync(join(FIXTURE_DIR, name), 'utf8');
@@ -492,6 +492,16 @@ describe('Task 265 — the registered task must survive a developer laptop', () 
       expect(ps).toMatch(/catch \{ exit 1 \}/);
     });
 
+    it('REJECTS an entryName outside the safe charset — the exported contract is self-carrying', () => {
+      // The `-TaskName '<entryName>'` interpolation is single-quoted; its safety
+      // is the charset, not the quoting. registerCron validates before calling,
+      // but this function is exported, so it must not trust that.
+      for (const bad of ["it's", 'a b', 'x;y', 'q"z', '', null, undefined, 7]) {
+        expect(() => buildWindowsSettingsPowerShell(bad)).toThrow(/entryName must match/);
+      }
+      expect(() => buildWindowsSettingsPowerShell('cmk-daily-distill')).not.toThrow();
+    });
+
     it('does NOT set RestartOnIdle — with StopOnIdleEnd off there is nothing to restart', () => {
       // Decision trail: the task entry offered "set RestartOnIdle: true" as an
       // alternative. Rejected — MS docs are explicit that terminate-and-restart
@@ -749,6 +759,66 @@ describe('Task 265 — the registered task must survive a developer laptop', () 
       } else {
         expect(out).not.toMatch(/Batteries|IdleEnd|ScheduledTask/i);
       }
+    });
+  });
+
+  // Door 3, against the REAL binary. Every other assertion in this file compares
+  // STRINGS — and a typo'd switch (`-DontStopOnIdleEnds`) passes every one of
+  // them, then fails at runtime with the flags left hostile. That is precisely
+  // the failure class Task 265 exists to fix, so the switch names get a guard
+  // that only the real cmdlet can provide.
+  //
+  // Registers NOTHING: `New-ScheduledTaskSettingsSet` builds a settings object
+  // in memory and we discard it — no task is created, modified or queried. CI
+  // runs ubuntu so this skips there; it runs on Windows dev machines and at the
+  // cut-gate, which is where a bad switch would otherwise reach a user.
+  describe('real-binary switch binding (win32 only — registers nothing)', () => {
+    const itWin32 = process.platform === 'win32' ? it : it.skip;
+
+    itWin32('the REAL New-ScheduledTaskSettingsSet accepts every switch the kit passes', () => {
+      const psExe = join(
+        process.env.SystemRoot || process.env.windir || 'C:\\Windows',
+        'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe',
+      );
+      const switches = Object.keys(WINDOWS_TASK_SETTINGS)
+        .map((k) => WINDOWS_SETTINGS_SWITCHES[k])
+        .join(' ');
+      const r = spawnSync(
+        psExe,
+        ['-NoProfile', '-NonInteractive', '-Command', `New-ScheduledTaskSettingsSet ${switches} | Out-Null`],
+        { encoding: 'utf8', windowsHide: true, timeout: 30_000 },
+      );
+      // A parameter-binding failure exits non-zero and names the bad switch.
+      expect(r.stderr || '').not.toMatch(/A parameter cannot be found|ParameterBindingException/i);
+      expect(r.status).toBe(0);
+    });
+
+    itWin32('and the switches actually PRODUCE the posture (not merely bind)', () => {
+      // Binding proves the names exist; this proves they mean what we think.
+      const psExe = join(
+        process.env.SystemRoot || process.env.windir || 'C:\\Windows',
+        'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe',
+      );
+      const switches = Object.keys(WINDOWS_TASK_SETTINGS)
+        .map((k) => WINDOWS_SETTINGS_SWITCHES[k])
+        .join(' ');
+      const script =
+        `$s = New-ScheduledTaskSettingsSet ${switches}; ` +
+        `"$($s.DisallowStartIfOnBatteries),$($s.StopIfGoingOnBatteries),` +
+        `$($s.StartWhenAvailable),$($s.WakeToRun),$($s.IdleSettings.StopOnIdleEnd)"`;
+      const r = spawnSync(psExe, ['-NoProfile', '-NonInteractive', '-Command', script], {
+        encoding: 'utf8', windowsHide: true, timeout: 30_000,
+      });
+      expect(r.status).toBe(0);
+      const [disallowBat, stopBat, startAvail, wake, stopIdle] =
+        (r.stdout || '').trim().split(',').map((v) => v.trim().toLowerCase() === 'true');
+      expect({
+        DisallowStartIfOnBatteries: disallowBat,
+        StopIfGoingOnBatteries: stopBat,
+        StartWhenAvailable: startAvail,
+        WakeToRun: wake,
+        StopOnIdleEnd: stopIdle,
+      }).toEqual({ ...WINDOWS_TASK_SETTINGS });
     });
   });
 

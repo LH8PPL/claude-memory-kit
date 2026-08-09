@@ -53,6 +53,13 @@ export const DEFAULT_WEEKLY_SCHEDULE = { hour: 9, minute: 0, dayOfWeek: 0 };
 // Map dayOfWeek (0-6, Sun=0) to schtasks /D abbreviation.
 const WIN_DAY_MAP = { 0: 'SUN', 1: 'MON', 2: 'TUE', 3: 'WED', 4: 'THU', 5: 'FRI', 6: 'SAT' };
 
+// The entry-name charset, shared by every site that validates one. It is what
+// makes an entryName safe to interpolate into a shell line, a plist label, a
+// schtasks /TN and a single-quoted PowerShell string: no quote, no space, no
+// metacharacter can appear. Single source so a widening here can never leave one
+// site accepting what another rejects.
+const ENTRY_NAME_PATTERN = /^[a-zA-Z0-9_.-]+$/;
+
 // ---------------------------------------------------------------------------
 // Task 265 (D-424) — the Windows Task Scheduler posture the kit's jobs need.
 //
@@ -108,6 +115,12 @@ export const WINDOWS_TASK_SETTINGS = Object.freeze({
 // all five are always emitted. Parity with WINDOWS_TASK_SETTINGS is asserted
 // both directions in tests/cli-register-crons.test.js — a setting added without
 // a switch would silently never apply.
+//
+// @internal — exported ONLY so the parity + switch-binding tests can enumerate
+// it. Not part of the module's supported surface: callers wanting the posture
+// read WINDOWS_TASK_SETTINGS, callers wanting the command call
+// buildWindowsSettingsPowerShell(). This mapping may change shape (e.g. if a
+// setting ever needs a valued parameter rather than a switch) without notice.
 export const WINDOWS_SETTINGS_SWITCHES = Object.freeze({
   StartWhenAvailable: '-StartWhenAvailable',
   WakeToRun: '-WakeToRun',
@@ -150,6 +163,15 @@ const WINDOWS_SETTING_SCHEMA_DEFAULTS = Object.freeze({
  * @returns {string} the `-Command` script
  */
 export function buildWindowsSettingsPowerShell(entryName) {
+  // The safety of the single-quoted `-TaskName '<entryName>'` below rests on the
+  // charset. registerCron validates it before reaching here, but this function
+  // is EXPORTED — so it carries its own contract rather than trusting that every
+  // future caller happens to validate first.
+  if (typeof entryName !== 'string' || !ENTRY_NAME_PATTERN.test(entryName)) {
+    throw new Error(
+      `buildWindowsSettingsPowerShell: entryName must match ${ENTRY_NAME_PATTERN} (got ${JSON.stringify(entryName)})`,
+    );
+  }
   const switches = Object.keys(WINDOWS_TASK_SETTINGS)
     .map((k) => WINDOWS_SETTINGS_SWITCHES[k])
     .join(' ');
@@ -376,7 +398,7 @@ export function registerCron(opts = {}) {
   // macOS XML-escapes them in the plist; Linux nests them inside its single-quote
   // `echo '...'` — so `"` is safe on every platform.
   const entryName = opts.entryName ?? CRON_ENTRY_NAME;
-  if (!entryName || typeof entryName !== 'string' || !/^[a-zA-Z0-9_.-]+$/.test(entryName)) {
+  if (!entryName || typeof entryName !== 'string' || !ENTRY_NAME_PATTERN.test(entryName)) {
     errors.push("entryName: must match /^[a-zA-Z0-9_.-]+$/ (used in shell + plist + schtasks identifiers)");
   }
   const {
@@ -591,7 +613,7 @@ export function registerCron(opts = {}) {
  */
 export function unregisterCron(opts = {}) {
   const entryName = opts.entryName ?? CRON_ENTRY_NAME;
-  if (!entryName || typeof entryName !== 'string' || !/^[a-zA-Z0-9_.-]+$/.test(entryName)) {
+  if (!entryName || typeof entryName !== 'string' || !ENTRY_NAME_PATTERN.test(entryName)) {
     return errorResult({
       category: ERROR_CATEGORIES.SCHEMA,
       errors: ["entryName: must match /^[a-zA-Z0-9_.-]+$/"],

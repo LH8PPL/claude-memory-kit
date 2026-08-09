@@ -2200,7 +2200,7 @@ export function runSetNativeMemory(enabled, opts = {}) {
  * command without executing — recommended first run so the user
  * sees what host-config will change before granting permissions.
  */
-function runRegisterCrons(options /* , command */) {
+export function runRegisterCrons(options /* , command */) {
   const dryRun = options?.dryRun === true;
   const unregister = options?.unregister === true;
   // Task 36 B1+B2 fix: emit the FULL cron command as
