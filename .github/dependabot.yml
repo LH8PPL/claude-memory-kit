@@ -1,16 +1,73 @@
-# Dependabot (Task 53). Weekly dependency-update PRs so CVE fixes land as
-# reviewable changes rather than forcing risky bumps by hand. Covers the
-# npm workspace (root lockfile spans packages/*) + the GitHub Actions pins
-# used by the security/publish/install-matrix workflows.
+# Dependabot (Task 53; cadence reshaped in Task 266).
+#
+# TWO DIFFERENT JOBS share this one file, and conflating them is the mistake
+# Task 266 unpicked:
+#
+#   VERSION updates  — driven by the `schedule:` blocks below. Routine "a new
+#                      release exists" bumps. Weekly, and now GROUPED, so a
+#                      quiet week costs one review instead of five.
+#
+#   SECURITY updates — NOT scheduled and NOT enabled here. They are a
+#                      repository setting (Settings -> Advanced Security ->
+#                      Dependabot security updates; ENABLED on this repo) and
+#                      they are ALERT-driven: a PR opens within about a minute
+#                      of an advisory publishing, ignoring `schedule:` and
+#                      exempt from `open-pull-requests-limit`. This file only
+#                      shapes them — see the `applies-to: security-updates`
+#                      groups below.
+#
+# What Task 266 changed, and why it is grouping rather than detection:
+# between 2026-08-03 and 08-08 five advisories fired, and Dependabot's
+# security updates caught EVERY one on their own, transitives included (npm is
+# the one ecosystem where a security update is allowed to bump a parent to
+# reach a vulnerable sub-dependency). Detection was never the gap. Fan-out
+# was: five advisories arrived as separate PRs spread over two days, so they
+# were re-fixed by hand in PR #343 while Dependabot's own fix PRs (#340, #341)
+# sat open and unnoticed, then got closed as superseded. The groups below make
+# a multi-advisory day arrive as ONE pull request whose title names the group.
+#
+# When an advisory fires on YOUR pull request, the runbook is in SECURITY.md,
+# "When an advisory fires (the runbook)".
 version: 2
 updates:
   - package-ecosystem: npm
+    # Two preconditions for grouped SECURITY updates, both load-bearing and
+    # both silent when broken (the PRs just quietly go back to one-per-
+    # advisory): `directory` must be the path to the manifest, and there must
+    # be NO `target-branch`. tests/security-posture.test.js pins both.
     directory: /
     schedule:
       interval: weekly
+    # Applies to version updates only; security PRs are exempt and uncapped.
     open-pull-requests-limit: 5
+    # DEFAULT labels only. Dependabot creates its own default labels as needed,
+    # but a CUSTOM label that does not already exist in the repo is silently
+    # ignored — it never lands and nothing says why. The old `github-actions`
+    # entry below was exactly that, and this repo shows the symptom today: not
+    # one Dependabot PR carries a label at all. Left as a flag for the
+    # maintainer (creating labels is a repo setting, not a file change) rather
+    # than papered over. Nothing here depends on it: a grouped PR announces
+    # itself in its own title.
     labels:
       - dependencies
+    groups:
+      # A day with N advisories should cost one review, not N.
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+      # Routine bumps: minor + patch ride together. MAJORS are deliberately
+      # left OUT, so each one still arrives as its own PR with its own
+      # breaking-change review — batching a major into a five-package PR is
+      # how a red gate becomes unpickable.
+      npm-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+        patterns:
+          - '*'
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -18,4 +75,8 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - dependencies
-      - github-actions
+    groups:
+      # Action pins are low-risk and move together; one PR for all of them.
+      github-actions:
+        patterns:
+          - '*'
