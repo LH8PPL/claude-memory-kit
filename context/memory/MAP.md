@@ -4,7 +4,7 @@
 <!-- Browse this folder as an Obsidian vault. Each [[link]] opens a fact file. -->
 <!-- How to open + the read-vs-write rule: docs/OBSIDIAN.md -->
 
-Facts: 2270
+Facts: 2273
 
 ## feedback
 
@@ -651,6 +651,7 @@ Facts: 2270
 - [[project_windows-powershell-doesn-t-expand-in-npm-bfmab3gz]] — Windows PowerShell doesn't expand `*` in npm install paths; use explicit filenam
 - [[project_decisions-md-is-the-decision-journal-tas-bftduaqt]] — DECISIONS.md is the decision journal; Task 159 makes it auto-update automaticall
 - [[project_user-questioned-the-decision-to-mirror-n-bfvneyaq]] — User questioned the decision to mirror npm README to root's lean structure, impl
+- [[project_pr-338-open-with-codeql-sonar-checks-act-bfw296wg]] — PR #338 open with CodeQL/Sonar checks active; v0.6.5 release pending on green
 - [[project_verifies-whether-proper-tools-cmk-kit-vs-bgac9pqx]] — Verifies whether proper tools (cmk kit) vs shortcuts (bash) were used — indicate
 - [[project_task-233-adr-0024-memory-search-fix-via-evidence-bearing-hin]] — Task 233 (ADR-0024): Memory-search fix via evidence-bearing hints
 - [[project_youtube-to-slide-foreign-format-fact-file-pre-existing-not-r]] — youtube-to-slide foreign-format fact file — pre-existing, not rename-related
@@ -739,6 +740,7 @@ Facts: 2270
 - [[project_mcp-prompt-gate-only-appears-in-non-default-agent-scenario]] — MCP prompt gate only appears in non-default agent scenario
 - [[project_memory-routing-gap-caught-i-was-writing-cltknava]] — Memory routing gap caught — I was writing to harness slug path instead of kit's
 - [[project_task-247-review-checklist]] — Task 247 Review Checklist
+- [[project_minting-process-failure-self-managed-worktree-workaround]] — Minting Process Failure — Self-Managed Worktree Workaround
 - [[project_release-plan-v0-6-0-day-one-memory-v0-7-0-team-layer]] — Release Plan: v0.6.0 (Day-One Memory) & v0.7.0 (Team Layer)
 - [[project_three-tier-model-delegation-pattern]] — Three-Tier Model Delegation Pattern
 - [[project_avoid-duplicating-authoritative-docs-in-temp-locations]] — Avoid Duplicating Authoritative Docs in Temp Locations
@@ -1648,6 +1650,7 @@ Facts: 2270
 - [[project_coverage-gate-fix-workflow]] — Coverage Gate Fix Workflow
 - [[project_values-code-reuse-questions-why-kiro-int-r6wkxmbk]] — Values code reuse; questions why Kiro integration differs from Claude Code integ
 - [[project_challenges-the-reasoning-they-avoid-it-w-r7yx4wlu]] — Challenges the reasoning: "they avoid it" ≠ "we're ahead"; other systems may sim
+- [[project_powershell-silently-parses-stash-0-as-ha-r9qn2j4g]] — PowerShell silently parses `stash@{0}` as hashtable literal when unquoted; quoti
 - [[project_research-notes-indexed-via-research-index-not-documentation]] — Research Notes Indexed via Research INDEX, Not DOCUMENTATION-MAP
 - [[project_graph-database-feature-purpose-memory-lens-not-storage]] — Graph Database Feature Purpose: Memory Lens, Not Storage
 - [[project_benchmark-baseline-results-task-262-sub-task-1]] — Benchmark Baseline Results — Task 262 Sub-task 1

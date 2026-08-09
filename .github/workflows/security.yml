@@ -115,6 +115,19 @@ jobs:
           # FIRST time a real finding fired (2026-07-22). Unit tests fed the
           # function, never the workflow's output wiring ג€” the D-303 class.
           echo "title=$(node -e "process.stdout.write(require('./verdict.json').title)")" >> "$GITHUB_OUTPUT"
+      # Task 266 — the label this job files under must EXIST, or `gh issue
+      # create --label` fails and the finding is DISCARDED after being
+      # detected and formatted. That is not hypothetical: every scheduled run
+      # that found something has died right here since Task 237 shipped
+      # (`could not add label: 'security' not found` — 2026-08-04, 08-05,
+      # 08-07), which is why this repo has never had a watch issue. Same root
+      # cause as the dependabot.yml `labels:` no-op, one layer up: a label
+      # nobody created. Idempotent + unconditional, so it also repairs a label
+      # deleted later and keeps the close/search paths honest.
+      - name: Ensure the security label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh label create security --color d73a4a --description "Supply-chain / security findings" --force
       # Fail LOUDLY to an issue, not silently to a log (the task's own wording).
       # The stable marker in the body means a re-run updates the open issue
       # rather than filing a new one every morning.

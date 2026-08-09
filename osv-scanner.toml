@@ -14,6 +14,11 @@
 # STRUCTURALLY unreachable in the kit AND that has no fix inside the dependent's
 # admitted range — such an entry must name its reachability argument AND a
 # checkable removal trigger (D-248), or it does not belong here.
+#
+# This file is the LAST route, not the first. Before adding an entry, work the
+# runbook in SECURITY.md, "When an advisory fires" — an advisory reaches this
+# file only after "Dependabot already fixed it" and "the fix is lock-only" have
+# both been ruled out.
 
 [[IgnoredVulns]]
 id = "GHSA-67mh-4wv8-2f99"

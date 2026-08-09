@@ -954,7 +954,12 @@ export function rerankResults(results, { query, now = Date.now(), temporalWindow
       s *= 1 + 0.3 * (overlap / qTokens.size);
     }
     if (target != null && r.created_at != null) {
-      const diff = Math.abs(r.created_at * 1000 - target);
+      // `created_at` is ALREADY epoch ms (index-rebuild's isoToEpochMs =
+      // Date.parse) — the same contract semanticRowPassesFilters states above.
+      // This multiplied it by 1000 (Task 264(b), the same seconds-vs-ms error
+      // fixed in that sibling), which put every diff ~3 orders past the window
+      // and made `boost` identically 0: the temporal term never fired at all.
+      const diff = Math.abs(r.created_at - target);
       const boost = Math.max(0, 0.4 * (1 - diff / temporalWindowMs));
       s *= 1 + boost;
     }
