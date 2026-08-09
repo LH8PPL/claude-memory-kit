@@ -1,7 +1,7 @@
 // @doors: 1, 2
 // Door 3 N/A: structural assertions read repo security-config files; no subprocess spawn.
-// Door 4 N/A: no NDJSON observability.
-// Door 5 N/A: no message-queue.
+// Door 4 N/A: no message-queue.
+// Door 5 N/A: no NDJSON observability.
 
 // Tests for Task 53 — package security hardening (T-041).
 // Asserts the security posture is wired structurally: the CI scanners
@@ -217,11 +217,19 @@ describe('Task 266 — advisories arrive grouped, not fanned out', () => {
     }
   });
 
-  it('the github-actions ecosystem is grouped as well', () => {
+  it('the github-actions ecosystem groups SECURITY updates too', () => {
     const doc = yaml.load(read(join(REPO_ROOT, '.github', 'dependabot.yml')));
     const actions = (doc.updates ?? []).find((u) => u['package-ecosystem'] === 'github-actions');
     expect(actions, 'no github-actions update block').toBeTruthy();
-    expect(Object.keys(actions.groups ?? {}).length).toBeGreaterThan(0);
+    const groups = Object.values(actions.groups ?? {});
+    // Not just "has a group" — `applies-to` DEFAULTS to version-updates, so a
+    // presence-only assertion passes on a config that leaves security updates
+    // fanning out exactly as before.
+    const security = groups.filter((g) => g['applies-to'] === 'security-updates');
+    expect(security.length, 'no github-actions group with applies-to: security-updates').toBeGreaterThan(0);
+    for (const g of security) {
+      expect(selectorsOf(g).length, 'security group selects nothing').toBeGreaterThan(0);
+    }
   });
 
   // The silent-no-op guard. GitHub: "the `directory` must be the path to the
@@ -236,6 +244,22 @@ describe('Task 266 — advisories arrive grouped, not fanned out', () => {
       npm['target-branch'],
       'a target-branch silently disables grouped security updates',
     ).toBeUndefined();
+  });
+});
+
+describe('Task 266 — the standing watch cannot be muted by a missing label', () => {
+  // Task 237 built the signal for advisories that never raise a Dependabot
+  // alert (postcss, fast-uri: zero alerts, ever) — a scheduled scan that files
+  // an ISSUE. It has never delivered one. Every scheduled run that FOUND
+  // something died at the report step with `could not add label: 'security'
+  // not found` (runs 2026-08-04, 08-05, 08-07), because the repo has no
+  // `security` label. The finding was detected, formatted, and thrown away.
+  // Same root cause as the dead dependabot `labels:` block, one layer up.
+  it('security.yml ensures the label exists before it files or searches', () => {
+    const text = read(wf('security.yml'));
+    expect(text, 'watch still assumes a label the repo may not have').toMatch(
+      /gh label create security/,
+    );
   });
 });
 
