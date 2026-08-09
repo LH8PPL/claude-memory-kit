@@ -65,6 +65,38 @@ So the same two scanners also run **daily on a schedule** (and on demand via `wo
 
 **What the watch covers, honestly:** *published* advisories in the npm and OSV databases. It does **not** detect zero-days, typosquatted packages, or a compromised-but-not-yet-reported version — it is a latency fix for known advisories, not a guarantee against unknown ones. We deliberately do **not** maintain a hand-curated blocklist of known-compromised `package@version` pairs: such a list rots the moment it stops being tended, and a stale security list is worse than none because it reads as coverage.
 
+### When an advisory fires (the runbook)
+
+Detection is handled. **Dependabot security updates are enabled on this repo, and they are alert-driven** — a fix PR opens within about a minute of an advisory publishing, without waiting for the weekly schedule and without counting against the open-PR limit. For **npm specifically**, they reach *transitive* dependencies too: a security update may bump a parent to get at a vulnerable sub-dependency. Multiple advisories on the same day arrive as **one grouped PR** (`.github/dependabot.yml`).
+
+So the failure mode is not "nobody noticed." It is **paying the fix twice** — hand-rolling a bump while Dependabot's PR for the same advisory sits open. Between 2026-08-03 and 08-08 that happened: five advisories, all caught automatically, two of them re-fixed by hand anyway.
+
+**When a security gate goes red on your PR:**
+
+1. **Look before you fix.** The fix probably already exists:
+
+   ```bash
+   gh pr list --state open --author app/dependabot
+   gh api repos/LH8PPL/core-memory-kit/dependabot/alerts --jq '.[] | select(.state=="open")'
+   ```
+
+   If a Dependabot PR covers it — merge that, then rebase yours. Do not hand-roll a second one.
+
+2. **Keep the advisory out of your feature PR.** A dependency fix lands as **its own PR**, so a feature PR keeps a zero-dependency diff and its claims stay checkable. Rebase once the fix is on `main`.
+
+3. **Stay lock-only when the range allows.** If the fixed version already satisfies the declared range, only `package-lock.json` changes:
+
+   ```bash
+   npm audit fix --package-lock-only
+   git diff --stat package.json   # expect: no change
+   ```
+
+   A `package.json` edit means the fix is outside the range — that is a real decision (a bump across a range boundary), not a lockfile refresh, and it says so in the PR body.
+
+4. **No fix available?** It goes in [`osv-scanner.toml`](osv-scanner.toml), never into a loosened gate. An entry must carry **both**: a **reachability argument** (why the kit structurally never executes the vulnerable path) **and** a **checkable removal trigger** (the concrete condition, with the command that tests it). If you can't write both, it doesn't belong there — fix it or block on it.
+
+**Never:** raise `--audit-level`, add `continue-on-error` to a scanner, or add an `IgnoredVulns` entry with a reason but no removal trigger. A gate that stops biting reads as coverage while providing none — the same reason we don't keep a hand-curated blocklist.
+
 ### Accepted, non-shipping findings
 
 `npm audit` currently reports a small number of **moderate** advisories confined to the **dev/test toolchain** (`vitest` / `vite` / `esbuild`). These packages are **devDependencies — they are never published** in the npm tarball (the `files` whitelist ships only `bin/`, `src/`, `template/`, `README.md`). They do not reach a user's machine and so are not gated on; Dependabot tracks them for routine cleanup.
