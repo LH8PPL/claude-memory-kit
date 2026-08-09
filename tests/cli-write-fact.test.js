@@ -34,6 +34,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { writeFact } from '../packages/cli/src/write-fact.mjs';
 import { generateId, canonicalize } from '../packages/canonicalize/src/index.mjs';
+// Task 270: the boundary fix is only meaningful against the SAME pattern the
+// index skips on, and the SAME parser that did the skipping — import both
+// rather than restating the regex here.
+import { ID_PATTERN } from '../packages/cli/src/tier-paths.mjs';
+import { parseObservationsFromFactFile } from '../packages/cli/src/index-rebuild.mjs';
+import { listFactFiles } from '../packages/cli/src/fact-store.mjs';
 
 function validOptions(overrides = {}) {
   return {
@@ -777,6 +783,129 @@ describe('Task 7 — writeFact() boundary', () => {
         ? readdirSync(factDir).filter((f) => f !== 'INDEX.md')
         : [];
       expect(files).toHaveLength(0);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // Task 270 (D-427) — an explicitly-supplied id that can never be found again.
+  //
+  // The bug: `const id = opts.id ?? generateId(...)` took a caller's id on
+  // trust. A fixture id of `P-5678ABCD` (`8` is outside the kit's base32
+  // alphabet) was ACCEPTED, returned `action:'created'`, and landed a real file
+  // — then `index-rebuild.parseObservationsFromFactFile` skipped it as
+  // 'invalid or missing id', so the fact was unreachable through search, the
+  // viewer, the graph, and every other DB-backed surface. No error anywhere;
+  // the only symptom was a count off by one. Durable-but-unfindable is the
+  // D-366 class, manufactured by our own write path.
+  //
+  // The fix REGENERATES rather than rejects (see the caller map in the PR): the
+  // one production caller that passes an explicit id is graduation.mjs, whose
+  // BULLET_RE is deliberately loose and whose comment delegates alphabet
+  // validity to "the writer's concern" — and a reject there would wedge
+  // MEMORY.md at cap forever on one legacy bullet. Regeneration reuses the very
+  // mechanism the repair path (D-394 `classifyFactId` → 'repairable') already
+  // chose for this exact shape, so write and repair agree instead of diverging.
+  describe('Task 270 — explicit id validated at the boundary (D-427)', () => {
+    // The alphabet-invalid id from the live finding. `8` is one of the six
+    // ambiguous chars the kit's base32 alphabet excludes.
+    const BAD_ID = 'P-5678ABCD'; // validate-test-ids: ignore
+
+    it('Door 1 (Response): an alphabet-invalid explicit id is REPLACED by a valid derived id, not echoed back', () => {
+      const opts = validOptions({ projectRoot, id: BAD_ID });
+      const result = writeFact(opts);
+      expect(result.action).toBe('created');
+      // The returned id must be usable — every DB-backed route keys on it.
+      expect(result.id).toMatch(ID_PATTERN);
+      expect(result.id).not.toBe(BAD_ID);
+      // Regenerated content-addressed, exactly as classifyFactId would derive it.
+      expect(result.id).toBe(generateId('P', opts.body));
+      // The response is HONEST about the substitution — never a silent swap.
+      expect(result.idRepaired).toBe(true);
+      expect(result.previousId).toBe(BAD_ID);
+    });
+
+    it('Door 2 (State): the file on disk carries the valid id + a legacy_id breadcrumb', () => {
+      const result = writeFact(validOptions({ projectRoot, id: BAD_ID }));
+      const { frontmatter } = parseFrontmatter(result.path);
+      expect(frontmatter.id).toMatch(ID_PATTERN);
+      expect(frontmatter.id).toBe(result.id);
+      // Same field the memory-recovery repair path writes (applyIdRepair), so
+      // the two paths leave identical forensics behind.
+      expect(frontmatter.legacy_id).toBe(BAD_ID);
+      // aliases must follow the REAL id, or an Obsidian `[[id]]` link dangles.
+      expect(frontmatter.aliases).toEqual([result.id]);
+    });
+
+    // THE integration door — the one that would have caught the original bug.
+    // Unit-green on writeFact alone never saw this: the write path said yes and
+    // the index path said "no such fact", and nothing compared the two.
+    it('the written fact is VISIBLE to the index parser (the orphan is not manufactured)', () => {
+      const result = writeFact(validOptions({ projectRoot, id: BAD_ID }));
+      const parsed = parseObservationsFromFactFile({
+        path: result.path,
+        content: readFileSync(result.path, 'utf8'),
+        tier: 'P',
+        projectRoot,
+      });
+      expect(parsed.skipped).toBeUndefined();
+      expect(parsed.observations.length).toBeGreaterThan(0);
+      expect(parsed.observations[0].id).toBe(result.id);
+    });
+
+    it('Door 5 (Observability): the repair is audited with its previousId', () => {
+      const result = writeFact(validOptions({ projectRoot, id: BAD_ID }));
+      const entries = readAuditLog(join(projectRoot, 'context'));
+      const repair = entries.filter((e) => e.reasonCode === 'fact-id-repaired');
+      expect(repair).toHaveLength(1);
+      expect(repair[0].id).toBe(result.id);
+      expect(repair[0].extra.previousId).toBe(BAD_ID);
+    });
+
+    // The graduation contract: a VALID explicit id must still pass through
+    // untouched, or graduation stops preserving citation ids across the move.
+    it('a VALID explicit id is preserved verbatim (graduation is unaffected)', () => {
+      const goodId = generateId('P', 'some other body entirely');
+      const result = writeFact(validOptions({ projectRoot, id: goodId }));
+      expect(result.id).toBe(goodId);
+      expect(result.idRepaired).toBeUndefined();
+      const { frontmatter } = parseFrontmatter(result.path);
+      expect(frontmatter.id).toBe(goodId);
+      expect(frontmatter.legacy_id).toBeUndefined();
+    });
+
+    // Over-mutation guard: seed N valid neighbours, write ONE bad-id fact,
+    // assert the other N are byte-untouched. A boundary fix that rewrites or
+    // re-ids its neighbours would be a far worse bug than the one it fixes.
+    it('over-mutation guard: repairing one fact leaves every valid neighbour untouched', () => {
+      const neighbours = ['alpha', 'bravo', 'charlie'].map((slug) =>
+        writeFact(validOptions({ projectRoot, slug, body: `body for ${slug}` })),
+      );
+      const before = neighbours.map((n) => readFileSync(n.path, 'utf8'));
+
+      const result = writeFact(
+        validOptions({ projectRoot, slug: 'delta', body: 'delta body', id: BAD_ID }),
+      );
+      expect(result.action).toBe('created');
+
+      // N-1 untouched: same bytes, same ids, still on disk.
+      neighbours.forEach((n, i) => {
+        expect(existsSync(n.path)).toBe(true);
+        expect(readFileSync(n.path, 'utf8')).toBe(before[i]);
+      });
+      // And the population is exactly N+1 — no file was replaced or dropped.
+      // `listFactFiles` (the shared walker), not a hand-rolled readdir filter:
+      // the generated INDEX.md *and* MAP.md both live in this dir, and
+      // re-deriving the skip rules here is the drift Task 241 removed.
+      const files = listFactFiles(join(projectRoot, 'context', 'memory'));
+      expect(files).toHaveLength(4);
+    });
+
+    it('a non-string / structurally-wrong explicit id is repaired the same way', () => {
+      // The MCP/import shape: an id that is not even the right type.
+      const result = writeFact(validOptions({ projectRoot, id: 12345 }));
+      expect(result.action).toBe('created');
+      expect(result.id).toMatch(ID_PATTERN);
+      expect(result.idRepaired).toBe(true);
     });
   });
 });

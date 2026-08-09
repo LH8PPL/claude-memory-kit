@@ -13,7 +13,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { generateId } from '@lh8ppl/cmk-canonicalize';
-import { VALID_TIERS, resolveTierRoot, resolveFactDir } from './tier-paths.mjs';
+import { VALID_TIERS, resolveTierRoot, resolveFactDir, ID_PATTERN } from './tier-paths.mjs';
 import { parse, format } from './frontmatter.mjs';
 import { eachFactIn } from './fact-store.mjs';
 import { reindex } from './reindex.mjs';
@@ -169,6 +169,11 @@ function buildFrontmatterObject(opts, computed) {
   // Key order matters for visual diff stability — insertion order = on-disk order.
   const fm = {
     id: computed.id,
+    // Task 270 (D-427): the id the caller SUPPLIED, when it was unusable and we
+    // derived a real one instead. Same field name + position the memory-recovery
+    // repair path writes (`applyIdRepair`), so a repaired-at-write fact and a
+    // repaired-at-install fact leave identical forensics on disk.
+    ...(computed.legacyId ? { legacy_id: computed.legacyId } : {}),
     // Task 254 (Obsidian vault view — shape a, forward-only): the fact's own id
     // as an Obsidian `aliases`, so a `[[P-XXXX]]` id reference (the kit's
     // cross-reference currency — used across fact bodies + the `superseded_by`
@@ -350,6 +355,56 @@ function maybeAutoLink({ opts, factOpts, id, createdAt }) {
   }
 }
 
+/**
+ * Task 270 (D-427) — THE ID BOUNDARY. Decide the fact's id from what the caller
+ * supplied, never trusting it blind.
+ *
+ * The bug this closes: `opts.id ?? generateId(...)` took a caller's id on faith,
+ * so an id outside the kit's base32 alphabet (the live finding: `P-5678ABCD`,
+ * where `8` is one of the six excluded ambiguous chars) was ACCEPTED, returned
+ * `action:'created'`, and landed a real file — which `index-rebuild`'s
+ * `parseObservationsFromFactFile` then skipped as 'invalid or missing id'. The
+ * write path said yes, every DB-backed read path said no such fact, and no
+ * error fired anywhere between them. The only symptom was a count off by one.
+ *
+ * REGENERATE, NOT REJECT — decided after caller-mapping every explicit-id
+ * caller, and the map is what settles it:
+ *   · `graduation.mjs:graduateOne` is the ONLY production caller that passes an
+ *     explicit id. Its `BULLET_RE` is deliberately loose (`[PUL]-[A-Za-z0-9]+`)
+ *     and its comment delegates alphabet validity to "the writer's concern" —
+ *     i.e. to here. That is the separately-correct-jointly-broken seam.
+ *   · A REJECT on that path is strictly worse than the bug: `graduateOne`
+ *     erroring makes the caller keep the bullet, but `graduateForCapRelief`'s
+ *     feasibility gate has already committed to graduating it to get under cap,
+ *     so the write fails CAP_EXCEEDED — one legacy bad-alphabet bullet would
+ *     wedge MEMORY.md at its cap permanently. A reject that breaks the cap-relief
+ *     path is exactly the "reject that breaks restore" the task warned about.
+ *   · Regeneration reuses the mechanism the REPAIR path (D-394) already chose
+ *     for this very shape — `classifyFactId` returns 'repairable' for a
+ *     non-ID_PATTERN id with a non-empty body and derives `generateId(tier,
+ *     body)`. Write and repair now agree instead of diverging.
+ *   · It is a no-op for every currently-working caller: regeneration fires only
+ *     when the supplied id FAILS ID_PATTERN, so no valid path changes behavior.
+ *
+ * The substitution is never silent — the caller sees `idRepaired`/`previousId`,
+ * the file keeps a `legacy_id` breadcrumb (the same field `applyIdRepair`
+ * writes), and an audit entry records it.
+ *
+ * @returns {{id: string, legacyId: string|null}}
+ */
+function resolveFactId(supplied, tier, body) {
+  if (supplied === undefined || supplied === null) {
+    return { id: generateId(tier, body), legacyId: null };
+  }
+  if (typeof supplied === 'string' && ID_PATTERN.test(supplied)) {
+    return { id: supplied, legacyId: null };
+  }
+  // Anything else — wrong alphabet, wrong length, wrong type entirely — is an
+  // id no read path could ever resolve. Derive the real one; keep the original
+  // visible rather than discarding it.
+  return { id: generateId(tier, body), legacyId: String(supplied) };
+}
+
 export function writeFact(opts = {}) {
   const errors = validateOptions(opts);
   if (errors.length > 0) {
@@ -440,7 +495,7 @@ export function writeFact(opts = {}) {
 
   // Use the sanitized body/title for id, frontmatter, and the file body.
   const factOpts = { ...opts, body, title };
-  const id = opts.id ?? generateId(opts.tier, body);
+  const { id, legacyId } = resolveFactId(opts.id, opts.tier, body);
   const createdAt = opts.createdAt ?? nowIso();
   const tierRoot = resolveTierRoot(opts);
   const factDir = resolveFactDir(opts.tier, tierRoot);
@@ -526,7 +581,7 @@ export function writeFact(opts = {}) {
   if (linkDecision?.related?.length) factOpts.related = linkDecision.related;
 
   mkdirSync(factDir, { recursive: true });
-  const frontmatter = buildFrontmatterObject(factOpts, { id, createdAt });
+  const frontmatter = buildFrontmatterObject(factOpts, { id, createdAt, legacyId });
   writeFileSync(path, format({ frontmatter, body: `\n${factOpts.body}\n` }), 'utf8');
   // Door 5, AFTER the file lands: an audit line always describes a link that
   // exists on disk.
@@ -616,5 +671,37 @@ export function writeFact(opts = {}) {
     }
   }
 
-  return { action: 'created', id, path };
+  // Task 270 (D-427), Door 5. A supplied id we could not use is a data-integrity
+  // event, so it is logged UNCONDITIONALLY — deliberately not gated on
+  // `opts.audit`, unlike the `created` entry above. `audit:false` exists so a
+  // caller with richer create semantics (merge-facts → CURATED_MERGE) avoids a
+  // redundant duplicate; it was never meant to suppress a different, rarer, and
+  // strictly more important event. A SILENT id substitution is the same class of
+  // failure as the silent orphan this task removes.
+  //
+  // Same action + reasonCode the install-time repair uses, so one audit query
+  // (`fact-id-repaired`) finds every id repair the kit has ever performed,
+  // whichever path performed it.
+  if (legacyId) {
+    try {
+      appendAuditEntry(tierRoot, {
+        ts: createdAt,
+        action: 'fact-id-repaired',
+        tier: opts.tier,
+        id,
+        reasonCode: REASON_CODES.FACT_ID_REPAIRED,
+        paths: { after: path },
+        extra: { previousId: legacyId, at: 'write-fact' },
+      });
+    } catch {
+      // best-effort; the fact is already durably on disk with a usable id
+    }
+  }
+
+  return {
+    action: 'created',
+    id,
+    path,
+    ...(legacyId ? { idRepaired: true, previousId: legacyId } : {}),
+  };
 }
