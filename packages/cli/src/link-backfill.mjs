@@ -16,9 +16,16 @@
 //        · its markdown carries `related:`             → it was LINKED;
 //        · a `link_eval` row matches its content sha   → it was CONSIDERED and
 //          had nothing above the floor.
-//      `link_eval` lives in the REBUILDABLE index on purpose: losing it to a
-//      full reindex costs a re-consideration, which is idempotent work — never
-//      lost work, and never a second source of truth about the markdown.
+//      `link_eval` lives in the REBUILDABLE index on purpose, and `reindexFull`
+//      DROPS IT with the rest of the derived tables — costing a re-consideration,
+//      which is idempotent work, never lost work, and never a second source of
+//      truth about the markdown. That drop is load-bearing, not incidental: it
+//      is the ONLY way to un-mark a corpus, so `cmk reindex --full` (and
+//      `cmk repair --index`, which calls it) is the documented repair when a run
+//      marked facts it should not have. Until 2026-08-10 this comment described
+//      a drop that did not exist — the table survived every reindex and nothing
+//      cleared it, which made a bad marking permanent. Code and comment now
+//      agree; if you change one, change the other.
 //   4. Bounded per run (`max`), with `remaining` reported so a caller/cron
 //      knows there is more.
 //   5. Re-running is idempotent and safe: the markdown tier stays the truth.
@@ -40,7 +47,7 @@ import { hashContent } from './content-hash.mjs';
 import { openIndexDb } from './index-db.mjs';
 import { reindexBoot } from './index-rebuild.mjs';
 import { ERROR_CATEGORIES, errorResult } from './result-shapes.mjs';
-import { nowIso } from './audit-log.mjs';
+import { appendAuditEntry, nowIso, REASON_CODES } from './audit-log.mjs';
 import {
   autoLinkFact,
   auditAutoLink,
@@ -167,13 +174,23 @@ function applyRelated(path, slugs) {
  * @param {'P'|'L'|'U'} [opts.tier='P']
  * @param {number} [opts.max=BACKFILL_DEFAULT_MAX]
  * @param {boolean} [opts.dryRun=false]  report only — zero writes of any kind
- * @param {number} [opts.dryRunSkip=0]  DRY-RUN ONLY pagination cursor: skip
- *   this many pending facts before considering any. A wet run needs no cursor —
- *   every fact it considers leaves the pending walk through an artifact, so the
- *   next batch naturally starts after the last one. A dry run persists nothing,
- *   so without a cursor batch 2 would re-consider batch 1's facts forever. It is
+ * @param {Set<string>} [opts.dryRunSeen]  DRY-RUN ONLY cursor: the ids this dry
+ *   run has already considered. A wet run needs no cursor — every fact it
+ *   considers leaves the pending walk through an artifact, so the next batch
+ *   naturally starts after the last one. A dry run persists nothing, so without
+ *   a cursor batch 2 would re-consider batch 1's facts forever.
+ *
+ *   IT IS A SET OF IDS, NOT A COUNT, deliberately. An index cursor ("skip the
+ *   first N") assumes the pending walk is stable, and it is not: a fact captured
+ *   while the run is in flight changes the walk's ORDER, so a count-based cursor
+ *   would skip a fact nobody looked at and re-consider one already reported. An
+ *   id set is correct under growth by construction.
+ *
+ *   UPDATED IN PLACE with the ids this batch considered — it is a cursor, and a
+ *   cursor that does not advance is not a cursor.
+ *
  *   IGNORED when `dryRun` is false, because there it would silently skip facts
- *   the run is supposed to write.
+ *   the run exists to write.
  * @param {{similarityFn:Function, backend:string}} [opts.similarity]  the
  *   prepared semantic backend; absent → token-Jaccard.
  * @returns {{tier, backend, floor, evaluated, linked, edges, wouldLink,
@@ -185,7 +202,7 @@ export function linkBackfill({
   tier = 'P',
   max = BACKFILL_DEFAULT_MAX,
   dryRun = false,
-  dryRunSkip = 0,
+  dryRunSeen = null,
   similarity = null,
   now = null,
   sampleLimit = 10,
@@ -251,13 +268,21 @@ export function linkBackfill({
     let edges = 0;
     let wouldEdges = 0;
 
-    const skip = dryRun ? Math.max(0, Math.trunc(dryRunSkip) || 0) : 0;
-    let cursor = 0;
+    // The dry-run cursor, ignored entirely on a wet run (see the jsdoc).
+    const seen = dryRun && dryRunSeen instanceof Set ? dryRunSeen : null;
+    let skippedSeen = 0;
+
+    // A degenerate floor is a property of the CORPUS, not of any one fact — so
+    // the first decision that reports one is the answer for every fact in the
+    // batch, and the run refuses rather than continuing.
+    let degenerate = null;
 
     for (const fact of pendingFacts({ projectRoot, userDir, tier, evaluated })) {
-      if (cursor++ < skip) continue;
+      if (seen?.has(fact.id)) {
+        skippedSeen += 1;
+        continue;
+      }
       if (considered >= max) break;
-      considered += 1;
 
       const decision = autoLinkFact({
         db,
@@ -271,6 +296,30 @@ export function linkBackfill({
         now: ts,
         candidates,
       });
+
+      // THE DEGENERATE FLOOR — REFUSE, NEVER MARK (B1).
+      //
+      // `autoLinkFact`'s two degeneracy guards (floor at/above the calibrated
+      // near-dup ceiling; floor at/below the random-pair median) return zero
+      // links WITH A NON-NULL FLOOR. Read as an ordinary "nothing above the
+      // floor", that wrote a `link_eval` marker for every fact in the corpus —
+      // and since the marker is keyed by content sha, an unedited fact was then
+      // never re-considered. One run could mark a whole corpus as done while
+      // linking nothing, and the write path's own promise ("a later backfill
+      // over a grown corpus re-decides") was silently revoked.
+      //
+      // Nothing here was genuinely CONSIDERED — there was no usable floor to
+      // consider it against — so nothing is marked, the fact is not counted as
+      // evaluated, and the batch stops. The floor is corpus-wide, so the first
+      // fact's verdict is every fact's verdict; walking the other 249 would only
+      // repeat it.
+      if (decision.degenerate) {
+        degenerate = decision.degenerate;
+        break;
+      }
+
+      considered += 1;
+      if (seen) seen.add(fact.id);
 
       if (decision.nearDups.length > 0) bands.nearDup += 1;
 
@@ -339,14 +388,19 @@ export function linkBackfill({
     let remaining = 0;
     for (const _ of pendingFacts({ projectRoot, userDir, tier, evaluated: afterEval })) remaining++;
     // A dry run leaves no artifact, so the walk still yields everything it just
-    // looked at: subtract what THIS batch considered AND what earlier batches
-    // of the same dry run skipped past.
-    if (dryRun) remaining = Math.max(0, remaining - considered - skip);
+    // looked at: subtract what THIS batch considered AND the ones it skipped
+    // because an earlier batch of the same dry run had already reported them.
+    // Both terms are counted from the walk itself, so a corpus that grew mid-run
+    // simply shows up as more `remaining` — never as a mis-paged cursor.
+    if (dryRun) remaining = Math.max(0, remaining - considered - skippedSeen);
 
     return {
       tier,
       backend,
       floor: floorRec?.floor ?? null,
+      // The corpus-level refusal, or null. A caller that sees this must NOT
+      // read `remaining === 0` / `evaluated === 0` as "finished".
+      degenerate,
       evaluated: considered,
       // `linked`/`edges` count WRITES THAT LANDED; `wouldLink`/`wouldAddEdges`
       // count facts that cleared the floor, which is the dry run's answer and
@@ -400,7 +454,9 @@ export function linkBackfill({
  * @returns {{synced: boolean, edgeCount: number, filesReindexed: number, error?: string}}
  */
 export function syncIndexAfterBackfill({ projectRoot, userDir } = {}) {
-  if (!projectRoot) return { synced: false, edgeCount: 0, filesReindexed: 0 };
+  if (!projectRoot) {
+    return { synced: false, edgeCount: 0, filesReindexed: 0, error: 'no project root' };
+  }
   try {
     const db = openIndexDb({ projectRoot });
     try {
@@ -428,6 +484,37 @@ export function syncIndexAfterBackfill({ projectRoot, userDir } = {}) {
 }
 
 /**
+ * DOOR 5 for a failed in-band sync. The links are on disk and safe, so this is
+ * not an error — but it must not be silent either, which is exactly the
+ * discipline `reindexBoot` already applies to its own edge-rebuild failures.
+ *
+ * Lives here rather than in the CLI so the audit-log wiring stays with its
+ * siblings (the module already owns `appendAuditEntry` / `resolveTierRoot`), and
+ * so the verb's injected-sync test can still exercise the reporting path.
+ *
+ * Shares `INDEX_REBUILD_FAILED` with `writeFact` rather than minting a
+ * near-duplicate code: same event kind — the durable write landed, the
+ * best-effort index refresh threw. Consumers disambiguate on `action`.
+ */
+export function auditIndexSyncFailure({ projectRoot, userDir, tier = 'P', error, linked = 0, edges = 0, now = null } = {}) {
+  try {
+    appendAuditEntry(resolveTierRoot({ tier, projectRoot, userDir }), {
+      ts: now ?? nowIso(),
+      action: 'index-rebuild-failed',
+      tier,
+      // Synthetic stable id — see the note on the backfill-incomplete entry.
+      id: `${tier}-LNKSYNCF`,
+      reasonCode: REASON_CODES.INDEX_REBUILD_FAILED,
+      reasonText: `cmk autolink: in-band index sync failed after ${linked} linked fact(s)`,
+      extra: { error: String(error ?? 'unknown error'), linked, edges },
+    });
+    return true;
+  } catch {
+    return false; // never fail a successful backfill over its own logging
+  }
+}
+
+/**
  * Run bounded batches until the corpus is finished — ONE invocation does the
  * whole job.
  *
@@ -445,12 +532,25 @@ export function syncIndexAfterBackfill({ projectRoot, userDir } = {}) {
  * it does not add a transaction, a sidecar, or a window in which work is held.
  *
  * The dry run loops too — otherwise a first look at a 2,000-fact corpus would
- * report the first 250 and call it the picture — using `dryRunSkip` as its
- * cursor, since a dry run persists nothing to advance the walk with.
+ * report the first 250 and call it the picture — using a `dryRunSeen` id set as
+ * its cursor, since a dry run persists nothing to advance the walk with.
+ *
+ * COST, ACCEPTED DELIBERATELY. Each batch re-opens the index, re-tokenizes the
+ * candidate set, and walks the corpus twice (once for the pending facts, once to
+ * re-derive `remaining` from the artifacts) — so a run is O(corpus) per batch,
+ * i.e. O(corpus² / batchSize) overall. That is the price of deriving the resume
+ * point from the artifacts instead of trusting a watermark, and it is the right
+ * trade for a MAINTENANCE verb a user runs occasionally: measured live at 620
+ * facts / 3 batches in 3.2 s. If a corpus ever makes this hurt, the fix is to
+ * hoist the candidate preparation across batches — NOT to cache `remaining`,
+ * which would reintroduce the second source of truth ADR-0002 forbids.
  *
  * @param {object} opts  as `linkBackfill`, except `max` → `batchSize`
  * @param {number} [opts.batchSize=BACKFILL_DEFAULT_MAX]  facts per durable batch
  * @param {(progress:object)=>void} [opts.onBatch]  called after each batch lands
+ * @param {Function} [opts._runBatch]  TEST SEAM: the batch function, default
+ *   `linkBackfill`. Injected to exercise the anomaly stops (`stalled`,
+ *   `batch-cap`), which real corpora cannot produce on demand.
  * @returns aggregated `linkBackfill` result + `{batches, stopped}`
  */
 export function linkBackfillToCompletion({
@@ -463,22 +563,32 @@ export function linkBackfillToCompletion({
   now = null,
   sampleLimit = 10,
   onBatch = null,
+  _runBatch = linkBackfill,
 } = {}) {
+  // A bad batch size is not "no batching" — the same failure mode `--max` had,
+  // one level in. Thrown rather than returned: this is a programming error at a
+  // seam only code reaches, never a user typo (the CLI validates `--max` first).
+  if (!Number.isInteger(batchSize) || batchSize < 1) {
+    throw new TypeError(
+      `linkBackfillToCompletion: batchSize must be a positive whole number (got ${JSON.stringify(batchSize)})`,
+    );
+  }
+
   let agg = null;
   let batches = 0;
   let stopped = 'complete';
-  let dryRunSkip = 0;
+  const dryRunSeen = dryRun ? new Set() : null;
   let batchCap = Infinity;
   let prevRemaining = Infinity;
 
   for (;;) {
-    const r = linkBackfill({
+    const r = _runBatch({
       projectRoot,
       userDir,
       tier,
       max: batchSize,
       dryRun,
-      dryRunSkip,
+      dryRunSeen,
       similarity,
       now,
       sampleLimit,
@@ -518,7 +628,11 @@ export function linkBackfillToCompletion({
       // us as if an earlier session had done it.
     }
 
-    onBatch?.({
+    // No progress line for a REFUSED batch. It considered nothing and linked
+    // nothing, so "batch 1 · linked 0 of 0 considered · 300 to go" is pure noise
+    // in front of the refusal — and worse, it reads as though a pass happened.
+    // (Caught by the live probe on a genuinely degenerate 300-fact corpus.)
+    if (!r.degenerate) onBatch?.({
       batch: batches,
       dryRun,
       evaluated: r.evaluated,
@@ -530,7 +644,22 @@ export function linkBackfillToCompletion({
     });
 
     // Terminators, in the order they can fire.
-    if (r.floor == null) break; // nothing is linkable at all — do not spin
+    //
+    // DEGENERATE FIRST (B1): the corpus cannot be linked at all right now, and
+    // — critically — the batch marked nothing, so this must never be reported
+    // as a finished corpus. It is the one stop that is a REFUSAL rather than an
+    // outcome.
+    if (r.degenerate) {
+      stopped = 'degenerate-floor';
+      break;
+    }
+    if (r.floor == null) {
+      // No floor could be derived (a corpus too small for the p99 to mean
+      // anything). Nothing is linkable, nothing was marked; naming it is what
+      // stops a consumer reading `remaining` as progress.
+      stopped = 'no-floor';
+      break;
+    }
     if (r.remaining <= 0) break; // done
     if (r.evaluated === 0) {
       // The walk yielded nothing while claiming work remains. Not a state we
@@ -548,8 +677,47 @@ export function linkBackfillToCompletion({
       stopped = 'batch-cap';
       break;
     }
-    if (dryRun) dryRunSkip += r.evaluated;
   }
 
-  return { ...agg, batches, stopped };
+  const result = { ...agg, batches, stopped };
+
+  // DOOR 5 — an anomaly leaves something reportable. "If this repeats please
+  // report it" is worthless if nothing durable records that it happened, so a
+  // loop that ends in a state it cannot make progress from writes one audit
+  // entry naming which state, on the same log the run's `auto-linked` entries
+  // land on. A refusal (`degenerate-floor` / `no-floor`) is NOT logged here —
+  // nothing went wrong, the corpus simply is not linkable, and the verb says so
+  // on stdout.
+  if (stopped === 'stalled' || stopped === 'batch-cap') {
+    try {
+      appendAuditEntry(resolveTierRoot({ tier, projectRoot, userDir }), {
+        ts: now ?? nowIso(),
+        action: 'backfill-incomplete',
+        tier,
+        // Synthetic stable id for corpus-level backfill events (kit base32
+        // alphabet), the same convention repair.mjs / install.mjs use for
+        // entries that describe a RUN rather than a fact. `id` is a required
+        // non-null field — passing null throws, and the best-effort catch here
+        // would have swallowed that into "no record at all", which is the exact
+        // failure this entry exists to prevent.
+        id: `${tier}-BCKFLNCM`,
+        reasonCode: REASON_CODES.BACKFILL_INCOMPLETE,
+        reasonText: `autolink stopped as ${stopped} with ${result.remaining} fact(s) still pending`,
+        extra: {
+          stopped,
+          batches,
+          batchSize,
+          evaluated: result.evaluated,
+          linked: result.linked,
+          remaining: result.remaining,
+          dryRun,
+        },
+      });
+    } catch {
+      // best-effort — an unwritable audit log must not turn an anomaly report
+      // into a crash on top of it.
+    }
+  }
+
+  return result;
 }

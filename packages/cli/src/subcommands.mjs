@@ -3501,8 +3501,13 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
   const log = deps.log ?? console.log;
   const logError = deps.logError ?? ((s) => process.stderr.write(`${s}
 `));
-  const { linkBackfill, linkBackfillToCompletion, syncIndexAfterBackfill, BACKFILL_DEFAULT_MAX } =
-    await import('./link-backfill.mjs');
+  const {
+    linkBackfill,
+    linkBackfillToCompletion,
+    syncIndexAfterBackfill,
+    auditIndexSyncFailure,
+    BACKFILL_DEFAULT_MAX,
+  } = await import('./link-backfill.mjs');
 
   const tier = String(options?.tier ?? 'P').toUpperCase();
   // DRY RUN IS THE DEFAULT — writing takes an explicit `--apply`.
@@ -3619,6 +3624,26 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
     return { ...r, indexSynced: false };
   }
 
+  // THE DEGENERATE FLOOR — REFUSE LOUDLY, AND DO NOT PRETEND TO BE DONE (B1).
+  //
+  // A floor at/above the near-dup ceiling, or at/below the random-pair median,
+  // means the corpus cannot separate a relationship from noise. The backfill has
+  // marked NOTHING (so nothing is poisoned and a later run re-decides freely),
+  // and the one thing this must never print is "the corpus is fully considered".
+  if (r.degenerate) {
+    const why =
+      r.degenerate === 'floor-above-neardup'
+        ? 'the linking threshold came out at or above the near-duplicate ceiling — every pair looks like a duplicate, so there is no "related" band left to fill'
+        : 'the linking threshold came out at or below the median of random pairs — the corpus is too uniform for similarity to mean anything here';
+    logError(
+      `cmk autolink: REFUSED (${r.degenerate}) — ${why}.\n` +
+        '  Nothing was linked and nothing was marked as considered, so this run costs you nothing and a later run over a\n' +
+        '  grown or more varied corpus will decide again. This is the honest answer, not a partial result.',
+    );
+    process.exitCode = 1;
+    return { ...r, indexSynced: false };
+  }
+
   log(
     `cmk autolink${dryRun ? ' (dry run)' : ''}: considered ${r.evaluated} fact(s) in tier ${r.tier}` +
       `${r.batches > 1 ? ` across ${r.batches} batches` : ''} ` +
@@ -3654,10 +3679,15 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
     if (sliced) {
       log(`  ${r.remaining} fact(s) remain — this was a --max slice; re-run to continue (it resumes where it stopped).`);
     } else {
+      // An ANOMALY, not paging: the loop ended in a state it could not make
+      // progress from. It is already recorded in the audit log (Door 5), and
+      // the exit code is non-zero so a wrapping script can see it too.
       log(
         `  stopped with ${r.remaining} fact(s) still pending (${r.stopped}) — everything finished is durable; ` +
-          're-run to continue, and if this repeats please report it.',
+          're-run to continue. This is unexpected: it is recorded as `backfill-incomplete` in\n' +
+          '  context/.locks/audit.log, and that entry is what to report if it repeats.',
       );
+      process.exitCode = 1;
     }
   } else {
     log('  nothing remains — the corpus is fully considered.');
@@ -3670,20 +3700,48 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
   // markdown is already written and every reader self-heals, so a cold index
   // is a slower path, never a lost link.
   let indexSynced = false;
+  let indexSyncError = null;
   if (!dryRun && r.linked > 0) {
-    const sync = syncIndexAfterBackfill({ projectRoot, userDir });
+    // Announced BEFORE the work, not after: on a real corpus the rebuild is a
+    // multi-second pause, and a silent pause immediately after "nothing remains"
+    // reads as a hang.
+    log('  syncing the search index so the new edges are live…');
+    const sync = (deps.syncIndex ?? syncIndexAfterBackfill)({ projectRoot, userDir });
     indexSynced = sync.synced;
     if (sync.synced) {
-      log(`  index synced — ${sync.edgeCount} edge(s) are live now in \`cmk links\`, \`cmk expand\` and \`cmk view\`.`);
+      // TWO NUMBERS, BOTH LABELLED. `r.edges` is what THIS RUN wrote;
+      // `sync.edgeCount` is the whole graph, every edge type (related, body
+      // wikilinks, citations, supersession chains). Printing only the second
+      // next to the run's own count left an unexplained gap that looked like a
+      // bug in the run.
+      log(
+        `  index synced — this run's ${r.edges} edge(s) are live in \`cmk links\`, \`cmk expand\` and \`cmk view\` ` +
+          `(the graph now holds ${sync.edgeCount} edges of all types).`,
+      );
     } else {
-      log('  (the search index could not be refreshed here; it rebuilds itself on your next search — nothing was lost.)');
+      // NOT fixed reassurance: say what failed. The links are on disk either
+      // way, so this is a slower path and not a loss — but a user debugging why
+      // `cmk links` looks empty needs the actual error, and so does the log.
+      indexSyncError = sync.error ?? 'unknown error';
+      log(
+        `  index NOT synced: ${indexSyncError}\n` +
+          '  Your links are written and safe — the index rebuilds itself on your next search, or run `cmk reindex --boot` now.',
+      );
+      auditIndexSyncFailure({
+        projectRoot,
+        userDir,
+        tier,
+        error: indexSyncError,
+        linked: r.linked,
+        edges: r.edges,
+      });
     }
   }
 
   if (dryRun && (r.wouldLink > 0 || r.remaining > 0)) {
     log('  (dry run — nothing was written. Re-run with `--apply` to write these links.)');
   }
-  return { ...r, indexSynced };
+  return { ...r, indexSynced, indexSyncError };
 }
 
 export const subcommands = [
@@ -3869,12 +3927,12 @@ export const subcommands = [
   {
     name: 'autolink',
     description:
-      'populate `related:` on facts that have none — scores each unlinked fact against the corpus and applies up to 3 edges above a floor derived from this corpus. Bounded + resumable; re-run to continue.',
+      'populate `related:` on facts that have none — scores each unlinked fact against the corpus and applies up to 3 edges above a floor derived from this corpus. One run does the WHOLE corpus (in resumable batches) and syncs the index when it is done.',
     milestone: 262,
     optionSpec: [
       { flags: '--apply', description: 'actually write the links. WITHOUT it this is a dry run — bare `cmk autolink` never modifies memory.' },
       { flags: '--dry-run', description: 'the default; report what WOULD link (band distribution + sample edges) and write nothing' },
-      { flags: '--max <n>', description: 'facts to consider this run (default 250) — the run is bounded and resumes where it stopped' },
+      { flags: '--max <n>', description: 'do a bounded SLICE of n facts and stop, instead of the whole corpus. Without it the run finishes the job; interrupting any run is safe either way and the next one resumes.' },
       { flags: '--tier <tier>', description: 'tier to link within: P (default) | L | U. Links never cross tiers.' },
       { flags: '--semantic', description: 'score with the local embedder instead of token-Jaccard (needs the optional embedder)' },
     ],
