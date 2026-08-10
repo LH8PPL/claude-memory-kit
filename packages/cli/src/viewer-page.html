@@ -890,11 +890,24 @@
     return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   };
 
-  // Freshness is stated per view, never implied (§24.1.6). This page does not
-  // watch the filesystem; if the label is old, it is old, and Refresh is how it
-  // stops being old.
+  // Freshness is stated per view, never implied (§24.1.6). The stamp is also
+  // where the LIVE stream reports itself (Task 259): the base half is what this
+  // view read and when, the suffix is whether the page is still being told about
+  // changes. They are composed rather than concatenated at the call site because
+  // either half can be repainted without the other — a view re-renders on
+  // navigation, the stream changes state on its own schedule.
+  let stampBase = 'as of —';
+  let liveSuffix = '';
+  function paintFreshness() {
+    $('#freshness').textContent = stampBase + liveSuffix;
+  }
   function stamp(payload, what) {
-    $('#freshness').textContent = 'as of ' + hhmm(payload && payload.generated_at) + ' · ' + what;
+    stampBase = 'as of ' + hhmm(payload && payload.generated_at) + ' · ' + what;
+    paintFreshness();
+  }
+  function setStampBase(text) {
+    stampBase = text;
+    paintFreshness();
   }
 
   function badge(text, cls) { return el('span', { class: 'badge ' + (cls || ''), text }); }
@@ -2020,7 +2033,7 @@
     if ($('#q').value !== wanted) $('#q').value = wanted;
     const wantedTier = viewState().tier;
     if ($('#tier').value !== wantedTier) $('#tier').value = wantedTier;
-    $('#freshness').textContent = 'reading…';
+    setStampBase('reading…');
     paintStrip();
     const job = (async () => {
       if (route.view === 'fact') return viewFact(route.id);
@@ -2029,7 +2042,7 @@
       if (route.view === 'decisions') return viewDecisions();
       return viewFacts();
     })();
-    await job.catch((err) => { $('#freshness').textContent = 'failed: ' + err.message; });
+    await job.catch((err) => { setStampBase('failed: ' + err.message); });
   }
 
   function go(href) {
@@ -2061,9 +2074,97 @@
     debounce = setTimeout(searchHere, 220);
   });
   $('#tier').addEventListener('change', searchHere);
-  // Manual refresh, and nothing automatic: no filesystem watch on the server, no
-  // server-sent-events client here.
-  $('#refresh').addEventListener('click', render);
+  // Manual refresh stays — it is the fallback when the stream is gone, and the
+  // only control on the graph.
+  // Refresh is what ANSWERS the graph's stale badge, so it has to clear it —
+  // and only it, never the 'gone' state, which a re-read cannot fix.
+  $('#refresh').addEventListener('click', () => {
+    if (liveState === 'stale') setLive('on');
+    render();
+  });
+
+  // ---- live refresh (Task 259, design §24.1.6) --------------------------
+  //
+  // The server polls the tier and tells us WHEN it changed, never WHAT changed
+  // (see viewer.mjs's note on why the stream is a notification): so the response
+  // to a change is to re-run the view we are already on, through the same API
+  // and with the same URL state. Nothing about the reader's position moves.
+  //
+  // THE GRAPH IS THE ONE EXCEPTION, and it is deliberate. Every other view
+  // repaints into the same layout; the graph re-runs a force simulation, so an
+  // automatic refresh would move every node — possibly the one under the
+  // reader's cursor, mid-click. It gets told, and refreshes when asked.
+  //
+  // THE DROP CASE is the interesting one, because of what this server IS. It is
+  // ephemeral (§24.1.1): Ctrl-C ends it, and the next `cmk view` binds a
+  // DIFFERENT port. So when the stream dies there is nothing for this page to
+  // reconnect to — the port in our address bar is gone for good. A browser's
+  // EventSource does not know that and will retry forever, which would leave a
+  // dead tab quietly burning reconnects. So we count failures, give up after a
+  // bounded few, close the stream ourselves, and SAY so. The two things this
+  // must never be are the two easy ones: silent staleness (a page that looks
+  // live and is a photograph) and infinite retry noise.
+  const LIVE_GIVE_UP = 3;
+  let liveState = 'off'; // 'off' | 'on' | 'stale' | 'gone'
+  let liveSource = null;
+  let failures = 0;
+
+  // ONE variable owns the live half of the stamp, because the alternative — a
+  // separate `graphStale` boolean next to the rendered text — lets the two
+  // disagree: clearing the flag on Refresh left the words "memory changed —
+  // Refresh to see them" sitting under a view that had just been refreshed,
+  // which is a control lying about what it did (the same defect class as a
+  // theme button still reading "Light" on a light page).
+  function setLive(state) {
+    liveState = state;
+    if (state === 'on') liveSuffix = ' · live';
+    else if (state === 'stale') liveSuffix = ' · memory changed — Refresh to see them';
+    else if (state === 'gone') liveSuffix = ' · live off (server stopped — restart `cmk view` and reload)';
+    else liveSuffix = '';
+    paintFreshness();
+  }
+
+  function onLiveChange() {
+    // The graph redraws its whole force layout, so refreshing it automatically
+    // would move every node — possibly the one under the cursor, mid-click. It
+    // is told, and redraws when asked.
+    if (currentRoute().view === 'graph') return setLive('stale');
+    render();
+  }
+
+  function startLive() {
+    if (!window.EventSource) return; // no stream available: manual Refresh, as before
+    let es;
+    try {
+      // Same-origin and RELATIVE — which is what `connect-src 'self'` in the
+      // CSP permits, and what keeps the ephemeral port out of the markup.
+      es = new EventSource('/events');
+    } catch (_) {
+      return;
+    }
+    liveSource = es;
+    // A reconnect must not paint over an unanswered stale badge: the graph is
+    // still showing pre-change data, and the stream being healthy again does
+    // not make that untrue.
+    const connected = () => { failures = 0; if (liveState !== 'stale') setLive('on'); };
+    es.addEventListener('hello', connected);
+    es.addEventListener('change', () => { failures = 0; onLiveChange(); });
+    es.onopen = connected;
+    es.onerror = () => {
+      // EventSource reports an error per failed reconnect attempt and keeps
+      // going. A handful in a row on an ephemeral server means the server is
+      // not coming back on this port.
+      failures += 1;
+      if (failures < LIVE_GIVE_UP) return;
+      es.close();
+      liveSource = null;
+      setLive('gone');
+    };
+  }
+
+  // Let go of the stream when the tab does, so a reload does not leave the
+  // server holding a response for a client that no longer exists.
+  window.addEventListener('pagehide', () => { if (liveSource) liveSource.close(); });
 
   // ---- the theme toggle -------------------------------------------------
   // The head stamp owns the state, the storage key, and the writing of
@@ -2093,6 +2194,7 @@
 
   $('#project-path').textContent = location.host;
   render();
+  startLive();
 })();
 </script>
 </body>

@@ -135,7 +135,15 @@ export function dateFromIso(iso) {
   return iso.slice(0, 10);
 }
 
-function auditLogPath(tierRoot) {
+/**
+ * Where a tier's audit log lives. EXPORTED (Task 259) because the viewer's
+ * live-refresh poll needs to `stat` this file as a change signal — every
+ * mutating kit operation appends here, so it is the closest thing the kit has
+ * to a transaction log. A second inline `join(tierRoot, '.locks', 'audit.log')`
+ * would be the same one-definition-site drift the shared-module rule exists to
+ * stop; a reader gets the path from here, the same as every writer does.
+ */
+export function auditLogPath(tierRoot) {
   return join(tierRoot, '.locks', 'audit.log');
 }
 
