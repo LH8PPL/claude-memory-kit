@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f0c4be07d6d5ab2a078d45e318c75278d8d5e48c2b8c7239acffcf44e7886386
+related: [cmk-compress-session-requires-sessionend-hook-invocation-man, cmk-compress-session-must-be-invoked-by-54x6d2dm, research-notes-indexed-via-research-index-not-documentation]
 ---
 
 - `cmk-compress-session`: Meant to be invoked BY Claude Code at session-end. Running manually in terminal causes hangs (stdin/TTY or model spawn issues).

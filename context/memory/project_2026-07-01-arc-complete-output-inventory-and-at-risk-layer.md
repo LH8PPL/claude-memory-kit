@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6f1e9b3e9cf1e6fcd1367a646de9d036e13d3932444e2928465e1beffee06a1a
+related: [raw-research-evidence-preservation-vs-synthesis-only-boundar, kit-dogfooding-the-arc-that-redefined-memory-capture-was-its, decision-trail-and-knowledge-preservation-system]
 ---
 
 **Headline artifacts (Layer 1):** 5 docs — SYSTEM-MAP.md, ADR-0017, U-Mem research note, failure-survey, comparative-judgment note

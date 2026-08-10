@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0240334218a832138669fd9bff3697133098cd65bda67885c0f3f712d49f0c80
+related: [re-pack-verify-workflow-for-cut-gate-testing, memory-persistence-validation-workflow-end-to-end, diagnostic-test-allow-list-vs-workspace-trust]
 ---
 
 Workflow to validate cross-project rules are correctly captured and routed:

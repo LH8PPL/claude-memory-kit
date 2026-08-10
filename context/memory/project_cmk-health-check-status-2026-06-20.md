@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f48fbade0e7d982007b0aed516dbd9213af6cfdc8898a6ef3b26858746bbdf38
+related: [cascade-starvation-lazy-distill-limitation-on-busy-repos, claude-memory-kit-health-check-suite-hc-1-through-hc-9, cron-job-registration-feature-hc-5]
 ---
 
 - [PASS] Stop + SessionStart hooks registered

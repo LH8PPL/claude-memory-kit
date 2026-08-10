@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 63b4eec34dbd09d3cb1db36f269891b3ebe70d57
+related: [memory-review-discipline-before-commit, now-md-assistant-cap-precedent, the-kit-never-runs-git-on-the-user-s-behalf-settled-product]
 ---
 
 The kit should automate everything in its domain (capture, indexing, recall, curation) and nothing in the user's domain. Specifically, memory facts must NOT auto-commit to git; the user must review before publication. Git commits represent authorship and publication — a tool that auto-commits in the user's voice is a liability.

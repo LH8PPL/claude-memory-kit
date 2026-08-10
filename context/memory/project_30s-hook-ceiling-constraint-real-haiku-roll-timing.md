@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: cb6059cf59b121346757d6c9bcea598c015a20b4d920afea0640f725ea19ee00
+related: [sessionstart-hook-ceiling-constrains-synchronous-operations, hook-ceiling-enforces-operation-time-caps, kiro-cli-env-passing-limitation]
 ---
 
 The npm hook ceiling is **30 seconds**. Real `claude --print` (Haiku) command execution takes **18–37 seconds**, exceeding this hard constraint.

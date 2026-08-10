@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 82e47a869aa243cd5c3c139c19da7129fd8b37bb3d0106d5328c2785c1bbf098
+related: [cmk-install-scaffolding-and-wiring, cut-gate11-pre-session-verification-checklist, verification-sequence-for-task-169-170-fresh-folder-gate]
 ---
 
 `cmk install --with-semantic` scaffolds:

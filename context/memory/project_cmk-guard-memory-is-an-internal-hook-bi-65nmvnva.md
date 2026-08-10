@@ -8,6 +8,7 @@ trust: high
 source_file: review-promote
 source_line: 1
 source_sha1: 73d6f13df25c4858e74594aa0bddba39449214601f2b73b6a51d3a9fc95fa53d
+related: [recurrence-roi-is-an-internal-signal-for-laak3qe2]
 ---
 
 `cmk-guard-memory` is an internal hook binary, not a hand-run command (now clarified in CLI.md).

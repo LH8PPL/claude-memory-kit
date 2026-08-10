@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f73b9f9c317397a541a9e68948ce877b1cb239ab7aa71030c3313eba879e8dd3
+related: [claude-memory-kit-installation-levels, verification-sequence-for-task-169-170-fresh-folder-gate, gate-preparation-tier-backups-and-dogfood-isolation]
 ---
 
 - Backup existing user-tier (optional): `Copy-Item -Recurse $env:USERPROFILE\.claude-memory-kit $env:USERPROFILE\.claude-memory-kit.bak`

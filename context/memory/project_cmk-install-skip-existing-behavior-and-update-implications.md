@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 09869c69bd5eda54ca12a9fdf9dcbef5b8a59ba2bf092805062c8c92917e0961
+related: [d-343-disposition-cmk-install-scaffold-refresh-bug-task-230, cmk-install-skips-existing-files-cannot-repair-stale-skills, d-343-kit-lacks-mechanism-to-repair-stale-scaffolded-skills]
 ---
 
 On existing projects, `cmk install` (first-run or re-run) skips any file that already exists, to protect user edits.

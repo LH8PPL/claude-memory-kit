@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9b7fe7866ec9ba9bbf0dc6a9432512d2efee9c0906ae99a500ebc79dde6d553c
+related: [venv-setup-requirement, python-projects-always-use-venv, global-binary-lag-after-code-merge]
 ---
 
 Create and use a `.venv` virtual environment in the project root for all Python projects. Install all Python packages into it, never into the global Python environment.

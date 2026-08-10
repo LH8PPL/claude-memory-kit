@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 1df2e2ed5af7bbe77049ac42e5feae02b6785a50aba86a9b25c74deb9099ad20
+related: [claude-code-deferred-tools-first-turn-race-condition, cc-update-does-not-fix-mcp-prompt-task-171-validated, kiro-cli-custom-agent-tool-limitation]
 ---
 
 - **Root cause:** Claude Code v2.1.x (#42148) freezes the deferred-tool list before MCP servers connect (10–30s), causing `mk_remember` to be unavailable on first ToolSearch

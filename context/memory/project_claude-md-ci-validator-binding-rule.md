@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2108b83eef70a68ca7cc0f4e70fe4fb425c6e0eeb843a02c8d2f8e4b91317563
+related: [release-workflow-cold-open-testing-discipline, stress-gate-required-before-pr-for-spawn-hook-boundary-chang, ci-watch-rule-specify-ci-yml-by-name]
 ---
 
 Added binding rule to CLAUDE.md derived from a publish-failure lesson. **The rule:** watch CI on direct-to-main; run full validators on doc changes before committing.

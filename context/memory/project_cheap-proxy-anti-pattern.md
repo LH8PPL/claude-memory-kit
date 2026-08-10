@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 519ff4cc70cd760f7f315f5770defb2d286be05e89a62b96ff48c02514cc8538
+related: [v0-3-5-patch-vs-v0-4-0-versioning-logic, github-metadata-sync-pattern, verify-check-run-agent-liveness-before-status-reports]
 ---
 
 - Recurring failure: accepting cheap proxies (grep count, single directory, cloned subset) as ground truth for actual metrics

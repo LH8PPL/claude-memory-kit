@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: acdbdd224a5501224b745c98b393ebc910830d74f426cd04fcaf9ae6033736ad
+related: [cmk-daily-distill-scheduled-task-console-popup-issue, windows-dll-locking-during-cmk-reinstall, register-crons-for-staleness-starvation-prevention]
 ---
 
 The claude-memory-kit installation includes a Windows scheduled task `cmk-daily-distill` that:

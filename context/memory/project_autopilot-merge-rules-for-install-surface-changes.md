@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a15e1507886435ee7288f246c7f4bca89a413425fe3edb14e462cf73935121ea
+related: [onnxruntime-node-postinstall-cdn-timeout, sonarcloud-d-341-known-server-side-crash, autopilot-stop-condition-for-install-surface-decisions]
 ---
 
 The project uses an "autopilot" CI/CD system that auto-merges most code PRs when CI passes. PRs that modify the user-facing install surface (e.g., node:sqlite migration, loadExtension behavior) are surfaced to the user for explicit approval rather than auto-merged.

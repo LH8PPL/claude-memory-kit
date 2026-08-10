@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 88cf686e35879085ce95df95dcc2db4787fa111989118a0b0e04b7e2015aac91
+related: [user-is-on-claude-subscription-not-api-token-billing, stress-testing-omitted-for-pure-read-cli-changes, sonarcloud-then-in-object-false-positive-schema-fields]
 ---
 
 claude-memory-kit development runs on subscription billing. API calls have no marginal token cost, unlike per-API-call billing.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: user-explicit
 source_line: 1
 source_sha1: 1c7a66db03cf3cac537acb9acd312f8eb06bbb3cdaccc1a30a3c3bea7213043b
+related: [memory-tiers-contain-only-mission-context, memory-tier-boundaries-kit-health-signals, a-health-check-behind-a-command-does-not-surface-a-silent-fa]
 ---
 
 Memory tiers carry MISSION CONTEXT ONLY - the user's project, decisions, preferences, domain facts. The kit's own problems (tool failures, timeouts, hook errors, our debugging, retracted diagnoses, meta-commentary about kit operation) are BUILD ARTIFACTS and belong in DECISION-LOG.md and tasks.md, never in a tier that gets injected into every future session. This binds BOTH directions: the capture layer must filter kit-operational noise out of what it writes, AND the reporting layer must never route kit-health signals into additionalContext, the injected snapshot, or any memory tier - a health warning belongs on the ephemeral systemMessage display channel (shown, not remembered), if anywhere.

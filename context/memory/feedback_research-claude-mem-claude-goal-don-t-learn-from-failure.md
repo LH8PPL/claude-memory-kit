@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: user-explicit
 source_line: 1
 source_sha1: 09b0fa29de4baae1eb2ee34a107aafec4469f4939140cca67538ce83b1e2cdf8
+related: [evo-memory-survey-passive-benchmark-oracle-discards-failure, a-memguard-consensus-driven-lesson-memory-learn-from-failure, skillrevise-learns-from-failure-only-via-a-per-task-test-ora]
 ---
 
 Adversarial code-level research (2026-07-01) on two U-Mem-adjacent systems, for the "does anyone ship an outcome/failure signal" question:

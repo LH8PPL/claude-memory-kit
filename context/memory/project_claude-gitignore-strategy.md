@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c44b47d3f10d39b5c06635853428a480e2285761a9e7e5b324dd20cadeff3579
+related: [gitignore-carve-out-for-claude-agents, agent-neutral-names-persist-across-any-rename, claude-skills-gitignore-creates-broken-claude-md-references]
 ---
 
 `.claude/` is fully gitignored at the repo root because it is "per-developer, not part of the kit" — each developer has personal settings, commands, and scaffolded skills.

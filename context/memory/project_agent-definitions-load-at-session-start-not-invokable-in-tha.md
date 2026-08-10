@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: da54ecaec64f9875da748516274f869a29f0bf81aad2cca34495df29cd70b25b
+related: [kiro-cli-agent-tools-field-configuration-fix, context-snapshot-frozen-at-session-start, kiro-cli-hooks-gap-d-181-follow-up-found-by-reading-kiro-dev]
 ---
 
 When `.claude/agents/` definitions are created or updated in a session, they are loaded at session start. However, the *same* session cannot invoke them by name — named references to agent definitions only work in *subsequent* sessions.

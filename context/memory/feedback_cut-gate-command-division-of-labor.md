@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 0742619ce2243613c995ebc968c93f2b6582c3682e807f63a3fde51f986b6200
+related: [test-artifacts-can-contaminate-fresh-install-testing, use-mcp-mk-remember-not-bash-cli, kiro-skills-map-nearly-1-1-to-claude-code-skills-verified-fr]
 ---
 
 During cut-gate / live-test runs, the assistant runs the boring read-only verification commands itself (dir, type, Test-Path, Get-Content, cmk search, file reads); the user only runs the commands that need their real machine's live app — the Kiro IDE GUI sessions, kiro-cli chat, creating hooks in the GUI, the destructive backup/restore, tag pushes.

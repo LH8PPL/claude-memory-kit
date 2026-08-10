@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4c3ad82a1545fe5e5ed74cdd7fe5a7965fb72af75af54f0486f0d839cb614fa3
+related: [system-written-grants-file-as-specification, regression-isolation-a-b-test-old-config-in-new-environment, claude-code-2-1-x-needs-skill-name-wildcard-to-suppress-skil]
 ---
 
 - **Problem**: `PermissionRequest` auto-approve hooks (with `Skill` matcher) auto-dismissed in earlier CC versions but now prompt in CC 2.1.198

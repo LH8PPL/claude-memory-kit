@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 566c1f2c300966a2027c8b7e42f004f48c510241647f71f47625c5fdeb6c2878
+related: [failure-driven-whisper-skill-architecture-with-required-amen, full-gate-re-run-on-final-code-after-code-review, direct-to-main-approval-by-campaign-rules]
 ---
 
 Only alert on failures that represent a pattern or require judgment: repeated failures, or sequence of (failed → fixed → potential regression). Never alert on transient single events (e.g., one Haiku timeout).

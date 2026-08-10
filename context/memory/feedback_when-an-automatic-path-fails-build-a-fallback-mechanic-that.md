@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: user-explicit
 source_line: 1
 source_sha1: 16d2057769ed8b8ab2e1942e78cf5e3999b9de0af3bfe88c2ce13099676b5913
+related: [a-health-check-behind-a-command-does-not-surface-a-silent-fa, task-242-auto-extract-silent-failures-self-heal-first-design, notification-doctrine-non-actionable-repeating-failures]
 ---
 
 When an automatic path fails, build a FALLBACK MECHANIC that keeps it working - do not build a recurring warning that reports the failure to the user. A per-session message about a problem the user can neither cause nor cure is a nag: silence plus guilt. It also burns the one notification channel we have (the SessionStart systemMessage), training people to tune out the line we will need later for something actionable. Notify only ONCE, on a state change, only after self-heal has genuinely given up, and only when a real user action exists.

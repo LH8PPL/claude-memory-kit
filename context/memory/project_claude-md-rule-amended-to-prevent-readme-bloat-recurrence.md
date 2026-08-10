@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 1292aaf982f052df3def4f97e34b1d5ce6aec730c99cd82e8e2a5f928efcbe37
+related: [documentation-structure-and-prerequisite-locations, dogfood-decisions-md-committed-post-merge-not-with-feature-p, binding-rule-readme-line-for-user-facing-features]
 ---
 
 A rule in CLAUDE.md was causing the problem it was meant to prevent (likely: "every feature gets a README line").

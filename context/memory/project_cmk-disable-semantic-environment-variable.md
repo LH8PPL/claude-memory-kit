@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ef23c6de1994e5f810db5efd0126c34373ce59fd
+related: [global-install-auto-recreates-user-tier-directory, log-sink-injection-pattern-across-install-uninstall, stress-gate-required-before-pr-for-spawn-hook-boundary-chang]
 ---
 
 Environment variable `CMK_DISABLE_SEMANTIC` controls whether semantic similarity processing runs. Functions like `prepareSemanticSimilarity()` must check this flag and skip processing when disabled, for consistency across deployments.

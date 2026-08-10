@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 8dfa512d5cdee298361d62613cf36ae4bbf4e2c1daef6dfb74bc16de94669353
+related: [text-substitution-carve-outs-for-rename, gitignore-carve-out-for-claude-agents, cursor-supports-headless-agent-cli-cursor-agent-p]
 ---
 
 The CLI binary `cmk` and environment variable `MEMORY_KIT_USER_DIR` are intentionally agent-neutral (per ADR-0012 §75) and must NOT change in any rename, even to `core-memory-kit`.

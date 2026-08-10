@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 1b234282251bc40a1290b62a5cda4c5c0e576adcc9942dfd661b73437a3f3fbe
+related: [always-fix-markdown-lint-warnings-md022-blanks-around-headin, back-up-the-user-tier-before-a-cut-gate-never-plain-delete, bash-tool-cwd-persists-cd-into-a-workspace-silently-reroutes]
 ---
 
 For ad-hoc test/repro scripts + scratch files, NEVER use the dev repo path (C:\Projects\claude-memory-kit) or the home dir (~ as the working/output location — always use c:\temp or c:\tmp.

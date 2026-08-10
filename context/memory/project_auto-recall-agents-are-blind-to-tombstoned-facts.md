@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1e973f3ce9977578a063fcc5140bf2083591209441fa2b29aa88ef13f71f8843
+related: [tombstone-auto-recall-design-decision, d-163-invariant-agent-must-never-see-forgotten-facts, automatic-recall-never-reads-tombstones-recovery-is-human-on]
 ---
 
 When an agent (in-session recall, not a human user) retrieves memories, it never sees tombstoned facts. Deleted facts remain invisible to automatic recall. Recovery of tombstoned facts is always human-initiated.

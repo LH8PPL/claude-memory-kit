@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2172f79297dd805b8c24df0833651cae02ad626bf5e97ba1c21f9af78cf9232b
+related: [task-262-cmk-autolink-measured-insufficient-for-auto-linking, architecture-decisions-recorded-in-adrs, semantic-search-vs-grep-trade-off-d-111-design-rationale]
 ---
 
 Features ship complete but with defaults OFF if measured benchmarks show regression. Task 262 example: the linking mechanism works live (would add 4,903 edges to 1,843 facts), but multi-hop recall regresses −0.111 vs. baseline, so default is OFF (D-436). The mechanism remains available via `cmk autolink --apply` or future override.

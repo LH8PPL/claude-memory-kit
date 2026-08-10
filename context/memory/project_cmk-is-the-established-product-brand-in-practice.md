@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: df73bf42b809637dee2f92aecb3ea853f1082fe80308db755cc972bc11137387
+related: [kiro-cli-memory-integration-test-procedure, mcp-server-staleness-workaround, global-mcp-tool-prompts-suppressed-via-settings-allow-list]
 ---
 
 - Users interact via `cmk` CLI commands (`cmk install`, `cmk remember`, `cmk search`)

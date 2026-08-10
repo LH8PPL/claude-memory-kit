@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 6a0db8c6f17255dd55b4fe3b5bad252eb23cecc87a14610e993a933d45071c49
+related: [derive-vs-stamp-design-rule, cron-liveness-gate-by-heartbeat-age-task-167-a]
 ---
 
 - Compaction-State should derive `now`/`daily`/`weekly` levels from artifact mtimes (`now.md`, `recent.md`, `today-*.md`), not persistent marker/sentinel files.

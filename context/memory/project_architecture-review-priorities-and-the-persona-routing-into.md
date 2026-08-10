@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: da871c45ac06f3c42fc662d8abc6be3cea0758cca02b768e6c6f652612e16993
+related: [compaction-state-module-v0-4-1-core-architecture-refactoring, task-167-compaction-state-module-interface-two-methods-rich, kiro-has-four-install-surfaces-not-three-the-user-s-correcti]
 ---
 
 Architecture review (2026-06-25) outcome: #1 Compaction-State module = v0.4.1 (it IS Task 167's implementation shape — build the deep module, 167.A/D/F land as its callers). #2 persona-routing seam = FOLD INTO Task 151 (v0.4.2), do NOT do standalone — 151 already rewrites PERSONA_CONFIDENCE_RULE + promoteCandidatesToUserTier wholesale, so a v0.4.1 refactor would be churn; the shared seam becomes part of 151's redesign. #3 bullet-lookup deepen = standalone low-risk, no collision. #4 (lazy-compress dispatch) folds into #1; #5 (scratchpad-sweep) deferred (one adapter = hypothetical seam).

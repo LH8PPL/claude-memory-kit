@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3abe8eef79f9c61899aa391dbf538530bfe58c43de8a3a701ef7b6bf76a8fff0
+related: [test-anti-pattern-setup-commands-masking-automation, contract-lock-testing-pattern, windows-ebusy-when-updating-cmk-during-claude-code-runtime]
 ---
 
 When a feature flag controls which code path runs (e.g., auto-linking being ON or OFF), add an assertion in the harness that verifies the relevant path executed. If the assertion fails, the benchmark output is invalid.

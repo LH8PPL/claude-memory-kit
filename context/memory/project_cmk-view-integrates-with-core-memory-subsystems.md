@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 206c4faf75d11fd99a98c83230dc1e0cef39fba696e4a67769e05fcae0045a0d
+related: [cmk-view-purpose-and-headline-use-cases, task-255-design-grill-questions-queued, research-based-claims-discipline]
 ---
 
 The viewer depends on and surfaces data from four internal systems:

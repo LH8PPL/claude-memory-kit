@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 5c8dbf93befcf94632ecd974e6848c92d610cf1751e0f05a98ed51c868722d11
+related: [sessionstart-hook-requires-reopen-after-install, memory-kit-hooks-are-project-scoped, kiro-requires-full-restart-to-load-updated-hooks]
 ---
 
 Claude Code reads hook registrations from `.claude/settings.json` only at startup. When `cmk install` wires hooks, the hooks are registered but not activated until Claude Code is restarted. Without restart, auto-extract (Stop-hook) and other kit hooks will not fire during the session.

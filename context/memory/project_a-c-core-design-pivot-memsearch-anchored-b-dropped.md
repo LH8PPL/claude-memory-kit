@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1cffc0790d7167930c30e8e6d2d306689a0a150eb7ff126a70e9854f174f8dbd
+related: [overflow-handling-caveat-single-buffer-vs-memsearch-s-many-f, context-buffer-stabilization-19-systems-classified-by-approa, task-161-decision-d-173-bound-compaction-input]
 ---
 
 Revision from A+B+C+D (four mechanisms) to A+C as core + D deferred + B dropped.

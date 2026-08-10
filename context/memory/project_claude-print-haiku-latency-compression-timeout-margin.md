@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2431911c2a150f3c03206102ea248f5d39c66f9feec9a7eae341101886433a0a
+related: [compression-retry-mechanism]
 ---
 
 Current Haiku invocations via `claude --print` take 70–89s consistently, against a 50s compression timeout. Historical baseline spans 21–50s with 5 prior timeouts, suggesting either transient load or a persistent CLI/model-routing issue. The timeout budget is marginal.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c3bcb8449fcb946e2a761876c788ac750fea8158ae222eca1d6946d293804cfc
+related: [sonarcloud-as-security-gate-for-redos-detection, reliable-tarball-file-validation-with-npm-pack-json, ci-pipeline-configuration]
 ---
 
 The CI now includes a named job `Lint (structural validators)` that runs in ~2 minutes and fails fast on any validator error. Single source of truth for lint: `npm run lint` script, which runs 20 structural validators. The test suite is configured as `npm test` = `npm run lint && vitest run`, ensuring no drift between standalone lint and CI lint.

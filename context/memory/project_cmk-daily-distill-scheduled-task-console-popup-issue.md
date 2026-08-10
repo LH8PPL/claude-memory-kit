@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a97499308ffa49ecbc7afcdaf83878dba75ad57bc6d33b4541d336cd10e134ca
+related: [cmk-daily-distill-scheduled-task-window-popup-at-23-00, the-nightly-distill-schtask-can-be-triggered-on-demand-schta, cron-job-registration-feature-hc-5]
 ---
 
 - **Task:** `cmk-daily-distill` (nightly scheduled task)

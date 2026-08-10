@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f2dd5bee5bd8db385a1fad01c8b7b2e444403b80e19b130a873247c49e19c0df
+related: [three-archive-splits-at-v0-5-release-boundary, zero-loss-archive-verification-method, release-workflow-tag-before-merging-new-work]
 ---
 
 For each archive split, verify lossless content transfer:

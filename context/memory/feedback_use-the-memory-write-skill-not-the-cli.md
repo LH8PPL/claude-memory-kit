@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 6df23222af3140423e833abded4b8f08f5bba1d86186fc3d41f2686b9b93f14e
+related: [use-mcp-mk-remember-not-bash-cli, zero-popup-route-steer-capture-to-bash-cmk-cli-allow-listed, resolved-from-file-gives-shell-proof-and-popup-free-capture]
 ---
 
 Capture facts in conversation via the memory-write skill / mk_remember MCP tool — NOT by shelling out to `node bin/cmk.mjs remember` in Bash.

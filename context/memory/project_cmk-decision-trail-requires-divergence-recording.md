@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 10034036bf3aaeb1f1a0035864bcf7a9593571078948fc5e9fddd54e6562fe49
+related: [decision-trail-recording-convention-for-divergences, decision-trail-rule-preserve-decision-history-in-task-entrie, project-decision-trail-lane-preservation-habit]
 ---
 
 When implementation diverges from prior research or spec conclusions, the divergence must be explicitly recorded in decision trail (research notes or DECISION-LOG). Include what was proposed, what was built instead, and why. Failing to do this violates the project's decision-trail rule.

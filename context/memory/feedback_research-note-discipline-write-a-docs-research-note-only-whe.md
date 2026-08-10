@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 227dd72769da297381f8ed859e4313431ef1a30a7186312c38a85b1d9b89efa1
+related: [research-triage-rule-skip-out-of-scope-topics, always-fix-markdown-lint-warnings-md022-blanks-around-headin, follow-the-doc-procedure-route-dont-narrate]
 ---
 
 Research-note discipline: write a docs/research/ note only when there's something a future session needs — a borrowable idea, a settled-line reaffirmation, or a non-obvious rejection. A subject with zero structural relationship to a memory kit (and where the rejection is self-evident) gets reported in chat and SKIPPED — no permanent file.

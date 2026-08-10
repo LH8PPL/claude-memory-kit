@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 19271ccf0d954a936e436451114978ffd4d6d240c0fdf07de5305bad78418444
+related: [cmk-version-bumping-convention, privacy-sanitization-pattern-for-all-prompt-handling, research-notes-indexed-via-research-index-not-documentation]
 ---
 
 The fix for Task 182 (persona searchability) iterates `SCRATCHPADS_BY_TIER` (the kit's canonical registry of memory tiers) instead of hardcoding `MEMORY.md`. This ensures the search uses a single source of truth.

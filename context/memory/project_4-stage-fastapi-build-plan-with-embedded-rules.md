@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c5dc149e757861c3f6e3e61f773dc6aa21446f6f1f3afbe88902c15c5a838b4d
+related: [session-1-staged-build-workflow, kiro-gate-testing-workflow, e1-cold-open-test-persona-carries-unprompted]
 ---
 
 - **Stage 0**: Minimal FastAPI + WebSocket + `index.html` in `app.py`

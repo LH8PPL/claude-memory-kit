@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 535954ecab741c49670a3c02df0799dacb7f081a9e9d982c5114be1e89b11730
+related: [test-repo-1455-facts-activated-semantic-mode-today, sonarcloud-coverage-job-rate-limited-by-hf-hub-cache-miss, false-embedder-unavailable-alert-on-scope-decisions]
 ---
 
 `cmk install` with `--with-semantic` vs keyword-only have distinct effects on test reproducibility:

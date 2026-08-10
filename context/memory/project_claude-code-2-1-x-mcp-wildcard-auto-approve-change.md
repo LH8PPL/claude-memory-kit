@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c72ce23b09c28e63de06b750f0fcce26c9da4cdfc6a3f151b17421be3694daeb
+related: [global-mcp-tool-prompts-suppressed-via-settings-allow-list, cc-update-does-not-fix-mcp-prompt-task-171-validated, cc-2-1-x-mcp-server-wildcard-does-not-auto-approve-mcp-tools]
 ---
 
 CC 2.1.x closed security holes in wildcard auto-approval for MCP tools. Rules like `mcp__cmk__*` no longer auto-approve per-tool prompts; each tool must be explicitly allowed in `settings.json`.

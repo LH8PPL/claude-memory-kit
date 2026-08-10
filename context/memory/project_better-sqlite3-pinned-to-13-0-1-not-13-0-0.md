@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4b3256cf9818619a081f8ddfab01dcacce7b463dc24fa675fd988e79ffa7d7c3
+related: [cmk-version-bumping-convention, tag-ready-criterion-core-features-pass-known-issues-cleanly, windows-npm-eperm-warning-on-better-sqlite3-node-is-benign]
 ---
 
 - Package: `better-sqlite3`

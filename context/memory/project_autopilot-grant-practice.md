@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 300dac5b4604ad9aa11acb05db47f1bdd6b93c0d816c69398dbae189e5b02065
+related: [stress-gate-required-before-pr-for-spawn-hook-boundary-chang, release-trigger-tag-push-publishes, release-handoff-pr-creation-vs-merge]
 ---
 
 Autopilot merging is not enabled by default. It requires explicit user authorization:

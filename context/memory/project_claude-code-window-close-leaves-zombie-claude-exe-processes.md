@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 1a74fb67d1285f7c4ef22ed953689761ee535bf4b879e4f543e6dec488055f2e
+related: [kiro-cli-spawns-mcp-in-cmd-exe-wrapper-claude-code-spawns-he, windows-dll-locking-during-cmk-reinstall, stale-mcp-process-workaround-after-build-updates]
 ---
 
 When closing a Claude Code window in VS Code, the `claude.exe` session process may not terminate properly, leaving a zombie with child MCP server processes still running.

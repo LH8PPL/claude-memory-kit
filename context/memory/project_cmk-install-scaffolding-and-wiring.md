@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d1680e77417a678931257c091691332dff991d8e568d45e2905332fe9d9f08e9
+related: [claude-memory-kit-5-surfaces-architecture, cmk-install-with-semantic-scaffolds-semantic-recall, kiro-has-four-install-surfaces-not-three-the-user-s-correcti]
 ---
 
 Running `cmk install --with-semantic --ide <ide>` performs:
