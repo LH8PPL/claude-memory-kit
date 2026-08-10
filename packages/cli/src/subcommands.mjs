@@ -3501,7 +3501,8 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
   const log = deps.log ?? console.log;
   const logError = deps.logError ?? ((s) => process.stderr.write(`${s}
 `));
-  const { linkBackfill, BACKFILL_DEFAULT_MAX } = await import('./link-backfill.mjs');
+  const { linkBackfill, linkBackfillToCompletion, syncIndexAfterBackfill, BACKFILL_DEFAULT_MAX } =
+    await import('./link-backfill.mjs');
 
   const tier = String(options?.tier ?? 'P').toUpperCase();
   // DRY RUN IS THE DEFAULT — writing takes an explicit `--apply`.
@@ -3523,13 +3524,23 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
   }
   const dryRun = options?.apply !== true || options?.dryRun === true;
 
-  // `--max` is a bound, and an unparseable bound is not "no bound".
-  // `Number('abc')` is NaN, and `considered >= NaN` is always false — which
-  // turned a typo into an UNBOUNDED walk of the whole corpus, the opposite of
-  // what the flag exists for.
+  // `--max` IS THE EXPLICIT BOUNDED SLICE, and it is the only way to get one.
+  //
+  // Without it the verb runs to completion: the ADR-0020 bound exists so a
+  // killed job keeps what it finished, NOT so a human has to re-type the
+  // command nine times to link their own corpus ("that is stupid, what would a
+  // real user do?" — the live run that found this). Each batch still commits
+  // durably exactly as before; the loop only removes the human from the middle
+  // of it. `--max` stays for the case the bound is genuinely wanted at the
+  // interface: one slice now, the rest later.
+  //
+  // An unparseable bound is not "no bound". `Number('abc')` is NaN, and
+  // `considered >= NaN` is always false — which turned a typo into an
+  // UNBOUNDED walk of the whole corpus, the opposite of what the flag is for.
   const rawMax = options?.max;
+  const sliced = rawMax !== undefined;
   let max = BACKFILL_DEFAULT_MAX;
-  if (rawMax !== undefined) {
+  if (sliced) {
     const parsed = Number(rawMax);
     if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed <= 0) {
       logError(`cmk autolink: --max must be a positive whole number (got ${JSON.stringify(rawMax)})`);
@@ -3572,7 +3583,28 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
     }
   }
 
-  const r = linkBackfill({ projectRoot, userDir, tier, max, dryRun, similarity });
+  const verb = dryRun ? 'would link' : 'linked';
+
+  const r = sliced
+    ? linkBackfill({ projectRoot, userDir, tier, max, dryRun, similarity })
+    : linkBackfillToCompletion({
+        projectRoot,
+        userDir,
+        tier,
+        // `deps.batchSize` is the injection seam for tests + the live probe: it
+        // changes how the work is DIVIDED, never how much of it gets done.
+        batchSize: deps.batchSize ?? BACKFILL_DEFAULT_MAX,
+        dryRun,
+        similarity,
+        // Progress, but only when there is more than one batch to have progress
+        // through — a corpus that finishes in one pass just gets its summary.
+        onBatch: ({ batch, evaluated, linked, remaining }) => {
+          if (batch === 1 && remaining <= 0) return;
+          log(
+            `  batch ${batch} · ${verb} ${linked} of ${evaluated} considered · ${remaining} to go`,
+          );
+        },
+      });
   if (r.action === 'error') {
     for (const e of r.errors) logError(`cmk autolink: ${e}`);
     process.exitCode = 2;
@@ -3584,15 +3616,30 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
       'cmk autolink: no linking floor could be derived for this corpus yet — it needs at least a few dozen facts.\n' +
         '  Nothing was linked. This is the honest answer, not a failure.',
     );
-    return r;
+    return { ...r, indexSynced: false };
   }
 
-  const verb = dryRun ? 'would link' : 'linked';
   log(
-    `cmk autolink${dryRun ? ' (dry run)' : ''}: considered ${r.evaluated} fact(s) in tier ${r.tier} ` +
+    `cmk autolink${dryRun ? ' (dry run)' : ''}: considered ${r.evaluated} fact(s) in tier ${r.tier}` +
+      `${r.batches > 1 ? ` across ${r.batches} batches` : ''} ` +
       `· ${verb} ${dryRun ? r.wouldLink : r.linked} ` +
       `· ${dryRun ? r.wouldAddEdges : r.edges} edge(s) · backend=${r.backend} floor=${r.floor.toFixed(4)}`,
   );
+  // A run that inherited finished work says so — this is what a Ctrl-C'd run
+  // looks like from the NEXT invocation, and the honest thing is to name it
+  // rather than let the numbers look like the whole corpus was small.
+  //
+  // "AT LEAST", deliberately: `alreadyDone` is the `link_eval` marker count,
+  // which is only ONE of the two resume artifacts. A fact an earlier run
+  // actually LINKED leaves the pending walk through its own `related:`
+  // frontmatter and is not in this number (the live probe: a 100-fact slice
+  // linked 40 and marked 60, so the next run inherited 100 and could only
+  // count 60). The marker count cannot be widened to cover the other half
+  // either — a fact carrying `related:` may have been linked by hand and never
+  // touched by any run. So the number is a floor, and it says so.
+  if (r.alreadyDone > 0) {
+    log(`  resumed — at least ${r.alreadyDone} fact(s) were finished by an earlier run and were skipped, not redone.`);
+  }
   log(
     `  bands — related ${r.bands.related} · near-dup ${r.bands.nearDup} (not linked; a merge is a human call) · nothing ${r.bands.none}`,
   );
@@ -3600,14 +3647,43 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
     log(`  ${s.id} ${s.title ?? ''} → ${s.links.map((l) => `${l.slug} (${l.score})`).join(', ')}`);
   }
   if (r.remaining > 0) {
-    log(`  ${r.remaining} fact(s) remain — re-run to continue (bounded per run, resumes where it stopped).`);
+    // Two ways to get here, and they are not the same news:
+    //   · `--max` — the user ASKED for a slice, so "re-run" is the answer;
+    //   · a loop that stopped early — a state we could not make progress from,
+    //     which must be reported as the anomaly it is, never as normal paging.
+    if (sliced) {
+      log(`  ${r.remaining} fact(s) remain — this was a --max slice; re-run to continue (it resumes where it stopped).`);
+    } else {
+      log(
+        `  stopped with ${r.remaining} fact(s) still pending (${r.stopped}) — everything finished is durable; ` +
+          're-run to continue, and if this repeats please report it.',
+      );
+    }
   } else {
     log('  nothing remains — the corpus is fully considered.');
   }
+
+  // THE FOLLOW-UP COMMAND, RUN FOR YOU. Links that exist only in the markdown
+  // are invisible to `cmk links` / `cmk expand` / the viewer graph until the
+  // index catches up, and the user was doing that catch-up by hand. It is
+  // plumbing; the run owns it (D-85). Best-effort by construction — the
+  // markdown is already written and every reader self-heals, so a cold index
+  // is a slower path, never a lost link.
+  let indexSynced = false;
+  if (!dryRun && r.linked > 0) {
+    const sync = syncIndexAfterBackfill({ projectRoot, userDir });
+    indexSynced = sync.synced;
+    if (sync.synced) {
+      log(`  index synced — ${sync.edgeCount} edge(s) are live now in \`cmk links\`, \`cmk expand\` and \`cmk view\`.`);
+    } else {
+      log('  (the search index could not be refreshed here; it rebuilds itself on your next search — nothing was lost.)');
+    }
+  }
+
   if (dryRun && (r.wouldLink > 0 || r.remaining > 0)) {
     log('  (dry run — nothing was written. Re-run with `--apply` to write these links.)');
   }
-  return r;
+  return { ...r, indexSynced };
 }
 
 export const subcommands = [

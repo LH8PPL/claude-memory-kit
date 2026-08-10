@@ -38,6 +38,7 @@ import { eachLiveFact } from './fact-store.mjs';
 import { parse, format } from './frontmatter.mjs';
 import { hashContent } from './content-hash.mjs';
 import { openIndexDb } from './index-db.mjs';
+import { reindexBoot } from './index-rebuild.mjs';
 import { ERROR_CATEGORIES, errorResult } from './result-shapes.mjs';
 import { nowIso } from './audit-log.mjs';
 import {
@@ -80,6 +81,15 @@ export function ensureLinkEvalSchema(db) {
     );
   `);
 }
+
+/**
+ * How many bounded batches a to-completion run will attempt beyond the number
+ * the first batch's own arithmetic says it needs. The loop's real terminators
+ * are "nothing remains" and "a batch made no progress"; this is the belt-and-
+ * braces stop that keeps a pathological state (a fact that neither links nor
+ * marks) from spinning forever instead of reporting honestly.
+ */
+const BATCH_HEADROOM = 2;
 
 /** The candidate walk: every live fact in `tier` that has NOT been considered. */
 function* pendingFacts({ projectRoot, userDir, tier, evaluated }) {
@@ -157,6 +167,13 @@ function applyRelated(path, slugs) {
  * @param {'P'|'L'|'U'} [opts.tier='P']
  * @param {number} [opts.max=BACKFILL_DEFAULT_MAX]
  * @param {boolean} [opts.dryRun=false]  report only — zero writes of any kind
+ * @param {number} [opts.dryRunSkip=0]  DRY-RUN ONLY pagination cursor: skip
+ *   this many pending facts before considering any. A wet run needs no cursor —
+ *   every fact it considers leaves the pending walk through an artifact, so the
+ *   next batch naturally starts after the last one. A dry run persists nothing,
+ *   so without a cursor batch 2 would re-consider batch 1's facts forever. It is
+ *   IGNORED when `dryRun` is false, because there it would silently skip facts
+ *   the run is supposed to write.
  * @param {{similarityFn:Function, backend:string}} [opts.similarity]  the
  *   prepared semantic backend; absent → token-Jaccard.
  * @returns {{tier, backend, floor, evaluated, linked, edges, wouldLink,
@@ -168,6 +185,7 @@ export function linkBackfill({
   tier = 'P',
   max = BACKFILL_DEFAULT_MAX,
   dryRun = false,
+  dryRunSkip = 0,
   similarity = null,
   now = null,
   sampleLimit = 10,
@@ -233,7 +251,11 @@ export function linkBackfill({
     let edges = 0;
     let wouldEdges = 0;
 
+    const skip = dryRun ? Math.max(0, Math.trunc(dryRunSkip) || 0) : 0;
+    let cursor = 0;
+
     for (const fact of pendingFacts({ projectRoot, userDir, tier, evaluated })) {
+      if (cursor++ < skip) continue;
       if (considered >= max) break;
       considered += 1;
 
@@ -316,7 +338,10 @@ export function linkBackfill({
     const afterEval = dryRun ? evaluated : loadEvaluated(db);
     let remaining = 0;
     for (const _ of pendingFacts({ projectRoot, userDir, tier, evaluated: afterEval })) remaining++;
-    if (dryRun) remaining = Math.max(0, remaining - considered);
+    // A dry run leaves no artifact, so the walk still yields everything it just
+    // looked at: subtract what THIS batch considered AND what earlier batches
+    // of the same dry run skipped past.
+    if (dryRun) remaining = Math.max(0, remaining - considered - skip);
 
     return {
       tier,
@@ -346,4 +371,185 @@ export function linkBackfill({
       /* best-effort */
     }
   }
+}
+
+/**
+ * Bring the search index back in step after a backfill wrote links.
+ *
+ * WHY THIS IS IN-BAND. Every index READER already lazy-reindexes (`withReadDb`,
+ * the viewer, the MCP server), so the edges would eventually appear on their
+ * own — but "eventually, if you happen to read through the right surface" is
+ * not what a user who just ran a write command is owed, and the observable
+ * result was a human being told to type `cmk reindex --boot` afterwards. That
+ * is plumbing, and D-85 says the action completes automatically: the regular
+ * user runs no follow-up command. Same contract, same idiom as `forget()`'s
+ * in-band reindex (forget.mjs) and `redact()`'s.
+ *
+ * WHY `reindexBoot` AND NOT THE NARROWER `rebuildEdges`. `rebuildEdges` is not
+ * actually narrower — it walks the whole fact corpus regardless — and calling
+ * it alone would leave the `files` mtime/sha1 checkpoint stale for exactly the
+ * files this run rewrote, so the next reader pays for re-parsing them anyway.
+ * `reindexBoot` IS the incremental one: it re-parses only the changed files and
+ * then rebuilds the edges itself because they changed. One call, both halves,
+ * and it is the primitive `cmk reindex --boot` runs.
+ *
+ * BEST-EFFORT BY CONSTRUCTION: the markdown is the truth and it is already
+ * written. An index failure must never turn a successful backfill into an
+ * error — it degrades to the self-heal every reader already performs.
+ *
+ * @returns {{synced: boolean, edgeCount: number, filesReindexed: number, error?: string}}
+ */
+export function syncIndexAfterBackfill({ projectRoot, userDir } = {}) {
+  if (!projectRoot) return { synced: false, edgeCount: 0, filesReindexed: 0 };
+  try {
+    const db = openIndexDb({ projectRoot });
+    try {
+      const r = reindexBoot({ projectRoot, userDir, db });
+      return {
+        synced: true,
+        edgeCount: r?.edgeCount ?? 0,
+        filesReindexed: r?.filesReindexed ?? 0,
+      };
+    } finally {
+      try {
+        db.close();
+      } catch {
+        /* best-effort */
+      }
+    }
+  } catch (err) {
+    return {
+      synced: false,
+      edgeCount: 0,
+      filesReindexed: 0,
+      error: String(err?.message ?? err),
+    };
+  }
+}
+
+/**
+ * Run bounded batches until the corpus is finished — ONE invocation does the
+ * whole job.
+ *
+ * THE BOUND IS A RECOVERY PROPERTY, NOT A UX. ADR-0020 requires that a long job
+ * killed at 80% has persisted the 80% and can resume; it does NOT require that
+ * a human be the loop driver. The first shipped version printed "1,895 fact(s)
+ * remain — re-run to continue", which leaked the internal property into the
+ * interface and asked the user to turn a crank the machine knows how to turn.
+ *
+ * WHAT IS UNCHANGED: every batch is a `linkBackfill` call, byte for byte the
+ * same durable unit as before — one fact at a time, each persisted before the
+ * next is considered, the resume point derived from the artifacts. Kill this
+ * loop at any moment and you keep everything the finished batches did, and the
+ * next invocation continues from the same artifacts. The loop adds iteration;
+ * it does not add a transaction, a sidecar, or a window in which work is held.
+ *
+ * The dry run loops too — otherwise a first look at a 2,000-fact corpus would
+ * report the first 250 and call it the picture — using `dryRunSkip` as its
+ * cursor, since a dry run persists nothing to advance the walk with.
+ *
+ * @param {object} opts  as `linkBackfill`, except `max` → `batchSize`
+ * @param {number} [opts.batchSize=BACKFILL_DEFAULT_MAX]  facts per durable batch
+ * @param {(progress:object)=>void} [opts.onBatch]  called after each batch lands
+ * @returns aggregated `linkBackfill` result + `{batches, stopped}`
+ */
+export function linkBackfillToCompletion({
+  projectRoot,
+  userDir,
+  tier = 'P',
+  batchSize = BACKFILL_DEFAULT_MAX,
+  dryRun = false,
+  similarity = null,
+  now = null,
+  sampleLimit = 10,
+  onBatch = null,
+} = {}) {
+  let agg = null;
+  let batches = 0;
+  let stopped = 'complete';
+  let dryRunSkip = 0;
+  let batchCap = Infinity;
+  let prevRemaining = Infinity;
+
+  for (;;) {
+    const r = linkBackfill({
+      projectRoot,
+      userDir,
+      tier,
+      max: batchSize,
+      dryRun,
+      dryRunSkip,
+      similarity,
+      now,
+      sampleLimit,
+    });
+    // A malformed request fails the same way it always did — on the first batch,
+    // before anything is written.
+    if (r.action === 'error') return r;
+    batches += 1;
+
+    if (agg === null) {
+      agg = {
+        ...r,
+        bands: { ...r.bands },
+        failures: [...r.failures],
+        samples: [...r.samples],
+      };
+      // Batches this run could possibly need, from the first batch's own
+      // arithmetic (`evaluated + remaining` is the corpus it has to get
+      // through), plus headroom.
+      const totalWork = r.evaluated + r.remaining;
+      batchCap = Math.ceil(Math.max(1, totalWork) / Math.max(1, batchSize)) + BATCH_HEADROOM;
+    } else {
+      agg.evaluated += r.evaluated;
+      agg.linked += r.linked;
+      agg.edges += r.edges;
+      agg.wouldLink += r.wouldLink;
+      agg.wouldAddEdges += r.wouldAddEdges;
+      agg.failed += r.failed;
+      agg.nearDupBand += r.nearDupBand;
+      for (const k of Object.keys(agg.bands)) agg.bands[k] += r.bands[k];
+      for (const f of r.failures) if (agg.failures.length < 10) agg.failures.push(f);
+      for (const s of r.samples) if (agg.samples.length < sampleLimit) agg.samples.push(s);
+      // `remaining` is always the LATEST derivation, never a running total.
+      agg.remaining = r.remaining;
+      // `alreadyDone` describes the state this whole run INHERITED, so it stays
+      // the first batch's — later batches would report our own progress back to
+      // us as if an earlier session had done it.
+    }
+
+    onBatch?.({
+      batch: batches,
+      dryRun,
+      evaluated: r.evaluated,
+      linked: dryRun ? r.wouldLink : r.linked,
+      edges: dryRun ? r.wouldAddEdges : r.edges,
+      remaining: r.remaining,
+      totalEvaluated: agg.evaluated,
+      totalLinked: dryRun ? agg.wouldLink : agg.linked,
+    });
+
+    // Terminators, in the order they can fire.
+    if (r.floor == null) break; // nothing is linkable at all — do not spin
+    if (r.remaining <= 0) break; // done
+    if (r.evaluated === 0) {
+      // The walk yielded nothing while claiming work remains. Not a state we
+      // can make progress from, so stop and let the caller report it honestly
+      // rather than loop on it.
+      stopped = 'stalled';
+      break;
+    }
+    if (r.remaining >= prevRemaining) {
+      stopped = 'stalled';
+      break;
+    }
+    prevRemaining = r.remaining;
+    if (batches >= batchCap) {
+      stopped = 'batch-cap';
+      break;
+    }
+    if (dryRun) dryRunSkip += r.evaluated;
+  }
+
+  return { ...agg, batches, stopped };
 }
