@@ -404,6 +404,7 @@ export function appendScratchpadBullet(opts = {}) {
   // Local tier (machine-paths/overrides) is excluded: machine config, not facts.
   let bulletsGraduated = 0;
   let graduatedIds = [];
+  let graduatedFactIds = {};
   let finalBytes = Buffer.byteLength(finalContent, 'utf8');
   if (finalBytes > cap && tier === 'P') {
     const grad = graduateForCapRelief({
@@ -416,6 +417,7 @@ export function appendScratchpadBullet(opts = {}) {
     });
     finalContent = grad.text;
     graduatedIds = grad.graduated;
+    graduatedFactIds = grad.graduatedFactIds ?? {};
     bulletsGraduated = graduatedIds.length;
     finalBytes = Buffer.byteLength(finalContent, 'utf8');
   } else if (finalBytes > cap && tier === 'U') {
@@ -454,7 +456,10 @@ export function appendScratchpadBullet(opts = {}) {
       id: gid,
       reasonCode: REASON_CODES.SCRATCHPAD_GRADUATED,
       paths: { after: path },
-      extra: { scratchpad },
+      // `id` stays the BULLET id; `newId` is what the fact file actually got.
+      // They differ only when writeFact repaired an unusable id (Task 270 /
+      // D-444) — carrying both makes the move joinable in one hop either way.
+      extra: { scratchpad, ...(graduatedFactIds[gid] ? { newId: graduatedFactIds[gid] } : {}) },
     });
   }
 
@@ -558,6 +563,7 @@ export function sweepScratchpadForCapRelief({
   const evicted = consolidated.evicted ?? [];
 
   let graduatedIds = [];
+  let graduatedFactIds = {};
   if (Buffer.byteLength(working, 'utf8') > cap) {
     // Task 151.4 (§20.3): PROJECT graduates to the recall-reachable fact store;
     // USER PERSONA condenses in place — never graduates to un-injected fragments/
@@ -573,6 +579,7 @@ export function sweepScratchpadForCapRelief({
       });
       working = grad.text;
       graduatedIds = grad.graduated;
+      graduatedFactIds = grad.graduatedFactIds ?? {};
     } else {
       working = condenseScratchpadForCapRelief(working);
     }
@@ -597,7 +604,7 @@ export function sweepScratchpadForCapRelief({
       id: gid,
       reasonCode: REASON_CODES.SCRATCHPAD_GRADUATED,
       paths: { after: path },
-      extra: { scratchpad, trigger: 'session-end' },
+      extra: { scratchpad, trigger: 'session-end', ...(graduatedFactIds[gid] ? { newId: graduatedFactIds[gid] } : {}) },
     });
   }
   return {

@@ -40,7 +40,16 @@ let sandbox, projectRoot, userDir, db;
 // Generated so the 50+-fact linear-cost corpus needs no hand-listed ids; each
 // is a real ID_PATTERN match writeFact accepts. (Programmatic, so the literal
 // tokens never trip validate-test-ids.)
-const ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZa';
+//
+// Task 270: this was a hand-copied literal `'23456789ABCDEFGHJKLMNPQRSTUVWXYZa'`
+// — 33 chars, INCLUDING the `8` the comment above correctly says is excluded.
+// 21 of the 110 generated ids therefore failed ID_PATTERN, and the fixture only
+// worked because `writeFact` accepted a supplied id without checking it (D-427,
+// the very bug this task closes). `validate-test-ids` could not catch it: the
+// ids are COMPUTED at runtime, not literal tokens in the source — the same
+// "enforced one layer too late" shape as the bug itself. Now imported from the
+// canonical source so the fixture cannot drift from the kit's real alphabet.
+import { BASE32_ALPHABET as ALPHABET } from '../packages/canonicalize/src/index.mjs';
 function mkId(n) {
   let x = n;
   let s = '';

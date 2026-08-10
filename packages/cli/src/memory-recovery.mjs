@@ -682,15 +682,18 @@ function rootIdCensus(factDir, tierRoot) {
  *
  * @param {object} o
  * @param {string} o.projectRoot
- * @param {string} [o.userDir]        unused today (the U tier is not stray-prone —
- *                                    it has no project-relative fork path); accepted
- *                                    so the boundary matches every other tier walker.
+ * @param {string} [o.userDir]        the user tier. Its ID-REPAIR half runs (Task
+ *                                    270 / D-446 — `cmk persona import` writes
+ *                                    `fragments/` as raw bytes, bypassing writeFact's
+ *                                    id boundary); its STRAY half does not, because
+ *                                    the U tier has no project-relative fork path.
+ *                                    Omitted → the U tier is skipped entirely.
  * @param {Function} [o._scanFn]      test seam
  * @param {Function} [o._reindexFn]   test seam
  * @returns {{action:'completed'|'error', strays:object[], repaired:object[],
  *            quarantined:object[], reindexed:string[], errors:string[]}}
  */
-export function recoverMemory({ projectRoot, _scanFn, _reindexFn } = {}) {
+export function recoverMemory({ projectRoot, userDir, _scanFn, _reindexFn } = {}) {
   const report = {
     action: 'completed',
     strays: [],
@@ -707,8 +710,21 @@ export function recoverMemory({ projectRoot, _scanFn, _reindexFn } = {}) {
 
     // 1. Root tiers first — repairing an id here means the census below sees it,
     //    so a stray twin of a just-repaired fact collision-skips correctly.
-    for (const tier of ['P', 'L']) {
-      const tierRoot = resolveTierRoot({ tier, projectRoot });
+    //
+    // Task 270 (D-446): the U tier joined this loop. The STRAY half below stays
+    // P/L — the user tier has no project-relative fork path, which is what the
+    // old "U is not stray-prone" note actually meant — but the ID-REPAIR half
+    // applies to any fact dir, and the user tier has a raw-write entry point
+    // that nothing else guards: `cmk persona import` writes the whole bundle,
+    // `fragments/` included, with plain `writeFileSync` (persona-portability.mjs
+    // `applyBundleAtomic`), bypassing `writeFact` and therefore its id boundary.
+    // A bundle exported from a pre-boundary corpus can carry an unusable id
+    // ONTO A DIFFERENT MACHINE. Without this, HC-16 would flag such a fact and
+    // prescribe `cmk install`, install would repair nothing, and doctor would
+    // fail forever — the non-convergent loop HC-16's own contract refuses to
+    // create.
+    for (const tier of ['P', 'L', ...(userDir ? ['U'] : [])]) {
+      const tierRoot = resolveTierRoot({ tier, projectRoot, userDir });
       const factDir = resolveFactDir(tier, tierRoot);
       if (!existsSync(factDir)) continue;
       const r = repairFactDir({ factDir, tier, tierRoot });
@@ -731,7 +747,7 @@ export function recoverMemory({ projectRoot, _scanFn, _reindexFn } = {}) {
     const doReindex = _reindexFn ?? reindex;
     for (const tier of touched) {
       try {
-        doReindex({ tier, projectRoot, warn: () => {} });
+        doReindex({ tier, projectRoot, userDir, warn: () => {} });
         report.reindexed.push(tier);
       } catch (err) {
         report.errors.push(`reindex(${tier}) after recovery: ${err?.message ?? err}`);
