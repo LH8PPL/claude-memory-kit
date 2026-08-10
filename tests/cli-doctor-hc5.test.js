@@ -133,6 +133,17 @@ describe('HC-5 — cron registration', () => {
     expect(c.message).toContain('StopOnIdleEnd');
   });
 
+  it('M8: WARNs when the posture could not be read — never reports it as verified', async () => {
+    markCronRegistered({ projectRoot });
+    const c = await hc5(probe({ default: { verdict: 'settings-unknown', targetPath: '/x/y.mjs', problems: [], detail: 'no readable settings' } }));
+    // WARN, not SKIP: the registration itself WAS verified, so skipping the
+    // whole check would understate what is known. WARN, not FAIL: nothing is
+    // known to be broken.
+    expect(c.status).toBe('warn');
+    expect(c.message).toMatch(/could NOT be verified/i);
+    expect(c.recoveryCommand).toBe('cmk register-crons');
+  });
+
   it('SKIPs HONESTLY when the scheduler cannot be read — never a false green, never a false alarm', async () => {
     markCronRegistered({ projectRoot });
     const c = await hc5(probe({ default: { verdict: 'unreadable', problems: [], detail: 'schtasks.exe ENOENT' } }));

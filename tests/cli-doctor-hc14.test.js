@@ -114,6 +114,22 @@ describe('HC-14 — active kit health warnings', () => {
     expect(c.recoveryCommand).toBe('cmk register-crons');
   });
 
+  it('I3 REPRO at the doctor level: one job failing while the other succeeded still warns, and NAMES the job', async () => {
+    // The two entries `cmk register-crons` really writes when the settings call
+    // fails for one job and lands for the other. Before the per-subject fix
+    // this reported PASS — the failure the whole sub-task exists to surface,
+    // erased by its sibling's success inside a single command run.
+    seedHealth([
+      { ts: new Date(NOW_MS - 120_000).toISOString(), schema: 1, class: HEALTH_CODES.CRON_SETTINGS_UNAPPLIED, outcome: 'fail', detail: 'cmk-daily-distill' },
+      { ts: new Date(NOW_MS - 60_000).toISOString(), schema: 1, class: HEALTH_CODES.CRON_SETTINGS_UNAPPLIED, outcome: 'ok', detail: 'cmk-weekly-curate' },
+    ]);
+    const c = await hc14();
+    expect(c.status).toBe('warn');
+    expect(c.message).toContain('cmk-daily-distill');
+    expect(c.message).not.toContain('cmk-weekly-curate');
+    expect(c.recoveryCommand).toBe('cmk register-crons');
+  });
+
   it('a later successful registration CLEARS it — self-clean is structural, not a cleanup step', async () => {
     seedHealth([
       ...fails(HEALTH_CODES.CRON_SETTINGS_UNAPPLIED, 1, 120_000),

@@ -2415,7 +2415,7 @@ async function offerRepairs({ checks, projectRoot, options, deps = {} }) {
       return rl.question(q);
     });
   try {
-    const { counts } = await runRepairs({
+    const { counts, unfinished } = await runRepairs({
       plan,
       projectRoot,
       // process.argv[1] is THIS cmk's entry — repairs run the version the user
@@ -2435,6 +2435,12 @@ async function offerRepairs({ checks, projectRoot, options, deps = {} }) {
     // BEFORE the repairs; saying "fixed" about a state nobody re-measured is
     // the same false-green this task exists to remove.
     log('Re-run `cmk doctor` to confirm what actually changed.');
+    // M7: `--repair` asked for something. If a repair failed, or one was
+    // withheld only because nobody could consent, the run did not finish what
+    // it was asked to do — and a script must be able to see that even when
+    // every underlying check was merely advisory (see runRepairs for the full
+    // policy). Never LOWERS an exit code doctor already set.
+    if (unfinished > 0) process.exitCode = 1;
   } finally {
     try {
       rl?.close();

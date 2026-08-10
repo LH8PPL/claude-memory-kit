@@ -38,9 +38,9 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { install } from '../packages/cli/src/install.mjs';
-import { planRepairs, runRepairs, repairLogPath, EXECUTABLE_BINS } from '../packages/cli/src/doctor-repair.mjs';
+import { planRepairs, runRepairs, repairLogPath, EXECUTABLE_BINS, REPAIR_VERBS } from '../packages/cli/src/doctor-repair.mjs';
 import { subcommandNames } from '../packages/cli/src/subcommands.mjs';
 
 const repoRoot = join(fileURLToPath(new URL('.', import.meta.url)), '..');
@@ -137,6 +137,87 @@ describe('planRepairs — what may be run at all (Door 1, pure)', () => {
     expect(plan1({ recoveryCommand: 'cmk reindex; whoami' })[0].runnable).toBe(false);
     expect(plan1({ recoveryCommand: 'cmk reindex $(whoami)' })[0].runnable).toBe(false);
     expect(plan1({ recoveryCommand: 'cmk not-a-real-verb' })[0].reason).toBe('unrecognized');
+  });
+
+  // I4 — HC-9's recovery is the single most likely real `--repair` interaction
+  // (every user who lets a global upgrade go quiet hits it), and it was
+  // classified `unrecognized`, printing a line that reads as a kit defect.
+  it('allows the @version shape HC-9 emits (I4)', () => {
+    const [p] = plan1({
+      requiresInstall: true,
+      recoveryCommand: 'npm install -g @lh8ppl/core-memory-kit@latest',
+    });
+    expect(p.runnable).toBe(true);
+    expect(p.exec.args).toEqual(['install', '-g', '@lh8ppl/core-memory-kit@latest']);
+  });
+
+  it('accepts a pinned version too, and still refuses a path or a URL', () => {
+    expect(plan1({ recoveryCommand: 'npm install -g @lh8ppl/core-memory-kit@0.6.6' })[0].runnable).toBe(true);
+    expect(plan1({ recoveryCommand: 'npm install -g pkg@../../evil' })[0].runnable).toBe(false);
+    expect(plan1({ recoveryCommand: 'npm install -g https://evil.example/x.tgz' })[0].runnable).toBe(false);
+    expect(plan1({ recoveryCommand: 'npm install -g pkg@file:/tmp/x' })[0].runnable).toBe(false);
+  });
+
+  // I5 — the latent verb-level gap. Before this, ANY of the registered `cmk`
+  // verbs classified runnable, because the classifier only asked "is this a
+  // verb?" and never "is this a REPAIR?". Unreachable today (all the literal
+  // recoveryCommand sites are clean), but design §14.1's default-DENY claim
+  // rested on a check that did not exist.
+  describe('I5 — only REPAIR verbs are runnable, not every registered verb', () => {
+    it('refuses the destructive verbs by name, with a reason the user can act on', () => {
+      for (const cmd of ['cmk purge --all', 'cmk uninstall', 'cmk forget P-ABCDEFGH', 'cmk redact P-ABCDEFGH']) {
+        const [p] = plan1({ recoveryCommand: cmd });
+        expect(p.runnable, cmd).toBe(false);
+        expect(p.reason, cmd).toBe('destructive');
+      }
+    });
+
+    it('refuses a real-but-not-a-repair verb (a write is not a fix)', () => {
+      const [p] = plan1({ recoveryCommand: 'cmk remember something' });
+      expect(p.runnable).toBe(false);
+      expect(p.reason).toBe('not-a-repair-verb');
+    });
+
+    it('PARTITIONS the live registry: every verb is either an allowed repair or print-only', () => {
+      // The tripwire. A verb added to the CLI cannot quietly become executable
+      // by `--repair` — it lands here as print-only until someone puts it in
+      // REPAIR_VERBS deliberately, and this test names the split so the
+      // decision shows up in a diff.
+      const allowed = [];
+      const denied = [];
+      for (const verb of subcommandNames) {
+        const [p] = plan1({ recoveryCommand: `cmk ${verb}` });
+        (p.runnable ? allowed : denied).push(verb);
+      }
+      expect(allowed.sort()).toEqual([...REPAIR_VERBS].sort());
+      expect(allowed.length + denied.length).toBe(subcommandNames.length);
+    });
+
+    it('every recoveryCommand the kit actually emits is still runnable or DELIBERATELY manual', () => {
+      // The other direction, and the one that catches an over-eager deny: if a
+      // real health-check recovery stopped being runnable, `--repair` would
+      // silently become a printer. Read from the source rather than a copied
+      // list, so a new recovery is covered the day it is written.
+      const srcDir = join(repoRoot, 'packages/cli/src');
+      const emitted = new Set();
+      for (const f of readdirSync(srcDir).filter((n) => n.endsWith('.mjs'))) {
+        for (const m of readFileSync(join(srcDir, f), 'utf8').matchAll(/recoveryCommand: '([^']+)'/g)) {
+          emitted.add(m[1]);
+        }
+      }
+      expect(emitted.size).toBeGreaterThan(5); // the scrape actually found things
+      const MANUAL_BY_DESIGN = new Set([
+        'reopen this project as the primary cwd in Claude Code', // prose, not a command
+      ]);
+      for (const cmd of emitted) {
+        const [p] = plan1({ recoveryCommand: cmd });
+        if (MANUAL_BY_DESIGN.has(cmd)) {
+          expect(p.runnable, cmd).toBe(false);
+        } else {
+          expect(p.runnable, `${cmd} must stay runnable`).toBe(true);
+        }
+      }
+    });
   });
 
   it('allows the npm global install HC-8 emits — the case this feature exists for', () => {
@@ -240,6 +321,69 @@ describe('runRepairs — consent (Doors 1, 3)', () => {
     });
     expect(r.outcomes[0]).toMatchObject({ decision: 'auto-accepted', outcome: 'fixed' });
     expect(calls).toHaveLength(1);
+  });
+
+  it('M6: under --yes the "installs software" NOTE is still printed, before the spawn', async () => {
+    // Consent given in advance is a reason not to ASK, not a reason to stop
+    // SAYING. Under --yes the prompt block never runs, so without this the one
+    // line distinguishing an install from an index rebuild disappeared exactly
+    // where the user was least able to intervene.
+    const lines = [];
+    await runRepairs({
+      plan: plan1({ requiresInstall: true, recoveryCommand: 'npm install -g @lh8ppl/core-memory-kit@latest' }),
+      projectRoot, cliEntry: CLI_ENTRY, interactive: false, assumeYes: true,
+      prompt: async () => { throw new Error('must not prompt under --yes'); },
+      spawn: okSpawn([]), log: (l) => lines.push(l),
+    });
+    const out = lines.join('\n');
+    expect(out).toMatch(/installs software on your machine/i);
+    // Before the spawn announcement, not after it.
+    expect(out.indexOf('installs software')).toBeLessThan(out.indexOf('running npm install'));
+  });
+
+  // M7 — the exit-code policy, asserted rather than assumed.
+  describe('M7 — `unfinished` drives the exit code', () => {
+    it('counts a withheld-for-consent repair as unfinished (the WARN-only exit-0 hole)', async () => {
+      const r = await runRepairs({
+        plan: plan1(), projectRoot, cliEntry: CLI_ENTRY, interactive: false,
+        prompt: async () => { throw new Error('no terminal'); }, spawn: okSpawn([]), log: () => {},
+      });
+      expect(r.unfinished).toBe(1);
+    });
+
+    it('counts a FAILED repair as unfinished', async () => {
+      const r = await runRepairs({
+        plan: plan1(), projectRoot, cliEntry: CLI_ENTRY, interactive: true,
+        prompt: async () => 'y', log: () => {},
+        spawn: () => ({ status: 3, stdout: '', stderr: '' }),
+      });
+      expect(r.unfinished).toBe(1);
+    });
+
+    it('a DECLINED repair is finished — the user was asked and answered', async () => {
+      const r = await runRepairs({
+        plan: plan1(), projectRoot, cliEntry: CLI_ENTRY, interactive: true,
+        prompt: async () => 'n', spawn: okSpawn([]), log: () => {},
+      });
+      expect(r.unfinished).toBe(0);
+    });
+
+    it('a MANUAL-class item is finished — nothing was withheld, it is never runnable', async () => {
+      const r = await runRepairs({
+        plan: plan1({ recoveryCommand: 'rm "/p/x.lock"' }),
+        projectRoot, cliEntry: CLI_ENTRY, interactive: true,
+        prompt: async () => { throw new Error('must not prompt'); }, spawn: okSpawn([]), log: () => {},
+      });
+      expect(r.unfinished).toBe(0);
+    });
+
+    it('an APPLIED repair is finished', async () => {
+      const r = await runRepairs({
+        plan: plan1(), projectRoot, cliEntry: CLI_ENTRY, interactive: true,
+        prompt: async () => 'y', spawn: okSpawn([]), log: () => {},
+      });
+      expect(r.unfinished).toBe(0);
+    });
   });
 
   it('--yes does NOT cover the manual class — the blast radius has to be named by a human', async () => {
@@ -390,5 +534,31 @@ describe('the real `cmk doctor --repair` bin, with stdin not a terminal', () => 
     expect(out).toMatch(/--yes/);
     // And it did not silently do anything: no repair reports as applied.
     expect(out).not.toMatch(/\bfixed\b/i);
+    // M7 / Door 1 — the assertion this test was missing. A run that printed
+    // repairs it could not apply must not look like a clean run to a script.
+    // (This sandbox's HC-1 fails anyway, so the code is 1 by two routes; the
+    // unit tests above pin `unfinished` as the independent driver.)
+    expect(r.status).toBe(1);
   }, 130_000);
+
+  it('exits 1 on a WARN-ONLY plan whose repairs were withheld — the false-green hole M7 closes', () => {
+    // The case doctor's own failCount cannot see: nothing FAILED, so plain
+    // `cmk doctor` correctly exits 0 — but `--repair` was asked to fix two
+    // advisory findings and could not, and a CI script reading exit 0 would
+    // call that a clean run. Driven through the real bin so it covers the
+    // wiring, not just the helper.
+    const r = spawnSync(
+      process.execPath,
+      ['-e', `
+        const { runRepairs } = await import(${JSON.stringify(pathToFileURL(join(repoRoot, 'packages/cli/src/doctor-repair.mjs')).href)});
+        const plan = [{ id: 'HC-5', name: 'cron', problem: 'stale flags', command: 'cmk register-crons',
+                        runnable: true, requiresInstall: false, exec: { bin: 'cmk', args: ['register-crons'] } }];
+        const r = await runRepairs({ plan, projectRoot: process.cwd(), cliEntry: 'x',
+                                     interactive: false, prompt: async () => 'y', log: () => {} });
+        if (r.unfinished > 0) process.exitCode = 1;
+      `.replace(/\n\s+/g, '\n')],
+      { cwd: projectRoot, encoding: 'utf8', timeout: 60_000, input: '' },
+    );
+    expect(r.status).toBe(1);
+  });
 });

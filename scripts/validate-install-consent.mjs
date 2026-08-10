@@ -40,6 +40,34 @@
 // analysis; any check loose enough to catch it flags everything. That is why
 // the real guard is an exported contract rather than a scan.
 //
+// WHAT CHECK (2) CANNOT SEE — stated so nobody reads a green run as a proof
+// (M9). Three limits, each with the same shape: the scan knows about text in
+// files it looks at.
+//
+//   • SCOPE. It walks ONLY `ROOTS` below — packages/cli/src, packages/cli/bin,
+//     plugin/bin — and only `*.mjs`. An installer spawned from `scripts/`, from
+//     a `.js`/`.cjs` file, from a hook shipped in `template/`, or from a
+//     dependency is invisible to it. Those are out of scope on purpose (they
+//     are not the kit's runtime), but "out of scope" is not "checked and
+//     clean".
+//   • LITERAL NAMES ONLY. `INSTALLER` matches the manager's name spelled out in
+//     source. A command assembled at runtime — from config, from a health
+//     check's `recoveryCommand` string, from `['np','m'].join('')` — matches
+//     nothing. The exported-contract check (1) is what actually covers the one
+//     path where a command IS assembled at runtime, which is precisely why it
+//     is check (1) and this is check (2).
+//   • NO DATA FLOW. Being listed in INSTALL_EMITTERS asserts that a human read
+//     the file and found it emits without executing. The scan cannot verify
+//     that claim, and it will not notice if the file later starts executing
+//     what it used to only print — the spawn and the installer token were
+//     already both present, so the verdict does not change.
+//
+// In short: check (1) is a guarantee about doctor-repair's executable set;
+// check (2) is a tripwire that makes a new install-shaped module require a
+// deliberate declaration. Neither is a proof that the kit never installs
+// anything without consent — the consent branches in
+// tests/cli-doctor-repair.test.js are the closest thing to that.
+//
 // Run: `node scripts/validate-install-consent.mjs`   (wired into `npm test`)
 
 import { readFileSync, readdirSync } from 'node:fs';

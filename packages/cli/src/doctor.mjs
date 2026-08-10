@@ -620,6 +620,26 @@ function hc5CronRegistered({ projectRoot, schedulerProbe }) {
     };
   }
 
+  // M8 — the posture could not be read, so it must not be reported as verified.
+  // WARN rather than SKIP: the registration itself WAS checked and is fine, so
+  // skipping the whole check would understate what is known; and WARN rather
+  // than FAIL because nothing is known to be broken. The message says plainly
+  // which half was not verified.
+  const unknownSettings = findings.filter((f) => f.verdict === 'settings-unknown');
+  if (unknownSettings.length > 0) {
+    return {
+      id: 'HC-5',
+      name: HC5_NAME,
+      status: 'warn',
+      message:
+        `${unknownSettings.map((f) => f.entryName).join(', ')} is registered and its command exists, but the task ` +
+        'definition carried no readable settings block — so the scheduler posture that decides whether Windows will ' +
+        'actually run it (§8.6.5) could NOT be verified. `cmk register-crons` is idempotent and rewrites those ' +
+        'settings, which is the cheapest way to know.',
+      recoveryCommand: 'cmk register-crons',
+    };
+  }
+
   const unreadable = findings.filter((f) => f.verdict === 'unreadable');
   if (unreadable.length > 0) {
     return {
@@ -1132,7 +1152,15 @@ function hc14HealthWarnings({ projectRoot, now }) {
   }
   // Codes, not prose: the code is the key the troubleshooting skill's repair
   // book is sectioned by, so naming it is what makes the report actionable.
-  const codes = warnings.map((w) => `${w.code} (${w.severity}, ${w.strikes}x)`).join('; ');
+  // A per-subject class names WHICH subject is affected (I3). "your scheduled
+  // jobs are misconfigured" sends the user to inspect both; "cmk-daily-distill"
+  // tells them where to look.
+  const codes = warnings
+    .map((w) => {
+      const subjects = w.subjects?.length ? `: ${w.subjects.join(', ')}` : '';
+      return `${w.code}${subjects} (${w.severity}, ${w.strikes}x)`;
+    })
+    .join('; ');
   // A repair command is offered only when it is not the command the user just
   // ran. Most codes' primaryAction is `cmk doctor` — correct in the WHISPER,
   // where the model has not run doctor yet, and circular HERE, where this line

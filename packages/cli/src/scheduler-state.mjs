@@ -21,6 +21,12 @@
 //     'not-registered'  — the scheduler has no such entry.
 //     'settings-stale'  — registered and present, but carrying the pre-v0.6.6
 //                        battery/idle posture (§8.6.5). win32 only.
+//     'settings-unknown'— the command exists, but the task carried no readable
+//                        <Settings> block, so the posture was NOT verified.
+//                        Separate from both neighbours on purpose: calling it
+//                        `settings-stale` would assert flags we never saw, and
+//                        calling the whole read `unreadable` would discard a
+//                        target check that succeeded. win32 only.
 //     'unreadable'      — WE COULD NOT TELL. Never a guess; the caller SKIPs.
 //
 // THE VERDICTS ARE RANKED, and the ranking is a decision, not an accident:
@@ -155,11 +161,28 @@ function readWindows({ entryName, spawn, readFile, exists }) {
       timeout: QUERY_TIMEOUT_MS,
     });
   } catch (err) {
-    // The BINARY could not be launched — a different fact from "the binary said
-    // no". We genuinely could not tell, so we say so.
+    // Defence in depth only — see the check below for the shape that actually
+    // occurs in production.
     return result('unreadable', { detail: `${err?.code ?? ''} ${err?.message ?? err}`.trim() });
   }
-  if (!r || r.status !== 0) {
+  // THE LAUNCH FAILED, which is not the same fact as "the scheduler said no".
+  //
+  // `spawnSync` does NOT throw on ENOENT or ETIMEDOUT — it RETURNS
+  // `{error: <Error>, status: null}`. So the catch above never fires for the
+  // cases that matter, and without this check an unlaunchable or timed-out
+  // schtasks fell through to the non-zero-status branch below and reported
+  // `not-registered` — making HC-5 FAIL with "the host scheduler has no such
+  // entry", a claim about the user's scheduler drawn from a command that never
+  // ran. `status === null` is also checked directly: a kill-by-signal can leave
+  // a null status with no `error` object, and reading that as "no such task"
+  // would be the same wrong claim by another route.
+  // (House pattern: mcp-procs.mjs's `r.error || r.status !== 0` — split here,
+  // because these two need DIFFERENT verdicts.)
+  if (!r || r.error || r.status === null || r.status === undefined) {
+    const why = r?.error ? `${r.error.code ?? ''} ${r.error.message ?? r.error}`.trim() : 'the query did not complete';
+    return result('unreadable', { detail: why });
+  }
+  if (r.status !== 0) {
     // The scheduler DENIES a task the sentinel claims the kit registered.
     // Reported as a failure rather than as "unreadable" on purpose: whether the
     // task was deleted or the query is broken, the answer is the same
@@ -177,6 +200,13 @@ function readWindows({ entryName, spawn, readFile, exists }) {
     return result('unreadable', { detail: 'schtasks returned something that is not a task definition' });
   }
   const problems = settings.verdict === 'needs-repair' ? settings.problems : [];
+  // M8 — a readable Command with an UNREADABLE Settings block used to fall
+  // through to `ok`, i.e. "posture verified" on a posture nobody could read.
+  // That is the false-green shape this whole check exists to remove, so it gets
+  // its own verdict rather than being folded into either neighbour: calling it
+  // `settings-stale` would assert flags we never saw, and calling the whole
+  // read `unreadable` would throw away the target check, which DID succeed.
+  const settingsUnknown = settings.verdict === 'unreadable' && Boolean(cmd);
 
   let target = pickScript(extractPaths(`${cmd} ${args}`));
   if (!target) {
@@ -207,6 +237,13 @@ function readWindows({ entryName, spawn, readFile, exists }) {
     return result('target-missing', { targetPath: target, problems, detail: `the registered command no longer exists: ${target}` });
   }
   if (problems.length > 0) return result('settings-stale', { targetPath: target, problems });
+  if (settingsUnknown) {
+    return result('settings-unknown', {
+      targetPath: target,
+      problems,
+      detail: 'the task definition carried no readable <Settings> block, so its scheduler posture was not verified',
+    });
+  }
   return result('ok', { targetPath: target, problems });
 }
 
@@ -217,9 +254,16 @@ function readLinux({ entryName, spawn, exists }) {
   } catch (err) {
     return result('unreadable', { detail: `${err?.code ?? ''} ${err?.message ?? err}`.trim() });
   }
-  // `crontab -l` exits non-zero when the user simply has no crontab, which is
-  // "not registered", not "unreadable" — the same verdict the empty-output case
-  // reaches, so the two need no distinguishing.
+  // Same split as the Windows leg (I2): a crontab binary that could not be
+  // LAUNCHED means we could not tell, and must not be reported as "no crontab
+  // line tagged '# cmk-daily-distill'" — that would be a claim about the user's
+  // crontab drawn from a command that never ran.
+  if (!r || r.error || r.status === null || r.status === undefined) {
+    const why = r?.error ? `${r.error.code ?? ''} ${r.error.message ?? r.error}`.trim() : 'the query did not complete';
+    return result('unreadable', { detail: why });
+  }
+  // A CLEAN non-zero exit is different, and stays `not-registered`: that is what
+  // `crontab -l` does when the user simply has no crontab, which is an answer.
   const text = decodeSchedulerOutput(r?.stdout);
   // The trailing `# <entryName>` comment is what registerCron writes to make the
   // entry findable; matching on it is matching the kit's own contract rather

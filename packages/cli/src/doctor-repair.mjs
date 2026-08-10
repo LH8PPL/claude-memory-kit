@@ -83,6 +83,44 @@ const DESTRUCTIVE_HEADS = new Set([
   'remove-item', 'remove-itemproperty', 'clear-content',
 ]);
 
+/**
+ * The `cmk` verbs `--repair` may run — an ALLOWLIST, not a deny-list.
+ *
+ * WHY AN ALLOWLIST (the I5 fix, and a deliberate departure from the deny-set
+ * that was proposed). Before this, the classifier asked only "is this a
+ * registered verb?", so all 42 of them — `purge --all`, `uninstall`, `forget`,
+ * `redact` — classified runnable. Nothing reachable emitted those, so the bug
+ * was latent; but design §14.1's default-DENY claim rested on a check that did
+ * not exist.
+ *
+ * A deny-set would close today's hole and leave tomorrow's open: a verb added
+ * next year would default IN, silently, exactly the failure direction the
+ * default-DENY rule was written to avoid. An allowlist defaults OUT. New verbs
+ * become print-only until someone adds them here on purpose, and the partition
+ * test in tests/cli-doctor-repair.test.js asserts every registered verb lands
+ * on one side or the other, so the decision shows up in a diff.
+ *
+ * Membership rule: the verb must be a REPAIR — idempotent, non-destructive,
+ * and something a health check actually prescribes. Every entry below is a
+ * literal `recoveryCommand` emitted somewhere in this package (a test scrapes
+ * the source and pins that both ways, so an over-eager deny here cannot
+ * quietly turn `--repair` into a printer).
+ */
+export const REPAIR_VERBS = Object.freeze([
+  'install', // HC-1 (agent variants), HC-9 scaffold drift, HC-13 stray tiers
+  'reindex', // HC-4 INDEX drift, HC-15 vector mapping (--full)
+  'repair', // HC-1 --hooks
+  'register-crons', // HC-5
+  'daily-distill', // HC-2, HC-10
+]);
+
+/**
+ * Verbs that mutate or remove the user's memory. Not merely absent from
+ * REPAIR_VERBS — named, so the printed line says WHY this one is theirs to run
+ * rather than the unhelpful "not a shape --repair will execute".
+ */
+const DESTRUCTIVE_VERBS = new Set(['purge', 'uninstall', 'forget', 'redact', 'roll', 'prune']);
+
 function tokenize(command) {
   // Quoted runs stay whole so a quoted path is ONE token; that is all the
   // parsing this needs, because the allowlist below rejects anything with a
@@ -122,18 +160,26 @@ function classify(command, knownVerbs) {
 
   if (head === 'cmk') {
     const verb = tokens[1];
-    // Derived from the live command registry (passed in by the caller — a
-    // direct import would be a cycle), so a verb this kit does not have can
-    // never be executed, and a verb it gains needs no edit here.
+    // Two gates, in this order. The registry check rejects a verb the kit does
+    // not have; the REPAIR_VERBS check rejects a verb it has but which is not a
+    // repair. Only the second one closes I5 — the first was passing all 42.
     if (!verb || !knownVerbs.includes(verb)) return { runnable: false, reason: 'unrecognized' };
+    if (DESTRUCTIVE_VERBS.has(verb)) return { runnable: false, reason: 'destructive' };
+    if (!REPAIR_VERBS.includes(verb)) return { runnable: false, reason: 'not-a-repair-verb' };
     return { runnable: true, exec: { bin: 'cmk', args: tokens.slice(1) } };
   }
 
-  // npm: ONLY the global-install shape HC-8 emits. `npm run <script>` and a
-  // relative path both fail here, which is the intent — this is not a general
-  // npm passthrough.
+  // npm: ONLY the global-install shape HC-8 and HC-9 emit. `npm run <script>`,
+  // a relative path and a URL all fail here, which is the intent — this is not
+  // a general npm passthrough.
   const [, sub, flag, pkg, ...rest] = tokens;
-  const okPkg = typeof pkg === 'string' && /^@?[a-z0-9][a-z0-9._-]*(\/[a-z0-9][a-z0-9._-]*)?$/i.test(pkg);
+  // The `@version` suffix is allowed (I4): HC-9's real recovery is
+  // `npm install -g @lh8ppl/core-memory-kit@latest`, and rejecting it printed a
+  // "not a shape --repair will execute" line about the kit's own most likely
+  // repair. The version part is a restricted charset — no slash, no colon — so
+  // `@file:/tmp/x`, `@../../evil` and a tarball URL are all still refused.
+  const okPkg = typeof pkg === 'string'
+    && /^@?[a-z0-9][a-z0-9._-]*(\/[a-z0-9][a-z0-9._-]*)?(@[a-z0-9][a-z0-9.^~*-]*)?$/i.test(pkg);
   const okRest = rest.every((t) => /^--allow-scripts=[@a-z0-9._/-]+$/i.test(t));
   if (sub === 'install' && flag === '-g' && okPkg && okRest) {
     return { runnable: true, exec: { bin: 'npm', args: tokens.slice(1) } };
@@ -249,6 +295,15 @@ export async function runRepairs({
     let outcome = 'not-run';
     let exitCode;
     if (decision === 'accepted' || decision === 'auto-accepted') {
+      // M6: the install NOTE is printed on the `--yes` path too. Consent was
+      // given in advance, which is a reason not to ASK — not a reason to stop
+      // SAYING that something is being installed on the user's machine. Under
+      // `--yes` the prompt block above never runs, so without this line the one
+      // signal that distinguishes an install from an index rebuild vanished
+      // exactly where the user was least able to intervene.
+      if (item.requiresInstall) {
+        log(`  ${item.id}: NOTE — this installs software on your machine.`);
+      }
       log(`  ${item.id}: running ${item.command} …`);
       const r = execRepair({ item, cliEntry, projectRoot, spawn });
       outcome = r.ok ? 'fixed' : 'failed';
@@ -276,13 +331,41 @@ export async function runRepairs({
     else if (o.decision === 'declined') counts.declined += 1;
     else counts['not-run'] += 1;
   }
-  return { outcomes, counts };
+
+  // M7 — THE EXIT-CODE POLICY, stated rather than left to fall out of the
+  // health checks' own verdict.
+  //
+  // The problem it fixes: a WARN-only plan (HC-5's stale scheduler posture, say)
+  // leaves doctor's failCount at 0, so `cmk doctor --repair` in a script printed
+  // "here are 2 repairs you could apply" and exited 0 — indistinguishable from
+  // a clean run. That is the false-green shape, arriving through the exit code
+  // instead of the report.
+  //
+  // The rule: `--repair` is an explicit REQUEST to fix things, so its exit code
+  // answers "did the thing you asked for happen?"
+  //   • a repair that FAILED                         → unfinished  (exit 1)
+  //   • a runnable repair withheld for want of consent (no terminal, no --yes)
+  //                                                  → unfinished  (exit 1)
+  //   • a repair the user DECLINED                   → finished    (exit 0)
+  //     — they were asked and they answered; honouring that is not a failure.
+  //   • a MANUAL-class item (delete / placeholder / prose)
+  //                                                  → finished    (exit 0)
+  //     — nothing was withheld; those are never runnable by design.
+  //
+  // Plain `cmk doctor` is untouched: WARN still never reddens an exit code
+  // there, which keeps HC-13/HC-14's advisory posture intact.
+  const unfinished = outcomes.filter(
+    (o) => o.outcome === 'failed' || (o.decision === 'print-only' && !o.reason),
+  ).length;
+
+  return { outcomes, counts, unfinished };
 }
 
 const MANUAL_REASONS = Object.freeze({
-  destructive: 'this one DELETES something — the kit never runs a delete for you',
+  destructive: 'this one DELETES or rewrites your memory — the kit never runs that for you',
   placeholder: 'fill in the <placeholder> first — only you know what belongs there',
   'not-a-command': 'this is an instruction, not a command',
+  'not-a-repair-verb': 'a real `cmk` command, but not one `--repair` treats as a fix',
   unrecognized: 'not a shape `--repair` is willing to execute',
 });
 
