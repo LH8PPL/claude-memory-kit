@@ -3,7 +3,8 @@
 //   the dry-run's identical shape with zero writes.
 // Door 2: the STATE — `related:` appended to exactly the facts that earned it,
 //   the `link_eval` resume markers inside the rebuildable INDEX (never a
-//   sidecar file in the tier), and the over-mutation guard.
+//   sidecar file in the tier), the `related` EDGE ROWS the in-band index sync
+//   lands (no manual `cmk reindex --boot`), and the over-mutation guard.
 // Door 3 N/A: the backfill is in-process; the CLI verb's real-bin exercise is
 //   the live-test recorded in the task report.
 // Door 4 N/A: no message queue.
@@ -32,7 +33,11 @@ import { mkdtempSync, rmSync, readFileSync, chmodSync, existsSync, readdirSync }
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { linkBackfill, countLinkBackfillPending } from '../packages/cli/src/link-backfill.mjs';
+import {
+  linkBackfill,
+  linkBackfillToCompletion,
+  countLinkBackfillPending,
+} from '../packages/cli/src/link-backfill.mjs';
 import { writeLinkFloor, FLOOR_QUANTILE } from '../packages/cli/src/link-facts.mjs';
 import { writeFact } from '../packages/cli/src/write-fact.mjs';
 import { openIndexDb } from '../packages/cli/src/index-db.mjs';
@@ -342,5 +347,177 @@ describe('Task 262 — the backfill (Doors 1, 2, 5)', () => {
     const beforeText = readFileSync(explicit.path, 'utf8');
     linkBackfill({ projectRoot, userDir, tier: 'P', max: 100 });
     expect(readFileSync(explicit.path, 'utf8')).toBe(beforeText);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Task 262 follow-up — THE BOUND IS A RECOVERY PROPERTY, NOT A UX.
+//
+// `cmk autolink --apply` shipped processing ONE bounded batch and printing
+// "1,895 fact(s) remain — re-run to continue", which makes the human the loop
+// driver for a job the machine knows how to finish. ADR-0020's resumability is
+// about surviving a kill; it was never a reason to hand the user a crank.
+//
+// So: the verb LOOPS its own bounded batches to completion, each batch still
+// committing durably exactly as before (killed-at-80% still loses nothing —
+// every test above still holds against the single-batch primitive), `--max`
+// becomes the explicit bounded-slice opt-in, and the index sync the user was
+// doing by hand afterwards happens in-band (the D-85 contract: the action
+// completes; the regular user runs no follow-up command).
+// ---------------------------------------------------------------------------
+describe('Task 262 follow-up — one invocation finishes the job (Doors 1, 2, 5)', () => {
+  function relatedEdgeCount() {
+    const db = openIndexDb({ projectRoot });
+    try {
+      return db.prepare("SELECT COUNT(*) AS n FROM edges WHERE type = 'related'").get().n;
+    } finally {
+      db.close();
+    }
+  }
+
+  it('G13 linkBackfillToCompletion LOOPS bounded batches until nothing remains', () => {
+    seedClusteredCorpus();
+    const total = countLinkBackfillPending({ projectRoot, userDir, tier: 'P' });
+    expect(total).toBeGreaterThan(10); // more than one batch at batchSize 5
+
+    const r = linkBackfillToCompletion({ projectRoot, userDir, tier: 'P', batchSize: 5 });
+
+    // Door 1 — the aggregate is the WHOLE job, not the first slice.
+    expect(r.batches).toBeGreaterThan(1);
+    expect(r.evaluated).toBe(total);
+    expect(r.remaining).toBe(0);
+    expect(r.stopped).toBe('complete');
+    expect(r.linked).toBeGreaterThan(0);
+    expect(r.edges).toBeGreaterThanOrEqual(r.linked);
+    expect(r.bands.related + r.bands.none).toBe(total);
+
+    // Door 2 — the corpus really is finished, by the same derivation a fresh
+    // process would use.
+    expect(countLinkBackfillPending({ projectRoot, userDir, tier: 'P' })).toBe(0);
+
+    // Door 5 — one audit entry per linked fact, across every batch.
+    const entries = auditLines().filter((e) => e.action === 'auto-linked');
+    expect(entries.length).toBe(r.linked);
+  });
+
+  it('G14 `cmk autolink --apply` with no --max finishes in ONE invocation and says so', async () => {
+    seedClusteredCorpus();
+    const { runAutolink } = await import('../packages/cli/src/subcommands.mjs');
+    const total = countLinkBackfillPending({ projectRoot, userDir, tier: 'P' });
+    const lines = [];
+
+    const r = await runAutolink(
+      { apply: true },
+      null,
+      { projectRoot, userDir, batchSize: 5, log: (m) => lines.push(m) },
+    );
+
+    expect(r.evaluated).toBe(total);
+    expect(r.remaining).toBe(0);
+    expect(countLinkBackfillPending({ projectRoot, userDir, tier: 'P' })).toBe(0);
+
+    const out = lines.join('\n');
+    // Per-batch progress, not silence for the whole run.
+    expect(out).toMatch(/batch 2/);
+    // ...and the final word is what happened, never a crank to turn.
+    expect(out).not.toMatch(/re-run to continue/);
+    expect(out).toMatch(/nothing remains/);
+  });
+
+  it('G15 --max is the explicit bounded slice — one batch, and it says what remains', async () => {
+    seedClusteredCorpus();
+    const { runAutolink } = await import('../packages/cli/src/subcommands.mjs');
+    const total = countLinkBackfillPending({ projectRoot, userDir, tier: 'P' });
+    const lines = [];
+
+    const r = await runAutolink(
+      { apply: true, max: 5 },
+      null,
+      { projectRoot, userDir, log: (m) => lines.push(m) },
+    );
+
+    expect(r.evaluated).toBe(5);
+    expect(r.remaining).toBe(total - 5);
+    expect(countLinkBackfillPending({ projectRoot, userDir, tier: 'P' })).toBe(total - 5);
+    expect(lines.join('\n')).toMatch(/re-run to continue/);
+  });
+
+  it('G16 a completed apply run leaves the EDGES live — no manual `cmk reindex --boot`', async () => {
+    seedClusteredCorpus();
+    const { runAutolink } = await import('../packages/cli/src/subcommands.mjs');
+    // The seed's reindexFull built the edge table when no fact had links yet.
+    expect(relatedEdgeCount()).toBe(0);
+    const lines = [];
+
+    const r = await runAutolink(
+      { apply: true },
+      null,
+      { projectRoot, userDir, batchSize: 5, log: (m) => lines.push(m) },
+    );
+
+    expect(r.linked).toBeGreaterThan(0);
+    // Door 2 — read the index in a FRESH connection that does no reindexing of
+    // its own: the rows are there because the run put them there.
+    expect(relatedEdgeCount()).toBe(r.edges);
+    expect(r.indexSynced).toBe(true);
+    expect(lines.join('\n')).toMatch(/index synced/i);
+  });
+
+  it('G17 the DRY RUN loops too — full picture, still absolutely zero writes', async () => {
+    seedClusteredCorpus();
+    const { runAutolink } = await import('../packages/cli/src/subcommands.mjs');
+    const total = countLinkBackfillPending({ projectRoot, userDir, tier: 'P' });
+    const before = snapshotFactFiles();
+    const auditBefore = auditLines().length;
+    const edgesBefore = relatedEdgeCount();
+
+    const r = await runAutolink(
+      {},
+      null,
+      { projectRoot, userDir, batchSize: 5, log: () => {} },
+    );
+
+    // A dry run that stopped at the first batch would under-report the corpus.
+    expect(r.dryRun).toBe(true);
+    expect(r.evaluated).toBe(total);
+    expect(r.remaining).toBe(0);
+    expect(r.batches).toBeGreaterThan(1);
+
+    // ...and it is still the no-write posture, every batch of it.
+    const after = snapshotFactFiles();
+    expect(after.size).toBe(before.size);
+    for (const [name, content] of before) expect(after.get(name)).toBe(content);
+    expect(auditLines().length).toBe(auditBefore);
+    expect(relatedEdgeCount()).toBe(edgesBefore);
+    expect(r.indexSynced).toBe(false);
+    const db = openIndexDb({ projectRoot });
+    try {
+      expect(db.prepare('SELECT COUNT(*) AS n FROM link_eval').get().n).toBe(0);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('G18 an interrupted run resumes on the next invocation and SAYS so', async () => {
+    seedClusteredCorpus();
+    const { runAutolink } = await import('../packages/cli/src/subcommands.mjs');
+    // Stand in for a Ctrl-C mid-run: a bounded slice landed, durably.
+    const first = await runAutolink(
+      { apply: true, max: 5 },
+      null,
+      { projectRoot, userDir, log: () => {} },
+    );
+    expect(first.evaluated).toBe(5);
+
+    const lines = [];
+    const second = await runAutolink(
+      { apply: true },
+      null,
+      { projectRoot, userDir, batchSize: 5, log: (m) => lines.push(m) },
+    );
+
+    expect(second.alreadyDone).toBeGreaterThan(0);
+    expect(second.remaining).toBe(0);
+    expect(lines.join('\n')).toMatch(/resum/i);
   });
 });
