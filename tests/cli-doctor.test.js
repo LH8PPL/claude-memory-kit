@@ -241,7 +241,7 @@ describe('Task 37 — runDoctor (cmk doctor health checks)', () => {
     // it. `cmk persona import` writes the whole bundle (`fragments/` included)
     // with plain writeFileSync, bypassing writeFact's id boundary, so a bundle
     // exported from a pre-boundary corpus can carry an unusable id onto a
-    // different machine. Before D-445 `recoverMemory` repaired ['P','L'] only,
+    // different machine. Before D-446 `recoverMemory` repaired ['P','L'] only,
     // so HC-16 would flag such a fact, prescribe `cmk install`, install would
     // repair nothing, and doctor would fail forever — the non-convergent loop
     // HC-16's own contract refuses to create.
@@ -354,7 +354,7 @@ describe('Task 37 — runDoctor (cmk doctor health checks)', () => {
       expect(Number(claim[1])).toBe(highest);
     });
 
-    // D-445 / the B1 live probe. `runDoctorCli` hardcoded
+    // D-446 / the B1 live probe. `runDoctorCli` hardcoded
     // `join(homedir(), '.core-memory-kit')`, which ignores MEMORY_KIT_USER_DIR —
     // the kit's own sandbox/override mechanism. So every USER-TIER check (HC-16's
     // new arm, HC-7's stale locks) audited a different directory than the one

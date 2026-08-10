@@ -85,7 +85,7 @@ function graduateOne({ id, text, prov, tier, projectRoot, userDir, now }) {
  * @returns {{ text: string, graduated: string[], graduatedFactIds: Record<string,string> }}
  *   the new scratchpad content (graduated bullets removed), the BULLET ids that
  *   graduated, and bulletId → the id the fact file actually received (they differ
- *   when writeFact repaired an unusable bullet id — Task 270 / D-443).
+ *   when writeFact repaired an unusable bullet id — Task 270 / D-444).
  */
 export function graduateForCapRelief({
   text,
@@ -127,7 +127,7 @@ export function graduateForCapRelief({
 
   const removeIdx = new Set();
   const graduated = [];
-  // Task 270 (M5 / D-443): bulletId → the id the fact file ACTUALLY got. These
+  // Task 270 (M5 / D-444): bulletId → the id the fact file ACTUALLY got. These
   // differ exactly when writeFact repaired an unusable bullet id, and that is
   // the case where an audit entry keyed on the bullet id alone names an id no
   // fact file carries — unjoinable at the moment it matters most.

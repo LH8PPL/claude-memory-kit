@@ -4,7 +4,7 @@
 <!-- Browse this folder as an Obsidian vault. Each [[link]] opens a fact file. -->
 <!-- How to open + the read-vs-write rule: docs/OBSIDIAN.md -->
 
-Facts: 2273
+Facts: 2276
 
 ## feedback
 
@@ -793,6 +793,7 @@ Facts: 2273
 - [[project_agent-neutral-names-persist-across-any-rename]] — Agent-neutral names persist across any rename
 - [[project_v0-3-2-ships-fts5-query-fix-task-153-val-deqv4aul]] — v0.3.2 ships FTS5 query fix (Task 153) + validate-index (Task 152)
 - [[project_fresh-folder-verification-workflow-for-claude-memory-kit-rel]] — Fresh Folder Verification Workflow for claude-memory-kit Releases
+- [[project_pr-review-workflow-worktree-reproduction-severity-ranking]] — PR Review Workflow — Worktree + Reproduction + Severity Ranking
 - [[project_questioned-whether-fix-is-truly-automati-dgbpg6pg]] — Questioned whether fix is truly automatic and requires no user intervention.
 - [[project_v0-4-roadmap-kiro-first-editor-integration]] — v0.4 Roadmap — Kiro-First Editor Integration
 - [[project_ide-agents-and-autonomous-agents-are-on-dh5mucd6]] — IDE agents and autonomous agents are on a spectrum (signal richness + autonomy a
@@ -1359,6 +1360,7 @@ Facts: 2273
 - [[project_cutgate-fresh-install-test-sequence]] — Cutgate Fresh Install Test Sequence
 - [[project_prefers-to-pause-work-at-safe-checkpoint-lwrpvyqf]] — Prefers to pause work at safe checkpoints ("pause when you can"), not mid-flight
 - [[project_cursor-agent-cli-quirks-and-latency-profile]] — cursor-agent CLI Quirks and Latency Profile
+- [[project_paging-test-fixtures-below-real-world-scale-gap]] — Paging Test Fixtures Below Real-World Scale Gap
 - [[project_for-multi-surface-builds-like-kiro-ide-c-lzeddb4w]] — For multi-surface builds (like Kiro IDE/CLI): prefers sub-tasks, start with IDE
 - [[project_kiro-cli-agent-config-reads-from-kiro-agents-not-aws-amazonq]] — kiro-cli agent config reads from ~/.kiro/agents/ (not ~/.aws/amazonq/cli-agents/)
 - [[project_skill-gate-docs-say-skill-name-space-kit-writes-skill-name-c]] — SKILL gate: docs say Skill(name *) space; kit writes Skill(name:*) colon — plus workspace-trust prereq
@@ -2075,6 +2077,7 @@ Facts: 2273
 - [[project_design-spec-24-1-2-muted-text-contrast-target]] — Design Spec §24.1.2: Muted-Text Contrast Target
 - [[project_production-code-must-go-through-pr-ci]] — Production Code Must Go Through PR/CI
 - [[project_dependabot-cannot-approve-allowscripts-in-strict-repos]] — Dependabot Cannot Approve allowScripts in Strict Repos
+- [[project_run-cmk-register-crons-after-pr-351-ships]] — Run cmk register-crons After PR #351 Ships
 - [[project_dj4-live-test-prerequisites]] — DJ4-Live Test Prerequisites
 - [[project_post-commit-validator-suite]] — Post-Commit Validator Suite
 - [[project_task-195-bake-off-add-letta-term-collision-validation]] — Task 195 bake-off: add Letta term-collision validation

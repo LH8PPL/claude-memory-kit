@@ -683,7 +683,7 @@ function rootIdCensus(factDir, tierRoot) {
  * @param {object} o
  * @param {string} o.projectRoot
  * @param {string} [o.userDir]        the user tier. Its ID-REPAIR half runs (Task
- *                                    270 / D-445 — `cmk persona import` writes
+ *                                    270 / D-446 — `cmk persona import` writes
  *                                    `fragments/` as raw bytes, bypassing writeFact's
  *                                    id boundary); its STRAY half does not, because
  *                                    the U tier has no project-relative fork path.
@@ -711,7 +711,7 @@ export function recoverMemory({ projectRoot, userDir, _scanFn, _reindexFn } = {}
     // 1. Root tiers first — repairing an id here means the census below sees it,
     //    so a stray twin of a just-repaired fact collision-skips correctly.
     //
-    // Task 270 (D-445): the U tier joined this loop. The STRAY half below stays
+    // Task 270 (D-446): the U tier joined this loop. The STRAY half below stays
     // P/L — the user tier has no project-relative fork path, which is what the
     // old "U is not stray-prone" note actually meant — but the ID-REPAIR half
     // applies to any fact dir, and the user tier has a raw-write entry point

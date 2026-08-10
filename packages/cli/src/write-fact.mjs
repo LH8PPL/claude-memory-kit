@@ -356,7 +356,7 @@ function maybeAutoLink({ opts, factOpts, id, createdAt }) {
 }
 
 /**
- * Task 270 (D-427 the bug; D-443 the decision) — THE ID BOUNDARY. Decide the fact's id from what the caller
+ * Task 270 (D-427 the bug; D-444 the decision) — THE ID BOUNDARY. Decide the fact's id from what the caller
  * supplied, never trusting it blind.
  *
  * The bug this closes: `opts.id ?? generateId(...)` took a caller's id on faith,
@@ -509,11 +509,11 @@ export function writeFact(opts = {}) {
   const filename = `${opts.type}_${opts.slug}.md`;
   const path = join(factDir, filename);
 
-  // Task 270 (D-443/D-444), Door 5 — I2: the repair is audited HERE, at the
+  // Task 270 (D-444/D-445), Door 5 — I2: the repair is audited HERE, at the
   // decision point, not on the `created` path. The id substitution is a fact
   // about the WRITE ATTEMPT and is equally true when the write then dedups or
   // collides; auditing it only on the create path meant the three early returns
-  // below escaped the never-silent invariant that D-443 and design §3.3.1
+  // below escaped the never-silent invariant that D-444 and design §3.3.1
   // declare absolute. Deliberately NOT gated on `opts.audit` — that flag exists
   // to suppress a redundant `created` entry, never a data-integrity event.
   if (idRepaired) {

@@ -904,7 +904,7 @@ describe('Task 7 — writeFact() boundary', () => {
     // id whose regenerated content-id already exists takes a dedup early-return,
     // and those used to escape carrying the substitution: the caller got back an
     // id it never passed, with nothing saying so and no audit line. That is
-    // exactly the property D-443 + design §3.3.1 declare impossible.
+    // exactly the property D-444 + design §3.3.1 declare impossible.
     describe('I2 — every exit carries the repair, not just `created`', () => {
       const seedBody = 'a body that will be written twice over';
 

@@ -1189,8 +1189,8 @@ async function hc15VectorMapping({ projectRoot, sample = HC15_SAMPLE }) {
 }
 
 // --- HC-16: every fact on disk is reachable in the index --------------------
-// Task 270 (D-427 the bug; D-444 why this asks the parser and not the database;
-// D-445 why the scan covers the USER tier and `cmk install` now repairs it). The gap this fills, stated as the question no other check
+// Task 270 (D-427 the bug; D-445 why this asks the parser and not the database;
+// D-446 why the scan covers the USER tier and `cmk install` now repairs it). The gap this fills, stated as the question no other check
 // asks: DID THE FACT MAKE IT INTO THE INDEX AT ALL?
 //
 //   · HC-4  compares INDEX.md's entry count against the file count — the

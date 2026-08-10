@@ -458,7 +458,7 @@ export function appendScratchpadBullet(opts = {}) {
       paths: { after: path },
       // `id` stays the BULLET id; `newId` is what the fact file actually got.
       // They differ only when writeFact repaired an unusable id (Task 270 /
-      // D-443) — carrying both makes the move joinable in one hop either way.
+      // D-444) — carrying both makes the move joinable in one hop either way.
       extra: { scratchpad, ...(graduatedFactIds[gid] ? { newId: graduatedFactIds[gid] } : {}) },
     });
   }

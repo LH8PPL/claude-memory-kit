@@ -2360,7 +2360,7 @@ export function formatDoctorReport(checks, durationMs) {
 
 async function runDoctorCli(/* options */) {
   const projectRoot = resolvePath(process.cwd());
-  // Task 270 (D-445): the SHARED resolver, not an inline `homedir()` join —
+  // Task 270 (D-446): the SHARED resolver, not an inline `homedir()` join —
   // that hardcoded form ignores `MEMORY_KIT_USER_DIR`, so every user-tier check
   // audited the wrong directory whenever the override was set (which is how the
   // kit is sandboxed and tested). Found by the B1 live probe: a planted U-tier

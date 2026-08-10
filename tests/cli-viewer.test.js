@@ -39,7 +39,12 @@ import {
   LOOPBACK_HOSTS,
   VIEWER_DEFAULT_LIMIT,
   VIEWER_MAX_LIMIT,
+  VIEWER_SEARCH_DEPTH,
+  RELEVANCE_BANDS,
+  relevanceBandFor,
 } from '../packages/cli/src/viewer.mjs';
+import { search as searchAction, SEARCH_MODES } from '../packages/cli/src/search.mjs';
+import { openIndexDb } from '../packages/cli/src/index-db.mjs';
 import { subcommands, runView } from '../packages/cli/src/subcommands.mjs';
 
 let sandbox, projectRoot, userDir, server;
@@ -2028,6 +2033,741 @@ describe('viewer — the theme toggle (268 rider, D-432)', () => {
     // define it — costing the reader their memory to save a button.
     expect(mainScript).toMatch(/if\s*\(window\.cmkTheme\)/);
     expect(mainScript).not.toMatch(/(?<!window\.)\bcmkTheme\./);
+  });
+});
+
+// --- Task 269: paging + search across the views ---------------------------
+//
+// The class this block exists to catch (D-426): every viewer test before it
+// asserted on ONE response that fit under the cap, so a route that could only
+// ever answer with the first 200 records looked identical to a route that could
+// answer with all of them. 91% of the fact corpus and 92% of the decision
+// journal were unreachable by any URL and nothing was red.
+//
+// So the load-bearing assertion here is not "offset is echoed" — it is that a
+// SECOND page carries DIFFERENT records than the first, and that the pages
+// partition the corpus: nothing repeated, nothing lost.
+
+// The kit's base32 alphabet (tier-paths ID_PATTERN), MINUS the lowercase `a`.
+// Ids are GENERATED here rather than hand-written because paging needs more
+// records than a cap, and 30 hand-picked literals is 30 chances to typo an `8`
+// into one — the D-427 class.
+//
+// WHY `a` IS DROPPED, measured rather than assumed. The kit's alphabet carries
+// both `A` and `a`, so `P-222224ZA` and `P-222224Za` are two different ids whose
+// FACT FILES have the same name on a case-insensitive filesystem — which is
+// Windows and macOS by default. Generating 260 sequential ids produced 7 such
+// pairs, the second file of each silently overwrote the first, and 260 seeded
+// facts became 253 on disk. That is a real property of the kit worth reporting
+// separately (it is the Task-270 durability class: a write that says yes and a
+// read that finds nothing); here it is simply a fixture that must not have it,
+// because a test whose corpus is 7 short measures the wrong thing.
+const ID_CHARS = '2345679ABCDEFGHJKLMNPQRSTUVWXYZ';
+function seqId(prefix, n) {
+  let s = '';
+  let v = n;
+  for (let i = 0; i < 8; i++) {
+    s = ID_CHARS[v % ID_CHARS.length] + s;
+    v = Math.floor(v / ID_CHARS.length);
+  }
+  return `${prefix}-${s}`;
+}
+
+/**
+ * A fact file written RAW, where `seedFact` would go through `writeFact`.
+ *
+ * Deliberate, and only for the bulk fixtures: `writeFact` also rewrites
+ * `INDEX.md` and runs its dedup scan on every call, which is O(corpus) per
+ * fact — 260 of them timed the setup out at 88s. These fixtures care about how
+ * the SEARCH RANKING pages, and the ranking is built by the index walk from the
+ * files on disk, which this produces identically. The small fixtures keep using
+ * the real write path.
+ */
+function seedFactFileFast({ id, tier = 'P', slug, body, createdAt }) {
+  const dir = tier === 'U'
+    ? join(userDir, 'memory')
+    : join(projectRoot, tier === 'L' ? 'context.local' : 'context', 'memory');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(
+    join(dir, `${id}.md`),
+    [
+      '---',
+      `id: ${id}`,
+      'type: feedback',
+      `title: ${slug}`,
+      `created_at: ${createdAt}`,
+      'write_source: user-explicit',
+      'trust: high',
+      'source_file: MEMORY.md',
+      'source_line: 1',
+      `source_sha1: ${'a'.repeat(64)}`,
+      '---',
+      '',
+      body,
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+}
+
+/** A journal of N entries, oldest-first — the order the kit APPENDS in. */
+function seedBigJournal(n, { needle = 'kafka' } = {}) {
+  const lines = ['# Decisions', ''];
+  for (let i = 0; i < n; i++) {
+    const id = seqId('P', 5000 + i);
+    lines.push(
+      `<!-- decision:${id} -->`,
+      '',
+      `## Decision number ${i}${i % 3 === 0 ? ` about ${needle}` : ''}`,
+      '',
+      `**When:** 2026-07-${String((i % 28) + 1).padStart(2, '0')} · **Fact:** \`${id}\``,
+      `**Why:** reason ${i}`,
+      '',
+    );
+  }
+  writeFileSync(join(projectRoot, 'context', 'DECISIONS.md'), lines.join('\n'), 'utf8');
+}
+
+describe('viewer — paging (269.1) on /api/facts', () => {
+  let base;
+  const EXTRA = 24;
+  beforeEach(async () => {
+    seedCorpus(); // 5 LIVE facts (P_OLD is archived, so outside the live corpus)
+    for (let i = 0; i < EXTRA; i++) {
+      seedFact({ id: seqId('P', i), tier: 'P', slug: `paged-${i}`, body: `Paged body number ${i}.` });
+    }
+    const r = await boot({ doctorOptions: STUB_DOCTOR });
+    base = r.url;
+  });
+  const LIVE = 5 + EXTRA;
+
+  it('THE assertion (D-426): a second page returns DIFFERENT records than the first, and the pages partition the corpus', async () => {
+    const p1 = await getJson(base, '/api/facts?limit=10');
+    const p2 = await getJson(base, '/api/facts?limit=10&offset=10');
+    const p3 = await getJson(base, '/api/facts?limit=10&offset=20');
+
+    expect(p1.body.count).toBe(10);
+    expect(p2.body.count).toBe(10);
+    expect(p3.body.count).toBe(LIVE - 20);
+
+    const ids1 = p1.body.facts.map((f) => f.id);
+    const ids2 = p2.body.facts.map((f) => f.id);
+    const ids3 = p3.body.facts.map((f) => f.id);
+    // DIFFERENT — the check that would have caught a route with no offset at
+    // all, which returns the identical first page for every request.
+    expect(ids2).not.toEqual(ids1);
+    expect(ids2.some((id) => ids1.includes(id))).toBe(false);
+    expect(ids3.some((id) => ids1.includes(id) || ids2.includes(id))).toBe(false);
+
+    // …and together they are the WHOLE corpus: nothing repeated, nothing lost.
+    const all = [...ids1, ...ids2, ...ids3];
+    expect(new Set(all).size).toBe(LIVE);
+    expect(all).toHaveLength(LIVE);
+  });
+
+  it('the envelope reports the position honestly — offset, total, reachable, has_more', async () => {
+    const first = await getJson(base, '/api/facts?limit=10');
+    expect(first.body.offset).toBe(0);
+    expect(first.body.total).toBe(LIVE);
+    expect(first.body.reachable).toBe(LIVE); // browse can page to every record
+    expect(first.body.has_more).toBe(true);
+
+    const last = await getJson(base, `/api/facts?limit=10&offset=${LIVE - 5}`);
+    expect(last.body.offset).toBe(LIVE - 5);
+    expect(last.body.count).toBe(5);
+    expect(last.body.has_more).toBe(false);
+    expect(last.body.total).toBe(LIVE);
+  });
+
+  it('the paged sequence is EXACTLY the unpaged one — the sort is stable, so nothing is skipped or repeated', async () => {
+    // Facts written in one loop share a millisecond; `created_at DESC, id ASC`
+    // is what makes the window deterministic. Without the id tiebreak, SQLite
+    // may return same-timestamp rows in any order per query and a paged read
+    // silently drops and duplicates records — the durability-shaped bug.
+    const whole = await getJson(base, `/api/facts?limit=${VIEWER_MAX_LIMIT}`);
+    const walked = [];
+    for (let off = 0; off < LIVE; off += 3) {
+      const p = await getJson(base, `/api/facts?limit=3&offset=${off}`);
+      walked.push(...p.body.facts.map((f) => f.id));
+    }
+    expect(walked).toEqual(whole.body.facts.map((f) => f.id));
+  });
+
+  it('an offset past the end is an EMPTY page, not an error — and still states the corpus', async () => {
+    for (const off of [LIVE, LIVE + 1, 100000]) {
+      const r = await getJson(base, `/api/facts?offset=${off}`);
+      expect(r.status).toBe(200);
+      expect(r.body.facts).toEqual([]);
+      expect(r.body.count).toBe(0);
+      expect(r.body.total).toBe(LIVE);
+      expect(r.body.has_more).toBe(false);
+    }
+  });
+
+  it('a malformed offset is a 400, exactly like a malformed limit — including one too big to be a number', async () => {
+    // The last two are review I2: `/^\d+$/` alone accepted a 20-digit string,
+    // `Number.isInteger(1e20)` is true, and the value then reached
+    // better-sqlite3, which refuses to bind outside int64 — a 500 WITH a stack
+    // on a route whose documented contract says a past-the-end offset is a 200.
+    // Past MAX_SAFE_INTEGER the parsed value is not the number that was typed,
+    // so it is malformed rather than large.
+    for (const bad of ['-1', 'abc', '1.5', '1e3', '9'.repeat(20), String(Number.MAX_SAFE_INTEGER + 2)]) {
+      const r = await getJson(base, `/api/facts?offset=${bad}`);
+      expect(`offset=${bad} -> ${r.status}`).toBe(`offset=${bad} -> 400`);
+      expect(String(r.body.error)).toMatch(/offset/i);
+      expect(String(r.body.error)).not.toMatch(/at .*viewer\.mjs|SqliteError/); // never a stack
+    }
+    // …and the largest offset that IS a number is still an honest empty page.
+    const edge = await getJson(base, `/api/facts?offset=${Number.MAX_SAFE_INTEGER}`);
+    expect(edge.status).toBe(200);
+    expect(edge.body.facts).toEqual([]);
+    expect(edge.body.total).toBe(LIVE);
+    const journalEdge = await getJson(base, `/api/decisions?offset=${'9'.repeat(20)}`);
+    expect(journalEdge.status).toBe(400);
+    // Absent and empty both mean "the first page", like `limit`.
+    expect((await getJson(base, '/api/facts?offset=')).body.offset).toBe(0);
+    expect((await getJson(base, '/api/facts?offset=0')).body.offset).toBe(0);
+  });
+
+  it('paging composes with the tier filter — the denominator narrows with the rows', async () => {
+    const p = await getJson(base, '/api/facts?tier=P&limit=5&offset=5');
+    expect(p.body.tier).toBe('P');
+    expect(p.body.facts.every((f) => f.tier === 'P')).toBe(true);
+    expect(p.body.offset).toBe(5);
+    const allP = await getJson(base, `/api/facts?tier=P&limit=${VIEWER_MAX_LIMIT}`);
+    expect(p.body.total).toBe(allP.body.count);
+    expect(p.body.facts.map((f) => f.id)).toEqual(allP.body.facts.slice(5, 10).map((f) => f.id));
+  });
+
+  it('Door 2 — paging the WHOLE corpus mutates nothing on disk', async () => {
+    const before = snapshotTier(projectRoot).filter((p) => !p.includes('.index'));
+    for (let off = 0; off < LIVE + 10; off += 5) await getJson(base, `/api/facts?limit=5&offset=${off}`);
+    expect(snapshotTier(projectRoot).filter((p) => !p.includes('.index'))).toEqual(before);
+  });
+});
+
+describe('viewer — paging + search compose (269.4) on /api/facts', () => {
+  let base;
+  const HITS = 12;
+  beforeEach(async () => {
+    seedCorpus();
+    for (let i = 0; i < HITS; i++) {
+      seedFact({ id: seqId('P', 900 + i), tier: 'P', slug: `zebrafish-${i}`, body: `A zebrafish note number ${i}.` });
+    }
+    const r = await boot({ doctorOptions: STUB_DOCTOR });
+    base = r.url;
+  });
+
+  it('searching NARROWS and paging traverses the remainder — different hits per page, one honest total', async () => {
+    const p1 = await getJson(base, '/api/facts?q=zebrafish&limit=5');
+    const p2 = await getJson(base, '/api/facts?q=zebrafish&limit=5&offset=5');
+    const p3 = await getJson(base, '/api/facts?q=zebrafish&limit=5&offset=10');
+
+    for (const p of [p1, p2, p3]) {
+      expect(p.body.mode).toBe('search');
+      expect(p.body.total).toBe(HITS); // the MATCH SET, on every page of it
+      expect(p.body.facts.every((f) => /zebrafish/i.test(f.snippet))).toBe(true);
+    }
+    expect(p1.body.count).toBe(5);
+    expect(p2.body.count).toBe(5);
+    expect(p3.body.count).toBe(2);
+    expect(p1.body.has_more).toBe(true);
+    expect(p3.body.has_more).toBe(false);
+
+    const ids1 = p1.body.facts.map((f) => f.id);
+    const ids2 = p2.body.facts.map((f) => f.id);
+    const ids3 = p3.body.facts.map((f) => f.id);
+    expect(ids2).not.toEqual(ids1);
+    const all = [...ids1, ...ids2, ...ids3];
+    expect(new Set(all).size).toBe(HITS);
+  });
+
+  it('a ranked page is a slice of ONE ranking — a small set never leaves the first candidate pool', async () => {
+    // NOTE ON WHAT THIS DOES *NOT* PROVE. With 12 hits and a 4-row page, every
+    // request's oversample pool covers the whole match set, so this passes
+    // whatever depth the route asks the engine for — it is a consistency check,
+    // not the partition guarantee. The pool-size bug lives past 3 × page size
+    // and is caught by the 260-hit walk in the block below (review finding 4,
+    // where this test was the vacuous one).
+    const whole = await getJson(base, '/api/facts?q=zebrafish&limit=12');
+    const p2 = await getJson(base, '/api/facts?q=zebrafish&limit=4&offset=4');
+    expect(p2.body.facts.map((f) => f.id)).toEqual(whole.body.facts.slice(4, 8).map((f) => f.id));
+  });
+
+  it('`reachable` states what paging can REACH — and in search mode that is capped by the engine, said out loud', async () => {
+    const r = await getJson(base, '/api/facts?q=zebrafish&limit=5');
+    expect(r.body.reachable).toBe(Math.min(r.body.total, VIEWER_SEARCH_DEPTH));
+    // Past the reachable depth the route answers empty and says has_more:false —
+    // it never pretends a record is one page away when it is not.
+    const past = await getJson(base, `/api/facts?q=zebrafish&offset=${VIEWER_SEARCH_DEPTH}`);
+    expect(past.status).toBe(200);
+    expect(past.body.facts).toEqual([]);
+    expect(past.body.has_more).toBe(false);
+    expect(past.body.total).toBe(HITS); // the match set is still stated honestly
+  });
+
+  it('AT-CAP: the last reachable offset is served normally (VIEWER_SEARCH_DEPTH budget)', async () => {
+    // At `DEPTH - 1` the route still consults the engine and answers from the
+    // full ranking; the depth-capped denominator holds either way. (The corpus
+    // here is smaller than the depth, so the page is empty — what is under test
+    // is which BRANCH runs, and `reachable` is what reports it.)
+    const atCap = await getJson(base, `/api/facts?q=zebrafish&offset=${VIEWER_SEARCH_DEPTH - 1}`);
+    expect(atCap.status).toBe(200);
+    expect(atCap.body.offset).toBe(VIEWER_SEARCH_DEPTH - 1);
+    expect(atCap.body.total).toBe(HITS);
+    expect(atCap.body.reachable).toBe(Math.min(HITS, VIEWER_SEARCH_DEPTH));
+    expect(atCap.body.has_more).toBe(false);
+  });
+
+  it('OVER-CAP: at exactly VIEWER_SEARCH_DEPTH the route stops paging and says so, without lying about the total', async () => {
+    const overCap = await getJson(base, `/api/facts?q=zebrafish&offset=${VIEWER_SEARCH_DEPTH}`);
+    expect(overCap.status).toBe(200);
+    expect(overCap.body.facts).toEqual([]);
+    expect(overCap.body.count).toBe(0);
+    expect(overCap.body.has_more).toBe(false);
+    expect(overCap.body.total).toBe(HITS);
+    expect(overCap.body.reachable).toBe(Math.min(HITS, VIEWER_SEARCH_DEPTH));
+    // The early-out must not become a hole in validation: a bad parameter is
+    // still a 400 on the beyond-depth path, exactly as on the normal one.
+    //
+    // (An FTS *grammar* error is deliberately NOT asserted here. I wrote that
+    // assertion first and it failed, because `prepareFtsQuery` sanitizes every
+    // user query into a quoted term — `"unclosed` becomes `"""unclosed"` and
+    // parses fine. No `?q=` value is known to reach FTS5's parser raw, so the
+    // FTS5ParseError branch in search.mjs is defensive rather than a path a
+    // test can drive from here. The claim was removed rather than weakened.)
+    const badTier = await getJson(base, `/api/facts?q=zebrafish&tier=Z&offset=${VIEWER_SEARCH_DEPTH}`);
+    expect(badTier.status).toBe(400);
+    const badLimit = await getJson(base, `/api/facts?q=zebrafish&limit=nope&offset=${VIEWER_SEARCH_DEPTH}`);
+    expect(badLimit.status).toBe(400);
+  });
+
+  it('Door 5 (negative) — paging and searching still write NO recall-log entry', async () => {
+    const recall = join(projectRoot, 'context', '.locks', 'recall.log');
+    const before = existsSync(recall) ? readFileSync(recall, 'utf8') : null;
+    await getJson(base, '/api/facts?q=zebrafish&limit=5&offset=5');
+    await getJson(base, '/api/facts?limit=5&offset=5');
+    await getJson(base, '/api/decisions?q=median&offset=1');
+    expect(existsSync(recall) ? readFileSync(recall, 'utf8') : null).toBe(before);
+  });
+});
+
+describe('viewer — B1: a ranked walk PARTITIONS a set bigger than the candidate pool', () => {
+  // The blocking finding, and the one fixture shape that can see it.
+  //
+  // The engine OVERSAMPLES: `BLEND_OVERSAMPLE × requested` rows are fetched and
+  // re-ranked in JS. The first cut of paging asked for `offset + limit`, so
+  // page 1 ranked a 3×50 = 150-row pool and page 3 a 3×150 = 450-row one — and
+  // a trust-blended fact past the page-1 pool is INVISIBLE to page 1 and
+  // present for page 3, shifting every row after it. The reviewer reproduced
+  // one id on two pages and one on none (199 unique across a 200-row walk),
+  // and the TOP hit changed between pages, which corrupts the relevance
+  // normalization that is defined against it.
+  //
+  // Every earlier paging test used a fixture SMALLER than one pool, so all of
+  // them passed against the broken code. This one needs > 3 × page size to
+  // exist at all.
+  let base;
+  const HITS = 260; // > 3 × 50; the size the reviewer reproduced on
+  const PAGE = 50;
+  const BOOST_FROM = 200; // well past the 150-row pool a 50-row page ranks
+  const BOOST_N = 11;
+  let seeded;
+  beforeEach(async () => {
+    seeded = [];
+    for (let i = 0; i < HITS; i++) {
+      const id = seqId('P', 3000 + i);
+      seeded.push(id);
+      // UNIFORM bodies — same term count, same length, so bm25 scores them
+      // near-identically and the only thing that can reorder the set is the
+      // trust blend. With a spread of raw scores the blend's 1.225× nudge is
+      // absorbed by the gaps and nothing crosses the pool boundary, which is
+      // how the first version of this fixture passed against the broken code.
+      seedFactFileFast({
+        id,
+        slug: `manatee-${i}`,
+        body: `Manatee manatee manatee note ${String(i).padStart(3, '0')} recorded here.`,
+        createdAt: new Date(Date.parse('2026-07-01T10:00:00Z') + i * 60_000).toISOString(),
+      });
+    }
+    const r = await boot({ doctorOptions: STUB_DOCTOR });
+    base = r.url;
+    // Build the index once, THEN make some rows blend-eligible. The blend gate
+    // needs `signal_count >= BLEND_MIN_SIGNALS`, and without a single row whose
+    // blended rank differs from its bm25 rank the JS re-rank is a no-op and the
+    // pool size cannot matter — i.e. the test would be vacuous again for a
+    // second reason. The boot reindex is incremental (unchanged files are
+    // skipped), so these survive every later request.
+    await getJson(base, '/api/facts?limit=1');
+    const db = openIndexDb({ projectRoot });
+    try {
+      const up = db.prepare('UPDATE observations SET signal_count = 5, trust_score = 0.95 WHERE id = ?');
+      // DEEP in the set, past the 3 × 50 = 150-row pool a first page ranks.
+      // These are exactly the rows a variable-depth pool makes appear from
+      // nowhere on a later page: invisible to page 1, and lifted to the TOP by
+      // the blend once a bigger pool includes them — which shifts every row
+      // after them and is what puts an id on two pages or on none.
+      for (let i = BOOST_FROM; i < BOOST_FROM + BOOST_N; i++) up.run(seeded[i]);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('walking a 260-hit ranked set 50 at a time yields 260 rows and 260 DISTINCT ids — no repeat, no gap', async () => {
+    const walked = [];
+    const tops = [];
+    for (let off = 0; off < HITS; off += PAGE) {
+      const p = await getJson(base, `/api/facts?q=manatee&limit=${PAGE}&offset=${off}`);
+      expect(`offset=${off} -> ${p.status}`).toBe(`offset=${off} -> 200`);
+      expect(p.body.total).toBe(HITS);
+      walked.push(...p.body.facts.map((f) => f.id));
+      if (p.body.facts.length) tops.push(p.body.facts[0]);
+    }
+    // The partition: every seeded fact appears EXACTLY once across the walk.
+    expect(walked).toHaveLength(HITS);
+    expect(new Set(walked).size).toBe(HITS);
+    expect([...new Set(walked)].sort()).toEqual([...seeded].sort());
+  });
+
+  it('…and it is ONE ranking: relevance never rises as you page, so the top hit did not move', async () => {
+    // The same bug seen from the other side. `relevance` is defined against the
+    // top of the whole ranking; if a later page ranks a bigger pool and a new
+    // row wins it, the normalization reference changes mid-walk and a weaker
+    // hit can score ABOVE an earlier one.
+    const rels = [];
+    for (let off = 0; off < HITS; off += PAGE) {
+      const p = await getJson(base, `/api/facts?q=manatee&limit=${PAGE}&offset=${off}`);
+      rels.push(...p.body.facts.map((f) => f.relevance));
+    }
+    expect(rels).toHaveLength(HITS);
+    expect(rels[0]).toBe(1); // the reference point, on page 1 and nowhere else
+    const sorted = [...rels].sort((a, b) => b - a);
+    expect(rels).toEqual(sorted);
+  });
+
+  it('the page size does not change the answer — a 50-walk and a 100-walk agree record for record', async () => {
+    // A constant depth means the ranking is a property of the QUERY, not of how
+    // the reader chose to slice it. Under the old arithmetic the two walks
+    // ranked different pools and diverged.
+    const walk = async (size) => {
+      const out = [];
+      for (let off = 0; off < HITS; off += size) {
+        const p = await getJson(base, `/api/facts?q=manatee&limit=${size}&offset=${off}`);
+        out.push(...p.body.facts.map((f) => f.id));
+      }
+      return out;
+    };
+    expect(await walk(100)).toEqual(await walk(PAGE));
+  });
+
+});
+
+describe('viewer — relevance band thresholds (269.5 budget pair)', () => {
+  it('AT-CAP: the band edges are INCLUSIVE at exactly 0.7 and exactly 0.4', () => {
+    expect(RELEVANCE_BANDS.strong).toBe(0.7);
+    expect(RELEVANCE_BANDS.fair).toBe(0.4);
+    expect(relevanceBandFor(RELEVANCE_BANDS.strong)).toBe('strong');
+    expect(relevanceBandFor(RELEVANCE_BANDS.fair)).toBe('fair');
+    expect(relevanceBandFor(1)).toBe('strong');
+  });
+
+  it('OVER-CAP: a hair under either edge drops a band, and a non-number has no band at all', () => {
+    // The edges are where a colour claim flips, so they are where an off-by-one
+    // comparison would ship a "strong match" pill on a 0.699 hit.
+    expect(relevanceBandFor(0.6999999)).toBe('fair');
+    expect(relevanceBandFor(0.3999999)).toBe('weak');
+    expect(relevanceBandFor(0)).toBe('weak');
+    for (const junk of [null, undefined, NaN, Infinity, '0.9']) {
+      expect(`${String(junk)} -> ${relevanceBandFor(junk)}`).toBe(`${String(junk)} -> null`);
+    }
+  });
+});
+
+describe('viewer — relevance colour-coding (269.5, D-429)', () => {
+  let base;
+  beforeEach(async () => {
+    seedCorpus();
+    for (let i = 0; i < 8; i++) {
+      seedFact({
+        id: seqId('P', 700 + i),
+        tier: 'P',
+        slug: `zebrafish-${i}`,
+        // Varying repetition so BM25 actually spreads the scores apart —
+        // a flat corpus would make a green/amber/red test vacuous.
+        body: `A note ${i}. ${'zebrafish '.repeat(i + 1)}and some filler words to move the length norm.`,
+      });
+    }
+    const r = await boot({ doctorOptions: STUB_DOCTOR });
+    base = r.url;
+  });
+
+  it('a search hit carries a RELATIVE relevance and its band; a browse row carries neither', async () => {
+    const hits = await getJson(base, '/api/facts?q=zebrafish&limit=8');
+    expect(hits.body.facts.length).toBeGreaterThan(1);
+    for (const f of hits.body.facts) {
+      expect(typeof f.relevance).toBe('number');
+      expect(f.relevance).toBeGreaterThan(0);
+      expect(f.relevance).toBeLessThanOrEqual(1);
+      expect(['strong', 'fair', 'weak']).toContain(f.relevance_band);
+    }
+    // The top hit is the reference point, by definition.
+    expect(hits.body.facts[0].relevance).toBe(1);
+    expect(hits.body.facts[0].relevance_band).toBe('strong');
+    // Monotone with rank — a weaker hit must never score above a stronger one.
+    const rels = hits.body.facts.map((f) => f.relevance);
+    expect([...rels].sort((a, b) => b - a)).toEqual(rels);
+
+    // Browse mode has no query, so there is no relevance to claim. The FIELDS
+    // stay present (one row shape on the wire, §24.1.1) and are null.
+    const browse = await getJson(base, '/api/facts?limit=3');
+    for (const f of browse.body.facts) {
+      expect(f.relevance).toBeNull();
+      expect(f.relevance_band).toBeNull();
+    }
+  });
+
+  it('the bands are the documented thresholds, and page 2 is scored against page 1’s top hit', async () => {
+    const whole = await getJson(base, '/api/facts?q=zebrafish&limit=8');
+    for (const f of whole.body.facts) {
+      const expected = f.relevance >= RELEVANCE_BANDS.strong ? 'strong'
+        : f.relevance >= RELEVANCE_BANDS.fair ? 'fair' : 'weak';
+      expect(`${f.id}:${f.relevance_band}`).toBe(`${f.id}:${expected}`);
+    }
+    // Normalizing per PAGE would make every page's first row 1.0 "strong" —
+    // a weak match that looks strong, which is exactly the defect D-429 filed.
+    const p2 = await getJson(base, '/api/facts?q=zebrafish&limit=3&offset=3');
+    expect(p2.body.facts[0].relevance).toBeLessThanOrEqual(whole.body.facts[2].relevance);
+    expect(p2.body.facts.map((f) => f.relevance)).toEqual(
+      whole.body.facts.slice(3, 6).map((f) => f.relevance),
+    );
+  });
+});
+
+describe('viewer — decisions: paging + search (269.3/269.4)', () => {
+  let base;
+  const N = 12;
+  beforeEach(async () => {
+    seedCorpus();
+    seedBigJournal(N);
+    const r = await boot({ doctorOptions: STUB_DOCTOR });
+    base = r.url;
+  });
+
+  it('the journal pages — a second page is different entries, and the pages partition it', async () => {
+    const p1 = await getJson(base, '/api/decisions?limit=5');
+    const p2 = await getJson(base, '/api/decisions?limit=5&offset=5');
+    const p3 = await getJson(base, '/api/decisions?limit=5&offset=10');
+    expect(p1.body.count).toBe(5);
+    expect(p3.body.count).toBe(2);
+    for (const p of [p1, p2, p3]) {
+      expect(p.body.total).toBe(N);
+      expect(p.body.reachable).toBe(N);
+    }
+    expect(p1.body.has_more).toBe(true);
+    expect(p3.body.has_more).toBe(false);
+    const ids = [...p1.body.decisions, ...p2.body.decisions, ...p3.body.decisions].map((d) => d.id);
+    expect(new Set(ids).size).toBe(N);
+    expect(p2.body.decisions.map((d) => d.id)).not.toEqual(p1.body.decisions.map((d) => d.id));
+  });
+
+  it('`?q=` searches the journal, with the SAME match semantics as `cmk search --scope decisions`', async () => {
+    const r = await getJson(base, '/api/decisions?q=kafka');
+    expect(r.body.mode).toBe('search');
+    expect(r.body.query).toBe('kafka');
+    expect(r.body.count).toBeGreaterThan(0);
+    expect(r.body.count).toBeLessThan(N); // it NARROWS
+    expect(r.body.decisions.every((d) => /kafka/i.test(d.title))).toBe(true);
+
+    // Not a second search engine: the route and the CLI must agree on what
+    // matches. `search()` is the kit's one decisions backend (Task 156).
+    const db = openIndexDb({ projectRoot });
+    let viaCli;
+    try {
+      viaCli = searchAction({
+        db,
+        query: 'kafka',
+        mode: SEARCH_MODES.KEYWORD,
+        scope: 'decisions',
+        projectRoot,
+        limit: 100,
+      });
+    } finally {
+      db.close();
+    }
+    expect(viaCli.errors ?? []).toEqual([]);
+    expect(r.body.decisions.map((d) => d.id).sort()).toEqual(viaCli.results.map((h) => h.id).sort());
+  });
+
+  it('search and paging compose on the journal — the total is the match set, not the page', async () => {
+    const all = await getJson(base, '/api/decisions?q=kafka');
+    const p1 = await getJson(base, '/api/decisions?q=kafka&limit=2');
+    const p2 = await getJson(base, '/api/decisions?q=kafka&limit=2&offset=2');
+    expect(p1.body.total).toBe(all.body.count);
+    expect(p2.body.total).toBe(all.body.count);
+    expect(p2.body.decisions.map((d) => d.id)).not.toEqual(p1.body.decisions.map((d) => d.id));
+    expect(p2.body.decisions.map((d) => d.id)).toEqual(
+      all.body.decisions.slice(2, 4).map((d) => d.id),
+    );
+    const none = await getJson(base, '/api/decisions?q=zzzznotpresent');
+    expect(none.body.count).toBe(0);
+    expect(none.body.total).toBe(0);
+    expect(none.body.decisions).toEqual([]);
+    expect(none.body.has_more).toBe(false);
+  });
+
+  it('`?order=newest` answers the newest first — the default stays journal order (the shipped contract)', async () => {
+    const journal = await getJson(base, '/api/decisions?limit=3');
+    const newest = await getJson(base, '/api/decisions?order=newest&limit=3');
+    const whole = await getJson(base, `/api/decisions?limit=${VIEWER_MAX_LIMIT}`);
+    // Default: unchanged — the journal is chronological and that IS the trail.
+    expect(journal.body.decisions.map((d) => d.id)).toEqual(
+      whole.body.decisions.slice(0, 3).map((d) => d.id),
+    );
+    expect(journal.body.order).toBe('journal');
+    // Newest-first: page 1 is the END of the journal, reversed. On a 2,502-entry
+    // journal, page 1 in journal order is 2026-06 — the reader asking "what did
+    // we decide" wants the other end, which is what the tab already claims.
+    expect(newest.body.order).toBe('newest');
+    expect(newest.body.decisions.map((d) => d.id)).toEqual(
+      whole.body.decisions.slice(-3).reverse().map((d) => d.id),
+    );
+    // …and it pages from that end.
+    const p2 = await getJson(base, '/api/decisions?order=newest&limit=3&offset=3');
+    expect(p2.body.decisions.map((d) => d.id)).toEqual(
+      whole.body.decisions.slice(-6, -3).reverse().map((d) => d.id),
+    );
+    const bogus = await getJson(base, '/api/decisions?order=sideways');
+    expect(bogus.status).toBe(400);
+    expect(String(bogus.body.error)).toMatch(/order/i);
+  });
+
+  it('a malformed offset on the journal is a 400 too', async () => {
+    for (const bad of ['-1', 'abc', '2.5']) {
+      const r = await getJson(base, `/api/decisions?offset=${bad}`);
+      expect(`offset=${bad} -> ${r.status}`).toBe(`offset=${bad} -> 400`);
+    }
+  });
+
+  it('an empty journal answers empty on every knob, not 500', async () => {
+    rmSync(join(projectRoot, 'context', 'DECISIONS.md'), { force: true });
+    for (const path of ['/api/decisions', '/api/decisions?q=x', '/api/decisions?offset=5', '/api/decisions?order=newest']) {
+      const r = await getJson(base, path);
+      expect(`${path} -> ${r.status}`).toBe(`${path} -> 200`);
+      expect(r.body.count).toBe(0);
+      expect(r.body.total).toBe(0);
+      expect(r.body.decisions).toEqual([]);
+    }
+  });
+
+  it('STRUCTURALLY read-only still: the new paged/searched routes refuse every write method', async () => {
+    const before = await getJson(base, '/api/facts?limit=5&offset=5');
+    const routes = [
+      '/api/facts?limit=5&offset=5',
+      '/api/facts?q=alpha&offset=1',
+      '/api/decisions?offset=5',
+      '/api/decisions?q=kafka&order=newest',
+    ];
+    for (const path of routes) {
+      for (const method of ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'TRACE', 'PROPFIND']) {
+        const res = await raw(base, path, { method });
+        expect(`${method} ${path} -> ${res.status}`).toBe(`${method} ${path} -> 405`);
+        expect(res.headers.allow).toBe('GET, HEAD');
+      }
+    }
+    const after = await getJson(base, '/api/facts?limit=5&offset=5');
+    expect(after.body.facts).toEqual(before.body.facts);
+  });
+});
+
+describe('viewer — the pager + shared search box in the page (269.2/269.3)', () => {
+  let html;
+  let bareCss;
+  let mainScript;
+  beforeEach(async () => {
+    const r = await boot();
+    html = await (await fetch(r.url)).text();
+    bareCss = html.match(/<style>([\s\S]*?)<\/style>/)[1].replace(/\/\*[\s\S]*?\*\//g, '');
+    mainScript = html.slice(html.lastIndexOf('<script>'));
+  });
+
+  it('the pager is PREV/NEXT over a stable sort — real links, never an infinite scroll', () => {
+    // A memory archive is navigated deliberately: a page position has to be a
+    // URL you can paste into a decision log. Infinite scroll has no such thing.
+    expect(mainScript).toMatch(/function pager\(/);
+    expect(bareCss).toMatch(/\.pager\b/);
+    // Real anchors, so middle-click / copy-link / back all work.
+    expect(mainScript).toMatch(/pager[\s\S]{0,2000}el\('a',\s*\{[^}]*class: 'page-btn'/);
+    // …and none of the MECHANISMS that turn a list into an endless one. Named
+    // as APIs rather than as the word "infinite", which the code is entitled to
+    // use in a comment explaining why it does not do this.
+    expect(mainScript).not.toMatch(/IntersectionObserver|scrollHeight|scrollTop|addEventListener\(\s*'scroll'/);
+  });
+
+  it('the page position lives in the URL — a page is citeable, and the back button works', () => {
+    expect(mainScript).toMatch(/searchParams|URLSearchParams/);
+    expect(mainScript).toMatch(/\boffset\b/);
+    // A pager click is a real navigation (history entry); typing is not (a
+    // history entry per keystroke would bury the page you came from).
+    expect(mainScript).toMatch(/history\.replaceState/);
+    expect(mainScript).toMatch(/history\.pushState/);
+  });
+
+  it('a query change resets to page 1 — the one predictable answer', () => {
+    // Keeping offset across a query change lands the reader on "page 7 of 2
+    // results", i.e. an empty page for a query that matched.
+    expect(mainScript).toMatch(/resets? to page 1|offset:\s*0|OFFSET RESET/i);
+  });
+
+  it('there is exactly ONE search input, and it MOVES to the view that is showing', () => {
+    // The entry's rule: decisions reuses the facts search input rather than
+    // growing a second one. Two inputs means two debounces, two states and two
+    // places for the query to be out of sync with the URL.
+    expect([...html.matchAll(/<input[^>]+type="search"/gi)]).toHaveLength(1);
+    expect(html).toContain('id="q"');
+    // A slot in each searchable view, and the script that MOVES the one input
+    // between them. (Matched as a class-list prefix — the slot legitimately
+    // carries other classes, e.g. the reading `measure`.)
+    expect([...html.matchAll(/class="tb-slot\b/g)].length).toBeGreaterThanOrEqual(2);
+    expect(mainScript).toMatch(/tb-slot/);
+    expect(mainScript).toMatch(/slot\.append\(toolbar\)/);
+    // The tier filter is a FACTS concept — it must not claim to filter a journal.
+    expect(mainScript).toMatch(/#tier[\s\S]{0,400}hidden|tier[\s\S]{0,200}\.hidden/);
+  });
+
+  it('relevance is a BAND with a word, coloured by the kit’s good→poor ladder', () => {
+    // Colour alone is never the encoding (§24.1.2 / the graph's trust arc): the
+    // pill says the word, the hue reinforces it, so it survives CVD and a
+    // greyscale print.
+    expect(bareCss).toMatch(/\.rel-strong\b/);
+    expect(bareCss).toMatch(/\.rel-fair\b/);
+    expect(bareCss).toMatch(/\.rel-weak\b/);
+    expect(bareCss).toMatch(/\.rel-strong\s*\{[^}]*--hue:\s*var\(--ok\)/);
+    expect(bareCss).toMatch(/\.rel-fair\s*\{[^}]*--hue:\s*var\(--warn\)/);
+    expect(bareCss).toMatch(/\.rel-weak\s*\{[^}]*--hue:\s*var\(--bad\)/);
+    // Rendered from the SERVER's band, not a threshold re-derived in the page.
+    expect(mainScript).toMatch(/relevance_band/);
+  });
+
+  it('an empty PAGE is not an empty RESULT, and it is never a dead end (self-review)', () => {
+    // Two things the pager broke and self-review caught, both the same class:
+    // a line that was true on page 1 and false on page 2.
+    //   (a) "Nothing matches “x”" over an over-shot offset on a query that
+    //       matched 2,300 facts — false, and it stranded the reader with no
+    //       control to get back (the early return skipped the pager).
+    //   (b) the 56px overview's "showing the FIRST 50" under rows 51–100.
+    expect(mainScript).toMatch(/overshot/);
+    expect(mainScript).toMatch(/paged past the end/);
+    expect(mainScript).toMatch(/back to the first page/);
+    // The overview defers to the pager rather than restating a range it would
+    // get wrong.
+    expect(mainScript).toMatch(/const paged = !!\(data && data\.offset\)/);
+    expect(mainScript).toMatch(/range you are looking at is below the list/);
+  });
+
+  it('the pass added no HTML-parsing sink — the XSS discipline is unchanged', () => {
+    for (const sink of ['innerHTML', 'outerHTML', 'insertAdjacentHTML', 'document.write', 'srcdoc', 'setHTML', 'createContextualFragment']) {
+      expect(`${sink} in page script: ${mainScript.includes(sink)}`).toBe(`${sink} in page script: false`);
+    }
   });
 });
 
