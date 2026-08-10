@@ -2359,6 +2359,26 @@ by content sha means an EDITED fact is reconsidered automatically. The backfill 
 near-dup (both facts already exist and were both accepted, often months apart) and never touches a
 fact that already carries links.
 
+**THE BOUND IS A RECOVERY PROPERTY, NOT A UX (D-447).** ADR-0020 requires that a killed job has
+persisted what it finished; it does not require that a human drive the loop. The first shipped
+version processed ONE batch and printed *"1,895 fact(s) remain — re-run to continue"*, which leaked
+the internal property into the interface. `linkBackfillToCompletion` now runs the bounded batches to
+completion inside one invocation — **each batch is still a `linkBackfill` call, byte for byte the
+same durable unit**, so killed-at-80% still loses nothing; the loop adds iteration, never a
+transaction or a window in which work is held. It terminates on `remaining === 0`, on a batch that
+made no progress, or on a batch-count cap derived from the first batch's own arithmetic, and
+`stopped` names which. The DRY RUN loops too (otherwise a first look at a 2,000-fact corpus would
+report the first 250 and call it the picture), using a `dryRunSkip` cursor because a dry run persists
+no artifact to advance the walk with. `--max` is the explicit bounded-slice opt-in and keeps the
+"re-run to continue" report. **The index sync is in-band too**: `syncIndexAfterBackfill` runs
+`reindexBoot` after a run that wrote links, so the new edges are live in `cmk links` / `cmk expand` /
+`cmk view` without the user typing `cmk reindex --boot` — the D-85 contract, the same idiom
+`forget()` and `redact()` use. `reindexBoot` rather than the narrower `rebuildEdges`, because
+`rebuildEdges` walks the whole corpus regardless (so it is not actually narrower) and calling it
+alone would leave the `files` checkpoint stale for exactly the files the run rewrote; `reindexBoot`
+re-parses only those files and rebuilds the edges itself. Best-effort: the markdown is the truth and
+every reader self-heals, so a cold index is a slower path, never a lost link.
+
 **Flag + observability.** `CMK_LINK_FACTS` > `context/settings.json` `memory.link_facts` > **default
 OFF** (D-436, lead-ratified 2026-08-08 — see the measured outcome below; the write path is opt-in,
 `cmk autolink` is the no-configuration entry point). Every applied link writes an `auto-linked`
