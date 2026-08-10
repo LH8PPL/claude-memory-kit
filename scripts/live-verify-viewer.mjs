@@ -612,7 +612,7 @@ async function main() {
       '/api/decisions?offset=1', '/api/decisions?q=toolchain&order=newest',
       // Task 259: the live-refresh stream is a new ROUTE, so it is new surface
       // for the read-only guarantee. It is a GET stream and nothing else.
-      '/events', '/api/events',
+      '/events', '/api/events', '/events.json',
     ];
     const methods = ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'TRACE'];
     const refusals = [];

@@ -755,7 +755,7 @@ describe('viewer — JSON API routes (255.2)', () => {
     const { status, body } = await getJson(base, '/api/health');
     expect(status).toBe(200);
     expect(body.view).toBe('health');
-    expect(body.checks.length).toBe(15);
+    expect(body.checks.length).toBe(16);
     for (const c of body.checks) {
       expect(c).toHaveProperty('id');
       expect(c).toHaveProperty('name');
@@ -1047,7 +1047,7 @@ describe('viewer — the HTML page (255.3)', () => {
     expect(html).toContain('id="health-strip"'); // pinned, on every view
   });
 
-  it('carries the freshness label + a manual refresh control, alongside live refresh (§24.1.6)', () => {
+  it('carries the freshness label + a manual refresh control, alongside live refresh (§24.1 point 6 + §24.1.3)', () => {
     expect(html).toContain('id="freshness"');
     expect(html).toContain('id="refresh"');
     // The search box fires per keystroke, so two responses can race; the page
@@ -1059,7 +1059,7 @@ describe('viewer — the HTML page (255.3)', () => {
     // live-watch by accident while Task 259 still owned it. Task 259 has now
     // shipped it, so the guard inverts on the half it was holding and KEEPS the
     // half that is still contract:
-    //   * EventSource is now REQUIRED (design §24.1.6).
+    //   * EventSource is now REQUIRED (design §24.1.3).
     //   * a WebSocket is still forbidden — §24.1.7's zero-dependency rule, and
     //     the reason the mechanism is plain SSE in the first place.
     //   * MANUAL refresh survives the automatic one: it is the fallback when the
@@ -1864,7 +1864,7 @@ describe('viewer — the visual pass (260)', () => {
     expect(script).toMatch(/clipboard\.writeText/);
     expect(script).not.toMatch(/method:\s*['"](?:POST|PUT|PATCH|DELETE)['"]/i);
     // Was `not.toMatch(/EventSource|new WebSocket/)` while Task 259 was unbuilt
-    // (see the §24.1.6 test above for the full note). SSE has since shipped; the
+    // (see the §24.1 point 6 test above for the full note). SSE has since shipped; the
     // WebSocket half of the guard stands, per §24.1.7 zero-dependency.
     expect(script).not.toMatch(/new WebSocket/);
     // And no HTML-parsing sink crept in with the new renderer.
@@ -2872,7 +2872,7 @@ describe('viewer — the `cmk view` CLI glue (255.1)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Task 259 — live refresh over Server-Sent Events (design §24.1.6).
+// Task 259 — live refresh over Server-Sent Events (design §24.1.3).
 //
 // Boundary: the `/events` route, exercised the way a browser exercises it — a
 // real GET held open over real HTTP, parsed as a real event stream. The four
@@ -3042,6 +3042,33 @@ describe('viewer — live refresh over SSE (259.1: the stream)', () => {
     expect(change.json.generated_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
+  it('a write to the REVIEW QUEUE reaches the stream — the queue drives the health strip (Task 259 I1)', async () => {
+    // The reviewer probed this and got 16 poll cycles with no event. The queue
+    // is not incidental state: the pinned health strip on EVERY view reports
+    // its pending count, so a queue that changes while the strip says "all
+    // clear" is the live-refresh feature failing on the most prominent line of
+    // the page. Two halves fixed — routeMedium now audits (covered in
+    // cli-auto-extract.test.js), and the fingerprint watches queues/ directly
+    // as the belt for a writer that is NOT the kit.
+    stream = sse(base);
+    const hello = await stream.waitFor('hello');
+    const qDir = join(projectRoot, 'context', 'queues');
+    mkdirSync(qDir, { recursive: true });
+    writeFileSync(join(qDir, 'review.md'), '## queued\n- (P-2DZG7XF4) something to review\n', 'utf8');
+    const change = await stream.waitFor('change');
+    expect(change.json.fingerprint).not.toBe(hello.json.fingerprint);
+  });
+
+  it('a write to the CONFLICT queue reaches the stream too', async () => {
+    stream = sse(base);
+    const hello = await stream.waitFor('hello');
+    const qDir = join(projectRoot, 'context', 'queues');
+    mkdirSync(qDir, { recursive: true });
+    writeFileSync(join(qDir, 'conflicts.md'), '## conflict\n- (P-2DZG7XF4) contradicts something\n', 'utf8');
+    const change = await stream.waitFor('change');
+    expect(change.json.fingerprint).not.toBe(hello.json.fingerprint);
+  });
+
   it('a QUIET tier produces no change events — the poll does not cry wolf', async () => {
     stream = sse(base);
     await stream.waitFor('hello');
@@ -3095,7 +3122,9 @@ describe('viewer — live refresh over SSE (259.1: the stream)', () => {
   });
 
   it('STRUCTURALLY read-only still: /events refuses every write method (Door 3)', async () => {
-    for (const path of ['/events', '/api/events']) {
+    // M7: all THREE spellings, matching the GET test above — the `.json`
+    // suffix resolves to the same view, so it is the same surface to defend.
+    for (const path of ['/events', '/api/events', '/events.json']) {
       for (const method of ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'TRACE', 'PROPFIND']) {
         const res = await raw(base, path, { method });
         expect(`${method} ${path} -> ${res.status}`).toBe(`${method} ${path} -> 405`);
@@ -3207,7 +3236,9 @@ describe('viewer — the live-refresh client in the page (259.3)', () => {
     // re-runs a force layout, so auto-refreshing it would move every node while
     // someone is pointing at one. It gets the badge instead of the redraw.
     expect(mainScript).toMatch(/onLiveChange/);
-    expect(mainScript).toMatch(/view === 'graph'\) return setLive\('stale'\)/);
+    // The graph shares the hands-off branch with the typing guard (I2) — both
+    // resolve to the badge rather than a repaint.
+    expect(mainScript).toMatch(/view === 'graph' \|\| isReaderTyping\(\)\) return setLive\('stale'\)/);
   });
 
   it('ONE variable owns the live state, and Refresh ANSWERS the stale badge', () => {
@@ -3225,8 +3256,70 @@ describe('viewer — the live-refresh client in the page (259.3)', () => {
     // …and a reconnect must NOT paint over an unanswered stale badge: the graph
     // is still showing pre-change data and a healthy stream does not fix that.
     expect(mainScript).toMatch(/liveState !== 'stale'/);
-    // 'gone' is not answerable by a re-read — only Refresh's stale branch is.
-    expect(mainScript).not.toMatch(/liveState === 'gone'\) setLive/);
+    // M1 — RETARGETED. This originally asserted that Refresh never clears
+    // 'gone' ("a re-read cannot fix it"), which had the logic backwards:
+    // 'gone' is an INFERENCE from three failed reconnects, and a fetch that
+    // SUCCEEDS against the same origin is direct evidence the inference is now
+    // wrong. What must stay true is the success/failure split — only a refresh
+    // that actually resolved may retire the verdict.
+    expect(mainScript).toMatch(/liveState === 'gone'/);
+    expect(mainScript).toMatch(/startsWith\('failed:'\)/);
+  });
+
+  it('a change never wipes what the reader is typing (I2)', () => {
+    // render() repaints #q from the URL, so an auto-render landing between a
+    // keystroke and its 220ms debounce would DISCARD the query mid-word. The
+    // shipped claim is that a change never moves the reader's position; an
+    // input being wiped is the loudest possible way to move it.
+    expect(mainScript).toMatch(/isReaderTyping/);
+    // BOTH conditions — focus alone misses "typed then blurred inside 220ms",
+    // a pending debounce alone misses "typed three chars and paused".
+    expect(mainScript).toMatch(/document\.activeElement === \$\('#q'\)/);
+    expect(mainScript).toMatch(/debounce !== null/);
+    // …and the debounce must NULL itself when it fires, or it reads as
+    // permanently-pending and live refresh would never repaint again.
+    expect(mainScript).toMatch(/debounce = null; searchHere\(\)/);
+    // The guard routes to the badge, exactly like the graph does.
+    expect(mainScript).toMatch(/view === 'graph' \|\| isReaderTyping\(\)\) return setLive\('stale'\)/);
+  });
+
+  it('Back out of the bfcache does not leave the stamp claiming live with no stream (I4)', () => {
+    // A restored page keeps its JS state, including a liveSuffix reading
+    // "· live" over a stream closed on the way out — silent staleness reached
+    // from the one direction nobody tests.
+    expect(mainScript).toMatch(/'pageshow'/);
+    expect(mainScript).toMatch(/ev\.persisted/);
+    // The stamp is corrected BEFORE the re-open is attempted, so a failed
+    // re-open cannot leave the false claim standing.
+    expect(mainScript).toMatch(/setLive\('off'\);\s*\/\/ correct the restored stamp/);
+  });
+
+  it('a hidden tab releases its socket, and a visible one takes it back (I5)', () => {
+    // HTTP/1.1 allows ~6 connections per origin and multi-tab is supported
+    // here (ctrl-click passes through by design), so idle background tabs must
+    // not spend the budget.
+    expect(mainScript).toMatch(/visibilitychange/);
+    expect(mainScript).toMatch(/visibilityState === 'hidden'/);
+    // Re-opening must NOT resurrect a stream over a 'gone' verdict the reader
+    // has already been shown…
+    expect(mainScript).toMatch(/!liveSource && liveState !== 'gone'/);
+    // …and coming back must RE-READ, because the stream cannot report changes
+    // that happened while nobody was listening.
+    expect(mainScript).toMatch(/onLiveChange\(\);/);
+    // startLive must be idempotent or visibility flapping opens N streams.
+    expect(mainScript).toMatch(/if \(liveSource\) return;/);
+    // The residual (6+ concurrently VISIBLE windows) is accepted IN WRITING.
+    expect(mainScript).toMatch(/RESIDUAL, accepted and stated/);
+  });
+
+  it('the hello frame\'s poll_ms is CONSUMED, not decorative (M3)', () => {
+    // A field shipped with a comment claiming a consumer, and no consumer, is
+    // a field that drifts. The page reads the server's cadence rather than
+    // hardcoding a number in its own wording.
+    expect(mainScript).toMatch(/d\.poll_ms/);
+    expect(mainScript).toMatch(/pollSeconds/);
+    // Guarded: a malformed payload must never cost the reader live refresh.
+    expect(mainScript).toMatch(/catch \(_\) \{ \/\* keep the unqualified wording \*\/ \}/);
   });
 });
 

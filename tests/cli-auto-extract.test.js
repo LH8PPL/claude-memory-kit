@@ -207,6 +207,39 @@ describe('Task 23 — runAutoExtract() boundary', () => {
       expect(memoryAfter).toBe(memoryBefore);
     });
 
+    it('medium-trust routing is AUDITED — a queued fact is not an invisible one (Door 5, Task 259 I1)', async () => {
+      // The hole this closes: `routeMedium` appended to queues/review.md and
+      // wrote NO audit entry, while every sibling queue-writer does (the
+      // conflict-queue's CONFLICT_QUEUED is the precedent). CLAUDE.md makes
+      // appendAuditEntry mandatory for every mutating operation, and the audit
+      // log is what the viewer's live-refresh poll reads as its change signal —
+      // so an unaudited write was a fact landing in a queue that DRIVES the
+      // health strip, with nothing on any surface saying it had happened.
+      const turnFile = writeTurnFile(projectRoot, 'a turn');
+      const r = await runAutoExtract({
+        turnFile,
+        projectRoot,
+        haikuBackend: mockBackend('TRUST_MEDIUM user:we might be moving to pnpm next quarter'),
+        now: '2026-05-25T10:00:00Z',
+      });
+      expect(r.action).toBe('extracted');
+
+      const auditPath = join(projectRoot, 'context', '.locks', 'audit.log');
+      expect(existsSync(auditPath)).toBe(true);
+      const entries = readFileSync(auditPath, 'utf8')
+        .split('\n').filter(Boolean).map((l) => JSON.parse(l));
+      const queued = entries.filter((e) => e.reasonCode === 'review-queued');
+      expect(queued.length).toBe(1);
+      // The entry has to identify WHAT was queued and WHERE, or it cannot be
+      // used to reconstruct the queue's history.
+      expect(queued[0].action).toBe('queued');
+      expect(queued[0].tier).toBe('P');
+      expect(queued[0].id).toMatch(/^P-/);
+      expect(queued[0].reasonText).toMatch(/review/i);
+      expect(queued[0].extra?.queue).toBe('review');
+      expect(queued[0].extra?.proposed_trust).toBe('medium');
+    });
+
     it('low-trust candidate → discarded; extract.log records skipped_reason + a content-trace (Task 92/G6)', async () => {
       const turnFile = writeTurnFile(projectRoot, 'small talk');
       const r = await runAutoExtract({

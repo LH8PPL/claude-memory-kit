@@ -45,7 +45,7 @@
 //      explanation and an exit — never a silently-created memory tree (the
 //      Task-250 no-scaffold guard class).
 //
-// LIVE REFRESH (Task 259, design §24.1.6): an open tab reflects new captures
+// LIVE REFRESH (Task 259, design §24.1.3): an open tab reflects new captures
 // without a manual reload, over a plain `text/event-stream` on `/events`. Three
 // things about it are contracts rather than choices:
 //
@@ -353,9 +353,18 @@ function sendJson(res, status, payload) {
  *   * the fact DIR's own mtime catches an entry being added or removed by
  *     something outside the kit (a `git pull`, a checkout, a second agent).
  *     Directory mtime is reliable for add/remove on every filesystem we ship
- *     to; it is NOT reliable for in-place content change, which is exactly the
- *     half the audit log covers. The two are complementary, and neither alone
- *     is sufficient.
+ *     to; it is NOT reliable for in-place content change.
+ *
+ *     THE HONEST BOUNDARY, stated rather than implied: these two are
+ *     complementary, but they are not exhaustive. Between them they cover
+ *     every change the KIT makes (all of which audit) plus external
+ *     add/remove. What NOTHING here sees is an external IN-PLACE edit — a
+ *     hand-edited fact file, a `git checkout` that rewrites a file's bytes
+ *     without changing the directory entry. That is an accepted gap, not an
+ *     oversight: hand-editing memory files is forbidden (the kit's safe write
+ *     path is the only sanctioned writer), and closing it would cost a
+ *     content hash of the whole corpus every cycle — the O(corpus) poll this
+ *     design exists to avoid. A reader who hand-edits still has Refresh.
  *   * the tier's SCRATCHPADS (`SCRATCHPADS_BY_TIER`, not a hardcoded
  *     `MEMORY.md` — the Task-182 lesson: the persona files are scratchpads too)
  *     because a bullet appended there never becomes a fact file.
@@ -374,7 +383,18 @@ function fingerprintPaths({ projectRoot, userDir }) {
     out.push(auditLogPath(tierRoot));
     out.push(resolveFactDir(tier, tierRoot));
     for (const pad of SCRATCHPADS_BY_TIER[tier] ?? []) out.push(join(tierRoot, pad));
-    if (tier === 'P') out.push(join(tierRoot, 'DECISIONS.md'));
+    if (tier === 'P') {
+      out.push(join(tierRoot, 'DECISIONS.md'));
+      // The QUEUES (Task 259 I1). Not incidental state: the pinned health strip
+      // on EVERY view reports their pending counts, so a queue that grows while
+      // the strip still reads "all clear" is this feature failing on the most
+      // prominent line of the page. The two files are named rather than the
+      // directory alone, so an append to an existing queue moves the
+      // fingerprint (a directory mtime does not move on content change).
+      out.push(join(tierRoot, 'queues'));
+      out.push(join(tierRoot, 'queues', 'review.md'));
+      out.push(join(tierRoot, 'queues', 'conflicts.md'));
+    }
   }
   return out;
 }
@@ -410,6 +430,19 @@ export function memoryFingerprint({ projectRoot, userDir } = {}) {
 function sseWrite(res, lines) {
   // A stream can be half-closed under us at any moment (tab closed, laptop
   // slept). A failed write is the client leaving, never a server fault.
+  //
+  // M6 — `res.write()` also returns FALSE for backpressure (the kernel buffer
+  // is full), and we deliberately ignore that signal rather than pausing. The
+  // bounded-math argument: a frame is ~90 bytes, the poll emits at most one
+  // every 2s and the heartbeat one every 15s, against a loopback socket with a
+  // default buffer measured in tens of KB. Filling it needs a client that has
+  // stopped reading entirely for hours — at which point the TCP connection is
+  // dead and `close`/`error` removes it from the set anyway. So the only
+  // false this function can meaningfully return is the one it cares about.
+  // The distinction is worth naming because it would NOT hold if the stream
+  // ever carried payloads (see the notification-only rule above): rows down
+  // this socket would make backpressure a real condition, and this function
+  // would need to honour `drain`.
   try {
     res.write(lines);
     return true;
@@ -459,6 +492,15 @@ function openEventStream(req, res, ctx) {
   // `retry:` first, so a client that loses the connection before the hello
   // frame already knows our reconnection cadence.
   sseWrite(res, `retry: ${VIEWER_RETRY_MS}\n\n`);
+  // Both cadences are stated, and each has a named consumer (M3 — a field
+  // nobody reads is a field that drifts):
+  //   * `poll_ms` — OUR page reads it, so the "new captures appear within
+  //     about Ns" wording follows VIEWER_POLL_MS instead of hardcoding it.
+  //   * `heartbeat_ms` — for the API-first side (§24.1 point 2): a non-browser
+  //     consumer needs to know how long silence is NORMAL before treating the
+  //     connection as dead. Our page does not need it (EventSource handles
+  //     reconnection itself), which is exactly why it is documented as an API
+  //     field rather than left looking unused.
   sseWrite(
     res,
     frame('hello', {
@@ -1285,7 +1327,7 @@ const API = {
 
     // `?strip=1` answers the PINNED LINE ONLY, and this split is load-bearing
     // rather than tidy: the strip is on every view, so a page navigation would
-    // otherwise run all 14 doctor checks — including a subprocess probe of the
+    // otherwise run the FULL doctor sweep — every HC, including a subprocess probe of the
     // user's agent CLI — just to draw one line. The strip's inputs (the health
     // log tail + two queue reads) are cheap file reads; the doctor is the
     // expensive part, and only the health VIEW actually needs it.

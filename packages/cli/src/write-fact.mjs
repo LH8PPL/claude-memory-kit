@@ -13,7 +13,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { generateId } from '@lh8ppl/cmk-canonicalize';
-import { VALID_TIERS, resolveTierRoot, resolveFactDir } from './tier-paths.mjs';
+import { VALID_TIERS, resolveTierRoot, resolveFactDir, ID_PATTERN } from './tier-paths.mjs';
 import { parse, format } from './frontmatter.mjs';
 import { eachFactIn } from './fact-store.mjs';
 import { reindex } from './reindex.mjs';
@@ -169,6 +169,11 @@ function buildFrontmatterObject(opts, computed) {
   // Key order matters for visual diff stability — insertion order = on-disk order.
   const fm = {
     id: computed.id,
+    // Task 270 (D-427): the id the caller SUPPLIED, when it was unusable and we
+    // derived a real one instead. Same field name + position the memory-recovery
+    // repair path writes (`applyIdRepair`), so a repaired-at-write fact and a
+    // repaired-at-install fact leave identical forensics on disk.
+    ...(computed.idRepaired ? { legacy_id: computed.legacyId } : {}),
     // Task 254 (Obsidian vault view — shape a, forward-only): the fact's own id
     // as an Obsidian `aliases`, so a `[[P-XXXX]]` id reference (the kit's
     // cross-reference currency — used across fact bodies + the `superseded_by`
@@ -350,6 +355,63 @@ function maybeAutoLink({ opts, factOpts, id, createdAt }) {
   }
 }
 
+/**
+ * Task 270 (D-427 the bug; D-444 the decision) — THE ID BOUNDARY. Decide the fact's id from what the caller
+ * supplied, never trusting it blind.
+ *
+ * The bug this closes: `opts.id ?? generateId(...)` took a caller's id on faith,
+ * so an id outside the kit's base32 alphabet (the live finding: `P-5678ABCD`,
+ * where `8` is one of the six excluded ambiguous chars) was ACCEPTED, returned
+ * `action:'created'`, and landed a real file — which `index-rebuild`'s
+ * `parseObservationsFromFactFile` then skipped as 'invalid or missing id'. The
+ * write path said yes, every DB-backed read path said no such fact, and no
+ * error fired anywhere between them. The only symptom was a count off by one.
+ *
+ * REGENERATE, NOT REJECT — decided after caller-mapping every explicit-id
+ * caller, and the map is what settles it:
+ *   · `graduation.mjs:graduateOne` is the ONLY production caller that passes an
+ *     explicit id. Its `BULLET_RE` is deliberately loose (`[PUL]-[A-Za-z0-9]+`)
+ *     and its comment delegates alphabet validity to "the writer's concern" —
+ *     i.e. to here. That is the separately-correct-jointly-broken seam.
+ *   · A REJECT on that path is strictly worse than the bug: `graduateOne`
+ *     erroring makes the caller keep the bullet, but `graduateForCapRelief`'s
+ *     feasibility gate has already committed to graduating it to get under cap,
+ *     so the write fails CAP_EXCEEDED — one legacy bad-alphabet bullet would
+ *     wedge MEMORY.md at its cap permanently. A reject that breaks the cap-relief
+ *     path is exactly the "reject that breaks restore" the task warned about.
+ *   · Regeneration reuses the mechanism the REPAIR path (D-394) already chose
+ *     for this very shape — `classifyFactId` returns 'repairable' for a
+ *     non-ID_PATTERN id with a non-empty body and derives `generateId(tier,
+ *     body)`. Write and repair now agree instead of diverging.
+ *   · It is a no-op for every currently-working caller: regeneration fires only
+ *     when the supplied id FAILS ID_PATTERN, so no valid path changes behavior.
+ *
+ * The substitution is never silent — the caller sees `idRepaired`/`previousId`,
+ * the file keeps a `legacy_id` breadcrumb (the same field `applyIdRepair`
+ * writes), and an audit entry records it.
+ *
+ * M4: `idRepaired` is an explicit BOOLEAN, never the truthiness of `legacyId`.
+ * A caller passing `id: ''` supplied a real (and unusable) value, and an empty
+ * string is falsy — gating the never-silent trio on `legacyId` alone would have
+ * made that one case silent, which is the exact property this function exists
+ * to guarantee. Absent (`undefined`/`null`) is the ONLY "caller supplied
+ * nothing" state.
+ *
+ * @returns {{id: string, legacyId: string|null, idRepaired: boolean}}
+ */
+function resolveFactId(supplied, tier, body) {
+  if (supplied === undefined || supplied === null) {
+    return { id: generateId(tier, body), legacyId: null, idRepaired: false };
+  }
+  if (typeof supplied === 'string' && ID_PATTERN.test(supplied)) {
+    return { id: supplied, legacyId: null, idRepaired: false };
+  }
+  // Anything else — wrong alphabet, wrong length, wrong type entirely — is an
+  // id no read path could ever resolve. Derive the real one; keep the original
+  // visible rather than discarding it.
+  return { id: generateId(tier, body), legacyId: String(supplied), idRepaired: true };
+}
+
 export function writeFact(opts = {}) {
   const errors = validateOptions(opts);
   if (errors.length > 0) {
@@ -440,12 +502,37 @@ export function writeFact(opts = {}) {
 
   // Use the sanitized body/title for id, frontmatter, and the file body.
   const factOpts = { ...opts, body, title };
-  const id = opts.id ?? generateId(opts.tier, body);
+  const { id, legacyId, idRepaired } = resolveFactId(opts.id, opts.tier, body);
   const createdAt = opts.createdAt ?? nowIso();
   const tierRoot = resolveTierRoot(opts);
   const factDir = resolveFactDir(opts.tier, tierRoot);
   const filename = `${opts.type}_${opts.slug}.md`;
   const path = join(factDir, filename);
+
+  // Task 270 (D-444/D-445), Door 5 — I2: the repair is audited HERE, at the
+  // decision point, not on the `created` path. The id substitution is a fact
+  // about the WRITE ATTEMPT and is equally true when the write then dedups or
+  // collides; auditing it only on the create path meant the three early returns
+  // below escaped the never-silent invariant that D-444 and design §3.3.1
+  // declare absolute. Deliberately NOT gated on `opts.audit` — that flag exists
+  // to suppress a redundant `created` entry, never a data-integrity event.
+  if (idRepaired) {
+    try {
+      appendAuditEntry(tierRoot, {
+        ts: createdAt,
+        action: 'fact-id-repaired',
+        tier: opts.tier,
+        id,
+        reasonCode: REASON_CODES.FACT_ID_REPAIRED,
+        paths: { after: path },
+        extra: { previousId: legacyId, at: 'write-fact' },
+      });
+    } catch {
+      // best-effort; the substitution still rides the returned result
+    }
+  }
+  // Every exit from here on carries the repair trio when a repair happened.
+  const repairFields = idRepaired ? { idRepaired: true, previousId: legacyId } : {};
 
   const existingIdAtPath = readExistingFactId(path);
   if (existingIdAtPath !== null) {
@@ -468,7 +555,7 @@ export function writeFact(opts = {}) {
       // the durable count (MemoryOS/MemOS/honcho: the count IS a score term). No
       // overlay write here — it would only be reseeded away by the reindex that the
       // file change triggers. Durable-by-construction.
-      return { action: 'skipped', skipReason: 'duplicate', id, path, recurrenceCount };
+      return { action: 'skipped', skipReason: 'duplicate', id, path, recurrenceCount, ...repairFields };
     }
     return errorResult({
       category: ERROR_CATEGORIES.COLLISION,
@@ -477,6 +564,7 @@ export function writeFact(opts = {}) {
       ],
       id,
       path,
+      ...repairFields,
     });
   }
 
@@ -504,6 +592,7 @@ export function writeFact(opts = {}) {
       path,
       duplicateAt: elsewhere,
       recurrenceCount,
+      ...repairFields,
     };
   }
 
@@ -526,7 +615,7 @@ export function writeFact(opts = {}) {
   if (linkDecision?.related?.length) factOpts.related = linkDecision.related;
 
   mkdirSync(factDir, { recursive: true });
-  const frontmatter = buildFrontmatterObject(factOpts, { id, createdAt });
+  const frontmatter = buildFrontmatterObject(factOpts, { id, createdAt, legacyId, idRepaired });
   writeFileSync(path, format({ frontmatter, body: `\n${factOpts.body}\n` }), 'utf8');
   // Door 5, AFTER the file lands: an audit line always describes a link that
   // exists on disk.
@@ -616,5 +705,5 @@ export function writeFact(opts = {}) {
     }
   }
 
-  return { action: 'created', id, path };
+  return { action: 'created', id, path, ...repairFields };
 }

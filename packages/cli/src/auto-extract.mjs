@@ -59,7 +59,7 @@ import { buildRichFactBody, slugifyFact } from './rich-fact.mjs';
 import { sanitizeForTitle } from './sanitize.mjs';
 import { HaikuTimeoutError } from './compressor.mjs';
 import { pidIsAlive } from './lock-discipline.mjs';
-import { nowIso } from './audit-log.mjs';
+import { nowIso, appendAuditEntry, REASON_CODES } from './audit-log.mjs';
 import { ERROR_CATEGORIES } from './result-shapes.mjs';
 import { touchCooldownMarker } from './cooldown.mjs';
 // Task 250 (D-412) — the failure-driven health nudge's capture-chain evidence.
@@ -781,6 +781,23 @@ function routeMedium({ candidate, projectRoot, ts }) {
     '',
   ].join('\n');
   appendFileSync(reviewPath, block, 'utf8');
+  // Task 259 (I1): the review queue's two EXITS (review-promoted /
+  // review-discarded) have been audited since Task 26 while its ENTRANCE wrote
+  // nothing — so the queue could grow with no trail at all. That matters twice:
+  // CLAUDE.md makes appendAuditEntry mandatory for every mutating operation
+  // (the conflict-queue's CONFLICT_QUEUED is the sibling precedent), and the
+  // viewer's live-refresh poll reads this log as its change signal, so an
+  // unaudited append is a fact landing in the queue that drives the pinned
+  // health strip while every surface says nothing happened.
+  appendAuditEntry(join(projectRoot, 'context'), {
+    ts,
+    action: 'queued',
+    tier: 'P',
+    id,
+    reasonCode: REASON_CODES.REVIEW_QUEUED,
+    reasonText: 'auto-extract: medium-trust candidate routed to queues/review.md pending review',
+    extra: { queue: 'review', proposed_trust: 'medium', write_source: 'auto-extract' },
+  });
   return { action: 'queued', id, path: reviewPath };
 }
 

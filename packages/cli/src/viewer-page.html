@@ -316,7 +316,7 @@
      server's (§24.1.1); only shape changes here. */
   /* The strip and the freshness stamp share one status line at MAIN level, so
      the stamp is on screen for every view — it belongs to the page, not to the
-     search toolbar (§24.1.6: freshness is stated per view, never implied). */
+     search toolbar (§24.1 point 6: freshness is stated per view, never implied). */
   .statusline { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 0 0 24px; }
   #health-strip {
     display: inline-flex; align-items: center; gap: 8px;
@@ -890,7 +890,7 @@
     return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   };
 
-  // Freshness is stated per view, never implied (§24.1.6). The stamp is also
+  // Freshness is stated per view, never implied (§24.1 point 6). The stamp is also
   // where the LIVE stream reports itself (Task 259): the base half is what this
   // view read and when, the suffix is whether the page is still being told about
   // changes. They are composed rather than concatenated at the call site because
@@ -2068,22 +2068,38 @@
     return go('/facts' + (($('#q').value.trim()) ? '?q=' + encodeURIComponent($('#q').value.trim()) : ''));
   }
 
-  let debounce;
+  let debounce = null;
   $('#q').addEventListener('input', () => {
     clearTimeout(debounce);
-    debounce = setTimeout(searchHere, 220);
+    // `debounce` doubles as "a keystroke is in flight", which is half of what
+    // tells live refresh to keep its hands off the box (see isReaderTyping).
+    // So it must be NULLED when it fires, not left holding a spent id.
+    debounce = setTimeout(() => { debounce = null; searchHere(); }, 220);
   });
   $('#tier').addEventListener('change', searchHere);
   // Manual refresh stays — it is the fallback when the stream is gone, and the
   // only control on the graph.
-  // Refresh is what ANSWERS the graph's stale badge, so it has to clear it —
-  // and only it, never the 'gone' state, which a re-read cannot fix.
-  $('#refresh').addEventListener('click', () => {
+  // Refresh ANSWERS the stale badge, so it clears it.
+  //
+  // M1 — and a refresh that SUCCEEDS is proof of life, so it retires 'gone'
+  // too. The original reasoning ("a re-read cannot fix 'gone'") had it
+  // backwards: 'gone' is an INFERENCE from three failed reconnects, and a
+  // successful fetch to the same origin is direct evidence that the inference
+  // is now wrong — the server is answering. Leaving the page saying "server
+  // stopped" while it demonstrably just served a request is the same
+  // lying-control class as the stale-badge bug. The success/failure split
+  // matters: only a fetch that RESOLVES may clear it.
+  $('#refresh').addEventListener('click', async () => {
     if (liveState === 'stale') setLive('on');
-    render();
+    await render();
+    if (liveState === 'gone' && !$('#freshness').textContent.startsWith('failed:')) {
+      failures = 0;
+      setLive('off');
+      startLive(); // the port answers again; try to get the stream back
+    }
   });
 
-  // ---- live refresh (Task 259, design §24.1.6) --------------------------
+  // ---- live refresh (Task 259, design §24.1.3) --------------------------
   //
   // The server polls the tier and tells us WHEN it changed, never WHAT changed
   // (see viewer.mjs's note on why the stream is a notification): so the response
@@ -2115,6 +2131,15 @@
   // Refresh to see them" sitting under a view that had just been refreshed,
   // which is a control lying about what it did (the same defect class as a
   // theme button still reading "Light" on a light page).
+  // M3 — the hello frame's `poll_ms` is USED, not decorative. The server owns
+  // the cadence, so the page must not hardcode a number in its own wording:
+  // change VIEWER_POLL_MS and this sentence follows it. Until a hello arrives
+  // the claim is unqualified, because we do not yet know what to promise.
+  let pollSeconds = 0;
+  const liveTitle = () => (pollSeconds
+    ? 'Live: new captures appear within about ' + pollSeconds + 's'
+    : 'Live: new captures appear automatically');
+
   function setLive(state) {
     liveState = state;
     if (state === 'on') liveSuffix = ' · live';
@@ -2122,18 +2147,42 @@
     else if (state === 'gone') liveSuffix = ' · live off (server stopped — restart `cmk view` and reload)';
     else liveSuffix = '';
     paintFreshness();
+    // The exact cadence goes in the title, not the visible line — the stamp is
+    // already the densest thing on the status row.
+    $('#freshness').title = state === 'on' ? liveTitle() : '';
   }
 
+  // Is the reader mid-thought in the search box? Two conditions, because
+  // either alone misses a real case: FOCUS covers "typed three characters and
+  // paused to think" (no timer pending, but the box is theirs), and a PENDING
+  // DEBOUNCE covers "typed and blurred within 220ms" (not focused, but a
+  // search is already on its way).
+  const isReaderTyping = () => document.activeElement === $('#q') || debounce !== null;
+
   function onLiveChange() {
-    // The graph redraws its whole force layout, so refreshing it automatically
-    // would move every node — possibly the one under the cursor, mid-click. It
-    // is told, and redraws when asked.
-    if (currentRoute().view === 'graph') return setLive('stale');
+    // I2. render() repaints #q from the URL, so an auto-render landing between
+    // a keystroke and its 220ms debounce would DISCARD what the reader was
+    // typing. The shipped claim is that a change never moves the reader's
+    // position — an input being wiped mid-word is the loudest possible way to
+    // move it, so the claim has to be true here or not be made.
+    //
+    // The graph is the other hands-off case: it redraws its whole force
+    // layout, so refreshing it automatically would move every node, possibly
+    // the one under the cursor mid-click.
+    //
+    // Both resolve the same way — badge, don't repaint. The reader decides when.
+    if (currentRoute().view === 'graph' || isReaderTyping()) return setLive('stale');
     render();
+  }
+
+  function stopLive(nextState) {
+    if (liveSource) { liveSource.close(); liveSource = null; }
+    if (nextState) setLive(nextState);
   }
 
   function startLive() {
     if (!window.EventSource) return; // no stream available: manual Refresh, as before
+    if (liveSource) return;          // already streaming — never open a second
     let es;
     try {
       // Same-origin and RELATIVE — which is what `connect-src 'self'` in the
@@ -2147,7 +2196,15 @@
     // still showing pre-change data, and the stream being healthy again does
     // not make that untrue.
     const connected = () => { failures = 0; if (liveState !== 'stale') setLive('on'); };
-    es.addEventListener('hello', connected);
+    es.addEventListener('hello', (ev) => {
+      // Read the server's own cadence off the frame (M3). Guarded: a malformed
+      // payload must never cost the reader their live refresh.
+      try {
+        const d = JSON.parse(ev.data);
+        if (typeof d.poll_ms === 'number' && d.poll_ms > 0) pollSeconds = Math.round(d.poll_ms / 1000);
+      } catch (_) { /* keep the unqualified wording */ }
+      connected();
+    });
     es.addEventListener('change', () => { failures = 0; onLiveChange(); });
     es.onopen = connected;
     es.onerror = () => {
@@ -2162,9 +2219,55 @@
     };
   }
 
-  // Let go of the stream when the tab does, so a reload does not leave the
-  // server holding a response for a client that no longer exists.
-  window.addEventListener('pagehide', () => { if (liveSource) liveSource.close(); });
+  // ---- the stream's own lifecycle (I4 + I5) -----------------------------
+  //
+  // I4 — BFCACHE. `pagehide` alone was a one-way door: navigate away, press
+  // Back, and the browser restores this page from the back/forward cache with
+  // all its JS state intact — including a `liveSuffix` still reading "· live"
+  // over a stream that was closed on the way out. A stamp claiming live with no
+  // socket behind it is the silent-staleness failure this whole feature is
+  // built to prevent, arrived at from the one direction nobody tests. So
+  // `pageshow` with `persisted` re-opens, and the stamp is corrected FIRST in
+  // case the re-open fails.
+  //
+  // I5 — SOCKET BUDGET. HTTP/1.1 allows ~6 connections per origin and each tab
+  // holds its SSE response open for as long as it lives. Multi-tab is a
+  // supported interaction here (ctrl-click passes straight through to the
+  // browser by design), so a reader with several views open could spend the
+  // whole budget on idle streams and stall their own page loads. Releasing the
+  // stream while a tab is HIDDEN reclaims almost all of it, because tabs are
+  // overwhelmingly hidden rather than closed.
+  //
+  // RESIDUAL, accepted and stated: six or more CONCURRENTLY VISIBLE windows on
+  // this origin can still saturate the budget. Not mitigated — it needs several
+  // side-by-side windows of one loopback viewer to reach, the server is
+  // ephemeral, and the honest fixes (a shared worker, a token) are real
+  // machinery against a case that does not occur. If it ever does, the symptom
+  // is a hanging view and the workaround is closing a window.
+  const syncLiveToVisibility = () => {
+    if (document.visibilityState === 'hidden') {
+      // Only a HEALTHY stream is parked. 'gone' is a verdict the reader has
+      // been shown; quietly downgrading it to 'off' would erase it.
+      if (liveSource) stopLive('off');
+      return;
+    }
+    if (!liveSource && liveState !== 'gone') {
+      failures = 0;
+      startLive();
+      // A change may well have landed while we were not listening, and the
+      // stream cannot tell us about the past. Re-read rather than assume.
+      onLiveChange();
+    }
+  };
+  document.addEventListener('visibilitychange', syncLiveToVisibility);
+
+  window.addEventListener('pagehide', () => { stopLive(); });
+  window.addEventListener('pageshow', (ev) => {
+    if (!ev.persisted) return; // a normal load already called startLive()
+    setLive('off');            // correct the restored stamp BEFORE trying
+    failures = 0;
+    syncLiveToVisibility();
+  });
 
   // ---- the theme toggle -------------------------------------------------
   // The head stamp owns the state, the storage key, and the writing of
