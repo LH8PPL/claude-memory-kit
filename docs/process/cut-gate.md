@@ -187,7 +187,7 @@ The v0.4.5 headline is the **agent-relative LLM backend** (Task 200, design §16
 
 | Check | Move | What it verifies | Reachability |
 | --- | --- | --- | --- |
-| **★ BK1** | Task 200 — HC-11 | `cmk doctor` emits **15** checks (HC-1..HC-15); HC-11 PASSes when the effective backend agent's CLI is on PATH, and FAILs with an honest "automatic features degraded, file-only still works" message (never a silent no-op) when it's absent | CLI, deterministic (via the injectable `backendCliProbe` seam or a hidden-binary sandbox) |
+| **★ BK1** | Task 200 — HC-11 | `cmk doctor` emits **16** checks (HC-1..HC-16); HC-11 PASSes when the effective backend agent's CLI is on PATH, and FAILs with an honest "automatic features degraded, file-only still works" message (never a silent no-op) when it's absent | CLI, deterministic (via the injectable `backendCliProbe` seam or a hidden-binary sandbox) |
 | **★ BK2** | Task 201 — `--backend` | `cmk install --backend kiro` (installed-for claude) writes `backend.agent: kiro` to `context/settings.json`, and the install output warns about the **EFFECTIVE** backend CLI (kiro-cli), not the installed-for agent; an invalid `--backend banana` is rejected **fail-fast BEFORE any scaffold** (no half-install) | CLI, deterministic |
 | **★ BK3** | Task 201 — `config show` | `cmk config show` prints the installed-for agent, the ACTIVE backend agent (+ whether it's an override), the backend-CLI presence, and the semantic mode — informational, never a non-zero exit | CLI, deterministic |
 | **★ BK4** | Task 200 — live cross-agent | the automatic engine (a `cmk compress` / auto-extract cycle) actually **runs the LLM call through a non-`claude` agent CLI** (kiro-cli or cursor-agent) and produces a sane summary | **live cross-agent MANUAL flag** |
@@ -286,7 +286,7 @@ code .
 
 - [ ] **★ G1 — install + doctor clean.**
       `cmk install` → "ready, hooks wired";
-      `cmk doctor` → **0 fail** on a fresh install — **15 checks now** (HC-1..HC-15; the 2 memsearch checks were removed in Task 120, HC-8 native-bindings added in v0.3.1, HC-9 version-drift added in v0.3.4, **HC-10 compaction-liveness added in v0.4.1 (Task 167)**, **HC-11 backend-LLM-CLI-present added in v0.4.5 (Task 200/D-272/D-277)**). HC-9 = PASS on a just-installed project (the scaffold marker matches the binary). **HC-10 = SKIP** on a fresh install with no cron registered (it's informational — memory self-heals each session via the lazy roll; only flags a *registered but dead* cron). **HC-11 = PASS** when the effective backend agent's CLI (`claude` on a Claude-Code install) is on PATH; **FAIL** with an honest degrade message if it's absent (see ★ BK1).
+      `cmk doctor` → **0 fail** on a fresh install — **16 checks now** (HC-1..HC-16; the 2 memsearch checks were removed in Task 120, HC-8 native-bindings added in v0.3.1, HC-9 version-drift added in v0.3.4, **HC-10 compaction-liveness added in v0.4.1 (Task 167)**, **HC-11 backend-LLM-CLI-present added in v0.4.5 (Task 200/D-272/D-277)**). HC-9 = PASS on a just-installed project (the scaffold marker matches the binary). **HC-10 = SKIP** on a fresh install with no cron registered (it's informational — memory self-heals each session via the lazy roll; only flags a *registered but dead* cron). **HC-11 = PASS** when the effective backend agent's CLI (`claude` on a Claude-Code install) is on PATH; **FAIL** with an honest degrade message if it's absent (see ★ BK1).
       Type:
         `/hooks` → the 5 `cmk-*` hooks are loaded.
 
@@ -957,7 +957,7 @@ CLI suite structurally can't cover (Claude is in the loop).
 
 The automatic engine now runs through the agent's OWN CLI, and the user can override which agent runs it. BK1–BK3 are CLI-deterministic (run them in the build terminal on any machine); **BK4 is the live cross-agent flag** (needs a 2nd agent's CLI present — see §0).
 
-- **★ BK1 — `cmk doctor` HC-11 (backend LLM CLI present).** On a fresh Claude-Code install, `cmk doctor` reports **15** checks and HC-11 = PASS (the `claude` CLI is on PATH). To prove the FAIL path deterministically, use the injectable probe in a script (`runDoctor({ projectRoot, userDir, backendCliProbe: () => ({ agent: 'kiro', bin: 'kiro-cli', present: false, reason: 'kiro-cli not found on PATH' }) })`) — HC-11 = FAIL with an honest "automatic features degraded, file-only still works" message and **no `recoveryCommand` that implies data loss**.
+- **★ BK1 — `cmk doctor` HC-11 (backend LLM CLI present).** On a fresh Claude-Code install, `cmk doctor` reports **16** checks and HC-11 = PASS (the `claude` CLI is on PATH). To prove the FAIL path deterministically, use the injectable probe in a script (`runDoctor({ projectRoot, userDir, backendCliProbe: () => ({ agent: 'kiro', bin: 'kiro-cli', present: false, reason: 'kiro-cli not found on PATH' }) })`) — HC-11 = FAIL with an honest "automatic features degraded, file-only still works" message and **no `recoveryCommand` that implies data loss**.
   **PASS:** 15 checks, HC-11 PASS on a healthy install; the injected-absent probe yields a FAIL that names the missing CLI + says capture/search/recall still work. **FAIL:** doctor reports the wrong number of checks, or HC-11 silently SKIPs when the CLI is absent (the D-270 bug), or the message frames it as broken/fatal.
 
 - **★ BK2 — `cmk install --backend <agent>` (the split-brain override + fail-fast).** In a throwaway dir:
@@ -1328,7 +1328,7 @@ Ask: *"Start a new Python backend for me - set up the structure."*
 **Health & repair**
 
 - [ ] **F-11**
-      - `cmk doctor` → HC-1..HC-15 accurate (HC-8 = native bindings / npm-12 readiness, v0.3.1; HC-9 = version-drift, v0.3.4; HC-10 = compaction-liveness, v0.4.1 — SKIP when no cron registered; HC-11 = backend LLM CLI present, v0.4.5 — PASS/FAIL on the effective backend agent's CLI, never silently skipped) + the trailing **Memory health (informational)** line renders
+      - `cmk doctor` → HC-1..HC-16 accurate (HC-8 = native bindings / npm-12 readiness, v0.3.1; HC-9 = version-drift, v0.3.4; HC-10 = compaction-liveness, v0.4.1 — SKIP when no cron registered; HC-11 = backend LLM CLI present, v0.4.5 — PASS/FAIL on the effective backend agent's CLI, never silently skipped) + the trailing **Memory health (informational)** line renders
       - `cmk repair --hooks` re-wires if settings drift
       - **`cmk repair --index` → "(index): fixed → reindex completed"** (NOT an error). _v0.3.1: this ran the REAL reindexFull which needs a db; the bug where repair passed no db (since Task 49, masked by every test mocking the reindexer) was found by THIS cut-gate probe — keep it on the real path, no injected reindexer._
       - `cmk repair --all` → all three (hooks/locks/index) report cleanly

@@ -401,6 +401,42 @@
   button:hover, input[type="search"]:hover, select:hover { border-color: var(--ink-3); }
   #freshness { color: var(--ink-3); font-size: 12px; margin-left: auto; font-variant-numeric: tabular-nums; }
 
+  /* ---- the pager -------------------------------------------------------
+     Prev/next over a stable sort, NOT an infinite scroll. A memory archive is
+     navigated deliberately and a position in it has to be citeable — an
+     infinite list has no URL for "the page that has the fact I mean". So both
+     controls are real anchors carrying the whole view state, and the end of the
+     range is a SPAN, because a link that goes nowhere is a lie a cursor tells.
+     -------------------------------------------------------------------- */
+  .pager {
+    display: flex; align-items: center; gap: 12px;
+    margin: 18px 2px 0; font-size: 12.5px; color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .pager .page-btn, .pager .page-btn-off {
+    border: 1px solid var(--line); border-radius: var(--r-ctl);
+    padding: 6px 13px; text-decoration: none; font-weight: 500; line-height: 1.5;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .pager .page-btn { color: var(--ink-2); }
+  .pager .page-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .pager .page-btn-off { color: var(--ink-3); opacity: .5; cursor: default; }
+  .pager .range { margin: 0 auto; }
+  .pager .range b { color: var(--ink-2); font-weight: 600; }
+
+  /* ---- relevance bands (D-429) -----------------------------------------
+     A weak match must LOOK weak. The pill carries the WORD and the hue only
+     reinforces it — same discipline as the graph's trust rim-arc: colour is
+     never the sole encoding, so this survives colour blindness and greyscale.
+     The hues are the kit's existing good→poor ladder (`--ok`/`--warn`/`--bad`,
+     already AA-tested on both surfaces in both themes) — a third reading of the
+     same ladder trust levels and health statuses already use, not a fourth
+     colour system.
+     -------------------------------------------------------------------- */
+  .rel-strong { --hue: var(--ok); --hue-rgb: var(--ok-rgb); }
+  .rel-fair { --hue: var(--warn); --hue-rgb: var(--warn-rgb); }
+  .rel-weak { --hue: var(--bad); --hue-rgb: var(--bad-rgb); }
+
   /* ---- the fact list: ROWS ---------------------------------------------
      Not 50 rounded boxes. Cards do not share edges, so N items become N
      separate objects with no rail for the eye; every craft reference here
@@ -762,22 +798,30 @@
     <span id="freshness">as of —</span>
   </div>
 
+  <!-- ONE search box for the whole product, not one per view (Task 269). It is
+       MOVED into whichever view is showing (`.tb-slot`) rather than duplicated:
+       two inputs would mean two debounces, two pieces of state and two chances
+       for the box to disagree with the URL about what is being searched. It
+       starts hidden so it cannot flash above the statusline before the first
+       render places it. -->
+  <div class="toolbar measure hidden" id="toolbar">
+    <input type="search" id="q" placeholder="Search your memory…" aria-label="Search your memory" autocomplete="off" spellcheck="false" />
+    <select id="tier" aria-label="Filter by tier" title="Filter by tier. At session start the tiers are injected with local &gt; project &gt; user precedence — the most specific wins and the others are logged as shadowed.">
+      <option value="">All tiers</option>
+      <option value="P" title="Project — committed, travels with the repo">P · project</option>
+      <option value="L" title="Local — this machine only, gitignored">L · local</option>
+      <option value="U" title="User — you, across every project">U · user</option>
+    </select>
+    <button id="refresh" type="button" title="Re-read from disk">Refresh</button>
+  </div>
+
   <section data-view="facts" class="hidden">
     <div class="overview measure" id="overview">
       <span class="micro" id="ov-label">Durable memory</span>
       <span class="d1" id="ov-figure">—</span>
       <p class="sub" id="ov-sub">Reading the store…</p>
     </div>
-    <div class="toolbar measure">
-      <input type="search" id="q" placeholder="Search your memory…" aria-label="Search your memory" autocomplete="off" spellcheck="false" />
-      <select id="tier" aria-label="Filter by tier" title="Filter by tier. At session start the tiers are injected with local &gt; project &gt; user precedence — the most specific wins and the others are logged as shadowed.">
-        <option value="">All tiers</option>
-        <option value="P" title="Project — committed, travels with the repo">P · project</option>
-        <option value="L" title="Local — this machine only, gitignored">L · local</option>
-        <option value="U" title="User — you, across every project">U · user</option>
-      </select>
-      <button id="refresh" type="button" title="Re-read from disk">Refresh</button>
-    </div>
+    <div class="tb-slot measure"></div>
     <div id="facts-out" class="measure"></div>
   </section>
 
@@ -805,8 +849,10 @@
   <section data-view="decisions" class="hidden">
     <div class="overview measure">
       <span class="micro">Journal</span>
-      <span class="d2">Decisions, newest first</span>
+      <span class="d2" id="dec-title">Decisions, newest first</span>
+      <p class="sub" id="dec-sub">Reading the journal…</p>
     </div>
+    <div class="tb-slot measure"></div>
     <div id="decisions-out"></div>
   </section>
 </main>
@@ -852,6 +898,96 @@
   }
 
   function badge(text, cls) { return el('span', { class: 'badge ' + (cls || ''), text }); }
+
+  // ---- view state lives in the URL (Task 269) ----------------------------
+  //
+  // Query, tier and page position are all URL parameters, so a position in the
+  // archive is CITEABLE — you can paste "the page with that decision on it"
+  // into a commit message and it still resolves tomorrow. That is the whole
+  // reason this is a pager and not an infinite scroll: an infinite list has no
+  // URL for where you are.
+  function viewState() {
+    const p = new URLSearchParams(location.search);
+    const n = Number(p.get('offset'));
+    return {
+      q: (p.get('q') || '').trim(),
+      tier: p.get('tier') || '',
+      offset: Number.isInteger(n) && n > 0 ? n : 0,
+    };
+  }
+
+  /** The current URL with some of the state replaced. */
+  function hrefFor(patch) {
+    const s = Object.assign(viewState(), patch);
+    const p = new URLSearchParams();
+    if (s.q) p.set('q', s.q);
+    if (s.tier) p.set('tier', s.tier);
+    if (s.offset) p.set('offset', String(s.offset));
+    const qs = p.toString();
+    return location.pathname + (qs ? '?' + qs : '');
+  }
+
+  // OFFSET RESET: any change to the QUERY or the TIER goes back to page 1.
+  // This is the one predictable answer — carrying a page position across a
+  // narrowing query lands the reader on "page 7 of 2 matches", an empty page
+  // for a search that found something. Written with `replaceState`, not
+  // `pushState`: typing must not leave one history entry per keystroke, which
+  // would bury the page the reader arrived from under 30 near-identical URLs.
+  // A PAGER click is the opposite — a deliberate navigation, so it pushes.
+  function setQuery(patch) {
+    history.replaceState({}, '', hrefFor(Object.assign({ offset: 0 }, patch)));
+  }
+
+  /**
+   * Prev / next over a stable sort. Returns null when there is exactly one page
+   * — a pager on a list that does not page is furniture.
+   *
+   * Both controls are real anchors carrying the whole view state, so
+   * middle-click, copy-link and the back button all work. An unavailable
+   * direction renders as a SPAN, never a dead link.
+   */
+  function pager(data, noun) {
+    if (!data || typeof data.total !== 'number') return null;
+    const offset = typeof data.offset === 'number' ? data.offset : 0;
+    const limit = typeof data.limit === 'number' && data.limit > 0 ? data.limit : 50;
+    const count = data.count || 0;
+    const total = data.total;
+    const reachable = typeof data.reachable === 'number' ? data.reachable : total;
+    if (offset === 0 && !data.has_more) return null;
+
+    const nav = el('nav', { class: 'pager', 'aria-label': noun + ' pages' });
+    nav.append(offset > 0
+      ? el('a', { class: 'page-btn', href: hrefFor({ offset: Math.max(0, offset - limit) }), text: '← Previous', 'aria-label': 'Previous page of ' + noun })
+      : el('span', { class: 'page-btn-off', text: '← Previous', 'aria-disabled': 'true' }));
+
+    const range = el('span', { class: 'range' });
+    if (count > 0) {
+      range.append('Showing ');
+      range.append(el('b', { text: group(offset + 1) + '–' + group(offset + count) }));
+      range.append(' of ');
+      range.append(el('b', { text: group(total) }));
+      range.append(' ' + noun + '.');
+    } else {
+      range.append('No ' + noun + ' on this page.');
+    }
+    // Said out loud rather than hidden behind a disabled button: a ranked
+    // result set is only pageable to the engine's ranking depth.
+    if (reachable < total) {
+      range.append(' Paging reaches the first ' + group(reachable) + ' — narrow the search for the rest.');
+    }
+    nav.append(range);
+
+    // Advance by the PAGE SIZE, not by `count`. They are the same number on
+    // every ordinary page, and they differ exactly when a hit was dropped
+    // because its fact row could not be resolved (the Task-270 orphan class):
+    // stepping by `count` there would re-serve the window it already showed and
+    // walk the reader in circles. The server computes `has_more` from the same
+    // window for the same reason.
+    nav.append(data.has_more
+      ? el('a', { class: 'page-btn', href: hrefFor({ offset: offset + limit }), text: 'Next →', 'aria-label': 'Next page of ' + noun })
+      : el('span', { class: 'page-btn-off', text: 'Next →', 'aria-disabled': 'true' }));
+    return nav;
+  }
 
   // The denominator behind the headline figure, and it rides on the SAME
   // payload as the rows (`/api/facts` states `total` in both modes). It used to
@@ -1115,6 +1251,22 @@
     const shown = data && data.facts ? data.facts.length : 0;
     const total = readTotal(data);
     const tail = tier ? ' · tier ' + tier + ' only' : '';
+    // Task 269: past page 1, "showing the FIRST 50" is simply false — the rows
+    // below are 51–100. The pager states the true range, and an overview that
+    // contradicts the control under it is worse than one that says less. So on
+    // a paged view the sub-line drops the claim and defers to the pager.
+    const paged = !!(data && data.offset);
+    if (paged) {
+      label.textContent = data.mode === 'search'
+        ? 'Search'
+        : (tier ? 'Durable memory · tier ' + tier : 'Durable memory');
+      figure.textContent = total !== null ? group(total) : group(shown);
+      clear(sub);
+      sub.append(data.mode === 'search'
+        ? 'matches for “' + (data.query || q) + '” — the range you are looking at is below the list.'
+        : 'facts on disk, none forgotten — the range you are looking at is below the list.');
+      return;
+    }
     if (data && data.mode === 'search') {
       // The figure is the MATCH COUNT, not the page of it. Showing `count` here
       // rendered "50 matches" for a 500-hit query, in the largest type on the
@@ -1148,12 +1300,37 @@
     }
   }
 
+  // The three bands the server hands back, and the class + WORD each one shows.
+  // A Map, not an object literal: the class name must come from THIS table and
+  // never from the payload, and an object lookup gated on truthiness would let
+  // a band of `constructor` or `toString` through the gate and then interpolate
+  // the payload's own string into the class attribute. A Map has no prototype
+  // chain to inherit past, so the lookup is closed by construction rather than
+  // by a comment claiming it is (review M5).
+  const REL = new Map([
+    ['strong', { cls: 'rel-strong', word: 'strong match' }],
+    ['fair', { cls: 'rel-fair', word: 'fair match' }],
+    ['weak', { cls: 'rel-weak', word: 'weak match' }],
+  ]);
+
   function factRow(f) {
     const row = el('a', { class: 'row', href: '/fact/' + f.id });
     row.append(el('span', { class: 'glyph tier-' + f.tier, text: f.tier, title: 'tier ' + f.tier }));
     const main = el('div', { class: 'row-main' });
     for (const node of factText(f.snippet, true)) main.append(node);
     const meta = el('div', { class: 'meta' });
+    // Relevance first in the meta row: on a search result it is the thing that
+    // decides whether the row is worth reading at all. The tooltip states what
+    // the number IS — relative to the top hit, not an absolute confidence —
+    // because a coloured pill invites the stronger reading.
+    const rel = REL.get(f.relevance_band);
+    if (rel) {
+      meta.append(el('span', {
+        class: 'badge ' + rel.cls,
+        text: rel.word,
+        title: 'Relevance ' + Number(f.relevance).toFixed(2) + ' — relative to the strongest match for this query, not an absolute score.',
+      }));
+    }
     if (f.trust) meta.append(el('span', { class: 'trust trust-' + f.trust, text: f.trust + ' trust' }));
     if (f.state) meta.append(badge(f.state, 'state'));
     if (f.write_source) meta.append(el('span', { text: f.write_source }));
@@ -1169,11 +1346,13 @@
   async function viewFacts() {
     const seq = ++factsSeq;
     const out = $('#facts-out');
-    const q = $('#q').value.trim();
-    const tier = $('#tier').value;
+    // The URL is the state, not the controls: a deep link with `?q=…&offset=…`
+    // must paint the same page the controls would have.
+    const { q, tier, offset } = viewState();
     const params = new URLSearchParams();
     if (q) params.set('q', q);
     if (tier) params.set('tier', tier);
+    if (offset) params.set('offset', String(offset));
     const data = await api('/facts' + (params.toString() ? '?' + params : ''));
     if (seq !== factsSeq) return; // a newer query went out while this one flew
     clear(out);
@@ -1186,24 +1365,30 @@
       : 'newest ' + data.count);
     paintOverview(data, q, tier);
     if (!data.facts.length) {
-      out.append(el('p', { class: 'empty', text: q
-        ? 'Nothing matches “' + q + '”. Try fewer words — search is keyword, not fuzzy.'
-        : 'No memory captured here yet. It fills as you work; `cmk remember` captures one by hand.' }));
+      // An empty PAGE is not an empty result: an over-shot `?offset=` on a
+      // query that matched 2,300 facts would otherwise read "nothing matches",
+      // which is false, and strand the reader with no control to get back.
+      const overshot = data.offset > 0;
+      out.append(el('p', { class: 'empty', text: overshot
+        ? 'No facts on this page — you have paged past the end of ' + (q ? 'these matches.' : 'the list.')
+        : q
+          ? 'Nothing matches “' + q + '”. Try fewer words — search is keyword, not fuzzy.'
+          : 'No memory captured here yet. It fills as you work; `cmk remember` captures one by hand.' }));
+      if (overshot) {
+        const back = pager(data, 'facts');
+        if (back) out.append(back);
+        out.append(el('p', { class: 'note' }, el('a', { class: 'chip', href: hrefFor({ offset: 0 }), text: '← back to the first page' })));
+      }
       return;
     }
     const rows = el('div', { class: 'rows' });
     for (const f of data.facts) rows.append(factRow(f));
     out.append(rows);
-    // Keyed off the TOTAL, not off `clamped` (which only means the `?limit=`
-    // someone typed was above the cap): the honest question is whether there
-    // are records this list does not show, and that is true at the DEFAULT
-    // limit on any real corpus.
-    const total = readTotal(data);
-    if (total !== null && total > data.count) {
-      out.append(el('p', { class: 'note', text:
-        'Showing the first ' + group(data.count) + ' of ' + group(total) +
-        (data.mode === 'search' ? ' — refine the search to narrow it.' : ' — search reaches all of them.') }));
-    }
+    // The pager replaced the "showing the first N of M" note that used to sit
+    // here: that line stated the shortfall and offered nothing to do about it,
+    // which was the whole D-426 finding one layer up.
+    const nav = pager(data, 'facts');
+    if (nav) out.append(nav);
   }
 
   async function viewFact(id) {
@@ -1375,14 +1560,49 @@
     ]));
   }
 
+  // Same race guard as the facts list: the shared search box fires per
+  // keystroke on this view too.
+  let decisionsSeq = 0;
+
   async function viewDecisions() {
+    const seq = ++decisionsSeq;
     const out = $('#decisions-out');
-    const data = await api('/decisions');
+    const { q, offset } = viewState();
+    const params = new URLSearchParams();
+    // NEWEST-FIRST, explicitly. The route's default is journal order (oldest
+    // first — the order the kit appends in, and the chronological trail the
+    // view exists to show), but page 1 of a real journal in that order is its
+    // oldest 50 decisions. This tab has always been LABELLED "newest first";
+    // asking for it is what makes the label true.
+    params.set('order', 'newest');
+    if (q) params.set('q', q);
+    if (offset) params.set('offset', String(offset));
+    const data = await api('/decisions?' + params);
+    if (seq !== decisionsSeq) return; // a newer query went out while this flew
     clear(out);
     if (data.error) { out.append(errorCard(data)); return; }
-    stamp(data, data.count + ' decision(s)');
+    stamp(data, data.mode === 'search'
+      ? data.total + ' hit(s) for “' + data.query + '”'
+      : data.count + ' decision(s)');
+    $('#dec-title').textContent = q ? 'Decisions matching “' + q + '”' : 'Decisions, newest first';
+    const sub = $('#dec-sub');
+    clear(sub);
+    if (typeof data.total === 'number' && data.total > 0) {
+      sub.append(el('b', { text: group(data.total) }));
+      sub.append(q ? ' matching entries in the journal.' : ' entries — superseded and retracted ones kept, struck.');
+    }
     if (!data.count) {
-      out.append(el('p', { class: 'empty measure', text: 'No decisions journaled yet. They accumulate as decisions get captured — `cmk remember --type project --why …` writes one.' }));
+      const overshot = data.offset > 0;
+      out.append(el('p', { class: 'empty measure', text: overshot
+        ? 'No decisions on this page — you have paged past the end of ' + (q ? 'these matches.' : 'the journal.')
+        : q
+          ? 'Nothing in the journal matches “' + q + '”. The search is a plain substring — try fewer words.'
+          : 'No decisions journaled yet. They accumulate as decisions get captured — `cmk remember --type project --why …` writes one.' }));
+      if (overshot) {
+        const back = pager(data, 'decisions');
+        if (back) out.append(back);
+        out.append(el('p', { class: 'note' }, el('a', { class: 'chip', href: hrefFor({ offset: 0 }), text: '← back to the first page' })));
+      }
       return;
     }
     for (const d of data.decisions) {
@@ -1396,6 +1616,8 @@
       if (d.why) box.append(richBody(d.why));
       out.append(box);
     }
+    const nav = pager(data, 'decisions');
+    if (nav) out.append(nav);
   }
 
   // ---- the graph: the instrument ----------------------------------------
@@ -1749,6 +1971,17 @@
   }
 
   // ---- routing ----------------------------------------------------------
+  //
+  // The toolbar is ONE element, MOVED into the showing view's `.tb-slot`
+  // (appending an existing node relocates it). Two search inputs would mean two
+  // debounces and two states, and the second one is always the one that ends up
+  // out of sync with the URL.
+  const SEARCHABLE = {
+    facts: { noun: 'your memory', tier: true },
+    decisions: { noun: 'the decision journal', tier: false },
+  };
+  const toolbar = $('#toolbar');
+
   function show(view) {
     for (const s of document.querySelectorAll('section[data-view]')) {
       s.classList.toggle('hidden', s.dataset.view !== view);
@@ -1757,6 +1990,17 @@
       const on = a.dataset.nav === view || (view === 'fact' && a.dataset.nav === 'facts');
       if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     }
+    const spec = SEARCHABLE[view];
+    const slot = spec ? document.querySelector('section[data-view="' + view + '"] .tb-slot') : null;
+    toolbar.classList.toggle('hidden', !slot);
+    if (!slot) return;
+    slot.append(toolbar);
+    // The tier filter is a FACTS concept — a journal has no tiers, so on the
+    // decisions view the control is hidden rather than left there filtering
+    // nothing.
+    $('#tier').classList.toggle('hidden', !spec.tier);
+    $('#q').placeholder = 'Search ' + spec.noun + '…';
+    $('#q').setAttribute('aria-label', 'Search ' + spec.noun);
   }
 
   function currentRoute() {
@@ -1769,6 +2013,13 @@
   async function render() {
     const route = currentRoute();
     show(route.view);
+    // The box follows the URL, never the other way round — otherwise a back
+    // button, a pasted link and a nav click each paint a different query than
+    // the one the box is showing.
+    const wanted = viewState().q;
+    if ($('#q').value !== wanted) $('#q').value = wanted;
+    const wantedTier = viewState().tier;
+    if ($('#tier').value !== wantedTier) $('#tier').value = wantedTier;
     $('#freshness').textContent = 'reading…';
     paintStrip();
     const job = (async () => {
@@ -1794,12 +2045,22 @@
   });
   window.addEventListener('popstate', render);
 
+  // Typing narrows the view you are ON — facts or decisions — and always
+  // returns to page 1 (setQuery). From any other view it takes you to the
+  // facts list, which is what a search box in the memory product means.
+  function searchHere() {
+    const view = currentRoute().view;
+    if (view === 'facts') { setQuery({ q: $('#q').value.trim(), tier: $('#tier').value }); return viewFacts(); }
+    if (view === 'decisions') { setQuery({ q: $('#q').value.trim() }); return viewDecisions(); }
+    return go('/facts' + (($('#q').value.trim()) ? '?q=' + encodeURIComponent($('#q').value.trim()) : ''));
+  }
+
   let debounce;
   $('#q').addEventListener('input', () => {
     clearTimeout(debounce);
-    debounce = setTimeout(() => { if (currentRoute().view === 'facts') viewFacts(); else go('/facts'); }, 220);
+    debounce = setTimeout(searchHere, 220);
   });
-  $('#tier').addEventListener('change', () => { if (currentRoute().view === 'facts') viewFacts(); else go('/facts'); });
+  $('#tier').addEventListener('change', searchHere);
   // Manual refresh, and nothing automatic: no filesystem watch on the server, no
   // server-sent-events client here.
   $('#refresh').addEventListener('click', render);
