@@ -183,7 +183,7 @@ export const HEALTH_REGISTRY = Object.freeze({
     strikeThreshold: 2,
     deterministic: false,
   }),
-  // Task 47.0 — the durable home D-439 asked for. `cmk register-crons` on
+  // Task 47.0 — the durable home D-452 asked for. `cmk register-crons` on
   // Windows is TWO calls: create the task, then apply the settings that decide
   // whether Windows will ever start it (§8.6.5). The second can fail on its
   // own, and Task 265 reported that only to the CONSOLE — which scrolls away,

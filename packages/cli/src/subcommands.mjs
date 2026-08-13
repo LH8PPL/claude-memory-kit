@@ -2285,7 +2285,7 @@ export function runRegisterCrons(options /* , command */) {
         `command above by hand in an ordinary PowerShell window.`,
       );
     }
-    // Task 47.0 (D-439's handover): the console is not a durable surface. The
+    // Task 47.0 (D-452's handover): the console is not a durable surface. The
     // warning above scrolls away, and HC-5 passes on the `cron-registered`
     // sentinel alone — so without this the kit forgets, within one screenful,
     // that it left a registered-but-starving task behind.
