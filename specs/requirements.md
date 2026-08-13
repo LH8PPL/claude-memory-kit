@@ -494,6 +494,34 @@ The kit shall implement v0.1 baseline defenses against memory poisoning, recogni
 
 Acceptance: When an auto-extracted observation has `write_source: auto-extract` AND `trust: low`, the user shall be able to filter it out of search results with `cmk search --min-trust medium`.
 
+### NFR-10 — Consent gate for system-level installs
+
+_Added 2026-08-09 (Task 48). Until then this rule lived in [`design.md`](design.md) §14 as an **unsourced assertion**, having been mis-cited as NFR-9 (which is memory-poisoning defence — a different rule entirely). Task 37's review flagged the drift in 2026-05-28; it took a task that actually needed the rule to give it a number._
+
+**The kit shall NEVER invoke a system-level install command — `pip install`, `npm install`, `winget install`, `brew install`, or any equivalent that changes software on the user's machine — without explicit user consent.**
+
+Consent is satisfied by **exactly one** of:
+
+1. **Install-time opt-in via a flag the user typed** — e.g. `cmk install --with-semantic`.
+2. **Runtime consent via an interactive prompt** — e.g. `cmk doctor --repair`'s per-repair `[y/N]`, whose default is No.
+3. **An explicit non-interactive consent flag the user typed** — e.g. `cmk doctor --repair --yes`, which is consent given in advance for that invocation.
+
+**A missing terminal is not consent.** When stdin is not a TTY and no consent flag was passed, the kit shall print the command for the user to run and shall NOT execute it. It shall neither assume yes (dangerous) nor exit silently as though healthy (the false-green class NFR-10's own health checks exist to prevent) — it shall name the flag that would have granted consent.
+
+**Consent is per-command, not per-session.** Consent granted for one install does not extend to another, and a consent flag does not extend to commands outside the kit's declared executable set.
+
+EARS-form:
+
+- **WHEN** a health check's recovery requires a system-level install, **THE** Memory_System **SHALL** surface the command and **SHALL NOT** execute it until one of the three consent channels above is satisfied.
+- **WHEN** stdin is not an interactive terminal **AND** no explicit consent flag was passed, **THE** Memory_System **SHALL** print the command, name the flag that grants consent, and take no action.
+- **WHEN** a recovery would delete or overwrite user data, **THE** Memory_System **SHALL** print it for manual execution **regardless** of any consent flag.
+
+Acceptance: `cmk doctor --repair` on a project whose HC-8 fails prompts before running `npm install -g …`; the same command with stdin redirected from a non-terminal prints the command, names `--yes`, and installs nothing.
+
+Enforced structurally by [`scripts/validate-install-consent.mjs`](../scripts/validate-install-consent.mjs) — the set of production modules that may spawn an installer is a declared allowlist, checked both directions, so a new spawn site fails the suite until someone states which consent channel gates it.
+
+_Implemented by: `cmk doctor --repair` (Task 47, [`doctor-repair.mjs`](../packages/cli/src/doctor-repair.mjs)) · `cmk install --with-semantic` (Task 120) · HC-8's `requiresInstall` surfacing (Task 141a)._
+
 ---
 
 ## 5. Out of scope (explicit non-goals for v0.1.0)

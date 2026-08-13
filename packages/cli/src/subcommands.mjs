@@ -65,6 +65,8 @@ import {
   markCronRegistered,
   unmarkCronRegistered,
 } from './lazy-compress.mjs';
+import { appendHealthEntry, HEALTH_CODES } from './health-log.mjs';
+import { planRepairs, runRepairs } from './doctor-repair.mjs';
 import {
   registerCron,
   unregisterCron,
@@ -2283,6 +2285,26 @@ export function runRegisterCrons(options /* , command */) {
         `command above by hand in an ordinary PowerShell window.`,
       );
     }
+    // Task 47.0 (D-439's handover): the console is not a durable surface. The
+    // warning above scrolls away, and HC-5 passes on the `cron-registered`
+    // sentinel alone — so without this the kit forgets, within one screenful,
+    // that it left a registered-but-starving task behind.
+    //
+    // BOTH outcomes are recorded, not just the failure: an `ok` is what resets
+    // the streak, so a user who re-registers successfully stops being warned
+    // without anything having to clean up (D-412's structural self-clean). The
+    // `undefined` case — a dry run, or any POSIX platform, where there was no
+    // settings call to have an outcome — records nothing at all.
+    if (typeof r.settingsApplied === 'boolean') {
+      appendHealthEntry(projectRoot, {
+        class: HEALTH_CODES.CRON_SETTINGS_UNAPPLIED,
+        outcome: r.settingsApplied ? 'ok' : 'fail',
+        // A machine token, never a message (DETAIL_TOKEN_PATTERN): it names
+        // WHICH job, which is the only thing a reader of the log cannot
+        // otherwise recover.
+        detail: job.entryName,
+      });
+    }
     if (r.output) console.log(`  output: ${r.output.trim()}`);
   }
   // Task 35.3: maintain the cron-registered sentinel so lazy-compress
@@ -2358,7 +2380,77 @@ export function formatDoctorReport(checks, durationMs) {
   return { lines, counts, failCount: counts.fail };
 }
 
-async function runDoctorCli(/* options */) {
+/**
+ * Task 47 — the `--repair` pass, after the report has already been printed.
+ *
+ * Kept out of runDoctorCli's body so the report path stays readable and so the
+ * repair flow can be driven in a test without re-running fifteen health checks.
+ * The prompter is created HERE rather than in doctor-repair.mjs: a module that
+ * opens stdin cannot be unit-tested, and the seam is the whole reason the
+ * consent logic is testable at all (this is Task 47.3's `promptUser`, landing
+ * WITH its consumer rather than as the forward-compat hook Task 37 correctly
+ * refused to leave lying around).
+ */
+async function offerRepairs({ checks, projectRoot, options, deps = {} }) {
+  const log = deps.log ?? console.log;
+  const plan = planRepairs(checks, { knownVerbs: subcommandNames });
+  if (plan.length === 0) {
+    log('');
+    log('Nothing to repair — no failing check carries a recovery command.');
+    return;
+  }
+  const interactive = deps.interactive ?? Boolean(process.stdin.isTTY);
+  const assumeYes = options?.yes === true;
+  log('');
+  log(`--repair: ${plan.length} repair(s) available.`);
+
+  let rl;
+  const prompt =
+    deps.prompt ??
+    (async (q) => {
+      if (!rl) {
+        const { createInterface } = await import('node:readline/promises');
+        rl = createInterface({ input: process.stdin, output: process.stdout });
+      }
+      return rl.question(q);
+    });
+  try {
+    const { counts, unfinished } = await runRepairs({
+      plan,
+      projectRoot,
+      // process.argv[1] is THIS cmk's entry — repairs run the version the user
+      // actually invoked, never whatever `cmk` happens to be on PATH.
+      cliEntry: deps.cliEntry ?? process.argv[1],
+      interactive,
+      assumeYes,
+      prompt,
+      ...(deps.spawn ? { spawn: deps.spawn } : {}),
+      log,
+    });
+    log('');
+    log(
+      `Repairs: ${counts.fixed} applied · ${counts.failed} failed · ${counts.declined} declined · ${counts['not-run']} left for you.`,
+    );
+    // Deliberately does NOT claim the checks now pass. The checks were run
+    // BEFORE the repairs; saying "fixed" about a state nobody re-measured is
+    // the same false-green this task exists to remove.
+    log('Re-run `cmk doctor` to confirm what actually changed.');
+    // M7: `--repair` asked for something. If a repair failed, or one was
+    // withheld only because nobody could consent, the run did not finish what
+    // it was asked to do — and a script must be able to see that even when
+    // every underlying check was merely advisory (see runRepairs for the full
+    // policy). Never LOWERS an exit code doctor already set.
+    if (unfinished > 0) process.exitCode = 1;
+  } finally {
+    try {
+      rl?.close();
+    } catch {
+      /* best-effort */
+    }
+  }
+}
+
+async function runDoctorCli(options, _command, deps = {}) {
   const projectRoot = resolvePath(process.cwd());
   // Task 270 (D-446): the SHARED resolver, not an inline `homedir()` join —
   // that hardcoded form ignores `MEMORY_KIT_USER_DIR`, so every user-tier check
@@ -2382,6 +2474,13 @@ async function runDoctorCli(/* options */) {
     const { lines, failCount } = formatDoctorReport(r.checks, r.duration_ms);
     for (const line of lines) console.log(line);
     if (failCount > 0) process.exitCode = 1;
+
+    // Task 47 — `--repair`. Strictly additive: without the flag this function
+    // behaves exactly as it did, which matches every doctor-style CLI surveyed
+    // (brew / flutter / npm all report and hand you a command).
+    if (options?.repair === true) {
+      await offerRepairs({ checks: r.checks, projectRoot, options, deps });
+    }
 
     // Task 144 (D-130): the memory-HEALTH section — content quality, not
     // plumbing. Informational only: read-only, never changes the exit code,
@@ -3910,6 +4009,18 @@ export const subcommands = [
     name: 'doctor',
     description: 'run health checks HC-1..HC-16; print structured report with self-repair commands',
     milestone: 37,
+    optionSpec: [
+      {
+        flags: '--repair',
+        description:
+          'after the report, offer to run each failed check\'s recovery command, one at a time [y/N]. Destructive or incomplete recoveries are always printed for you to run yourself, never executed.',
+      },
+      {
+        flags: '--yes',
+        description:
+          'with --repair: apply the offered repairs without prompting (for scripts and CI). Never covers the ones marked "run this yourself".',
+      },
+    ],
     action: runDoctorCli,
   },
   {

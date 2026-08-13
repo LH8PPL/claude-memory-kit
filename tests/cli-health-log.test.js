@@ -129,6 +129,48 @@ describe('the Warnable-shaped registry', () => {
     expect(SEVERITY_RANK['memory-off']).toBeGreaterThan(SEVERITY_RANK.degraded);
     expect(SEVERITY_RANK.degraded).toBeGreaterThan(SEVERITY_RANK.advisory);
   });
+
+  // Task 47.0 — the class D-439 handed over. Its two non-obvious properties are
+  // pinned explicitly rather than left to the generic shape loop above, because
+  // getting either wrong changes what the user is told.
+  // I3 — the two-subject defect. `register-crons` registers TWO jobs and writes
+  // one entry per job, but the streak was computed per CLASS with `detail`
+  // ignored — so the weekly job's `ok` reset the daily job's `fail` inside a
+  // single command run, and the warning the whole sub-task exists to raise
+  // never appeared. The fix is a DECLARED per-class property rather than a
+  // change to how every class streaks: single-subject classes must keep their
+  // contract exactly (extract-failing's `haiku_timeout` and `spawn-enoent`
+  // details are reasons for the SAME failure and must still reset each other).
+  it('declares cron-settings-unapplied as PER-SUBJECT; every single-subject class does not', () => {
+    expect(HEALTH_REGISTRY[HEALTH_CODES.CRON_SETTINGS_UNAPPLIED].perSubject).toBe(true);
+    for (const [code, w] of Object.entries(HEALTH_REGISTRY)) {
+      if (code === HEALTH_CODES.CRON_SETTINGS_UNAPPLIED) continue;
+      expect(w.perSubject, `${code} must not silently become per-subject`).toBeFalsy();
+    }
+  });
+
+  it('registers cron-settings-unapplied as a DETERMINISTIC, one-strike, advisory class', () => {
+    const w = HEALTH_REGISTRY[HEALTH_CODES.CRON_SETTINGS_UNAPPLIED];
+    expect(w).toBeTruthy();
+    // Deterministic: a settings call that did not apply does not un-fail itself.
+    // Nothing re-runs it; the flags stay wrong until someone re-registers. So
+    // one strike, not two — waiting for a second is waiting for a second manual
+    // registration that may never come.
+    expect(w.deterministic).toBe(true);
+    expect(w.strikeThreshold).toBe(1);
+    // ADVISORY, not degraded: cron is optional by design and the lazy roll is
+    // the floor (§8.2.1), so nothing is broken — the nightly OPTIMIZATION is.
+    // Claiming a worse severity would train the user to discount the whisper.
+    expect(w.severity).toBe('advisory');
+    // The repair is a real, idempotent next step — and it is NOT `cmk doctor`,
+    // so HC-14 will actually print it (see hc14's don't-echo-the-command-you-
+    // just-ran rule).
+    expect(w.primaryAction).toBe('cmk register-crons');
+    // `confirm`, not `silent`: re-registering rewrites HOST scheduler state,
+    // which is the user's, not the kit's (ADR-0018 propose-and-approve).
+    expect(w.fixClass).toBe('confirm');
+    expect(w.dependsOn).toEqual([]);
+  });
 });
 
 // --- Door 2 + Door 5: the append -------------------------------------------
@@ -403,6 +445,96 @@ describe('computeActiveWarnings — streak semantics', () => {
     const oldest = entry(HEALTH_CODES.EXTRACT_FAILING, 'fail', 3000);
     const w = computeActiveWarnings([oldest, entry(HEALTH_CODES.EXTRACT_FAILING, 'fail', 1000)], { now: NOW });
     expect(w[0].brokenSince).toBe(oldest.ts);
+  });
+});
+
+// I3 — a class with more than one SUBJECT. `register-crons` registers two jobs
+// and records one outcome per job, so a single command run appends two entries
+// whose `detail` differs. Streaking those together makes one job's success
+// erase the other job's failure.
+describe('computeActiveWarnings — per-subject streaks (I3)', () => {
+  const CRON = HEALTH_CODES.CRON_SETTINGS_UNAPPLIED;
+
+  it("THE REPRO: daily fails and weekly succeeds in one run — the daily failure still warns", () => {
+    // Exactly the sequence `cmk register-crons` writes when the settings call
+    // fails for the daily job and lands for the weekly one. Before the fix the
+    // weekly `ok` reset the class streak and this returned [].
+    const w = computeActiveWarnings(
+      [
+        entry(CRON, 'fail', 2000, { detail: 'cmk-daily-distill' }),
+        entry(CRON, 'ok', 1000, { detail: 'cmk-weekly-curate' }),
+      ],
+      { now: NOW },
+    );
+    expect(w.map((x) => x.code)).toEqual([CRON]);
+    // And it must name WHICH job — "your scheduled jobs are misconfigured" sends
+    // the user to look at both.
+    expect(w[0].subjects).toEqual(['cmk-daily-distill']);
+  });
+
+  it('both jobs healthy → no warning', () => {
+    const w = computeActiveWarnings(
+      [entry(CRON, 'ok', 2000, { detail: 'cmk-daily-distill' }), entry(CRON, 'ok', 1000, { detail: 'cmk-weekly-curate' })],
+      { now: NOW },
+    );
+    expect(w).toEqual([]);
+  });
+
+  it('both jobs failing → ONE warning naming both (one root cause, one whisper)', () => {
+    const w = computeActiveWarnings(
+      [entry(CRON, 'fail', 2000, { detail: 'cmk-daily-distill' }), entry(CRON, 'fail', 1000, { detail: 'cmk-weekly-curate' })],
+      { now: NOW },
+    );
+    expect(w).toHaveLength(1);
+    expect(w[0].subjects.sort()).toEqual(['cmk-daily-distill', 'cmk-weekly-curate']);
+  });
+
+  it("a later successful run of the SAME job clears it — self-clean survives the split", () => {
+    const w = computeActiveWarnings(
+      [
+        entry(CRON, 'fail', 3000, { detail: 'cmk-daily-distill' }),
+        entry(CRON, 'ok', 2000, { detail: 'cmk-daily-distill' }),
+        entry(CRON, 'ok', 1000, { detail: 'cmk-weekly-curate' }),
+      ],
+      { now: NOW },
+    );
+    expect(w).toEqual([]);
+  });
+
+  it('NON-REGRESSION: a single-subject class still streaks across differing details', () => {
+    // extract-failing's details are REASONS for one failure (`haiku_timeout`,
+    // `spawn-enoent`), not subjects. Two fails with different reasons are still
+    // two strikes on one thing, and an `ok` with any reason still clears it.
+    // This is the contract the fix must not disturb.
+    expect(
+      computeActiveWarnings(
+        [
+          entry(HEALTH_CODES.EXTRACT_FAILING, 'fail', 3000, { detail: 'haiku_timeout' }),
+          entry(HEALTH_CODES.EXTRACT_FAILING, 'fail', 2000, { detail: 'spawn-enoent' }),
+        ],
+        { now: NOW },
+      ).map((x) => x.code),
+    ).toEqual([HEALTH_CODES.EXTRACT_FAILING]);
+
+    expect(
+      computeActiveWarnings(
+        [
+          entry(HEALTH_CODES.EXTRACT_FAILING, 'fail', 3000, { detail: 'haiku_timeout' }),
+          entry(HEALTH_CODES.EXTRACT_FAILING, 'fail', 2000, { detail: 'spawn-enoent' }),
+          entry(HEALTH_CODES.EXTRACT_FAILING, 'ok', 1000, { detail: 'whatever' }),
+        ],
+        { now: NOW },
+      ),
+    ).toEqual([]);
+
+    // And a single-subject warning carries no `subjects` field at all.
+    const w = computeActiveWarnings([entry(HEALTH_CODES.AGENT_CLI_MISSING, 'fail', 1000, { detail: 'x' })], { now: NOW });
+    expect(w[0]).not.toHaveProperty('subjects');
+  });
+
+  it('an entry with NO detail still streaks — a per-subject class with an unlabelled write is not lost', () => {
+    const w = computeActiveWarnings([entry(CRON, 'fail', 1000)], { now: NOW });
+    expect(w.map((x) => x.code)).toEqual([CRON]);
   });
 });
 

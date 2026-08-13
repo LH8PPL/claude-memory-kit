@@ -51,6 +51,11 @@ import { resolveTierRoot, resolveFactDir } from './tier-paths.mjs';
 import { parseObservationsFromFactFile } from './index-rebuild.mjs';
 import { detectStaleLocks } from './lock-discipline.mjs';
 import { cronSentinelPath } from './lazy-compress.mjs';
+// Task 47 (D-354): HC-5 asks the HOST what is registered instead of reading
+// back the kit's own sentinel. CRON_ENTRY_NAME / WEEKLY_ENTRY_NAME come from
+// register-crons so the check can never look for a name the writer stopped using.
+import { CRON_ENTRY_NAME, WEEKLY_ENTRY_NAME } from './register-crons.mjs';
+import { readRegisteredJob } from './scheduler-state.mjs';
 import { isCompactionNeeded } from './compaction-state.mjs';
 import { getNativeAutoMemoryState } from './native-memory.mjs';
 import { checkKitBinding, checkEmbedderBinding } from './native-binding.mjs';
@@ -524,24 +529,134 @@ function hc4IndexConsistency({ projectRoot }) {
 }
 
 // --- HC-5: Cron jobs registered with host scheduler -------------------
-function hc5CronRegistered({ projectRoot }) {
-  if (existsSync(cronSentinelPath(projectRoot))) {
+//
+// Task 47 (D-354) turned this from a SENTINEL check into a REGISTRATION check.
+//
+// The bug that forced it: the v0.5.4 package rename left the Windows scheduled
+// task pointing at an absolute path under the dead package name. The nightly
+// distill failed silently for four nights. HC-10 — which watches OUTCOMES —
+// caught it. HC-5 reported PASS the whole time, because all it ever read was a
+// file the kit itself had written to say "we registered something once." That
+// is D-298's heartbeat-not-outcome false green, one check over.
+//
+// So the sentinel now decides only whether cron is IN USE. Once it is, the
+// question is put to the host: does the entry still exist, does the command it
+// runs still exist, and (win32) did the §8.6.5 settings actually apply. One
+// read answers all three — see scheduler-state.mjs.
+//
+// THE THREE SEVERITIES ARE DELIBERATE and they differ:
+//   • no sentinel                → SKIP. Cron is optional; the lazy-on-read
+//     fallback compresses at SessionStart. Flagging an optional,
+//     working-by-fallback feature as broken made healthy installs read as sick.
+//   • target missing / no entry  → FAIL. The job CANNOT run. This is D-354.
+//   • stale settings (win32)     → WARN. The job runs, badly. Cron is an
+//     optimization and the lazy roll is the floor, so this must not put a
+//     non-zero exit code on an otherwise healthy project — the same posture
+//     HC-13/HC-14 take, and the same `advisory` severity the identical
+//     condition carries in the health registry.
+//   • unreadable                 → SKIP, saying so. An unrun check must never
+//     read as verified (the AOEP negative-invariant HC-12 follows).
+const HC5_JOBS = [CRON_ENTRY_NAME, WEEKLY_ENTRY_NAME];
+const HC5_NAME = 'Cron jobs registered with host scheduler';
+
+function hc5CronRegistered({ projectRoot, schedulerProbe }) {
+  if (!existsSync(cronSentinelPath(projectRoot))) {
     return {
       id: 'HC-5',
-      name: 'Cron jobs registered with host scheduler',
-      status: 'pass',
-      message: 'cron-registered sentinel present',
+      name: HC5_NAME,
+      status: 'skip',
+      message: 'cron not registered (optional) — using the lazy-on-read fallback (compresses at SessionStart). Run `cmk register-crons` for scheduled background compression.',
     };
   }
-  // Cron is OPTIONAL by design (README + design §… the lazy-on-read fallback
-  // compresses at SessionStart without any scheduler). Absence is therefore a
-  // SKIP, not a FAIL — flagging an optional, working-by-fallback feature as a
-  // failure made a healthy fresh install read as broken.
+  const probe = schedulerProbe ?? readRegisteredJob;
+  const findings = [];
+  for (const entryName of HC5_JOBS) {
+    let r;
+    try {
+      r = probe({ entryName });
+    } catch (err) {
+      // A probe must never take doctor down, and its failure must never read as
+      // health. "Could not tell" is its own answer.
+      r = { verdict: 'unreadable', problems: [], detail: `probe error: ${err?.message ?? err}` };
+    }
+    findings.push({ entryName, ...r });
+  }
+
+  const broken = findings.filter((f) => f.verdict === 'target-missing' || f.verdict === 'not-registered');
+  if (broken.length > 0) {
+    const detail = broken
+      .map((f) =>
+        f.verdict === 'target-missing'
+          ? `${f.entryName} → its registered command is gone (${f.targetPath})`
+          : `${f.entryName} → the host scheduler has no such entry (${f.detail})`,
+      )
+      .join('; ');
+    return {
+      id: 'HC-5',
+      name: HC5_NAME,
+      status: 'fail',
+      message:
+        `${detail}. A scheduled job that points at a path which no longer exists fails silently every night — ` +
+        'the usual cause is a package rename or a global reinstall that moved the kit, since registrations use ' +
+        'absolute paths on purpose (D-83). `cmk register-crons` re-registers both jobs at their current paths; ' +
+        'memory keeps self-healing each session via the lazy roll meanwhile, so nothing is lost.',
+      recoveryCommand: 'cmk register-crons',
+    };
+  }
+
+  const stale = findings.filter((f) => f.verdict === 'settings-stale');
+  if (stale.length > 0) {
+    const flags = [...new Set(stale.flatMap((f) => (f.problems ?? []).map((p) => p.setting)))];
+    return {
+      id: 'HC-5',
+      name: HC5_NAME,
+      status: 'warn',
+      message:
+        `${stale.map((f) => f.entryName).join(', ')} registered with the pre-v0.6.6 Task Scheduler posture ` +
+        `(${flags.join(', ')}) — Windows will refuse to start these jobs on battery and may kill them when you ` +
+        'return to the keyboard (§8.6.5). Nothing is lost: the lazy roll still compresses every session. ' +
+        '`cmk register-crons` is idempotent and rewrites the flags.',
+      recoveryCommand: 'cmk register-crons',
+    };
+  }
+
+  // M8 — the posture could not be read, so it must not be reported as verified.
+  // WARN rather than SKIP: the registration itself WAS checked and is fine, so
+  // skipping the whole check would understate what is known; and WARN rather
+  // than FAIL because nothing is known to be broken. The message says plainly
+  // which half was not verified.
+  const unknownSettings = findings.filter((f) => f.verdict === 'settings-unknown');
+  if (unknownSettings.length > 0) {
+    return {
+      id: 'HC-5',
+      name: HC5_NAME,
+      status: 'warn',
+      message:
+        `${unknownSettings.map((f) => f.entryName).join(', ')} is registered and its command exists, but the task ` +
+        'definition carried no readable settings block — so the scheduler posture that decides whether Windows will ' +
+        'actually run it (§8.6.5) could NOT be verified. `cmk register-crons` is idempotent and rewrites those ' +
+        'settings, which is the cheapest way to know.',
+      recoveryCommand: 'cmk register-crons',
+    };
+  }
+
+  const unreadable = findings.filter((f) => f.verdict === 'unreadable');
+  if (unreadable.length > 0) {
+    return {
+      id: 'HC-5',
+      name: HC5_NAME,
+      status: 'skip',
+      message:
+        `cron is registered, but the host scheduler could not be read, so the registration was NOT verified: ` +
+        `${unreadable.map((f) => `${f.entryName} (${f.detail})`).join('; ')}.`,
+    };
+  }
+
   return {
     id: 'HC-5',
-    name: 'Cron jobs registered with host scheduler',
-    status: 'skip',
-    message: 'cron not registered (optional) — using the lazy-on-read fallback (compresses at SessionStart). Run `cmk register-crons` for scheduled background compression.',
+    name: HC5_NAME,
+    status: 'pass',
+    message: `both scheduled jobs are registered and their targets exist (${findings.map((f) => f.targetPath).filter(Boolean).join(', ')})`,
   };
 }
 
@@ -1037,7 +1152,15 @@ function hc14HealthWarnings({ projectRoot, now }) {
   }
   // Codes, not prose: the code is the key the troubleshooting skill's repair
   // book is sectioned by, so naming it is what makes the report actionable.
-  const codes = warnings.map((w) => `${w.code} (${w.severity}, ${w.strikes}x)`).join('; ');
+  // A per-subject class names WHICH subject is affected (I3). "your scheduled
+  // jobs are misconfigured" sends the user to inspect both; "cmk-daily-distill"
+  // tells them where to look.
+  const codes = warnings
+    .map((w) => {
+      const subjects = w.subjects?.length ? `: ${w.subjects.join(', ')}` : '';
+      return `${w.code}${subjects} (${w.severity}, ${w.strikes}x)`;
+    })
+    .join('; ');
   // A repair command is offered only when it is not the command the user just
   // ran. Most codes' primaryAction is `cmk doctor` — correct in the WHISPER,
   // where the model has not run doctor yet, and circular HERE, where this line
@@ -1314,6 +1437,7 @@ export async function runDoctor({
   awsDir, // injectable: sandboxes the HC-1 Kiro CLI-agent (~/.aws) probe in tests
   registryFetcher, // injectable: Task 245 stale-global check (tests avoid a real registry GET)
   vectorSample, // injectable: HC-15 sample size (tests audit the whole fixture)
+  schedulerProbe, // injectable: Task 47 HC-5 host-scheduler read (tests never touch a real scheduler)
 } = {}) {
   const t0 = Date.now();
   if (!projectRoot) {
@@ -1332,7 +1456,7 @@ export async function runDoctor({
   const c2 = hc2DistillFreshness({ projectRoot, now: ts });
   const c3 = hc3Transcripts({ projectRoot, now: ts });
   const c4 = hc4IndexConsistency({ projectRoot });
-  const c5 = hc5CronRegistered({ projectRoot });
+  const c5 = hc5CronRegistered({ projectRoot, schedulerProbe });
   const c6 = hc6NativeAutoMemory({ projectRoot, now: ts });
   const c7 = hc7StaleLocks({ projectRoot, userDir: resolvedUserDir });
   const c8 = await hc8NativeBindings({ projectRoot, kitBindingProbe, embedderBindingProbe });

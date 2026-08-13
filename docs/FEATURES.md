@@ -96,6 +96,20 @@ Claude can then load a **troubleshooting skill** that holds the repair steps per
 
 It's quiet by design: a one-off hiccup that recovers on its own never says a word, evidence older than a week is ignored, and the moment the next run succeeds the warning disappears on its own — nothing to dismiss, nothing to reset. If capture is fully down you also get a visible heads-up, because that's the case where silence costs you sessions. `cmk doctor` reports the same thing when you go looking (HC-14).
 
+### Fixes what it finds — one repair at a time, and only if you say yes
+
+`cmk doctor` on its own has always printed a repair command next to each failure and left the running to you. That's what `brew doctor`, `flutter doctor` and `npm doctor` all do, and it stays the default. **`cmk doctor --repair`** adds the obvious next step: it walks the failures afterwards and offers each fix — showing the problem, the exact command, and a `[y/N]` whose default is **No**.
+
+It reports what happened honestly and separately — applied, failed, declined, left for you — and it never claims a check now passes, because the checks ran *before* the repairs. It tells you to re-run `cmk doctor` to see what actually changed.
+
+Three things it will not do:
+
+- **It won't delete anything for you.** A fix that removes a file — a stale lock, say — is always printed for you to run yourself, with the reason why. So is one that still contains a `<placeholder>` only you can fill in. Neither is covered by `--yes`.
+- **It won't take silence for a yes.** Piped, or in CI, there's no terminal to ask on: it prints the commands and tells you `--yes` would apply them. It doesn't assume, and it doesn't quietly exit as though everything were fine.
+- **It won't install anything without being asked.** Where a fix means installing software on your machine, that's a prompt of its own — the kit never runs your package manager behind your back. (`--yes` counts as asking, in advance, for that one run.)
+
+Every offer, answer and result is written to `context/.locks/doctor-repair.log`, including the ones nobody ran.
+
 ### Rescues memory an older version stranded
 
 Upgrading isn't only forward-looking. If a past version left an orphaned `context/` folder in a subdirectory (a real bug, fixed in v0.6.2 — automatic capture forked a second, unread copy when the agent ran from a subfolder), the next `cmk install` finds it and brings those facts back into your project's memory **with their original ids and dates intact**, skipping anything already there and never resurrecting something you forgot. The old folder is left untouched with a delete command printed for your shell — deleting memory is always your call, never the kit's.

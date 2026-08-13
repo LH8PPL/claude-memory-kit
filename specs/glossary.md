@@ -610,7 +610,7 @@ Cross-refs: [[Failure code]], [[Health whisper]], [[Audit log]]. Spec: design §
 
 ### Failure code
 
-The stable identifier for one class of kit failure — `agent-cli-missing`, `extract-failing`, `inject-failing`, `precompact-failing`, `index-drift`, `mcp-tool-failing`. It is the key that ties the three surfaces together: the instrumented op writes it to the [[Health log]], the [[Health whisper]] names it, HC-14 reports it, and the `troubleshooting` skill's repair book is sectioned by it. A code is **active** only when its evidence clears the [[Strike threshold]] and is under 7 days old.
+The stable identifier for one class of kit failure — `agent-cli-missing`, `extract-failing`, `inject-failing`, `precompact-failing`, `index-drift`, `mcp-tool-failing`, `cron-settings-unapplied`. It is the key that ties the three surfaces together: the instrumented op writes it to the [[Health log]], the [[Health whisper]] names it, HC-14 reports it, and the `troubleshooting` skill's repair book is sectioned by it. A code is **active** only when its evidence clears the [[Strike threshold]] and is under 7 days old.
 
 Cross-refs: [[Health log]], [[Warnable registry]], [[Health whisper]]. Spec: design §23.2.
 
