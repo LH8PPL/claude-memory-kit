@@ -289,7 +289,7 @@ Numbers consistent with Anthropic's own page across all four sources.
 ## Windows-specific gotchas (documented in install guides)
 
 - **NTFS forbids `<` and `>` in filenames** — surfaces when cloning `milvus-io/web-content` (Java SDK uses `R<T>.md`). Fix: sparse-checkout. Documented in `template/context/SETUP.md` reference docs section.
-- **Task Scheduler resolves `bash` to WSL launcher, not Git Bash** — fix: `scripts/register-crons.py` rewrites `bash ...` to `"C:\Program Files\Git\usr\bin\bash.exe" ...` explicitly.
+- **`bash` on Windows resolves to the WSL launcher (`C:\Windows\System32\bash.exe`), not Git Bash** — and it fails as an exit-1, not as a missing command, so a caller that only checks for spawn errors sees a normal failure. The gotcha is live and bit us again in the v0.6.6 sweep (the `CMK_STRESS_LOG=1` tee). The standing fix is to **not depend on `bash` at all**: `cmk register-crons` ([`register-crons.mjs`](../packages/cli/src/register-crons.mjs)) emits `node <abs path>` directly, and `scripts/stress-test.mjs` tees in Node. _(This entry previously named a `scripts/register-crons.py` that rewrote `bash …` to an explicit Git-Bash path; that script was retired in the 2026-05-28 Python → Node pivot — design §8.6.3 — and the rewrite it described no longer exists.)_
 - **milvus-lite has no Windows wheels on PyPI** — fix: ship a Docker Compose stack for Milvus v2.6.16 in `milvus-deploy/`.
 
 ## Embedding model

@@ -580,7 +580,9 @@ Ship a `cmk` Node binary that proxies to the underlying scripts (`cmk search`, `
 
 ### OQ-7 — Scheduler backend: **RESOLVED → cron / schtasks only for v0.1**
 
-Windows: Task Scheduler via `schtasks`. macOS/Linux: `crontab`. User works on both Windows AND macOS/Linux, so both must work; both already do via `register-crons.py`.
+Windows: Task Scheduler via `schtasks`. macOS/Linux: `crontab`. User works on both Windows AND macOS/Linux, so both must work; both already do — via `cmk register-crons` ([`register-crons.mjs`](../packages/cli/src/register-crons.mjs)).
+
+_The mechanism line above read `register-crons.py` when this question was resolved 2026-05-21, and stayed that way after the register script pivoted Python → Node on 2026-05-28; corrected in the v0.6.6 sweep. The pivot itself — and the 4-point rationale for it — is preserved in [design §8.6.3](design.md) and `tasks-archive.md` 33.2, per the decision-trail rule. **The OQ-7 decision is unchanged**: only the name of the script that implements it was wrong._
 
 `launchd` (macOS-native) and `systemd timers` (Linux-server-native) are deferred to v0.2 as enhancements. Cron works fine for desktop/dev use.
 
