@@ -27,6 +27,8 @@ import {
   eachFactIn,
   eachLiveFact,
   listMarkdownFiles,
+  archiveReadPath,
+  archiveWritePath,
 } from './fact-store.mjs';
 import { appendAuditEntry, nowIso, REASON_CODES } from './audit-log.mjs';
 import { ERROR_CATEGORIES, errorResult, notFoundResult } from './result-shapes.mjs';
@@ -98,7 +100,9 @@ function resolveByQuery(query, { projectRoot, userDir }) {
 function moveFactToTombstone(match, { deletedAt, reason, deletedBy }) {
   const tombDir = join(match.factDir, 'archive', 'tombstones');
   mkdirSync(tombDir, { recursive: true });
-  const tombPath = join(tombDir, `${match.id}.md`);
+  // Task 281: the escaped spelling, so a case-pair of ids cannot collapse to
+  // one file on a case-insensitive filesystem and destroy the first tombstone.
+  const tombPath = archiveWritePath(tombDir, match.id);
   // Read + parse the original, inject deletion fields at the top of the
   // frontmatter object, write via the canonical formatter. No regex hacks.
   const { frontmatter, body } = parse(readFileSync(match.path, 'utf8'));
@@ -356,8 +360,10 @@ export function resolveFact({ id, projectRoot, userDir }) {
     }
   }
 
-  const tombPath = join(factDir, 'archive', 'tombstones', `${id}.md`);
-  if (existsSync(tombPath)) {
+  // Task 281: resolves the escaped spelling, falling back to a LEGACY raw-id
+  // file so corpora written before the fix stay readable with no migration.
+  const tombPath = archiveReadPath(join(factDir, 'archive', 'tombstones'), id);
+  if (tombPath) {
     const { frontmatter, body } = readFactAt(tombPath);
     return {
       state: 'tombstoned',
@@ -368,8 +374,8 @@ export function resolveFact({ id, projectRoot, userDir }) {
     };
   }
 
-  const supersededPath = join(factDir, 'archive', 'superseded', `${id}.md`);
-  if (existsSync(supersededPath)) {
+  const supersededPath = archiveReadPath(join(factDir, 'archive', 'superseded'), id);
+  if (supersededPath) {
     const { frontmatter, body } = readFactAt(supersededPath);
     return {
       state: 'superseded',

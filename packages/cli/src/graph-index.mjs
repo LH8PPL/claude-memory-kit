@@ -250,8 +250,11 @@ export function relatedSlugs(related) {
   return [];
 }
 
-// Superseded facts are MOVED to <factDir>/archive/superseded/<id>.md (they leave
-// the top-level walk), so the chain's backward pointers live only there. Read
+// Superseded facts are MOVED to <factDir>/archive/superseded/ under their
+// DERIVED archive name (fact-store's archiveFileName; = <id>.md unless the id
+// contains `a` or `A` — Task 281), so they leave the top-level walk and the
+// chain's backward pointers live only there. This walk reads ids from
+// frontmatter, never from the basename, so the spelling does not affect it. Read
 // each archived file's frontmatter for its id + superseded_by. Best-effort per
 // file: a malformed archive entry is skipped, never fatal to the rebuild.
 // Task 255: the WALK now comes from fact-store's `eachSupersededFact` (the
@@ -370,7 +373,8 @@ export function rebuildEdges(db, { projectRoot, userDir } = {}) {
   //      fact is superseded it is MOVED there (merge-facts / D-308), taking its
   //      superseded_by frontmatter out of the top-level walk. Without reading
   //      these the chain is unwalkable (the live successor carries no backward
-  //      pointer). Each archived file is <id>.md with id: + superseded_by:.
+  //      pointer). Each archived file carries id: + superseded_by: in its
+  //      frontmatter, which is what this reads — never the basename.
   for (const row of db
     .prepare('SELECT id AS src, superseded_by AS dst FROM observations WHERE superseded_by IS NOT NULL')
     .all()) {

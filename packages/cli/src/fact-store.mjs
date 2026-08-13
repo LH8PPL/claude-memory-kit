@@ -71,7 +71,7 @@
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { resolveTierRoot, resolveFactDir } from './tier-paths.mjs';
+import { resolveTierRoot, resolveFactDir, ID_PATTERN } from './tier-paths.mjs';
 import { parse } from './frontmatter.mjs';
 import { compareCodeUnits } from './audit-log.mjs';
 
@@ -197,6 +197,258 @@ export function* eachLiveFact(opts = {}) {
     if (fact.frontmatter.deleted_at) continue;
     yield fact;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* archive FILENAME derivation (Task 281 / D-451)                      */
+/* ------------------------------------------------------------------ */
+
+// THE BUG THIS CLOSES. The kit's base32 alphabet
+// (`2345679ABCDEFGHJKLMNPQRSTUVWXYZa`, tier-paths.mjs) drops the six visually
+// ambiguous characters `0 O 1 l I 8` — and to get back to 32 symbols it adds
+// lowercase `a`. That makes `a` the ONLY lowercase letter in the alphabet, and
+// `A`/`a` its ONLY case-pair. Archive files were named `<id>.md` verbatim, so on
+// a case-INSENSITIVE filesystem (Windows, macOS by default) the two valid,
+// distinct ids `P-A234567A` and `P-a234567A` resolved to the SAME path: the
+// second write silently destroyed the first.
+//
+// That is not cosmetic. `rootIdCensus` (memory-recovery) reads the tombstone
+// archive precisely so a stray-recovery pass never copies a deliberately
+// forgotten fact back into `memory/`. A destroyed tombstone therefore lets a
+// later recovery UNDO a `forget` — the durability product failing at exactly
+// the promise it is sold on.
+//
+// THE FORK, AND WHY THIS ARM. Two options were on the table: (a) drop `a` from
+// the alphabet, or (b) encode ARCHIVE filenames only. This is (b), for three
+// reasons in descending weight:
+//
+//   1. (a) DOES NOT FIX THE BUG. Dropping `a` stops FUTURE ids from containing
+//      it, but every id already minted with an `a` — ~22% of any existing
+//      corpus, 1-(31/32)^8 — stays on disk and stays exposed, forever. A
+//      durability fix that leaves deployed data broken is not a fix.
+//   2. (a) breaks the alphabet's power-of-two property. 32 symbols is exactly
+//      5 bits/char, which is what makes `base32(SHA-256(text))[:8]` a clean
+//      derivation (§3.3). 31 symbols would need rejection sampling or a biased
+//      modulo — i.e. changing how ids are DERIVED to fix how they are STORED.
+//   3. The collision is a property of the FILENAME layer, not the id layer. The
+//      two ids are distinct and correct; only the id→path mapping is lossy.
+//
+// PRIOR ART (checked against primary sources, 2026-08-13). The field splits on
+// exactly this line, and both arms are right for their own precondition:
+//   · git / rclone / Nix restrict the ALPHABET to a single case. git's
+//     `fill_loose_path()` (object-file.c) emits loose-object names from a
+//     hardcoded lowercase `"0123456789abcdef"` table, so two object ids can
+//     never differ only by case; rclone's docs say it picks base32 over base64
+//     precisely "so rclone can be used on case insensitive remotes". RFC 4648
+//     §3.4 puts the decision at the alphabet layer. But all three chose their
+//     alphabet at DESIGN time, before any data existed — the option (a) we no
+//     longer have. (git's own case-insensitivity machinery — `core.ignoreCase`,
+//     `core.protectHFS/NTFS` — is about WORKING-TREE paths, never the object
+//     store, which has no such hazard by construction.)
+//   · Mercurial's `.hg/store` ESCAPES instead, `FOO` → `_f_o_o`, because its
+//     names are already-existing user-supplied paths it cannot re-alphabet. Its
+//     CaseFolding wiki states our exact problem: "If a repository contains
+//     history for 'A' and then pulls a changeset containing 'a', case-
+//     insensitive file systems will see this as a collision."
+// We are in Mercurial's position (deployed names we must keep reading), not
+// git's (greenfield alphabet choice) — so we escape. Our requirement is in fact
+// WEAKER than hg's: we need determinism, collision-freedom under case folding,
+// and decodability, but not byte-exact round-tripping of arbitrary input.
+//
+// THE ENCODING — BOTH members of the case-pair are escaped:
+//
+//     'a' → '_a'        'A' → '_b'        every other character → itself
+//
+// `_` is not in the id alphabet, so the mapping is unambiguous, and the two
+// images are distinct from each other and from every plain character's image.
+//
+// WHY ESCAPING ONLY `a` WAS NOT ENOUGH (review finding I3 — the first cut of
+// this fix shipped that weaker map and it was reproduced broken). Escaping only
+// `a` leaves an `A`-containing id's derived name IDENTICAL to a raw id name —
+// `P-A234567A` → `P-A234567A.md` — which case-folds onto the LEGACY raw file of
+// the OTHER id, `P-a234567A.md`. On a legacy corpus that made `forget` overwrite
+// a different id's pre-existing tombstone, and made reads hand back the wrong
+// id's content: a never-forgotten fact reading as deleted. Escaping BOTH members
+// puts every case-pair-bearing name into a `_`-prefixed namespace that no raw
+// name can ever occupy.
+//
+// THE TWO PROPERTIES THIS BUYS, stated precisely (both swept in
+// tests/cli-archive-filenames.test.js with folding simulated in-process, so they
+// are verified on case-SENSITIVE CI too):
+//
+//   1. INJECTIVE UNDER FOLDING. The per-character folded images — `_a`, `_b`,
+//      `b`…`z`, and the digits — are pairwise distinct AND prefix-free (only the
+//      two escapes start with `_`, and neither is a prefix of the other), so the
+//      per-character code is uniquely decodable. Two distinct ids can therefore
+//      never produce one case-folded filename.
+//   2. DISJOINT FROM THE LEGACY NAMESPACE. Any id containing `a` or `A` yields a
+//      name containing `_`; a raw id name never contains `_`, and folding
+//      preserves `_`. So such a derived name can never fold onto ANY legacy raw
+//      name. An id containing neither `a` nor `A` keeps its raw name — safe,
+//      because folding collides only on the {A,a} pair, so no OTHER id can fold
+//      onto it either.
+//
+// It remains a NO-OP for the ~60% of ids containing neither `a` nor `A`, so most
+// archive files never change name.
+//
+// COLLISIONS ALREADY ON DISK. The properties above make the kit stop CREATING
+// folded collisions; they cannot undo one a pre-fix version already created. For
+// that, every resolution below VERIFIES the candidate file's own frontmatter id
+// before returning or deleting it (see `archiveVerifiedPaths`), so a folded
+// legacy file belonging to another id reads as not-found rather than as the
+// wrong fact — and is never unlinked by a purge aimed at its neighbour.
+//
+// NOT A SANITIZER. This maps `a` and `A`; every other byte passes through
+// untouched, including `.` `/` `\`. It neither adds nor removes path-traversal
+// safety, so the callers' existing `ID_PATTERN` gates (see read-core's
+// readTombstone) are still the defense and must NOT be relaxed on account of it.
+
+/** The escape byte. Deliberately outside the id alphabet. */
+const ARCHIVE_ESCAPE = '_';
+
+/** id character → its escaped image. Only the alphabet's case-pair is escaped. */
+const ARCHIVE_ESCAPES = [
+  ['a', `${ARCHIVE_ESCAPE}a`],
+  ['A', `${ARCHIVE_ESCAPE}b`],
+];
+
+/**
+ * The archive filename an id maps to — the ONE derivation for
+ * `archive/tombstones/` and `archive/superseded/`.
+ *
+ * @param {string} id
+ * @returns {string} basename including the `.md` suffix
+ */
+export function archiveFileName(id) {
+  let out = '';
+  for (const ch of String(id)) {
+    const esc = ARCHIVE_ESCAPES.find(([plain]) => plain === ch);
+    out += esc ? esc[1] : ch;
+  }
+  return `${out}.md`;
+}
+
+/**
+ * The inverse: the id an archive filename denotes, or `null` if the name is not
+ * an archive fact file (INDEX.md, a stray, a non-`.md` file).
+ *
+ * Accepts BOTH spellings on purpose — the escaped form this module now writes,
+ * and the LEGACY raw-id form already sitting in every corpus written before
+ * Task 281. Callers that recover ids from basenames (decisions-journal's
+ * tombstoned-id scan, deletion-propagation's frontmatter fallback) therefore
+ * keep working across the change with no migration.
+ *
+ * @param {string} filename
+ * @returns {string|null}
+ */
+export function archiveIdFromFileName(filename) {
+  const name = String(filename);
+  if (!name.endsWith('.md')) return null;
+  const stem = name.slice(0, -3);
+  // Single left-to-right scan: an escape is always TWO bytes (`_` + selector),
+  // so decoding cannot be confused by an escape image appearing inside another.
+  let decoded = '';
+  for (let i = 0; i < stem.length; i += 1) {
+    if (stem[i] !== ARCHIVE_ESCAPE) {
+      decoded += stem[i];
+      continue;
+    }
+    const esc = ARCHIVE_ESCAPES.find(([, image]) => image === stem.slice(i, i + 2));
+    if (!esc) return null; // a `_` that is not a known escape is not our name
+    decoded += esc[0];
+    i += 1;
+  }
+  // The ID_PATTERN gate is what makes this safe to interpolate into a path.
+  return ID_PATTERN.test(decoded) ? decoded : null;
+}
+
+/**
+ * Every spelling an archive file for `id` could legitimately have, newest
+ * convention first: the escaped name, then the legacy raw-id name. De-duplicated
+ * (they coincide for any id without an `a`).
+ *
+ * `cmk purge --hard` needs the whole list — its contract is "gone from every
+ * app-layer location", and a corpus mid-migration can hold either spelling.
+ *
+ * @param {string} dir  an archive dir (`.../archive/tombstones` | `.../superseded`)
+ * @param {string} id
+ * @returns {string[]}
+ */
+export function archiveCandidatePaths(dir, id) {
+  const escaped = join(dir, archiveFileName(id));
+  const legacy = join(dir, `${id}.md`);
+  return escaped === legacy ? [escaped] : [escaped, legacy];
+}
+
+/**
+ * The candidate paths that EXIST **and whose file actually carries `id`** in its
+ * own frontmatter — derived spelling first, then legacy.
+ *
+ * The verification is the load-bearing part, not a belt-and-braces extra. On a
+ * case-insensitive filesystem the LEGACY candidate for one id can resolve to the
+ * file belonging to its case-pair twin (a collision a pre-fix version wrote).
+ * Trusting `existsSync` alone therefore let two real bugs through: a read handed
+ * back the WRONG fact's content, and `cmk purge --hard` unlinked a fact it was
+ * never asked to touch — irreversibly, since purge leaves no tombstone.
+ *
+ * A mismatch is a real anomaly on disk, so it WARNS to stderr (never stdout —
+ * `cmk get` emits JSON there) rather than failing: the caller's own not-found
+ * path is the correct behaviour, and a hard error would make one pre-existing
+ * collision break every later read.
+ *
+ * @param {string} dir  an archive dir (`.../archive/tombstones` | `.../superseded`)
+ * @param {string} id
+ * @returns {string[]} existing, verified paths (possibly empty)
+ */
+export function archiveVerifiedPaths(dir, id) {
+  const out = [];
+  for (const path of archiveCandidatePaths(dir, id)) {
+    if (!existsSync(path)) continue;
+    let owner;
+    try {
+      owner = parse(readFileSync(path, 'utf8')).frontmatter?.id;
+    } catch {
+      continue; // unreadable/unparseable — not provably ours, so not ours
+    }
+    if (owner === id || !owner) {
+      // `!owner` — a malformed / frontmatter-less archive file. It cannot be
+      // PROVEN to belong to another fact, and read-core's documented contract is
+      // that a garbled tombstone still degrades gracefully (raw body, null
+      // provenance) because a human recovering is exactly the case where
+      // something already went wrong. Only a file that positively claims a
+      // DIFFERENT id is rejected below.
+      out.push(path);
+    } else if (owner !== id) {
+      process.stderr.write(
+        `cmk: archive filename collision — ${path} resolves for ${id} but the file carries ${owner}; ` +
+          `treating ${id} as absent here (a pre-Task-281 case-folded archive name)\n`,
+      );
+    }
+  }
+  return out;
+}
+
+/**
+ * Where to READ an archive file for `id` from: the escaped name if it exists,
+ * else a legacy raw-id file, else `null`.
+ *
+ * Reading falls back rather than migrating. A rename would be a write on a read
+ * path (`cmk get` must stay read-only), and renaming INTO a case-folding
+ * filesystem is the very hazard being fixed — design §6.5's "archive copies are
+ * never renamed" still holds.
+ *
+ * @returns {string|null}
+ */
+export function archiveReadPath(dir, id) {
+  return archiveVerifiedPaths(dir, id)[0] ?? null;
+}
+
+/**
+ * Where to WRITE a new archive file for `id`. Always the escaped spelling —
+ * the canonical form going forward.
+ */
+export function archiveWritePath(dir, id) {
+  return join(dir, archiveFileName(id));
 }
 
 /** Where a superseded fact is MOVED to, relative to its tier's fact dir. */

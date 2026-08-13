@@ -42,6 +42,7 @@ import { parse as parseFrontmatter } from './frontmatter.mjs';
 // flexible whitespace (needles are whitespace-normalized; the raw line isn't).
 import { escapeRegExp } from './sanitize.mjs';
 import { openIndexDb } from './index-db.mjs';
+import { archiveIdFromFileName } from './fact-store.mjs';
 
 const SESSIONS_REL = ['context', 'sessions'];
 const TOMBSTONES_REL = ['context', 'memory', 'archive', 'tombstones'];
@@ -78,7 +79,9 @@ function readTombstones({ projectRoot, maxFacts }) {
     try {
       const raw = readFileSync(join(dir, name), 'utf8');
       const { frontmatter, body } = parseFrontmatter(raw);
-      const id = frontmatter?.id ?? name.replace(/\.md$/, '');
+      // Task 281: the basename fallback decodes through the shared helper, so
+      // an escaped name (`_a`) yields the real id rather than a mangled one.
+      const id = frontmatter?.id ?? archiveIdFromFileName(name) ?? name.replace(/\.md$/, '');
       const needles = [];
       const title = typeof frontmatter?.title === 'string' ? frontmatter.title : '';
       // strip redact markers before measuring: a marker-only title/line is

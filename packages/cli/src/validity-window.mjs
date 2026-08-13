@@ -23,7 +23,7 @@ import { join } from 'node:path';
 import { ID_PATTERN } from './tier-paths.mjs';
 import { parse, format } from './frontmatter.mjs';
 import { appendAuditEntry, nowIso, REASON_CODES, asIsoString } from './audit-log.mjs';
-import { eachLiveFact } from './fact-store.mjs';
+import { eachLiveFact, archiveWritePath } from './fact-store.mjs';
 import { ERROR_CATEGORIES, errorResult, notFoundResult } from './result-shapes.mjs';
 import { resolveFact } from './forget.mjs';
 import { reindex } from './reindex.mjs';
@@ -102,7 +102,8 @@ export function resolveTemporalSupersede({
   // fields). Original key order preserved; the window fields append.
   const supersededDir = join(older.factDir, 'archive', 'superseded');
   mkdirSync(supersededDir, { recursive: true });
-  const archivePath = join(supersededDir, `${older.id}.md`);
+  // Task 281: escaped spelling — see fact-store's archive-filename note.
+  const archivePath = archiveWritePath(supersededDir, older.id);
   const updated = { ...(older.frontmatter ?? {}) };
   updated.ended_at = endedAt;
   updated.status = 'completed';

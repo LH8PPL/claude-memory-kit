@@ -32,6 +32,7 @@ import {
   validatePath,
 } from '../packages/cli/src/mcp-server.mjs';
 import { openIndexDb } from '../packages/cli/src/index-db.mjs';
+import { archiveFileName } from '../packages/cli/src/fact-store.mjs';
 import { install } from '../packages/cli/src/install.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -675,7 +676,9 @@ describe('Task 31 — MCP server', () => {
       // the tombstone archive file records the custom deleter, NOT the default —
       // discriminating (skill-review #1): if deleted_by were ignored, the frontmatter
       // would carry the `user-explicit` default instead of `ci-bot`.
-      const tombstone = join(projectRoot, 'context', 'memory', 'archive', 'tombstones', `${id}.md`);
+      // Task 281: archive filenames are DERIVED (lowercase `a` escapes to `_a`),
+      // so the name comes from the one shared helper, not a raw interpolation.
+      const tombstone = join(projectRoot, 'context', 'memory', 'archive', 'tombstones', archiveFileName(id));
       expect(existsSync(tombstone)).toBe(true);
       const body = readFileSync(tombstone, 'utf8');
       expect(body).toMatch(/deleted_by:\s*ci-bot/);
