@@ -252,9 +252,9 @@ export function relatedSlugs(related) {
 
 // Superseded facts are MOVED to <factDir>/archive/superseded/ under their
 // DERIVED archive name (fact-store's archiveFileName; = <id>.md unless the id
-// contains a lowercase `a` — Task 281). This walk reads ids from frontmatter,
-// so the spelling does not matter to it. (they leave
-// the top-level walk), so the chain's backward pointers live only there. Read
+// contains `a` or `A` — Task 281), so they leave the top-level walk and the
+// chain's backward pointers live only there. This walk reads ids from
+// frontmatter, never from the basename, so the spelling does not affect it. Read
 // each archived file's frontmatter for its id + superseded_by. Best-effort per
 // file: a malformed archive entry is skipped, never fatal to the rebuild.
 // Task 255: the WALK now comes from fact-store's `eachSupersededFact` (the

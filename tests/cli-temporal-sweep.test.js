@@ -19,6 +19,7 @@ import { mkdtempSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { writeFact } from '../packages/cli/src/write-fact.mjs';
+import { archiveFileName } from '../packages/cli/src/fact-store.mjs';
 import { temporalSweep, buildCandidateQuery, buildSemanticCandidateFinder } from '../packages/cli/src/temporal-sweep.mjs';
 import { MockHaikuBackend } from '../packages/cli/src/compressor.mjs';
 import { parse as parseFm } from '../packages/cli/src/frontmatter.mjs';
@@ -114,7 +115,9 @@ describe('Task 66.4 — temporalSweep() boundary', () => {
     // Door 2 — the older fact is archived with the window closed at the
     // NEWER fact's created_at (event-time).
     expect(existsSync(older.path)).toBe(false);
-    const archived = join(projectRoot, 'context', 'memory', 'archive', 'superseded', `${older.id}.md`);
+    // Task 281: archive names are DERIVED (`a`→`_a`, `A`→`_b`), so the expected
+    // path comes from the one shared helper rather than a raw interpolation.
+    const archived = join(projectRoot, 'context', 'memory', 'archive', 'superseded', archiveFileName(older.id));
     const { frontmatter } = parseFm(readFileSync(archived, 'utf8'));
     expect(frontmatter.ended_at).toBe('2026-07-01T18:00:00Z');
     expect(frontmatter.superseded_by).toBe(newer.id);

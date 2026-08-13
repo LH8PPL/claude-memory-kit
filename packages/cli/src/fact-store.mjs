@@ -255,21 +255,62 @@ export function* eachLiveFact(opts = {}) {
 // WEAKER than hg's: we need determinism, collision-freedom under case folding,
 // and decodability, but not byte-exact round-tripping of arbitrary input.
 //
-// THE ENCODING. Escape the single lowercase letter: `a` → `_a`. `_` is not in
-// the id alphabet, so the mapping is unambiguous. Under case folding the
-// per-character images (`_a` for `a`, `a` for `A`, `b` for `B`, …) are all
-// distinct AND prefix-free — only `_a` starts with `_`, and nothing else
-// contains one — so the map is injective: two distinct ids can never produce
-// one case-folded name. It is also a NO-OP for the ~78% of ids containing no
-// `a`, so the overwhelming majority of archive files never change name.
+// THE ENCODING — BOTH members of the case-pair are escaped:
 //
-// NOT A SANITIZER. This maps `a`; every other byte passes through untouched,
-// including `.` `/` `\`. It neither adds nor removes path-traversal safety, so
-// the callers' existing `ID_PATTERN` gates (see read-core's readTombstone) are
-// still the defense and must NOT be relaxed on account of this helper.
+//     'a' → '_a'        'A' → '_b'        every other character → itself
+//
+// `_` is not in the id alphabet, so the mapping is unambiguous, and the two
+// images are distinct from each other and from every plain character's image.
+//
+// WHY ESCAPING ONLY `a` WAS NOT ENOUGH (review finding I3 — the first cut of
+// this fix shipped that weaker map and it was reproduced broken). Escaping only
+// `a` leaves an `A`-containing id's derived name IDENTICAL to a raw id name —
+// `P-A234567A` → `P-A234567A.md` — which case-folds onto the LEGACY raw file of
+// the OTHER id, `P-a234567A.md`. On a legacy corpus that made `forget` overwrite
+// a different id's pre-existing tombstone, and made reads hand back the wrong
+// id's content: a never-forgotten fact reading as deleted. Escaping BOTH members
+// puts every case-pair-bearing name into a `_`-prefixed namespace that no raw
+// name can ever occupy.
+//
+// THE TWO PROPERTIES THIS BUYS, stated precisely (both swept in
+// tests/cli-archive-filenames.test.js with folding simulated in-process, so they
+// are verified on case-SENSITIVE CI too):
+//
+//   1. INJECTIVE UNDER FOLDING. The per-character folded images — `_a`, `_b`,
+//      `b`…`z`, and the digits — are pairwise distinct AND prefix-free (only the
+//      two escapes start with `_`, and neither is a prefix of the other), so the
+//      per-character code is uniquely decodable. Two distinct ids can therefore
+//      never produce one case-folded filename.
+//   2. DISJOINT FROM THE LEGACY NAMESPACE. Any id containing `a` or `A` yields a
+//      name containing `_`; a raw id name never contains `_`, and folding
+//      preserves `_`. So such a derived name can never fold onto ANY legacy raw
+//      name. An id containing neither `a` nor `A` keeps its raw name — safe,
+//      because folding collides only on the {A,a} pair, so no OTHER id can fold
+//      onto it either.
+//
+// It remains a NO-OP for the ~60% of ids containing neither `a` nor `A`, so most
+// archive files never change name.
+//
+// COLLISIONS ALREADY ON DISK. The properties above make the kit stop CREATING
+// folded collisions; they cannot undo one a pre-fix version already created. For
+// that, every resolution below VERIFIES the candidate file's own frontmatter id
+// before returning or deleting it (see `archiveVerifiedPaths`), so a folded
+// legacy file belonging to another id reads as not-found rather than as the
+// wrong fact — and is never unlinked by a purge aimed at its neighbour.
+//
+// NOT A SANITIZER. This maps `a` and `A`; every other byte passes through
+// untouched, including `.` `/` `\`. It neither adds nor removes path-traversal
+// safety, so the callers' existing `ID_PATTERN` gates (see read-core's
+// readTombstone) are still the defense and must NOT be relaxed on account of it.
 
 /** The escape byte. Deliberately outside the id alphabet. */
 const ARCHIVE_ESCAPE = '_';
+
+/** id character → its escaped image. Only the alphabet's case-pair is escaped. */
+const ARCHIVE_ESCAPES = [
+  ['a', `${ARCHIVE_ESCAPE}a`],
+  ['A', `${ARCHIVE_ESCAPE}b`],
+];
 
 /**
  * The archive filename an id maps to — the ONE derivation for
@@ -279,7 +320,12 @@ const ARCHIVE_ESCAPE = '_';
  * @returns {string} basename including the `.md` suffix
  */
 export function archiveFileName(id) {
-  return `${String(id).replaceAll('a', `${ARCHIVE_ESCAPE}a`)}.md`;
+  let out = '';
+  for (const ch of String(id)) {
+    const esc = ARCHIVE_ESCAPES.find(([plain]) => plain === ch);
+    out += esc ? esc[1] : ch;
+  }
+  return `${out}.md`;
 }
 
 /**
@@ -298,7 +344,21 @@ export function archiveFileName(id) {
 export function archiveIdFromFileName(filename) {
   const name = String(filename);
   if (!name.endsWith('.md')) return null;
-  const decoded = name.slice(0, -3).replaceAll(`${ARCHIVE_ESCAPE}a`, 'a');
+  const stem = name.slice(0, -3);
+  // Single left-to-right scan: an escape is always TWO bytes (`_` + selector),
+  // so decoding cannot be confused by an escape image appearing inside another.
+  let decoded = '';
+  for (let i = 0; i < stem.length; i += 1) {
+    if (stem[i] !== ARCHIVE_ESCAPE) {
+      decoded += stem[i];
+      continue;
+    }
+    const esc = ARCHIVE_ESCAPES.find(([, image]) => image === stem.slice(i, i + 2));
+    if (!esc) return null; // a `_` that is not a known escape is not our name
+    decoded += esc[0];
+    i += 1;
+  }
+  // The ID_PATTERN gate is what makes this safe to interpolate into a path.
   return ID_PATTERN.test(decoded) ? decoded : null;
 }
 
@@ -321,6 +381,54 @@ export function archiveCandidatePaths(dir, id) {
 }
 
 /**
+ * The candidate paths that EXIST **and whose file actually carries `id`** in its
+ * own frontmatter — derived spelling first, then legacy.
+ *
+ * The verification is the load-bearing part, not a belt-and-braces extra. On a
+ * case-insensitive filesystem the LEGACY candidate for one id can resolve to the
+ * file belonging to its case-pair twin (a collision a pre-fix version wrote).
+ * Trusting `existsSync` alone therefore let two real bugs through: a read handed
+ * back the WRONG fact's content, and `cmk purge --hard` unlinked a fact it was
+ * never asked to touch — irreversibly, since purge leaves no tombstone.
+ *
+ * A mismatch is a real anomaly on disk, so it WARNS to stderr (never stdout —
+ * `cmk get` emits JSON there) rather than failing: the caller's own not-found
+ * path is the correct behaviour, and a hard error would make one pre-existing
+ * collision break every later read.
+ *
+ * @param {string} dir  an archive dir (`.../archive/tombstones` | `.../superseded`)
+ * @param {string} id
+ * @returns {string[]} existing, verified paths (possibly empty)
+ */
+export function archiveVerifiedPaths(dir, id) {
+  const out = [];
+  for (const path of archiveCandidatePaths(dir, id)) {
+    if (!existsSync(path)) continue;
+    let owner;
+    try {
+      owner = parse(readFileSync(path, 'utf8')).frontmatter?.id;
+    } catch {
+      continue; // unreadable/unparseable — not provably ours, so not ours
+    }
+    if (owner === id || !owner) {
+      // `!owner` — a malformed / frontmatter-less archive file. It cannot be
+      // PROVEN to belong to another fact, and read-core's documented contract is
+      // that a garbled tombstone still degrades gracefully (raw body, null
+      // provenance) because a human recovering is exactly the case where
+      // something already went wrong. Only a file that positively claims a
+      // DIFFERENT id is rejected below.
+      out.push(path);
+    } else if (owner !== id) {
+      process.stderr.write(
+        `cmk: archive filename collision — ${path} resolves for ${id} but the file carries ${owner}; ` +
+          `treating ${id} as absent here (a pre-Task-281 case-folded archive name)\n`,
+      );
+    }
+  }
+  return out;
+}
+
+/**
  * Where to READ an archive file for `id` from: the escaped name if it exists,
  * else a legacy raw-id file, else `null`.
  *
@@ -332,10 +440,7 @@ export function archiveCandidatePaths(dir, id) {
  * @returns {string|null}
  */
 export function archiveReadPath(dir, id) {
-  for (const p of archiveCandidatePaths(dir, id)) {
-    if (existsSync(p)) return p;
-  }
-  return null;
+  return archiveVerifiedPaths(dir, id)[0] ?? null;
 }
 
 /**

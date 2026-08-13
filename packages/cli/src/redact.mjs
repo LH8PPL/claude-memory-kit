@@ -42,7 +42,7 @@ import { slugifyFact } from './rich-fact.mjs';
 import { openIndexDb } from './index-db.mjs';
 import { reindexBoot } from './index-rebuild.mjs';
 import { reindex } from './reindex.mjs';
-import { archiveCandidatePaths } from './fact-store.mjs';
+import { archiveVerifiedPaths } from './fact-store.mjs';
 
 // Per-tier scratchpad list, derived from the canonical SCRATCHPADS_BY_TIER
 // (shared-modules rule). A hand-rolled union here missed the L-tier pads —
@@ -427,14 +427,20 @@ export function purgeHard({ id, yes, projectRoot, userDir, now } = {}) {
 
   // Remove the resolved file + any OTHER archive copy under the same id (a
   // purge means gone from every app-layer location, not just the first hit).
-  // Task 281: BOTH spellings of each archive name — the escaped one written
-  // since the fix and the legacy raw-id one in older corpora. A purge that
-  // knew only one spelling would leave the other copy on disk, which is
-  // exactly the "gone from every app-layer location" contract failing.
+  // Task 281: BOTH spellings of each archive name — the derived one written
+  // since the fix and the legacy raw-id one in older corpora. A purge that knew
+  // only one spelling would leave the other copy on disk, which is exactly the
+  // "gone from every app-layer location" contract failing.
+  //
+  // `archiveVerifiedPaths`, NOT the raw candidate list: on a case-insensitive
+  // filesystem a legacy candidate for THIS id can resolve to the file of its
+  // case-pair twin, and purge is irreversible with no tombstone — an unverified
+  // unlink here destroyed a fact the user never asked to purge. The helper
+  // returns only files whose own frontmatter carries this id.
   const candidates = [
     fact.path,
-    ...archiveCandidatePaths(join(factDir, 'archive', 'tombstones'), id),
-    ...archiveCandidatePaths(join(factDir, 'archive', 'superseded'), id),
+    ...archiveVerifiedPaths(join(factDir, 'archive', 'tombstones'), id),
+    ...archiveVerifiedPaths(join(factDir, 'archive', 'superseded'), id),
   ];
   const removed = [];
   for (const p of candidates) {
