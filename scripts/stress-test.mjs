@@ -33,14 +33,27 @@
 // On a failing run the runner PARSES the JSON and prints the failing test
 // names, so the gate self-reports what broke instead of scrolling output.
 //
-// DEEP capture (CMK_STRESS_LOG=1) ADDITIONALLY tees full stdout+stderr through
-// `bash -c '… | tee <log>'` for the rare case the JSON isn't enough (a hard
-// crash, or a validator/prerun failure before vitest runs). It's ~2x slower
-// (the documented tee/non-TTY cost) and needs `bash` on PATH — opt-in only.
+// DEEP capture (CMK_STRESS_LOG=1) ADDITIONALLY tees full stdout+stderr to a
+// `.log` beside the json, for the rare case the JSON isn't enough (a hard
+// crash, or a validator/prerun failure before vitest runs). It's ~2x slower —
+// the documented tee/non-TTY cost, which PR #46 measured as a property of
+// PIPING (Node-pipe and bash-tee alike), not of the tee program — so it stays
+// opt-in.
+//
+// THE TEE IS NODE'S, NOT A SHELL'S (v0.6.6 sweep). It used to run
+// `bash -c '… | tee <log>'`, which is broken on stock Windows: `bash` resolves
+// to `C:\Windows\System32\bash.exe`, the WSL launcher, which exits 1 with
+// `execvpe /bin/bash failed 2` and NO spawn error — so the deep-log opt-in did
+// not degrade, it reported five phantom FAILING RUNS with an empty JSON and a
+// hint telling the user to enable the flag they already had on. Node splits the
+// child's streams itself now: no shell, no PATH assumption, identical behaviour
+// on Windows / macOS / Linux. (This is the cross-platform-command rule applied
+// to our own tooling — the previous code was a POSIX command emitted at a
+// Windows user.)
 // =========================================================================
 
-import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { spawn, spawnSync } from 'node:child_process';
+import { createWriteStream, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const DEFAULT_RUNS = 5;
@@ -70,7 +83,7 @@ console.log(
   `stress-test: per-run JSON results → ${LOG_DIR}/${sessionStamp}_run-*.json ` +
     `(always on). ` +
     (DEEP_CAPTURE
-      ? `DEEP capture (full stdout via tee) ALSO on — ~2x slower, needs bash.`
+      ? `DEEP capture (full stdout tee'd to ${LOG_DIR}/${sessionStamp}_run-*.log) ALSO on — ~2x slower.`
       : `For full stdout capture too (slower): CMK_STRESS_LOG=1 npm run stress.`),
 );
 
@@ -114,7 +127,57 @@ function failedTestNames(jsonPath) {
   }
 }
 
-function runOne(i) {
+/**
+ * Run `npm test` with stdout+stderr going to BOTH the console and `logPath`.
+ *
+ * The shell used to own this (`bash -c '… | tee'`); Node owns it now, so the
+ * deep opt-in works wherever Node does. Both streams are merged into the one
+ * log in arrival order — the same thing `2>&1 | tee` produced, and the reason
+ * it matters here is that a prerun validator's failure lands on stderr while
+ * the vitest output around it lands on stdout.
+ *
+ * Piping (not the tee) is what costs ~2x: it makes vitest non-TTY, so the
+ * default reporter goes verbose. That cost is inherent to capturing and is why
+ * DEEP stays opt-in — it is not a regression introduced by dropping bash.
+ */
+async function runTeed(args, logPath) {
+  const log = createWriteStream(logPath);
+  const child = spawn(npmCmd, args, {
+    stdio: ['inherit', 'pipe', 'pipe'],
+    shell: true,
+    windowsHide: true,
+  });
+  child.stdout.on('data', (c) => {
+    process.stdout.write(c);
+    log.write(c);
+  });
+  child.stderr.on('data', (c) => {
+    process.stderr.write(c);
+    log.write(c);
+  });
+
+  // Deliberately NOT `events.once(child, 'close')`: that helper rejects when
+  // the emitter emits 'error', so a failed spawn would blow up the runner with
+  // an unhandled rejection instead of reaching the SPAWN ERROR branch below —
+  // which is the exact failure shape this whole fix exists to stop reporting
+  // as something else. A failed spawn emits 'error' AND then 'close'; record
+  // the error and let 'close' settle, so both paths return the same shape.
+  let error = null;
+  child.on('error', (e) => {
+    error = e;
+  });
+  // 'close' (not 'exit') — it waits for the piped streams to drain, so the log
+  // is complete before the runner reads the run's verdict.
+  const [status, signal] = await new Promise((resolve) => {
+    child.on('close', (s, sig) => resolve([s, sig]));
+  });
+  await new Promise((resolve) => log.end(resolve));
+  // A signalled child reports status null; surface the signal rather than a
+  // silent null that would read as "no exit code" downstream.
+  return { status: status ?? (signal ? `signal:${signal}` : null), error };
+}
+
+async function runOne(i) {
   const runStart = Date.now();
   const jsonPath = join(LOG_DIR, `${sessionStamp}_run-${i}.json`);
   const fullLogPath = DEEP_CAPTURE
@@ -127,34 +190,24 @@ function runOne(i) {
       `)`,
   );
 
-  let r;
-  if (DEEP_CAPTURE) {
-    // bash prefers forward slashes; works on Windows git-bash too. set -o
-    // pipefail propagates npm's exit code through tee so a failure is detectable.
-    const escJson = jsonPath.replace(/\\/g, '/');
-    const escLog = fullLogPath.replace(/\\/g, '/');
-    const cmd =
-      `set -o pipefail; npm test -- --reporter=default --reporter=json ` +
-      `--outputFile.json="${escJson}" 2>&1 | tee "${escLog}"`;
-    r = spawnSync('bash', ['-c', cmd], { stdio: 'inherit', windowsHide: true });
-  } else {
-    r = spawnSync(npmCmd, ['test', ...reporterArgs(jsonPath)], {
-      stdio: 'inherit',
-      shell: true,
-      windowsHide: true,
-    });
-  }
+  // Same argv either way — the ONLY difference is where the child's stdio
+  // goes. The exit code reaches the runner directly in both cases (the old
+  // bash path needed `set -o pipefail` to get it back through the pipeline).
+  const args = ['test', ...reporterArgs(jsonPath)];
+  const r = DEEP_CAPTURE
+    ? await runTeed(args, fullLogPath)
+    : spawnSync(npmCmd, args, {
+        stdio: 'inherit',
+        shell: true,
+        windowsHide: true,
+      });
 
   const elapsed = ((Date.now() - runStart) / 1000).toFixed(1);
   const code = r.status;
   const spawnErr = r.error;
 
   if (spawnErr) {
-    const hint = DEEP_CAPTURE
-      ? `  Hint: DEEP capture needs \`bash\` on PATH. Install Git for ` +
-        `Windows (git-bash) or unset CMK_STRESS_LOG.`
-      : '';
-    console.error(`run ${i}: SPAWN ERROR — ${spawnErr.message}\n${hint}`);
+    console.error(`run ${i}: SPAWN ERROR — ${spawnErr.message}`);
     failures.push({ run: i, exit: 'spawn-error', elapsedSec: Number(elapsed), jsonPath, spawnError: spawnErr.message });
     return;
   }
@@ -181,8 +234,9 @@ function runOne(i) {
 
 for (let i = 1; i <= runs; i++) {
   // Sequential — concurrent runs would invalidate the "green under realistic
-  // load" contract since each run becomes its own workload.
-  runOne(i);
+  // load" contract since each run becomes its own workload. `await` is what
+  // keeps that true now that DEEP capture is async.
+  await runOne(i);
 }
 
 const totalSec = ((Date.now() - startedAt) / 1000).toFixed(1);
