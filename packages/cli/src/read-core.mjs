@@ -7,8 +7,9 @@
 // adapter wraps the result in a content envelope, the CLI adapter prints it.
 
 import { existsSync, readFileSync } from 'node:fs';
-import { join, resolve, relative, isAbsolute } from 'node:path';
+import { join, resolve, relative, isAbsolute, basename } from 'node:path';
 import { ID_PATTERN } from './tier-paths.mjs';
+import { archiveReadPath } from './fact-store.mjs';
 import { parse as parseFrontmatter } from './frontmatter.mjs';
 import { stateFieldFor } from './state-label.mjs';
 import { relatedRefsFor, traverseLinks, supersessionChain, anchorNodeForToken } from './graph-index.mjs';
@@ -77,10 +78,13 @@ function readTombstone(projectRoot, id) {
   // ONLY after getObservations' `ID_PATTERN.test(id)` gate (anchored
   // /^[PUL]-[base32]{8}$/ — no `.`/`/`/`\`), so it cannot path-traverse out of
   // the tombstones dir. Do NOT call readTombstone before that validation.
-  const tombPath = join(
-    projectRoot, 'context', 'memory', 'archive', 'tombstones', `${id}.md`,
-  );
-  if (!existsSync(tombPath)) return null;
+  // Task 281: the filename is DERIVED (escaped `a` → `_a`), with a legacy
+  // raw-id fallback for corpora written before the fix — see fact-store's
+  // archive-filename note. The SAFETY gate above is unchanged and still
+  // required: the helper maps `a` only and sanitizes nothing.
+  const tombDir = join(projectRoot, 'context', 'memory', 'archive', 'tombstones');
+  const tombPath = archiveReadPath(tombDir, id);
+  if (!tombPath) return null;
   const { frontmatter, body } = parseFrontmatter(readFileSync(tombPath, 'utf8'));
   const fm = frontmatter ?? {};
   // `tombstoned: true` is the SOLE discriminator for recovered-vs-live — a live
@@ -92,7 +96,9 @@ function readTombstone(projectRoot, id) {
     id,
     body: body ?? '',
     heading_path: fm.title ?? null,
-    source_file: `context/memory/archive/tombstones/${id}.md`,
+    // derived from the RESOLVED path, so it names the file actually read
+    // (escaped or legacy) rather than a spelling that may not exist on disk.
+    source_file: `context/memory/archive/tombstones/${basename(tombPath)}`,
     source_line: 1, // synthetic — the tombstone file has no meaningful source line
     tier: fm.tier ?? null,
     trust: fm.trust ?? null,

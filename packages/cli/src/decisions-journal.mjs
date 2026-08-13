@@ -31,7 +31,7 @@
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { eachFactIn } from './fact-store.mjs';
+import { eachFactIn, archiveIdFromFileName } from './fact-store.mjs';
 import { ID_PATTERN } from './tier-paths.mjs';
 import { trimTrailingNewlines } from './managed-block.mjs';
 
@@ -349,9 +349,14 @@ function readTombstonedIds(projectRoot) {
   const ids = new Set();
   const dir = join(projectRoot, 'context', 'memory', 'archive', 'tombstones');
   if (!existsSync(dir)) return ids;
+  // Task 281: decode via the shared helper rather than matching the raw id
+  // against the basename — archive names now escape `a` as `_a`, so a regex
+  // over the bare alphabet would silently stop seeing every escaped tombstone
+  // (and this set is what keeps forgotten decisions OUT of the journal).
+  // The helper accepts the legacy raw-id spelling too.
   for (const name of readdirSync(dir)) {
-    const m = name.match(new RegExp(`^(${ID_CHARS})\\.md$`));
-    if (m) ids.add(m[1]);
+    const id = archiveIdFromFileName(name);
+    if (id) ids.add(id);
   }
   return ids;
 }

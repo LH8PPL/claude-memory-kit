@@ -62,6 +62,7 @@ import { sanitizePrivacyTags } from './privacy.mjs';
 import { maskPii, localUsernames, resolvePrivacyScreen } from './pii-patterns.mjs';
 import { appendRedactions } from './redactions-log.mjs';
 import { applyTrustSignal } from './trust-signal.mjs';
+import { archiveWritePath } from './fact-store.mjs';
 
 // Write-sources produced by MACHINE paths. Anything not listed persists as
 // 'user-explicit' — the strongest provenance — so a new machine source must be
@@ -246,7 +247,10 @@ function writeTombstone({
 }) {
   const tombstoneDir = join(tierRoot, 'archive', 'tombstones');
   mkdirSync(tombstoneDir, { recursive: true });
-  const tombstonePath = join(tombstoneDir, `${id}.md`);
+  // Task 281: escaped spelling — see fact-store's archive-filename note. This is
+  // the SECOND tombstone location (tier root, not factDir): the scratchpad-bullet
+  // tombstone that rootIdCensus also reads (design §13.2).
+  const tombstonePath = archiveWritePath(tombstoneDir, id);
   const provenance = parseBulletProvenance(commentLine) ?? {};
   const body = [
     '---',

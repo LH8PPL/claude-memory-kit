@@ -20,7 +20,7 @@ import {
   resolveFactDir,
 } from './tier-paths.mjs';
 import { parse, format } from './frontmatter.mjs';
-import { eachFactIn } from './fact-store.mjs';
+import { eachFactIn, archiveWritePath } from './fact-store.mjs';
 import { appendAuditEntry, nowIso, REASON_CODES } from './audit-log.mjs';
 import { ERROR_CATEGORIES, errorResult, notFoundResult } from './result-shapes.mjs';
 import { writeFact } from './write-fact.mjs';
@@ -53,7 +53,8 @@ function earliestExpiresAt(fmA, fmB) {
 function moveToSuperseded(match, supersededBy) {
   const supersededDir = join(match.factDir, 'archive', 'superseded');
   mkdirSync(supersededDir, { recursive: true });
-  const newPath = join(supersededDir, `${match.id}.md`);
+  // Task 281: escaped spelling — see fact-store's archive-filename note.
+  const newPath = archiveWritePath(supersededDir, match.id);
   const { frontmatter, body } = parse(readFileSync(match.path, 'utf8'));
   const updated = {
     superseded_by: supersededBy,

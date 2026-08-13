@@ -42,6 +42,7 @@ import { slugifyFact } from './rich-fact.mjs';
 import { openIndexDb } from './index-db.mjs';
 import { reindexBoot } from './index-rebuild.mjs';
 import { reindex } from './reindex.mjs';
+import { archiveCandidatePaths } from './fact-store.mjs';
 
 // Per-tier scratchpad list, derived from the canonical SCRATCHPADS_BY_TIER
 // (shared-modules rule). A hand-rolled union here missed the L-tier pads —
@@ -426,10 +427,14 @@ export function purgeHard({ id, yes, projectRoot, userDir, now } = {}) {
 
   // Remove the resolved file + any OTHER archive copy under the same id (a
   // purge means gone from every app-layer location, not just the first hit).
+  // Task 281: BOTH spellings of each archive name — the escaped one written
+  // since the fix and the legacy raw-id one in older corpora. A purge that
+  // knew only one spelling would leave the other copy on disk, which is
+  // exactly the "gone from every app-layer location" contract failing.
   const candidates = [
     fact.path,
-    join(factDir, 'archive', 'tombstones', `${id}.md`),
-    join(factDir, 'archive', 'superseded', `${id}.md`),
+    ...archiveCandidatePaths(join(factDir, 'archive', 'tombstones'), id),
+    ...archiveCandidatePaths(join(factDir, 'archive', 'superseded'), id),
   ];
   const removed = [];
   for (const p of candidates) {

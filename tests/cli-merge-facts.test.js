@@ -30,6 +30,11 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mergeFacts } from '../packages/cli/src/merge-facts.mjs';
+// Task 281: archive filenames are DERIVED (lowercase `a` escapes to `_a` so a
+// case-pair of ids cannot collapse to one file). These tests assert the fact
+// landed at its archive name — deriving it here keeps the assertion independent
+// of the result object while tracking the one shared convention.
+import { archiveFileName } from '../packages/cli/src/fact-store.mjs';
 import { writeFact } from '../packages/cli/src/write-fact.mjs';
 import { resolveFact } from '../packages/cli/src/forget.mjs';
 import { generateId, canonicalize } from '../packages/canonicalize/src/index.mjs';
@@ -196,7 +201,7 @@ describe('Task 10 — mergeFacts() boundary', () => {
         'memory',
         'archive',
         'superseded',
-        `${wA.id}.md`,
+        archiveFileName(wA.id),
       );
       const supersededB = join(
         projectRoot,
@@ -204,7 +209,7 @@ describe('Task 10 — mergeFacts() boundary', () => {
         'memory',
         'archive',
         'superseded',
-        `${wB.id}.md`,
+        archiveFileName(wB.id),
       );
       expect(existsSync(supersededA)).toBe(true);
       expect(existsSync(supersededB)).toBe(true);
@@ -227,7 +232,7 @@ describe('Task 10 — mergeFacts() boundary', () => {
         'memory',
         'archive',
         'superseded',
-        `${wA.id}.md`,
+        archiveFileName(wA.id),
       );
       const fmA = parseFrontmatter(supersededA).frontmatter;
       const fmB = parseFrontmatter(
@@ -237,7 +242,7 @@ describe('Task 10 — mergeFacts() boundary', () => {
           'memory',
           'archive',
           'superseded',
-          `${wB.id}.md`,
+          archiveFileName(wB.id),
         ),
       ).frontmatter;
       expect(fmA.superseded_by).toBe(r.id);
@@ -264,7 +269,7 @@ describe('Task 10 — mergeFacts() boundary', () => {
           'memory',
           'archive',
           'superseded',
-          `${wA.id}.md`,
+          archiveFileName(wA.id),
         ),
         'utf8',
       );
@@ -275,7 +280,7 @@ describe('Task 10 — mergeFacts() boundary', () => {
           'memory',
           'archive',
           'superseded',
-          `${wB.id}.md`,
+          archiveFileName(wB.id),
         ),
         'utf8',
       );
