@@ -45,19 +45,37 @@
 //      explanation and an exit — never a silently-created memory tree (the
 //      Task-250 no-scaffold guard class).
 //
-// WHAT IS DELIBERATELY ABSENT IN WAVE 1: `fs.watch` / SSE live refresh (Task
-// 259, named trigger), a timeline view, a conflict-queue UI, a stats page
-// (§24.1.8). The page refreshes when the human asks it to and labels how stale
-// it is — the Pulse TabFreshness borrow.
+// LIVE REFRESH (Task 259, design §24.1.3): an open tab reflects new captures
+// without a manual reload, over a plain `text/event-stream` on `/events`. Three
+// things about it are contracts rather than choices:
+//
+//   * The change signal is POLLED FROM ARTIFACTS, not watched. `fs.watch` /
+//     chokidar was evaluated and rejected — D-329 measured chokidar dropping
+//     events 5/5 under load, and the field's own answer is re-read-per-request;
+//     a watcher would also be the one platform-sensitive moving part §24.2
+//     deliberately kept out of this server. So a small fixed set of tier
+//     artifacts is `stat`ed on an interval and hashed (ADR-0002: the markdown
+//     IS the truth, so derive the signal from it).
+//   * The stream is a NOTIFICATION, never a payload. It says "the tier changed
+//     at T"; the page re-fetches through the same API every other read uses.
+//     Shipping rows down the stream would mean a SECOND read path that has to
+//     know which view is open, and two renderings of one envelope.
+//   * It cannot outlive Ctrl-C. Both timers are `unref`'d and only exist while
+//     a client is attached, and `close()` ends every open stream — a viewer the
+//     user cannot stop is the resident-daemon class §24.1 exists to avoid.
+//
+// STILL DELIBERATELY ABSENT: a timeline view, a conflict-queue UI, a stats page
+// (§24.1.8).
 //
 // ZERO NEW DEPENDENCIES (§24.1.7): node's own `http`, one committed static HTML
 // file, the better-sqlite3 index the kit already carries.
 
 import { createServer } from 'node:http';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { errorResult, ERROR_CATEGORIES } from './result-shapes.mjs';
 import { openBrowserCommand } from './platform-commands.mjs';
 import { openIndexDb } from './index-db.mjs';
@@ -69,7 +87,13 @@ import {
   SEARCH_MODES,
   SEARCH_MAX_LIMIT,
 } from './search.mjs';
-import { ID_PATTERN, VALID_TIERS } from './tier-paths.mjs';
+import {
+  ID_PATTERN,
+  VALID_TIERS,
+  SCRATCHPADS_BY_TIER,
+  resolveTierRoot,
+  resolveFactDir,
+} from './tier-paths.mjs';
 import { eachSupersededFact } from './fact-store.mjs';
 import { parseRichFactBody } from './rich-fact.mjs';
 import { traverseLinks, supersessionChain } from './graph-index.mjs';
@@ -79,6 +103,7 @@ import { runDoctor } from './doctor.mjs';
 import { listConflictQueue } from './conflict-queue.mjs';
 import { listReviewQueue } from './review-queue.mjs';
 import { stateFieldFor } from './state-label.mjs';
+import { auditLogPath } from './audit-log.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -140,9 +165,46 @@ export const RELEVANCE_BANDS = Object.freeze({ strong: 0.7, fair: 0.4 });
 /** The journal orderings `/api/decisions?order=` accepts. */
 const DECISION_ORDERS = Object.freeze(new Set(['journal', 'newest']));
 
+/**
+ * How often the live-refresh stream re-`stat`s the tier (Task 259).
+ *
+ * Two seconds, and the reasoning is the human on the other end: a capture lands
+ * because they just said something worth remembering, so the honest latency
+ * budget is "before they look back at the tab", not "instantly". The cost of a
+ * cycle is a dozen `statSync` calls on a fixed path list — no directory walk, no
+ * file read, no database — so this is cheap enough that halving it would buy
+ * nothing and doubling it would be noticed.
+ *
+ * NOT a `?poll=` parameter and NOT a CLI flag: it is a server-internal cadence,
+ * and a client-settable one would let a bookmarked URL turn a read-only viewer
+ * into a busy loop. The `pollMs` option on `startViewer` is a TEST seam.
+ */
+export const VIEWER_POLL_MS = 2000;
+
+/**
+ * How often a `: ping` comment goes down an idle stream.
+ *
+ * SSE has no application-level keepalive, so a stream with nothing to say is
+ * indistinguishable from a dead one — to intermediaries that buffer, and to a
+ * client trying to decide whether the server is still there. Fifteen seconds is
+ * comfortably under the common 30–60s idle-cut heuristics and costs six bytes.
+ */
+export const VIEWER_HEARTBEAT_MS = 15_000;
+
+/**
+ * The reconnection delay handed to the browser in the stream's `retry:` field.
+ *
+ * Stated rather than defaulted because the PAGE's give-up budget is counted in
+ * these intervals: leaving it to the browser (the spec makes it
+ * implementation-defined) would make "how long before we admit the server is
+ * gone" unknowable from our own source.
+ */
+export const VIEWER_RETRY_MS = 2000;
+
 /** Media types, spelled once. */
 const HTML = 'text/html; charset=utf-8';
 const JSON_TYPE = 'application/json; charset=utf-8';
+const EVENT_STREAM = 'text/event-stream; charset=utf-8';
 
 /**
  * A read-only, loopback-only, offline page: no external origin is reachable at
@@ -217,6 +279,11 @@ export function resolveRoute(rawUrl, { accept = '' } = {}) {
   if (path === '/graph') return { view: 'graph', json, params };
   if (path === '/health') return { view: 'health', json, params };
   if (path === '/decisions') return { view: 'decisions', json, params };
+  // The live-refresh stream (Task 259). It is a VIEW like any other so the
+  // 405-before-routing guard and the Host check cover it for free — but it is
+  // neither of the two renderings, so `handle` branches on it before the
+  // HTML-vs-JSON fork. See the note there.
+  if (path === '/events') return { view: 'events', json, params };
   if (path.startsWith('/fact/')) {
     return { view: 'fact', id: path.slice('/fact/'.length), json, params };
   }
@@ -270,6 +337,267 @@ function sendJson(res, status, payload) {
   send(res, status, JSON_TYPE, JSON.stringify(payload, null, 2));
 }
 
+// --- Live refresh: the change signal (Task 259) ---------------------------
+
+/**
+ * The artifacts a memory change shows up in — a FIXED, small path list, walked
+ * with `statSync` and nothing else.
+ *
+ * WHY THESE FOUR PER TIER, and why not a directory walk:
+ *
+ *   * `.locks/audit.log` is the load-bearing one. CLAUDE.md's shared-module
+ *     rule makes `appendAuditEntry` mandatory for EVERY mutating kit operation,
+ *     so an append here is the closest thing the kit has to a transaction log.
+ *     It catches in-place edits — a `trust` change, a `forget` tombstone, a
+ *     supersession — which no directory mtime would ever show.
+ *   * the fact DIR's own mtime catches an entry being added or removed by
+ *     something outside the kit (a `git pull`, a checkout, a second agent).
+ *     Directory mtime is reliable for add/remove on every filesystem we ship
+ *     to; it is NOT reliable for in-place content change.
+ *
+ *     THE HONEST BOUNDARY, stated rather than implied: these two are
+ *     complementary, but they are not exhaustive. Between them they cover
+ *     every change the KIT makes (all of which audit) plus external
+ *     add/remove. What NOTHING here sees is an external IN-PLACE edit — a
+ *     hand-edited fact file, a `git checkout` that rewrites a file's bytes
+ *     without changing the directory entry. That is an accepted gap, not an
+ *     oversight: hand-editing memory files is forbidden (the kit's safe write
+ *     path is the only sanctioned writer), and closing it would cost a
+ *     content hash of the whole corpus every cycle — the O(corpus) poll this
+ *     design exists to avoid. A reader who hand-edits still has Refresh.
+ *   * the tier's SCRATCHPADS (`SCRATCHPADS_BY_TIER`, not a hardcoded
+ *     `MEMORY.md` — the Task-182 lesson: the persona files are scratchpads too)
+ *     because a bullet appended there never becomes a fact file.
+ *   * `DECISIONS.md`, the append-only journal the decisions view renders.
+ *
+ * A recursive walk of `context/memory/` would be the obvious alternative and is
+ * the wrong shape: it costs O(corpus) per cycle forever to detect an event that
+ * happens a few times an hour, on a corpus already measured in thousands of
+ * files. This is O(1) in the corpus.
+ */
+function fingerprintPaths({ projectRoot, userDir }) {
+  const out = [];
+  for (const tier of ['P', 'L', 'U']) {
+    const tierRoot = resolveTierRoot({ tier, projectRoot, userDir });
+    if (!tierRoot) continue;
+    out.push(auditLogPath(tierRoot));
+    out.push(resolveFactDir(tier, tierRoot));
+    for (const pad of SCRATCHPADS_BY_TIER[tier] ?? []) out.push(join(tierRoot, pad));
+    if (tier === 'P') {
+      out.push(join(tierRoot, 'DECISIONS.md'));
+      // The QUEUES (Task 259 I1). Not incidental state: the pinned health strip
+      // on EVERY view reports their pending counts, so a queue that grows while
+      // the strip still reads "all clear" is this feature failing on the most
+      // prominent line of the page. The two files are named rather than the
+      // directory alone, so an append to an existing queue moves the
+      // fingerprint (a directory mtime does not move on content change).
+      out.push(join(tierRoot, 'queues'));
+      out.push(join(tierRoot, 'queues', 'review.md'));
+      out.push(join(tierRoot, 'queues', 'conflicts.md'));
+    }
+  }
+  return out;
+}
+
+/**
+ * A short opaque digest of "what the tier looks like right now".
+ *
+ * HASHED, not returned as the raw stat list, for two reasons: the list contains
+ * ABSOLUTE paths including the user's home directory and this value is sent to
+ * a browser (the same home-path rule that governs what the kit writes to disk
+ * applies to what it puts on a socket), and a stable short string is what the
+ * client actually needs — it never inspects the parts.
+ *
+ * A missing path contributes a constant rather than being skipped, so a file
+ * APPEARING is a change and so is one being deleted.
+ */
+export function memoryFingerprint({ projectRoot, userDir } = {}) {
+  const h = createHash('sha256');
+  for (const p of fingerprintPaths({ projectRoot, userDir })) {
+    try {
+      const st = statSync(p);
+      // Size is in there because mtime resolution is coarse on some
+      // filesystems (FAT is 2s; some network mounts round to the second), and
+      // an append that lands inside one tick would otherwise be invisible.
+      h.update(`${p}|${st.mtimeMs}|${st.size}\n`);
+    } catch {
+      h.update(`${p}|-\n`);
+    }
+  }
+  return h.digest('hex').slice(0, 16);
+}
+
+function sseWrite(res, lines) {
+  // A stream can be half-closed under us at any moment (tab closed, laptop
+  // slept). A failed write is the client leaving, never a server fault.
+  //
+  // M6 — `res.write()` also returns FALSE for backpressure (the kernel buffer
+  // is full), and we deliberately ignore that signal rather than pausing. The
+  // bounded-math argument: a frame is ~90 bytes, the poll emits at most one
+  // every 2s and the heartbeat one every 15s, against a loopback socket with a
+  // default buffer measured in tens of KB. Filling it needs a client that has
+  // stopped reading entirely for hours — at which point the TCP connection is
+  // dead and `close`/`error` removes it from the set anyway. So the only
+  // false this function can meaningfully return is the one it cares about.
+  // The distinction is worth naming because it would NOT hold if the stream
+  // ever carried payloads (see the notification-only rule above): rows down
+  // this socket would make backpressure a real condition, and this function
+  // would need to honour `drain`.
+  try {
+    res.write(lines);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Attach one SSE client (Task 259).
+ *
+ * The response deliberately carries NO `content-length` (a stream that never
+ * ends has no length, and declaring one makes a browser buffer forever) and the
+ * same hardening headers every other response gets — a new route must not be
+ * the one that forgets them.
+ */
+function openEventStream(req, res, ctx) {
+  res.writeHead(200, {
+    'content-type': EVENT_STREAM,
+    'cache-control': 'no-store',
+    connection: 'keep-alive',
+    // Belt and braces for anyone who puts this behind something that buffers.
+    // There is no proxy in the shipped topology (loopback only), and there is
+    // no cost to saying so.
+    'x-accel-buffering': 'no',
+    'x-content-type-options': 'nosniff',
+    'referrer-policy': 'no-referrer',
+    'content-security-policy': CSP,
+  });
+  // HEAD is an allowed method — it is half of `Allow: GET, HEAD` — and this
+  // branch runs before the `send()` helper that handles HEAD for every other
+  // route. Without this, `curl -I /events` (or a link checker, or a monitoring
+  // probe) would sit forever on a body that never finishes, holding a server
+  // socket the whole time. RFC 9110 §9.3.2: headers, no body.
+  if (req.method === 'HEAD') return res.end();
+
+  // Events are small and latency IS the feature; Nagle would hold a 90-byte
+  // frame waiting for company that never comes.
+  req.socket?.setNoDelay?.(true);
+
+  const live = ctx.live;
+  // A request that raced the shutdown gets a stream that ends immediately
+  // rather than a reference parked in a client set nobody will drain again.
+  if (live.isShutdown()) return res.end();
+  live.clients.add(res);
+
+  // `retry:` first, so a client that loses the connection before the hello
+  // frame already knows our reconnection cadence.
+  sseWrite(res, `retry: ${VIEWER_RETRY_MS}\n\n`);
+  // Both cadences are stated, and each has a named consumer (M3 — a field
+  // nobody reads is a field that drifts):
+  //   * `poll_ms` — OUR page reads it, so the "new captures appear within
+  //     about Ns" wording follows VIEWER_POLL_MS instead of hardcoding it.
+  //   * `heartbeat_ms` — for the API-first side (§24.1 point 2): a non-browser
+  //     consumer needs to know how long silence is NORMAL before treating the
+  //     connection as dead. Our page does not need it (EventSource handles
+  //     reconnection itself), which is exactly why it is documented as an API
+  //     field rather than left looking unused.
+  sseWrite(
+    res,
+    frame('hello', {
+      stream: 'memory',
+      poll_ms: live.pollMs,
+      heartbeat_ms: VIEWER_HEARTBEAT_MS,
+      fingerprint: live.fingerprint,
+      generated_at: new Date().toISOString(),
+    }),
+  );
+
+  const drop = () => {
+    live.clients.delete(res);
+    if (live.clients.size === 0) live.stop();
+  };
+  res.on('close', drop);
+  res.on('error', drop);
+
+  live.start();
+}
+
+/** One SSE frame: an event name and a single-line JSON data field. */
+function frame(event, payload) {
+  // `JSON.stringify` never emits a raw newline, so the single `data:` line is
+  // safe by construction — no multi-line framing to get wrong.
+  return `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`;
+}
+
+/**
+ * The per-server live-refresh engine: a fingerprint, two unref'd timers, and a
+ * client set.
+ *
+ * The timers run ONLY while at least one client is attached. That is both the
+ * cheap thing (a viewer nobody has a tab open on does no work at all) and the
+ * leak-proof thing (there is no timer to forget). `unref()` on top of it is the
+ * ephemerality contract: even a timer that IS running must never be the reason
+ * a `cmk view` process refuses to exit.
+ */
+function createLiveEngine(ctx, pollMs) {
+  const clients = new Set();
+  let poll = null;
+  let beat = null;
+  let stopped = false;
+  const live = {
+    clients,
+    pollMs,
+    fingerprint: memoryFingerprint(ctx),
+    isShutdown: () => stopped,
+    start() {
+      if (stopped || poll) return;
+      poll = setInterval(() => {
+        let next;
+        try {
+          next = memoryFingerprint(ctx);
+        } catch (err) {
+          // A transient stat failure (a file being replaced mid-cycle) must not
+          // kill the stream — the next cycle is 2s away and will see the
+          // settled state.
+          ctx.logError?.(`cmk view: live-refresh poll failed — ${err?.message ?? err}`);
+          return;
+        }
+        if (next === live.fingerprint) return;
+        live.fingerprint = next;
+        const payload = frame('change', {
+          fingerprint: next,
+          generated_at: new Date().toISOString(),
+        });
+        for (const res of [...clients]) {
+          if (!sseWrite(res, payload)) clients.delete(res);
+        }
+      }, pollMs);
+      poll.unref?.();
+      beat = setInterval(() => {
+        for (const res of [...clients]) {
+          if (!sseWrite(res, ': ping\n\n')) clients.delete(res);
+        }
+      }, VIEWER_HEARTBEAT_MS);
+      beat.unref?.();
+    },
+    stop() {
+      if (poll) clearInterval(poll);
+      if (beat) clearInterval(beat);
+      poll = null;
+      beat = null;
+    },
+    shutdown() {
+      stopped = true;
+      live.stop();
+      for (const res of [...clients]) {
+        try { res.end(); } catch { /* already gone */ }
+      }
+      clients.clear();
+    },
+  };
+  return live;
+}
+
 /**
  * Start the viewer.
  *
@@ -293,6 +621,7 @@ export async function startViewer({
   open = true,
   openBrowser = defaultOpenBrowser,
   doctorOptions = {},
+  pollMs = VIEWER_POLL_MS,
   signals = [],
   onShutdown = () => process.exit(0),
   log = console.log,
@@ -332,6 +661,10 @@ export async function startViewer({
   // be able to disagree). The suite stubs the backend-CLI probe so it does not
   // depend on which agent binary happens to be installed on the machine.
   const ctx = { projectRoot, userDir, logError, doctorOptions };
+  // The live-refresh engine is per-SERVER, so its timers and its client set die
+  // with the server they belong to — there is no module-level state for a
+  // second `startViewer` in the same process (the test suite) to collide with.
+  ctx.live = createLiveEngine(ctx, Math.max(1, Number(pollMs) || VIEWER_POLL_MS));
   const server = createServer((req, res) => handle(req, res, ctx));
 
   const listenError = await new Promise((resolve) => {
@@ -366,6 +699,13 @@ export async function startViewer({
     bound.length = 0;
     if (closed) return;
     closed = true;
+    // FIRST: end every live stream and kill its timers (Task 259). An SSE
+    // response is a socket the server itself is holding open indefinitely — if
+    // `server.close()` ran first it would sit waiting on a response only this
+    // process is ever going to finish. Ending the streams turns the deadlock
+    // into an ordinary shutdown, and does it before `closeAllConnections` so
+    // the client sees a clean end rather than a reset.
+    ctx.live.shutdown();
     // `server.close()` stops ACCEPTING but waits for open sockets to end — and
     // a browser holds its connection open on keep-alive, so Ctrl-C with the tab
     // still open would hang the shutdown indefinitely. A viewer the user cannot
@@ -411,6 +751,17 @@ function handle(req, res, ctx) {
     if (route.json) return sendJson(res, 404, { error: 'no such view' });
     return send(res, 404, HTML, '<!doctype html><meta charset="utf-8"><title>404</title><p>No such view. <a href="/">Back to memory</a>.');
   }
+
+  // (3) The live stream, decided BEFORE the HTML-vs-JSON fork (Task 259).
+  //
+  // This branch is load-bearing, not tidiness. `resolveRoute` picks a rendering
+  // from `Accept`, and an EventSource sends `Accept: text/event-stream` — which
+  // is neither `application/json` nor `text/html`, so it falls to the HTML
+  // default and the browser would be handed 60 KB of markup where it expected a
+  // stream. `/events` has exactly ONE rendering; the `.json` and `/api/` forms
+  // resolve here too and get the same stream, because there is no other honest
+  // thing for them to be.
+  if (route.view === 'events') return openEventStream(req, res, ctx);
 
   if (!route.json) {
     // Every HTML view is the SAME committed page; it routes client-side off

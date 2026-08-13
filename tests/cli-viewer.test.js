@@ -1047,15 +1047,25 @@ describe('viewer — the HTML page (255.3)', () => {
     expect(html).toContain('id="health-strip"'); // pinned, on every view
   });
 
-  it('carries the freshness label + a manual refresh control, and NO live-watch (§24.1.6)', () => {
+  it('carries the freshness label + a manual refresh control, alongside live refresh (§24.1 point 6 + §24.1.3)', () => {
     expect(html).toContain('id="freshness"');
     expect(html).toContain('id="refresh"');
     // The search box fires per keystroke, so two responses can race; the page
     // must discard a stale one rather than repaint with it.
     expect(html).toContain('factsSeq');
     expect(html).toMatch(/seq !== factsSeq/);
-    // Task 259 owns live refresh; wave 1 must not have grown one by accident.
-    expect(html).not.toMatch(/EventSource|new WebSocket|text\/event-stream/);
+    // WAVE 1 (Task 255) asserted the OPPOSITE here — `not.toMatch(/EventSource|
+    // new WebSocket|text\/event-stream/)`, guarding against wave 1 growing a
+    // live-watch by accident while Task 259 still owned it. Task 259 has now
+    // shipped it, so the guard inverts on the half it was holding and KEEPS the
+    // half that is still contract:
+    //   * EventSource is now REQUIRED (design §24.1.3).
+    //   * a WebSocket is still forbidden — §24.1.7's zero-dependency rule, and
+    //     the reason the mechanism is plain SSE in the first place.
+    //   * MANUAL refresh survives the automatic one: it is the fallback when the
+    //     ephemeral server is gone, and the only control on the graph.
+    expect(html).toMatch(/new EventSource\(/);
+    expect(html).not.toMatch(/new WebSocket/);
   });
 
   it('renders the copy-the-command answer to the delete demand, never a write call', () => {
@@ -1853,7 +1863,10 @@ describe('viewer — the visual pass (260)', () => {
     expect(script).toContain('data.state_note');
     expect(script).toMatch(/clipboard\.writeText/);
     expect(script).not.toMatch(/method:\s*['"](?:POST|PUT|PATCH|DELETE)['"]/i);
-    expect(script).not.toMatch(/EventSource|new WebSocket/);
+    // Was `not.toMatch(/EventSource|new WebSocket/)` while Task 259 was unbuilt
+    // (see the §24.1 point 6 test above for the full note). SSE has since shipped; the
+    // WebSocket half of the guard stands, per §24.1.7 zero-dependency.
+    expect(script).not.toMatch(/new WebSocket/);
     // And no HTML-parsing sink crept in with the new renderer.
     for (const sink of ['innerHTML', 'outerHTML', 'insertAdjacentHTML', 'document.write', 'srcdoc', 'setHTML', 'createContextualFragment', 'DOMParser']) {
       expect(script, `${sink} appeared in the visual pass`).not.toContain(sink);
@@ -2855,6 +2868,458 @@ describe('viewer — the `cmk view` CLI glue (255.1)', () => {
     process.exitCode = 0;
     expect(errs.join(' ')).toMatch(/cmk view: refusing to bind 0\.0\.0\.0/);
     expect(errs.join(' ')).not.toMatch(/at .*viewer\.mjs/); // no stack
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Task 259 — live refresh over Server-Sent Events (design §24.1.3).
+//
+// Boundary: the `/events` route, exercised the way a browser exercises it — a
+// real GET held open over real HTTP, parsed as a real event stream. The four
+// contracts under test are the ones the task named as CONTRACTS: the read-only
+// guarantee survives the new route (405 matrix extended), the CSP permits the
+// stream deliberately, the stream cannot outlive Ctrl-C, and a change is
+// DETECTED from artifacts rather than from a watcher.
+// ---------------------------------------------------------------------------
+
+/**
+ * Open an SSE stream and collect parsed events.
+ *
+ * Deliberately NOT `fetch` + a ReadableStream reader: the point of these tests
+ * is that the raw HTTP response is a well-formed `text/event-stream` — headers,
+ * framing and all — so the parse happens over the bytes on the socket.
+ *
+ * Returns a handle with `events` (parsed so far), `waitFor(type, ms)` and
+ * `close()`. `waitFor` resolves on the FIRST matching event at or after the
+ * call, so a test never races the hello frame it already consumed.
+ */
+function sse(base, path = '/events', { headers = {} } = {}) {
+  const u = new URL(path, base);
+  const events = [];
+  const waiters = [];
+  let raw = '';
+  let response = null;
+  const opened = Object.create(null);
+
+  const emit = (ev) => {
+    events.push(ev);
+    for (let i = waiters.length - 1; i >= 0; i--) {
+      if (waiters[i].type === ev.type) {
+        waiters[i].resolve(ev);
+        waiters.splice(i, 1);
+      }
+    }
+  };
+
+  const req = httpRequest(
+    {
+      host: u.hostname,
+      port: u.port,
+      path: u.pathname + u.search,
+      method: 'GET',
+      // A real EventSource sends exactly this Accept. The route must answer the
+      // STREAM for it — not the HTML page, which is what a naive `json` check
+      // would do (an EventSource asks for neither JSON nor HTML).
+      headers: { accept: 'text/event-stream', ...headers },
+      agent: false,
+    },
+    (res) => {
+      response = res;
+      opened.resolve?.(res);
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => {
+        raw += chunk;
+        // SSE frames are separated by a blank line.
+        let idx;
+        while ((idx = raw.indexOf('\n\n')) !== -1) {
+          const frame = raw.slice(0, idx);
+          raw = raw.slice(idx + 2);
+          let type = 'message';
+          let data = '';
+          for (const line of frame.split('\n')) {
+            if (line.startsWith(':')) continue; // heartbeat comment
+            if (line.startsWith('event:')) type = line.slice(6).trim();
+            else if (line.startsWith('data:')) data += line.slice(5).trim();
+            else if (line.startsWith('retry:')) emit({ type: 'retry', data: line.slice(6).trim() });
+          }
+          if (data !== '' || type !== 'message') {
+            let json = null;
+            try { json = JSON.parse(data); } catch { /* not every frame is json */ }
+            emit({ type, data, json });
+          }
+        }
+      });
+    },
+  );
+  const headersPromise = new Promise((resolve, reject) => {
+    opened.resolve = resolve;
+    req.on('error', reject);
+    setTimeout(() => reject(new Error('stream headers never arrived')), 10_000).unref?.();
+  });
+  req.end();
+
+  return {
+    events,
+    get rawText() { return raw; },
+    headers: () => headersPromise,
+    waitFor(type, ms = 15_000) {
+      return new Promise((resolve, reject) => {
+        waiters.push({ type, resolve });
+        setTimeout(
+          () => reject(new Error(`no "${type}" event in ${ms}ms; saw ${events.map((e) => e.type).join(',') || '(none)'}`)),
+          ms,
+        ).unref?.();
+      });
+    },
+    close() {
+      try { response?.destroy(); } catch { /* already gone */ }
+      try { req.destroy(); } catch { /* already gone */ }
+    },
+  };
+}
+
+describe('viewer — live refresh over SSE (259.1: the stream)', () => {
+  let base;
+  let stream;
+  beforeEach(async () => {
+    seedCorpus();
+    const r = await boot({ pollMs: 60 });
+    base = r.url;
+  });
+  afterEach(() => {
+    stream?.close();
+    stream = null;
+  });
+
+  it('/events is a real text/event-stream — and it is UNBUFFERED (no content-length)', async () => {
+    stream = sse(base);
+    const res = await stream.headers();
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toMatch(/^text\/event-stream/);
+    expect(res.headers['cache-control']).toMatch(/no-store/);
+    // A content-length on a stream that never ends is a contradiction the
+    // browser resolves by buffering forever. Its ABSENCE is the contract.
+    expect(res.headers['content-length']).toBeUndefined();
+    // The same hardening headers every other response carries — a new route
+    // must not be the one that forgets them.
+    expect(res.headers['content-security-policy']).toBeTruthy();
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(res.headers['referrer-policy']).toBe('no-referrer');
+  });
+
+  it('the stream opens with a hello frame that states its own mechanism', async () => {
+    stream = sse(base);
+    const hello = await stream.waitFor('hello');
+    expect(hello.json).toBeTruthy();
+    expect(hello.json.stream).toBe('memory');
+    // The page needs to know how fast the server polls so it can say something
+    // honest about latency; and the fingerprint is what a `change` is measured
+    // against.
+    expect(typeof hello.json.poll_ms).toBe('number');
+    expect(hello.json.poll_ms).toBeGreaterThan(0);
+    expect(typeof hello.json.fingerprint).toBe('string');
+    expect(hello.json.fingerprint.length).toBeGreaterThan(0);
+    expect(hello.json.generated_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it('a real capture through the safe write path delivers a change event', async () => {
+    stream = sse(base);
+    const hello = await stream.waitFor('hello');
+
+    // The REAL writer, not a touch() — the whole point is that the mechanism
+    // sees what `cmk remember` actually does to the tier.
+    const p = seedFact({
+      id: 'P-BQ7YKD2M',
+      tier: 'P',
+      slug: 'sse-noticed',
+      body: 'the SSE stream must notice this capture',
+    });
+    expect(p).toBeTruthy();
+
+    const change = await stream.waitFor('change');
+    expect(change.json.fingerprint).toBeTruthy();
+    expect(change.json.fingerprint).not.toBe(hello.json.fingerprint);
+    expect(change.json.generated_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it('a write to the REVIEW QUEUE reaches the stream — the queue drives the health strip (Task 259 I1)', async () => {
+    // The reviewer probed this and got 16 poll cycles with no event. The queue
+    // is not incidental state: the pinned health strip on EVERY view reports
+    // its pending count, so a queue that changes while the strip says "all
+    // clear" is the live-refresh feature failing on the most prominent line of
+    // the page. Two halves fixed — routeMedium now audits (covered in
+    // cli-auto-extract.test.js), and the fingerprint watches queues/ directly
+    // as the belt for a writer that is NOT the kit.
+    stream = sse(base);
+    const hello = await stream.waitFor('hello');
+    const qDir = join(projectRoot, 'context', 'queues');
+    mkdirSync(qDir, { recursive: true });
+    writeFileSync(join(qDir, 'review.md'), '## queued\n- (P-2DZG7XF4) something to review\n', 'utf8');
+    const change = await stream.waitFor('change');
+    expect(change.json.fingerprint).not.toBe(hello.json.fingerprint);
+  });
+
+  it('a write to the CONFLICT queue reaches the stream too', async () => {
+    stream = sse(base);
+    const hello = await stream.waitFor('hello');
+    const qDir = join(projectRoot, 'context', 'queues');
+    mkdirSync(qDir, { recursive: true });
+    writeFileSync(join(qDir, 'conflicts.md'), '## conflict\n- (P-2DZG7XF4) contradicts something\n', 'utf8');
+    const change = await stream.waitFor('change');
+    expect(change.json.fingerprint).not.toBe(hello.json.fingerprint);
+  });
+
+  it('a QUIET tier produces no change events — the poll does not cry wolf', async () => {
+    stream = sse(base);
+    await stream.waitFor('hello');
+    // Several poll cycles with nothing written.
+    await new Promise((r) => setTimeout(r, 500));
+    expect(stream.events.filter((e) => e.type === 'change')).toEqual([]);
+  });
+
+  it('the stream is reachable at every spelling — and an EventSource Accept NEVER gets the HTML page', async () => {
+    for (const path of ['/events', '/api/events', '/events.json']) {
+      const s = sse(base, path);
+      const res = await s.headers();
+      expect(`${path} -> ${res.headers['content-type']}`).toMatch(/text\/event-stream/);
+      s.close();
+    }
+    // The trap this pins: `resolveRoute` decides HTML-vs-JSON from Accept, and
+    // `text/event-stream` is neither. Without an explicit branch the browser's
+    // EventSource would be handed 60 KB of HTML and report a parse failure the
+    // page could not explain.
+    const s = sse(base, '/events', { headers: { accept: 'text/html,application/xhtml+xml' } });
+    const res = await s.headers();
+    expect(res.headers['content-type']).toMatch(/text\/event-stream/);
+    s.close();
+  });
+
+  it('the stream tells the client how long to wait before retrying', async () => {
+    stream = sse(base);
+    await stream.waitFor('hello');
+    // Without a `retry:` the browser picks its own interval (spec default is
+    // implementation-defined), so the give-up budget on the page would be
+    // unknowable. The server states it.
+    const retry = stream.events.find((e) => e.type === 'retry');
+    expect(retry, `frames: ${stream.events.map((e) => e.type).join(',')}`).toBeTruthy();
+    expect(Number(retry.data)).toBeGreaterThan(0);
+  });
+
+  it('HEAD /events answers headers and ENDS — it does not open a stream that never closes', async () => {
+    // Self-review catch. HEAD is an allowed method (it has to be — it is half
+    // of `Allow: GET, HEAD`), and the stream branch runs before the `send()`
+    // helper that handles HEAD everywhere else. Without an explicit end, a
+    // `curl -I /events`, a link checker or any monitoring probe hangs forever
+    // on a response body that is never going to finish — and it holds a server
+    // socket open while it waits.
+    const res = await Promise.race([
+      raw(base, '/events', { method: 'HEAD' }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('HEAD /events never completed — it opened a stream')), 5000)),
+    ]);
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/text\/event-stream/);
+    expect(res.body).toBe('');
+  });
+
+  it('STRUCTURALLY read-only still: /events refuses every write method (Door 3)', async () => {
+    // M7: all THREE spellings, matching the GET test above — the `.json`
+    // suffix resolves to the same view, so it is the same surface to defend.
+    for (const path of ['/events', '/api/events', '/events.json']) {
+      for (const method of ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'TRACE', 'PROPFIND']) {
+        const res = await raw(base, path, { method });
+        expect(`${method} ${path} -> ${res.status}`).toBe(`${method} ${path} -> 405`);
+        expect(res.headers.allow).toBe('GET, HEAD');
+      }
+    }
+  });
+
+  it('holding a stream open mutates NOTHING on disk (Door 2 + Door 5 negative)', async () => {
+    const before = snapshotTier(projectRoot);
+    stream = sse(base);
+    await stream.waitFor('hello');
+    await new Promise((r) => setTimeout(r, 400)); // several poll cycles
+    stream.close();
+    const drop = (xs) => xs.filter((p) => !p.includes('.index'));
+    expect(drop(snapshotTier(projectRoot))).toEqual(drop(before));
+    // Door 5 in its negative form: the viewer writes no kit log, and a POLLING
+    // reader is exactly the thing that would quietly start writing one.
+    expect(existsSync(join(projectRoot, 'context', '.locks', 'recall.log'))).toBe(false);
+  });
+
+  it('the CSP permits a same-origin EventSource DELIBERATELY (connect-src)', async () => {
+    // `default-src 'none'` blocks EventSource outright; the stream works only
+    // because `connect-src 'self'` is spelled out. Pin it so a future
+    // minimization of the header cannot silently kill live refresh — the
+    // failure mode is a page that looks fine and never updates.
+    const res = await fetch(base);
+    const csp = res.headers.get('content-security-policy');
+    expect(csp).toMatch(/connect-src 'self'/);
+    expect(csp).toMatch(/default-src 'none'/);
+  });
+});
+
+describe('viewer — the stream cannot outlive Ctrl-C (259.2: ephemerality)', () => {
+  it('close() ends an OPEN stream and resolves promptly — no hang, no daemon', async () => {
+    seedCorpus();
+    const r = await boot({ pollMs: 60 });
+    const stream = sse(r.url);
+    await stream.waitFor('hello');
+
+    const t0 = Date.now();
+    await server.close();
+    const took = Date.now() - t0;
+    server = null;
+    // The §24.1 lifecycle contract: Ctrl-C ends it. A held-open SSE response is
+    // precisely the socket that would make `server.close()` wait forever — the
+    // resident-daemon complaint class the whole viewer design exists to avoid.
+    expect(took).toBeLessThan(5000);
+
+    // And the port is genuinely gone.
+    await expect(fetch(r.url)).rejects.toThrow();
+  });
+
+  it('the poll timer does not hold the event loop open (unref)', async () => {
+    seedCorpus();
+    const r = await boot({ pollMs: 60 });
+    const stream = sse(r.url);
+    await stream.waitFor('hello');
+    // A `setInterval` that is not unref'd keeps a Node process alive after the
+    // server is closed, which is a viewer the user cannot stop — the exact
+    // shape §24.1.1 rejects. Assert the handle count returns to what it was.
+    const handlesWithStream = process._getActiveHandles().length;
+    stream.close();
+    await server.close();
+    server = null;
+    await new Promise((res) => setTimeout(res, 200));
+    expect(process._getActiveHandles().length).toBeLessThan(handlesWithStream);
+  });
+});
+
+describe('viewer — the live-refresh client in the page (259.3)', () => {
+  let mainScript;
+  beforeEach(async () => {
+    const r = await boot();
+    const html = await (await fetch(r.url)).text();
+    mainScript = html.slice(html.lastIndexOf('<script>'));
+  });
+
+  it('the page subscribes to the stream on a RELATIVE, same-origin path', () => {
+    expect(mainScript).toMatch(/new EventSource\(/);
+    // Same-origin is what `connect-src 'self'` permits; an absolute URL here
+    // would be blocked by the CSP and would also pin the port into the markup.
+    const ctor = mainScript.match(/new EventSource\(([^)]*)\)/);
+    expect(ctor, 'no EventSource construction found').toBeTruthy();
+    expect(ctor[1]).toMatch(/^'\/(api\/)?events'|^"\/(api\/)?events"/);
+    expect(ctor[1]).not.toMatch(/https?:|location\.host/);
+  });
+
+  it('a dropped stream GIVES UP after a bounded number of failures — never infinite retry noise', () => {
+    // The ephemerality consequence the task named: the server dies with Ctrl-C
+    // and restarts on a NEW port, so the page CANNOT reconnect. A browser's
+    // EventSource retries forever unless someone closes it, so the page must.
+    expect(mainScript).toMatch(/\.close\(\)/);
+    expect(mainScript).toMatch(/LIVE_GIVE_UP|giveUp|failures/);
+  });
+
+  it('the drop is stated in the freshness stamp, not left as silent staleness', () => {
+    // The honest UX: a page that has stopped updating must SAY so. Silent
+    // staleness on a memory viewer is the worst available failure — the reader
+    // believes they are looking at the corpus and they are looking at a
+    // photograph of it.
+    expect(mainScript).toMatch(/freshness/);
+    expect(mainScript).toMatch(/reload|restart/i);
+    expect(mainScript).toMatch(/live/i);
+  });
+
+  it('the page does not re-render the GRAPH under the reader\'s cursor', () => {
+    // Every other view re-fetches in place and keeps its URL state. The graph
+    // re-runs a force layout, so auto-refreshing it would move every node while
+    // someone is pointing at one. It gets the badge instead of the redraw.
+    expect(mainScript).toMatch(/onLiveChange/);
+    // The graph shares the hands-off branch with the typing guard (I2) — both
+    // resolve to the badge rather than a repaint.
+    expect(mainScript).toMatch(/view === 'graph' \|\| isReaderTyping\(\)\) return setLive\('stale'\)/);
+  });
+
+  it('ONE variable owns the live state, and Refresh ANSWERS the stale badge', () => {
+    // Self-review catch. The first cut kept a `graphStale` boolean beside the
+    // rendered words, and Refresh cleared the boolean but not the text — so
+    // after refreshing, the stamp still read "memory changed — Refresh to see
+    // them" under a view that had just been refreshed. A control that lies
+    // about what it did, same class as a theme button reading "Light" on a
+    // light page. One variable owns it now, and Refresh moves it.
+    expect(mainScript).toMatch(/liveState/);
+    // The identifier survives in a comment ON PURPOSE (the decision trail);
+    // what must be gone is the second piece of STATE.
+    expect(mainScript).not.toMatch(/let graphStale|graphStale\s*=/);
+    expect(mainScript).toMatch(/if \(liveState === 'stale'\) setLive\('on'\)/);
+    // …and a reconnect must NOT paint over an unanswered stale badge: the graph
+    // is still showing pre-change data and a healthy stream does not fix that.
+    expect(mainScript).toMatch(/liveState !== 'stale'/);
+    // M1 — RETARGETED. This originally asserted that Refresh never clears
+    // 'gone' ("a re-read cannot fix it"), which had the logic backwards:
+    // 'gone' is an INFERENCE from three failed reconnects, and a fetch that
+    // SUCCEEDS against the same origin is direct evidence the inference is now
+    // wrong. What must stay true is the success/failure split — only a refresh
+    // that actually resolved may retire the verdict.
+    expect(mainScript).toMatch(/liveState === 'gone'/);
+    expect(mainScript).toMatch(/startsWith\('failed:'\)/);
+  });
+
+  it('a change never wipes what the reader is typing (I2)', () => {
+    // render() repaints #q from the URL, so an auto-render landing between a
+    // keystroke and its 220ms debounce would DISCARD the query mid-word. The
+    // shipped claim is that a change never moves the reader's position; an
+    // input being wiped is the loudest possible way to move it.
+    expect(mainScript).toMatch(/isReaderTyping/);
+    // BOTH conditions — focus alone misses "typed then blurred inside 220ms",
+    // a pending debounce alone misses "typed three chars and paused".
+    expect(mainScript).toMatch(/document\.activeElement === \$\('#q'\)/);
+    expect(mainScript).toMatch(/debounce !== null/);
+    // …and the debounce must NULL itself when it fires, or it reads as
+    // permanently-pending and live refresh would never repaint again.
+    expect(mainScript).toMatch(/debounce = null; searchHere\(\)/);
+    // The guard routes to the badge, exactly like the graph does.
+    expect(mainScript).toMatch(/view === 'graph' \|\| isReaderTyping\(\)\) return setLive\('stale'\)/);
+  });
+
+  it('Back out of the bfcache does not leave the stamp claiming live with no stream (I4)', () => {
+    // A restored page keeps its JS state, including a liveSuffix reading
+    // "· live" over a stream closed on the way out — silent staleness reached
+    // from the one direction nobody tests.
+    expect(mainScript).toMatch(/'pageshow'/);
+    expect(mainScript).toMatch(/ev\.persisted/);
+    // The stamp is corrected BEFORE the re-open is attempted, so a failed
+    // re-open cannot leave the false claim standing.
+    expect(mainScript).toMatch(/setLive\('off'\);\s*\/\/ correct the restored stamp/);
+  });
+
+  it('a hidden tab releases its socket, and a visible one takes it back (I5)', () => {
+    // HTTP/1.1 allows ~6 connections per origin and multi-tab is supported
+    // here (ctrl-click passes through by design), so idle background tabs must
+    // not spend the budget.
+    expect(mainScript).toMatch(/visibilitychange/);
+    expect(mainScript).toMatch(/visibilityState === 'hidden'/);
+    // Re-opening must NOT resurrect a stream over a 'gone' verdict the reader
+    // has already been shown…
+    expect(mainScript).toMatch(/!liveSource && liveState !== 'gone'/);
+    // …and coming back must RE-READ, because the stream cannot report changes
+    // that happened while nobody was listening.
+    expect(mainScript).toMatch(/onLiveChange\(\);/);
+    // startLive must be idempotent or visibility flapping opens N streams.
+    expect(mainScript).toMatch(/if \(liveSource\) return;/);
+    // The residual (6+ concurrently VISIBLE windows) is accepted IN WRITING.
+    expect(mainScript).toMatch(/RESIDUAL, accepted and stated/);
+  });
+
+  it('the hello frame\'s poll_ms is CONSUMED, not decorative (M3)', () => {
+    // A field shipped with a comment claiming a consumer, and no consumer, is
+    // a field that drifts. The page reads the server's cadence rather than
+    // hardcoding a number in its own wording.
+    expect(mainScript).toMatch(/d\.poll_ms/);
+    expect(mainScript).toMatch(/pollSeconds/);
+    // Guarded: a malformed payload must never cost the reader live refresh.
+    expect(mainScript).toMatch(/catch \(_\) \{ \/\* keep the unqualified wording \*\/ \}/);
   });
 });
 

@@ -48,6 +48,7 @@ export const REASON_CODES = Object.freeze({
   TRUST_SIGNAL_DAMPEN: 'dampen', // trust-signal: a screened passive dampen applied a trust_score delta (Task 193)
   CONFLICT_QUEUED: 'conflict-queued', // conflict-queue: new write contradicts existing higher-trust fact, routed to queues/conflicts.md (Task 25, design §6.8)
   CONFLICT_RESOLVED: 'conflict-resolved', // conflict-queue: user resolved a pending conflict via cmk queue conflicts (keep-old / keep-new / merge-both)
+  REVIEW_QUEUED: 'review-queued', // review-queue: auto-extract routed a medium-trust candidate INTO queues/review.md (Task 259 I1). The two exits below existed from Task 26 while the ENTRANCE wrote nothing — so a queue that drives the pinned health strip could grow with no audit trail, and the viewer's live-refresh (whose change signal reads this log) could not see it happen.
   REVIEW_PROMOTED: 'review-promoted', // review-queue: user promoted a medium-trust auto-extract to MEMORY.md (Task 26, design §6.2)
   REVIEW_DISCARDED: 'review-discarded', // review-queue: user discarded a medium-trust auto-extract via cmk queue review
   IMPORT_APPLIED: 'import-applied', // import-anthropic-memory: bullet applied to project MEMORY.md with write_source:imported (Task 38). ALSO emitted by import-sessions (Task 225, action:'import-session') — consumers disambiguate on `action`.
@@ -136,7 +137,15 @@ export function dateFromIso(iso) {
   return iso.slice(0, 10);
 }
 
-function auditLogPath(tierRoot) {
+/**
+ * Where a tier's audit log lives. EXPORTED (Task 259) because the viewer's
+ * live-refresh poll needs to `stat` this file as a change signal — every
+ * mutating kit operation appends here, so it is the closest thing the kit has
+ * to a transaction log. A second inline `join(tierRoot, '.locks', 'audit.log')`
+ * would be the same one-definition-site drift the shared-module rule exists to
+ * stop; a reader gets the path from here, the same as every writer does.
+ */
+export function auditLogPath(tierRoot) {
   return join(tierRoot, '.locks', 'audit.log');
 }
 

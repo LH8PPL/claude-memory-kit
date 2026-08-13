@@ -19,7 +19,7 @@
 // Run: npm run live-verify:viewer   [--keep] [--verbose]
 
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, mkdtempSync, rmSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { request as httpRequest } from 'node:http';
 import { connect as netConnect } from 'node:net';
 import { tmpdir, platform } from 'node:os';
@@ -89,6 +89,87 @@ function rawLine(base, requestLine) {
     sock.on('data', (c) => { body += c; });
     sock.on('end', () => resolve(body));
     sock.on('error', reject);
+  });
+}
+
+/**
+ * Open a REAL SSE connection and parse the frames off the socket (Task 259).
+ *
+ * Node has no `EventSource`, and adding one would break §24.1.7's zero-dependency
+ * rule for a gate script — so this speaks the wire format directly, which is
+ * also the more honest test: it proves the BYTES are a well-formed event stream,
+ * not that some client library was willing to tolerate them.
+ */
+function sseOpen(url) {
+  const u = new URL(url);
+  const events = [];
+  const waiters = [];
+  let buf = '';
+  return new Promise((resolve, reject) => {
+    const req = httpRequest(
+      {
+        host: u.hostname,
+        port: u.port,
+        path: u.pathname + u.search,
+        method: 'GET',
+        // Exactly what a browser's EventSource sends — the Accept value that is
+        // neither JSON nor HTML, and would otherwise fall through to the page.
+        headers: { accept: 'text/event-stream' },
+        agent: false,
+      },
+      (res) => {
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+          buf += chunk;
+          let i;
+          while ((i = buf.indexOf('\n\n')) !== -1) {
+            const raw = buf.slice(0, i);
+            buf = buf.slice(i + 2);
+            let type = null;
+            let data = '';
+            for (const line of raw.split('\n')) {
+              if (line.startsWith(':')) continue;
+              if (line.startsWith('event:')) type = line.slice(6).trim();
+              else if (line.startsWith('data:')) data += line.slice(5).trim();
+            }
+            if (!type) continue;
+            let json = null;
+            try { json = JSON.parse(data); } catch { /* not json */ }
+            const ev = { type, json };
+            events.push(ev);
+            for (let k = waiters.length - 1; k >= 0; k--) {
+              const w = waiters[k];
+              if (w.type !== type) continue;
+              if (w.where && !w.where(ev)) continue;
+              w.resolve(ev);
+              waiters.splice(k, 1);
+            }
+          }
+        });
+        resolve({
+          contentType: res.headers['content-type'],
+          contentLength: res.headers['content-length'],
+          events,
+          // `where` exists because the SECOND change on one stream is a
+          // different question from the first: without it, a buffered `change`
+          // from the previous write answers immediately and the next check
+          // passes on stale evidence rather than on the write it just made.
+          waitFor(type, ms, where = null) {
+            const match = (e) => e.type === type && (!where || where(e));
+            const seen = events.find(match);
+            if (seen) return Promise.resolve(seen);
+            return new Promise((res2, rej2) => {
+              waiters.push({ type, where, resolve: res2 });
+              setTimeout(() => rej2(new Error(`no "${type}" frame in ${ms}ms (saw: ${events.map((e) => e.type).join(',') || 'nothing'})`)), ms).unref();
+            });
+          },
+          close() { try { res.destroy(); } catch { /* gone */ } try { req.destroy(); } catch { /* gone */ } },
+        });
+      },
+    );
+    req.on('error', reject);
+    setTimeout(() => reject(new Error('stream never opened in 20s')), 20_000).unref();
+    req.end();
   });
 }
 
@@ -538,6 +619,9 @@ async function main() {
       // route. A query parameter must not be a way past the 405 gate.
       '/api/facts?limit=2&offset=2', '/api/facts?q=toolchain&offset=1',
       '/api/decisions?offset=1', '/api/decisions?q=toolchain&order=newest',
+      // Task 259: the live-refresh stream is a new ROUTE, so it is new surface
+      // for the read-only guarantee. It is a GET stream and nothing else.
+      '/events', '/api/events', '/events.json',
     ];
     const methods = ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'TRACE'];
     const refusals = [];
@@ -556,6 +640,94 @@ async function main() {
     // And the tier is untouched by the attempts.
     const stillThere = await http(`${base}/api/facts`);
     check('the corpus survived every write attempt intact', stillThere.json.count === facts.json.count);
+
+    // ---- 3b. LIVE REFRESH, end to end (Task 259) ---------------------------
+    //
+    // The whole point of the feature is a loop no unit test can close: a REAL
+    // `cmk remember` in one process, a REAL stat-poll in another, and a frame
+    // arriving on a socket a browser is holding open. In-process tests can drive
+    // `startViewer` with a 60ms poll and a synthetic write; this drives the real
+    // bin at its real 2s cadence against the real write path, which is where a
+    // fingerprint that watches the wrong artifact would actually show up.
+    {
+      const live = await sseOpen(`${base}/events`);
+      try {
+        check(
+          'the stream answers text/event-stream to a real EventSource Accept (not the HTML page)',
+          /^text\/event-stream/.test(live.contentType || ''),
+          `content-type=${live.contentType}`,
+        );
+        check(
+          'no content-length on the stream — it is unbuffered, not a finite body',
+          live.contentLength === undefined,
+          `content-length=${live.contentLength}`,
+        );
+
+        const hello = await live.waitFor('hello', 15_000).catch((e) => ({ error: e.message }));
+        check(
+          'the stream opens with a hello frame stating its poll cadence + fingerprint',
+          !!(hello && hello.json && hello.json.stream === 'memory' && hello.json.poll_ms > 0 && hello.json.fingerprint),
+          JSON.stringify(hello),
+        );
+
+        // THE loop: a real capture through the real CLI, seen by the open stream.
+        const w = runCmk([
+          'remember', 'Live refresh must notice a capture made while a tab is open',
+          '--type', 'project', '--title', 'live refresh smoke',
+        ], { cwd: proj, env });
+        check('the capture that the stream must notice was actually written', w.status === 0, w.stderr);
+
+        // The real server polls every VIEWER_POLL_MS (2s). Allow generous slack:
+        // this is a real subprocess on a possibly-busy CI box, and a flaky gate
+        // is worse than a slow one.
+        const change = await live.waitFor('change', 30_000).catch((e) => ({ error: e.message }));
+        check(
+          'a fact captured by the real `cmk remember` reaches the OPEN stream as a change event',
+          !!(change && change.json && change.json.fingerprint && change.json.fingerprint !== hello?.json?.fingerprint),
+          JSON.stringify(change),
+        );
+
+        // THE QUEUE HALF (review finding I1). The queue is the one tier surface
+        // this gate can reach that `cmk remember` does not touch, and it is the
+        // one that drives the pinned health strip on EVERY view — so a queue
+        // growing while the strip still reads "all clear" is the feature
+        // failing on the page's most prominent line. The reviewer probed 16
+        // poll cycles against the pre-fix build and saw nothing.
+        //
+        // Written DIRECTLY rather than through a bin, deliberately and on the
+        // fingerprint's own terms: the audit half of I1 (`REVIEW_QUEUED` from
+        // `routeMedium`) is covered by tests/cli-auto-extract.test.js and needs
+        // a live medium-trust Haiku extraction to reach from a bin, while the
+        // fingerprint entry exists precisely as the belt for writers that are
+        // NOT the kit — a second agent, a `git pull`, a merge. This is that
+        // writer. It is also the harder case: an APPEND to an existing file
+        // does not move the containing directory's mtime, which is why the two
+        // queue files are named individually rather than covered by `queues/`.
+        const queuePath = join(proj, 'context', 'queues', 'review.md');
+        mkdirSync(dirname(queuePath), { recursive: true });
+        const beforeQueue = change?.json?.fingerprint ?? hello?.json?.fingerprint;
+        appendFileSync(
+          queuePath,
+          `\n## 2026-01-01T00:00:00Z — live-verify (medium-trust, pending review)\n- (P-LIVEVRFY) a queued item the open stream must notice\n`,
+          'utf8',
+        );
+        const queueChange = await live
+          .waitFor('change', 30_000, (e) => e.json?.fingerprint && e.json.fingerprint !== beforeQueue)
+          .catch((e) => ({ error: e.message }));
+        check(
+          'an append to queues/review.md — the queue behind the pinned health strip — reaches the OPEN stream too (I1)',
+          !!(queueChange && queueChange.json && queueChange.json.fingerprint !== beforeQueue),
+          JSON.stringify(queueChange),
+        );
+      } finally {
+        live.close();
+      }
+
+      // Ephemerality, from the client side: the stream must not have turned the
+      // viewer into something that outlives its own shutdown. Proven at stage 6
+      // (Ctrl-C) — but only if a stream was open at some point, which it now was.
+      check('the server is still serving after a stream opened and closed', (await http(`${base}/api/facts`)).status === 200);
+    }
 
     // ---- 4. the two refusals that keep this safe ---------------------------
     const rebind = await http(`${base}/api/facts`, { headers: { host: 'evil.example.com' } });
@@ -643,10 +815,14 @@ async function main() {
   const failed = results.filter((r) => !r.ok);
   if (failed.length === 0) {
     log('The real bin serves all five views read-only on a real corpus, pages past the first');
-    log('screen of facts and decisions, and lets go of the port.');
+    log('screen of facts and decisions, streams a real capture to an open SSE client, and');
+    log('lets go of the port.');
     log('NOT covered here (needs a human with a browser): the rendered page itself — layout,');
     log('the graph drawing, the RENDERED pager and its prev/next links, the relevance pills,');
-    log('the copy buttons, and the actual browser auto-open.');
+    log('the copy buttons, and the actual browser auto-open. For live refresh specifically,');
+    log('the CLIENT half is unproven here: this script speaks SSE itself, so a browser');
+    log('EventSource actually re-rendering the view on `change`, the give-up-after-3-failures');
+    log('drop indicator, and the graph`s refresh-when-asked badge all need a human tab.');
     process.exit(0);
   }
   log(`${failed.length} check(s) FAILED.`);
