@@ -17112,3 +17112,130 @@ _(retracted 2026-07-22)_
 
 **When:** 2026-08-09 · **Fact:** `P-DFCJLVUA`
 **Why:** Worktree isolation + runnable reproducers catch real merge-blocking bugs (paging drop-dup, offset overflow, budget registry gaps) before code ships; catching at review time beats user-reported bugs.
+
+<!-- decision:P-UZ9BHS27 -->
+
+## When design direction is ratified in advance, work within it rather than proposi
+
+**When:** 2026-08-05 · **Fact:** `P-UZ9BHS27`
+
+<!-- decision:P-SDKP7RKS -->
+
+## Regression test added to pin graph layout—prevents graph from being pushed below
+
+**When:** 2026-08-06 · **Fact:** `P-SDKP7RKS`
+
+<!-- decision:P-aJJN2CYR -->
+
+## Windows Temp-Dir Teardown Causes EPERM in Test Cleanup
+
+**When:** 2026-08-10 · **Fact:** `P-aJJN2CYR`
+**Why:** Helps distinguish environmental test flakes from actual regressions; prevents false alarm escalations
+
+<!-- decision:P-W72YU36T -->
+
+## Agents Are Barred from Editing Their Own Governance Rules
+
+**When:** 2026-08-10 · **Fact:** `P-W72YU36T`
+**Why:** Self-modification would undermine the constraint system. This is a foundational safety pattern.
+
+<!-- decision:P-9TYUXKZC -->
+
+## NFR-10 Ask-Before-Install Rule Formalized in CLAUDE.md
+
+**When:** 2026-08-10 · **Fact:** `P-9TYUXKZC`
+**Why:** Makes ask-before-install a formal constraint, not just observed practice. Came from task 48's PR body; needed elevated authority to apply.
+
+<!-- decision:P-HS56GLKR -->
+
+## Windows Worktree Metadata Stale Dirs Cannot Be Pruned
+
+**When:** 2026-08-10 · **Fact:** `P-HS56GLKR`
+**Why:** Helps with triage and expectation-setting when stale metadata appears. Prevents false-alarm escalation.
+
+<!-- decision:P-BE4WKBDa -->
+
+## Windows Scheduled Task Configuration for Memory Crons
+
+**When:** 2026-08-10 · **Fact:** `P-BE4WKBDa`
+**Why:** Core infrastructure for memory system health. Crons manage daily distillation and weekly curation; starving crons block memory consolidation. Verified as of 2026-08-10.
+
+<!-- decision:P-NMKVWBX9 -->
+
+## Autolink Workflow to Complete Corpus Linking
+
+**When:** 2026-08-10 · **Fact:** `P-NMKVWBX9`
+**Why:** The bounded process requires iteration; the graph doesn't auto-update; understanding the full workflow prevents false expectations about single-run completion.
+
+<!-- decision:P-Z5RNAJ9X -->
+
+## Near-Duplicate Handling in Autolink
+
+**When:** 2026-08-10 · **Fact:** `P-Z5RNAJ9X`
+**Why:** The backfill system preserves decision-making authority by never automatically queuing merges.
+
+<!-- decision:P-67FYLTUQ -->
+
+## Corpus Autolink Workflow After PR 259
+
+**When:** 2026-08-10 · **Fact:** `P-67FYLTUQ`
+**Why:** User rejected manual looping as non-idiomatic. PR 259 fixes the command to self-complete, aligning with the principle "bounded runs prevent crashes, not mandate user loops" (saved as P-PM6WN3N3).
+
+<!-- decision:P-AYNYAAJD -->
+
+## Comprehensive PR Review Methodology
+
+**When:** 2026-08-10 · **Fact:** `P-AYNYAAJD`
+**Why:** Catches regressions across logic, docs, edge cases, and corpus-health dimensions
+
+<!-- decision:P-29RZ3W4a -->
+
+## Corpus Poison Repair Command
+
+**When:** 2026-08-10 · **Fact:** `P-29RZ3W4a`
+**Why:** Provides users a direct recovery path if corpus health degrades
+
+<!-- decision:P-C3PDGYHM -->
+
+## Healthy Corpus Baseline Metrics
+
+**When:** 2026-08-10 · **Fact:** `P-C3PDGYHM`
+**Why:** Distinguishes normal operation from degraded/poisoned corpus state
+
+<!-- decision:P-AZ54A745 -->
+
+## "#356 Dispatch Agent Killed → Fix Batch Does Not Auto-Start"
+
+**When:** 2026-08-10 · **Fact:** `P-AZ54A745`
+**Why:** Explains why work may appear complete (marked done) but has no visible output; guides debugging and recovery
+
+<!-- decision:P-Z9VT7FRE -->
+
+## Backfill's Terminal Step — `cmk autolink --apply`"
+
+**When:** 2026-08-10 · **Fact:** `P-Z9VT7FRE`
+**Why:** Clarifies the exact last action needed to close backfill
+
+<!-- decision:P-9DD3TUAT -->
+
+## "i dont want to add new things for nothing" — prefers solid justification before
+
+**When:** 2026-08-07 · **Fact:** `P-9DD3TUAT`
+
+<!-- decision:P-XGJVVQ4K -->
+
+## User approved dark-default-with-light-supported design direction over dark-only
+
+**When:** 2026-08-07 · **Fact:** `P-XGJVVQ4K`
+
+<!-- decision:P-2RTaUT3D -->
+
+## Task 47 HC-5 improvement (stat actual Windows task target, not just sentinel) wa
+
+**When:** 2026-08-08 · **Fact:** `P-2RTaUT3D`
+
+<!-- decision:P-SL5KD5Ya -->
+
+## we need a button to switch between dark and light.
+
+**When:** 2026-08-08 · **Fact:** `P-SL5KD5Ya`

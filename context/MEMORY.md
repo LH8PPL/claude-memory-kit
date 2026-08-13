@@ -8,18 +8,18 @@
 
 <!-- Current work in progress. Drop bullets as work resolves. -->
 
-- (P-9DD3TUAT) "i dont want to add new things for nothing" — prefers solid justification before adding features; cost-conscious about scope
-  <!-- source: auto-extract-session, source_line: 1, sha1: 32941c64f8316959dfa27f5f6ee618efa28ed3de04bc01a6bce6f52faaae8f3c, write: auto-extract, trust: high, at: 2026-08-07T20:17:45Z -->
-- (P-XGJVVQ4K) User approved dark-default-with-light-supported design direction over dark-only
-  <!-- source: auto-extract-session, source_line: 1, sha1: 7ce49d3141547292f636ce5fb92a025f9f94ac51341f6fa1070db54b419e59a2, write: auto-extract, trust: high, at: 2026-08-07T21:21:47Z -->
-- (P-2RTaUT3D) Task 47 HC-5 improvement (stat actual Windows task target, not just sentinel) was motivated by v0.5.4 incident: package rename caused registered task to point to dead path for 4 nights while HC-5 stayed green.
-  <!-- source: review-promote, source_line: 1, sha1: c91dfdcc622cd57600f2a96989dbe4397d93bf04d6ae5a8efe1f53217418bfc5, write: user-explicit, trust: high, at: 2026-08-08T20:26:00Z -->
-- (P-SL5KD5Ya) we need a button to switch between dark and light.
-  <!-- source: review-promote, source_line: 1, sha1: 6ac9522b1d10d52dcadc79f80c5336c68a1009b555c3455f1965113d6f286043, write: user-explicit, trust: high, at: 2026-08-08T20:26:02Z -->
-- (P-KZR4X3PW) Rejects manual command loops as UX anti-pattern; "what would a real user do?" signals idempotent commands are required
-  <!-- source: auto-extract-session, source_line: 1, sha1: d6b086d023627c2dbb303b374bb1653e0b2c724693a44cfbbe2ad3799d9512bf, write: auto-extract, trust: high, at: 2026-08-10T10:55:06Z -->
-- (P-5J4CT5ZR) PR #357 review pass-two complete; all verification tracks green (tests, validations, live probes on branch code)
-  <!-- source: auto-extract-session, source_line: 1, sha1: f5d09faf1b26ff63da077f0f2a5880426a89cf442f3410a1d186d306f21fae44, write: auto-extract, trust: high, at: 2026-08-10T11:36:14Z -->
+- (P-UKKMK2XF) Dry-run fix verified: `mkdirSync`/`writeFile` are fully behind `if (!dryRun)`; the linux + darwin dry-run legs never had the bug (checked — they return before any write). Real-filesystem state door is pinned, not just the injected seam.
+  <!-- source: review-promote, source_line: 1, sha1: 5e457bfb414df67205905aaadbb5020038c9a0e54eaba8b22e5ab03353d1f2f1, write: user-explicit, trust: high, at: 2026-08-10T20:41:42Z -->
+- (P-a7X2VNJN) Windows temp-dir teardown causes local EPERM in cli-install.test.js; ubuntu CI passes, confirming no regression
+  <!-- source: review-promote, source_line: 1, sha1: 907305fd96cb7991fcc928260cfc0236d7ec56a3bb8d71788574307cb875bdb4, write: user-explicit, trust: high, at: 2026-08-10T20:41:59Z -->
+- (P-SETV7N3V) Per D-378, green workflow ≠ green commit; Sonar posts gate as check-run; waiting for Sonar/Coverage to pass
+  <!-- source: review-promote, source_line: 1, sha1: 67f868f08d79c7ca525df7b80ceb5065bda948c11511d0d8da7c215ffa177927, write: user-explicit, trust: high, at: 2026-08-10T20:42:14Z -->
+- (P-F2YB59a9) D-number ledger explicitly tracked in todos; claims resolved serially at merge points
+  <!-- source: review-promote, source_line: 1, sha1: f3cfa8e6555de083c917950d8a7bcd895b86b50a446d09660dedfa5fe2e8f6a6, write: user-explicit, trust: high, at: 2026-08-10T20:42:14Z -->
+- (P-ASU3N6A9) User wants full autopilot through release close; no mid-sequence prompts until final tag
+  <!-- source: auto-extract-session, source_line: 1, sha1: 089ffa980f888af6c381bc5e9a651c774a730a592df24ca0270c43803652ecd4, write: auto-extract, trust: high, at: 2026-08-13T11:02:09Z -->
+- (P-GLUEBADK) User retains tag command as final manual step (not automated)
+  <!-- source: auto-extract-session, source_line: 1, sha1: a0fde7e786997f3b340ee84437ea058f4b411c58a53da4637ce722f5707e3ed2, write: auto-extract, trust: high, at: 2026-08-13T11:02:09Z -->
 
 ## Environment Notes
 
