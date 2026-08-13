@@ -1,5 +1,5 @@
 // scheduler-state.mjs — read back what the HOST scheduler actually has
-// registered for a kit job (Task 47, D-354 + D-439).
+// registered for a kit job (Task 47, D-354 + D-452).
 //
 // WHY THIS EXISTS. HC-5 used to answer "did we ever register a cron?" by
 // checking a sentinel file the kit itself wrote. That is not the question a

@@ -16,7 +16,7 @@
 //   real on-disk append + its whisper/HC-14 consequence are pinned in
 //   tests/cli-health-log.test.js and tests/cli-doctor-hc14.test.js.
 //
-// Task 265 (D-439): the +17 lines runRegisterCrons gained — the `settings:`
+// Task 265 (D-452): the +17 lines runRegisterCrons gained — the `settings:`
 // print and the failed-repair warning — had no coverage. The warning is the
 // part that matters: it is the ONLY thing standing between a user and a
 // registered-but-starving scheduled task, and a silent regression there would
@@ -157,7 +157,7 @@ describe('Task 265 — `cmk register-crons` reporting', () => {
   });
 });
 
-// Task 47.0 (D-439 handover) — the console is not a durable surface.
+// Task 47.0 (D-452 handover) — the console is not a durable surface.
 //
 // Task 265 made a failed settings repair VISIBLE; it did not make it
 // DISCOVERABLE. The warning scrolls away, and `cmk doctor` HC-5 passed on the

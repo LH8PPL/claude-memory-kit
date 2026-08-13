@@ -130,7 +130,7 @@ describe('the Warnable-shaped registry', () => {
     expect(SEVERITY_RANK.degraded).toBeGreaterThan(SEVERITY_RANK.advisory);
   });
 
-  // Task 47.0 — the class D-439 handed over. Its two non-obvious properties are
+  // Task 47.0 — the class D-452 handed over. Its two non-obvious properties are
   // pinned explicitly rather than left to the generic shape loop above, because
   // getting either wrong changes what the user is told.
   // I3 — the two-subject defect. `register-crons` registers TWO jobs and writes

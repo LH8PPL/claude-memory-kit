@@ -992,7 +992,7 @@ function hc10CompactionLiveness({ projectRoot, now }) {
         status: 'fail',
         // The load-bearing message: the heartbeat LIES if read alone. Name the
         // starvation explicitly so the user isn't reassured by a fresh heartbeat.
-        // Task 265 (D-439): the named cause used to be "a laptop asleep at
+        // Task 265 (D-452): the named cause used to be "a laptop asleep at
         // 23:00", which WakeToRun already addressed. The dominant cause on
         // Windows is the scheduler's own conditions — a task registered before
         // v0.6.6 refuses to start on battery, stops when you unplug, and is

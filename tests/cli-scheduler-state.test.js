@@ -27,7 +27,7 @@
 //
 // THE TWO QUESTIONS ARE ASKED FROM ONE READ. `schtasks /query /XML` returns the
 // whole task definition, which answers both "does the registered target still
-// exist" (D-354) and "did the settings actually apply" (Task 47.0 / D-439) —
+// exist" (D-354) and "did the settings actually apply" (Task 47.0 / D-452) —
 // the second via `inspectWindowsTaskSettings`, which Task 265 shipped pure and
 // unwired for exactly this caller.
 
