@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 6cdf95b3532fb83064522341e1954190e001f81a
+related: [version-snapshot-in-recent-md-guards-against-cross-session-a, memory-auto-injection-on-session-start, project-tracking-structure]
 ---
 
 Session auto-compaction that fires during a task loses context fidelity. This has occurred twice in recent work.

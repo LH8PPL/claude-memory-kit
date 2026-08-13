@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: dba081c365e06a48aac26a84eba0c0016039100a019ff308892de4041180763b
+related: [harness-args-parameter-format-and-normalization]
 ---
 
 When spawning agent pools via batch invocation, args may arrive as either JSON string or parsed object. Guard with `typeof args === 'string' ? JSON.parse(args) : args` to normalize before processing. Use `parallel(map(=> () => agent(...)))` pattern for parallel spawning (documented pattern).

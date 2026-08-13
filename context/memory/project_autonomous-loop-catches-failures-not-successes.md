@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ee9c395378de4acfe195876fd59dcdfd4d09c5874af4d892eef0a85661a04e65
+related: [memory-verification-spans-session-boundaries, cmk-view-integrates-with-core-memory-subsystems]
 ---
 
 The loop **reliably dampens memories behind autonomous failures** (failed commands, contradictions, PREDICTION: MISS)—no human trigger needed.

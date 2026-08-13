@@ -57,6 +57,7 @@ You work. It learns — automatically, no buttons. Next session, it remembers th
 - **Stays private** — secrets, personal data and machine paths are screened before every committed write.
 - **Guards your memory** — destructive commands aimed at a memory path are blocked before they run.
 - **Tells you when it is broken** — a real failure surfaces on your next prompt, naming the fix.
+- **Fixes itself, with your say-so** — `cmk doctor --repair` offers each fix `[y/N]`; deletes stay yours to run.
 - **Lets you SEE your memory** — `cmk view` opens a read-only browser view: search, graph, health, decisions. Updates live as you capture.
 - **Works across your agents** — Claude Code, [Kiro](https://kiro.dev), [Cursor](https://cursor.com) and [Codex](https://developers.openai.com/codex) share one project memory.
 - **Per-project, in your repo** — `context/` lives in your project and travels with `git clone`.

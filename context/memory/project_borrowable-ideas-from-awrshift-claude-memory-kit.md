@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e45719bc770a2cf98dc8948e75aabc9ca629123addfded734731ead0894304af
+related: [three-borrowed-ideas-laned-to-tasks-versions]
 ---
 
 - **Git-history backfill**: Scan for commit-days missing `sessions/` entries, reconstruct log from git. Fills gap if Stop hook misfires or session crashes. Fits daily-distill cron.

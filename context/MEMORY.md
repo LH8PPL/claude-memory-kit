@@ -8,10 +8,6 @@
 
 <!-- Current work in progress. Drop bullets as work resolves. -->
 
-- (P-UZ9BHS27) When design direction is ratified in advance, work within it rather than proposing alternatives
-  <!-- source: auto-extract-session, source_line: 1, sha1: b4caf350ba5187edd71990ae099e5e42b6bc2fec40fab0a8e6d16b51216923f5, write: auto-extract, trust: high, at: 2026-08-05T20:39:17Z -->
-- (P-SDKP7RKS) Regression test added to pin graph layout—prevents graph from being pushed below the fold again
-  <!-- source: review-promote, source_line: 1, sha1: 283391bc8f188a2ee3aa22623e5728132d8880bbfa8fb502b66cf191eb03fc84, write: user-explicit, trust: high, at: 2026-08-06T20:38:35Z -->
 - (P-9DD3TUAT) "i dont want to add new things for nothing" — prefers solid justification before adding features; cost-conscious about scope
   <!-- source: auto-extract-session, source_line: 1, sha1: 32941c64f8316959dfa27f5f6ee618efa28ed3de04bc01a6bce6f52faaae8f3c, write: auto-extract, trust: high, at: 2026-08-07T20:17:45Z -->
 - (P-XGJVVQ4K) User approved dark-default-with-light-supported design direction over dark-only
@@ -20,6 +16,10 @@
   <!-- source: review-promote, source_line: 1, sha1: c91dfdcc622cd57600f2a96989dbe4397d93bf04d6ae5a8efe1f53217418bfc5, write: user-explicit, trust: high, at: 2026-08-08T20:26:00Z -->
 - (P-SL5KD5Ya) we need a button to switch between dark and light.
   <!-- source: review-promote, source_line: 1, sha1: 6ac9522b1d10d52dcadc79f80c5336c68a1009b555c3455f1965113d6f286043, write: user-explicit, trust: high, at: 2026-08-08T20:26:02Z -->
+- (P-KZR4X3PW) Rejects manual command loops as UX anti-pattern; "what would a real user do?" signals idempotent commands are required
+  <!-- source: auto-extract-session, source_line: 1, sha1: d6b086d023627c2dbb303b374bb1653e0b2c724693a44cfbbe2ad3799d9512bf, write: auto-extract, trust: high, at: 2026-08-10T10:55:06Z -->
+- (P-5J4CT5ZR) PR #357 review pass-two complete; all verification tracks green (tests, validations, live probes on branch code)
+  <!-- source: auto-extract-session, source_line: 1, sha1: f5d09faf1b26ff63da077f0f2a5880426a89cf442f3410a1d186d306f21fae44, write: auto-extract, trust: high, at: 2026-08-10T11:36:14Z -->
 
 ## Environment Notes
 

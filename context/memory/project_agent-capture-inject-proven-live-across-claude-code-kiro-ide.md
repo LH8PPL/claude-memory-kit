@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 342b73c41afc3e6ecee3885d728c3e9e49ddfec402a1b55d4f35d94c45b63e37
+related: [d198-shipped-pr225-kiro-cli-capture-inject-proven-live, kiro-v3-hooks-redesigned-first-class-delete-guard-fallback-t, task-50-n-completion-state-kiro-parity-campaign]
 ---
 
 D-198 (config location fix) validates agentSpawn end-to-end. Three surfaces confirmed: Claude Code (capture+inject ✅, guardrail ✅) | Kiro IDE (capture+inject ✅, native confirm) | kiro-cli (capture+inject ✅, shell-approval fallback). Two-pass code review + full suite 2260/0.

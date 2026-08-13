@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: cfe03ce26c20a2a153ff9b941b165058d561153e95d9d8dcd33f8d9b2677440d
+related: [global-cli-rebuild-and-reinstall-workflow, design-contract-enforcement-via-tests-code, global-cmk-artifact-version-and-template-sync]
 ---
 
 A `claude.cmd` shim was created in `.local/bin` that forwards to the working Claude Code native binary. Purpose: tests and scripts calling `claude.cmd` will resolve to the working install even after the broken npm-global copy is uninstalled.

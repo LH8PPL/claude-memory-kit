@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: bbc6344a22c2c200a7d895dd7f776c866d0538bfbb565d6e2f8cae6c960264e1
+related: [claude-memory-kit-health-check-suite-hc-1-through-hc-9, fresh-cmk-install-expected-cmk-doctor-baseline, fresh-cmk-install-health-baseline-cmk-0-4-5-with-semantic]
 ---
 
 After `cmk doctor` completes with **5 pass · 0 fail · 4 skip**, the gate is verified. Proceed as follows:

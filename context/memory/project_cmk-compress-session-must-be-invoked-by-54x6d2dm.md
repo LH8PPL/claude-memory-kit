@@ -8,6 +8,7 @@ trust: high
 source_file: review-promote
 source_line: 1
 source_sha1: c9c1110b69bc346b291e252887817e4ffc753654ce9e6af1d9b5c397bbb07608
+related: [cmk-tool-invocation-cmk-compress-session-vs-cmk-compress-laz, nested-claude-invocations-from-inside-an-ya74axrj]
 ---
 
 cmk-compress-session must be invoked by Claude Code at session-end, not manually; code documents this; manual run causes hangs

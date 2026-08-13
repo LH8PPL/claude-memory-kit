@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2140b36154794f9cd35853b36b8ee41e224ebd71e3ad2c600f446dd5262c1cee
+related: [d6-fail-safe-behavior-on-compress-timeout, memory-system-captures-work-in-real-time, task-242-auto-extract-silent-failures-self-heal-first-design]
 ---
 
 Auto-extract frequently times out under load (observed: 7 timeouts to 1 success in a sampling window) but recovers automatically and silently once load drops. No manual retry or fix required; the system self-corrects across sessions.

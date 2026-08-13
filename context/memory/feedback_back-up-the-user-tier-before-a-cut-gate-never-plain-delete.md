@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: e53235286245d4f02d56c81c4400c03220acf91354fca2fcac0bd45bd234e640
+related: [user-tier-memory-backup-before-testing, never-overwrite-backups, gate-preparation-tier-backups-and-dogfood-isolation]
 ---
 
 Before a cut-gate (or any capture-from-zero test), BACK UP the user tier (~/.claude-memory-kit) — NEVER plain-delete it. The established pattern: MOVE it to a timestamped backup under C:\cut-gate-backups\ (e.g. user-tier_<stamp>), which leaves the live path absent (so the gate captures from zero) while preserving the old tier for restore. Same for a stray ~/context scaffold — back up, don't bin. The cut-gate doc Step 0b was updated from 'Remove-Item' to this Move-Item backup.

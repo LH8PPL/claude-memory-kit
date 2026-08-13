@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 19c8a921645825dd89ff52a01ba98005c92d667bfb05f6e7c217b1f42b97a791
+related: [task-141b-node-sqlite-migration-rejected-in-d-162, node-sqlite-migration-decision, task-141b-node-sqlite-migration-rejected-on-perf]
 ---
 
 - **What:** Migration from better-sqlite3 to node:sqlite for FTS5 is REJECTED.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 99af8fe020ba59a1c1df44239a8895849b7fd855a72fff171b0e29e1500be149
+related: [cmk-health-check-status-2026-06-20, cron-job-registration-feature-hc-5, sessionstart-lazy-fallback-shadowed-by-cascade-starvation]
 ---
 
 The `detectStaleness` verdict cascade returns only the highest-precedence verdict per cycle. On busy repos (where now.md keeps refilling each session), verdict is stuck at `stale-now`, blocking lower-precedence verdicts (`stale-daily`, `stale-weekly`) from triggering. This prevents multi-level compression refresh cycles, causing recent.md to silently go stale over days.

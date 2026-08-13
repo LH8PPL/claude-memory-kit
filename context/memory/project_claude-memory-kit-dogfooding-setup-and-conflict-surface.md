@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c0cc7b92e5618dc0a673ecc0f84f618cf43538162c242604c8c3f692003256e1
+related: [task-205-preflight-fires-on-wrong-trigger-design-flaw, task-205-preflight-ux-design-wart, use-mcp-mk-remember-not-bash-cli]
 ---
 
 The kit dogfoods itself on its own repo (`C:\Projects\claude-memory-kit`) with live MCP servers (`cmk mcp serve` PIDs 30444/30384) and active auto-extract child processes writing to `context/transcripts/` during development and cut-gate work. These processes hold locks on the shared global `@lh8ppl/claude-memory-kit` binary in `AppData\Roaming\npm`. This creates a real hazard: attempting `npm install -g @lh8ppl/...@latest` while these servers are active can trigger D-302 (half-install with locked DLLs).

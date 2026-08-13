@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2ab304ed3e6db22a09620efdd24f096283aeb9119c4b130c09126fd6b9a2a07f
+related: [cmk-install-scaffolding-and-wiring, claude-memory-kit-health-check-suite-hc-1-through-hc-9, core-memory-kit-installed-with-claude-code-hooks]
 ---
 
 The kit's integration architecture spans 5 surfaces (integration points):

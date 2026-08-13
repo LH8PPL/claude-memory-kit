@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 8949b18dce79cd49e49558c814751bb570bc983b
+related: [never-overwrite-backups, claude-code-cd-compound-command-prompting-edge, use-c-temp-or-c-tmp-for-test-scratch-never-the-repo-or-home]
 ---
 
 The Bash tool's working directory PERSISTS across calls within a session — a `cd packages/cli` earlier makes a later bare `npm test` run the CLI WORKSPACE's test script (6 tests, writes packages/cli/.test-logs/last-run.json), not the root suite (1800+ tests, root .test-logs/last-run.json). Reading the root last-run.json then shows stale/wrong counts. The PowerShell tool does NOT have this problem (it auto-resets to the project root each call).

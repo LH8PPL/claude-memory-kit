@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 77fdc157f90a9f5396994dede1ab389b7cc4e20745a74231d8c0561a0f3f458a
+related: [back-up-the-user-tier-before-a-cut-gate-never-plain-delete, self-identifying-backup-names, user-tier-memory-backup-before-testing]
 ---
 
 Always create a NEW backup directory for each cut-gate / backup run — never overwrite or reuse an existing backup dir, even if it has the same gate name. Use a unique suffix (timestamp or run-N) so prior backups stay intact as evidence.

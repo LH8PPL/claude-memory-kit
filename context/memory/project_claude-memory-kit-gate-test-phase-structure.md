@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: cb61c1af816fc1d4241a3a18b471bf694cd5a41c1060814d79f835c15e857cc1
+related: [cmk-gate-test-is-structured-in-phases-0-ryb7vedm, release-gate-cut-gate-guide-must-pass-before-tagging, v0-4-3-cut-gate-multi-phase-validation-structure]
 ---
 
 The cmk gate test verifies the kit through structured phases:

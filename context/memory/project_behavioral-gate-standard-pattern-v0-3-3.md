@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 08d90f12efa90e796a3d521420138406d7b165c8df5a3b3ac74f360790aede04
+related: [memory-kit-validation-gates-d1-w4-dj4-live-gate, dj4-verification-prompts-decisions-md-recall-gate, release-workflow-with-destructive-manual-steps]
 ---
 
 All behavioral gates must follow a consistent, executable shape:

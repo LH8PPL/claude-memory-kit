@@ -100,6 +100,7 @@ export const HEALTH_CODES = Object.freeze({
   PRECOMPACT_FAILING: 'precompact-failing',
   INDEX_DRIFT: 'index-drift',
   MCP_TOOL_FAILING: 'mcp-tool-failing',
+  CRON_SETTINGS_UNAPPLIED: 'cron-settings-unapplied',
 });
 
 /**
@@ -181,6 +182,44 @@ export const HEALTH_REGISTRY = Object.freeze({
     fixClass: 'advise',
     strikeThreshold: 2,
     deterministic: false,
+  }),
+  // Task 47.0 — the durable home D-439 asked for. `cmk register-crons` on
+  // Windows is TWO calls: create the task, then apply the settings that decide
+  // whether Windows will ever start it (§8.6.5). The second can fail on its
+  // own, and Task 265 reported that only to the CONSOLE — which scrolls away,
+  // leaving a registered-but-starving task that HC-5's sentinel check reads as
+  // healthy. That is D-298's heartbeat-not-outcome false green, one check over.
+  //
+  // ADVISORY rather than degraded, deliberately: cron is optional by design and
+  // the lazy roll is the floor (§8.2.1), so what is broken is the nightly
+  // OPTIMIZATION, not memory. Overstating it would teach the user to discount
+  // the whisper — which costs more than this warning is worth.
+  //
+  // DETERMINISTIC, so one strike: nothing re-runs the settings call. The flags
+  // stay wrong until someone registers again, so waiting for a second strike is
+  // waiting for a second manual registration that may never come.
+  [HEALTH_CODES.CRON_SETTINGS_UNAPPLIED]: Object.freeze({
+    code: HEALTH_CODES.CRON_SETTINGS_UNAPPLIED,
+    title:
+      'the scheduled memory jobs registered, but their scheduler settings did not apply — Windows may refuse to run them on battery',
+    severity: 'advisory',
+    dependsOn: Object.freeze([]),
+    // A REAL next step, and notably not `cmk doctor` — so HC-14 actually prints
+    // it rather than suppressing the command the user just ran.
+    primaryAction: 'cmk register-crons',
+    // `confirm`, not `silent`: re-registering rewrites HOST scheduler state,
+    // which is the user's and not the kit's (ADR-0018 propose-and-approve).
+    fixClass: 'confirm',
+    strikeThreshold: 1,
+    deterministic: true,
+    // THE ONLY CLASS WITH MORE THAN ONE SUBJECT, and it has to say so.
+    // `register-crons` registers TWO jobs and records one outcome per job, so a
+    // single command run appends two entries whose `detail` differs. Streaked
+    // together, the weekly job's `ok` erased the daily job's `fail` inside that
+    // one run and no warning ever appeared. See `computeActiveWarnings` for why
+    // this is a declared per-class flag rather than a change to how every class
+    // streaks.
+    perSubject: true,
   }),
 });
 
@@ -418,20 +457,40 @@ export function computeActiveWarnings(entries, { now } = {}) {
   else nowMs = Date.parse(String(now));
   if (!Array.isArray(entries) || entries.length === 0 || !Number.isFinite(nowMs)) return [];
 
-  // Bucket the well-formed, registry-known, dated entries per class.
-  const byClass = new Map();
+  // Bucket the well-formed, registry-known, dated entries.
+  //
+  // The bucket key is the CLASS — except for a class that declares
+  // `perSubject`, where it is class + `detail`. That flag is opt-in per class
+  // and deliberately so: for every other class the `detail` is a REASON for one
+  // failure (`haiku_timeout` vs `spawn-enoent` on extract-failing), so those
+  // must keep streaking together and clearing each other. Only
+  // `cron-settings-unapplied` uses `detail` as a SUBJECT — which of two
+  // registered jobs this outcome is about — and bucketing it by class made one
+  // job's success erase the other's failure inside a single command run (I3).
+  // A global change to the streak key would have silently altered the contract
+  // of every existing class to fix one; the flag changes exactly one.
+  const byBucket = new Map();
   for (const e of entries) {
     if (!e || typeof e !== 'object') continue;
     if (!HEALTH_REGISTRY[e.class]) continue; // unknown/newer code — ignore, don't guess
     if (!HEALTH_OUTCOMES.includes(e.outcome)) continue;
     const ms = typeof e.ts === 'string' ? Date.parse(e.ts) : NaN;
     if (!Number.isFinite(ms)) continue;
-    if (!byClass.has(e.class)) byClass.set(e.class, []);
-    byClass.get(e.class).push({ ms, ts: e.ts, outcome: e.outcome });
+    const subject = HEALTH_REGISTRY[e.class].perSubject ? String(e.detail ?? '') : '';
+    // The separator is a PIPE, and it is deliberately not a raw NUL. A NUL is
+    // equally unambiguous here — it cannot occur in a class code or in a
+    // DETAIL_TOKEN_PATTERN detail — but a literal NUL byte in source makes
+    // `grep` treat the whole file as binary and silently skip it in every
+    // content search. That is the D-439(a) class, and `source-hygiene` caught a
+    // raw one on this exact line. `|` is outside both charsets too, so the key
+    // stays unambiguous and the file stays greppable.
+    const key = `${e.class}|${subject}`;
+    if (!byBucket.has(key)) byBucket.set(key, { code: e.class, subject, rows: [] });
+    byBucket.get(key).rows.push({ ms, ts: e.ts, outcome: e.outcome });
   }
 
-  const candidates = [];
-  for (const [code, rows] of byClass) {
+  const perSubjectCandidates = [];
+  for (const { code, subject, rows } of byBucket.values()) {
     // `ts` is the truth, not file order — an out-of-order append (two writers,
     // clock skew) must not silently invert a streak.
     rows.sort((a, b) => a.ms - b.ms);
@@ -447,7 +506,7 @@ export function computeActiveWarnings(entries, { now } = {}) {
     const w = HEALTH_REGISTRY[code];
     if (strikes < w.strikeThreshold) continue;
     if (newestFailMs === null || nowMs - newestFailMs > HEALTH_FRESHNESS_MS) continue;
-    candidates.push({
+    perSubjectCandidates.push({
       code: w.code,
       title: w.title,
       severity: w.severity,
@@ -455,7 +514,37 @@ export function computeActiveWarnings(entries, { now } = {}) {
       fixClass: w.fixClass,
       strikes,
       brokenSince,
+      subject,
     });
+  }
+
+  // Collapse back to ONE candidate per code. The streak is computed per subject
+  // (above), but the OUTPUT stays one-warning-per-code: "one root cause, one
+  // whisper" is the property the cascade dedup below is built on, and two lines
+  // about the same misconfiguration would be exactly the noise the strike
+  // threshold exists to prevent. The affected subjects are named instead, so a
+  // user is told WHICH job rather than sent to inspect both.
+  const byCode = new Map();
+  for (const c of perSubjectCandidates) {
+    const prior = byCode.get(c.code);
+    if (!prior) {
+      byCode.set(c.code, { ...c, subjects: c.subject ? [c.subject] : [] });
+      continue;
+    }
+    if (c.subject && !prior.subjects.includes(c.subject)) prior.subjects.push(c.subject);
+    // Report the worst streak and the oldest still-unbroken start across
+    // subjects — understating either would make the warning look newer and
+    // milder than the evidence supports.
+    if (c.strikes > prior.strikes) prior.strikes = c.strikes;
+    if (c.brokenSince && (!prior.brokenSince || c.brokenSince < prior.brokenSince)) prior.brokenSince = c.brokenSince;
+  }
+  const candidates = [];
+  for (const c of byCode.values()) {
+    const { subject, subjects, ...rest } = c;
+    // Only a per-subject class carries the field at all: adding an empty
+    // `subjects: []` to every warning would change the shape every existing
+    // consumer reads for no benefit.
+    candidates.push(HEALTH_REGISTRY[c.code].perSubject ? { ...rest, subjects } : rest);
   }
 
   // Cascade dedup — computed against the pre-cascade active set, so a chain

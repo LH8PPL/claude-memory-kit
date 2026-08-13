@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7cb173d89764e9d431c3b46096e7587a57b3104daf96e98d4dadb906b1cfe08e
+related: [decision-log-records-validation-outcomes, kit-s-strict-forward-reference-validation, architecture-decisions-recorded-in-adrs]
 ---
 
 When a decision depends on survey/validation results, write the ADR with Proposed/WIP status and mark key sections (especially Decision) as provisional pending results. This satisfies forward-reference validation while deferring the final outcome judgment. Example: ADR-0017 recorded the thesis durably with "provisional pending the survey" in its Decision section; the final decision updates after validation completes.

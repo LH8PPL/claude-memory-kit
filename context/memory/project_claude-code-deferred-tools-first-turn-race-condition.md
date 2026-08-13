@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3450b1a6422c072ccd61b61d720d861b82f7ef0845eaabaa445bf21d41d091c9
+related: [claude-code-mcp-deferred-tool-race-issue-42148, kiro-cli-custom-agent-tool-limitation, cli-fallback-for-mcp-tool-resolution-failures]
 ---
 
 - Claude Code v2.1.x freezes deferred-tool list at turn-start, before MCP servers finish connecting (10-30s typical)

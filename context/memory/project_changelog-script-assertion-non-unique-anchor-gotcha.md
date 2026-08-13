@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 03a0eb6af67ffcf6c7038d794e8d2dd17b6102c7
+related: [powershell-utf-8-corruption-in-changelog-handling, vbs-launcher-quirk-for-hidden-scheduled-task-windows, d-343-kit-lacks-mechanism-to-repair-stale-scaffolded-skills]
 ---
 
 The CHANGELOG build script asserts when an anchor is not unique. When chaining multiple edits (e.g., CHANGELOG entry + task-checkbox flip), a failed assertion can be masked if the command sequence doesn't halt on first error; the commit proceeds with incomplete file updates.

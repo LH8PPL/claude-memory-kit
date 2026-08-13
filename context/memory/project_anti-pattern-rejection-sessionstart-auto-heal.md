@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 47edf9090dc73c6d93ab6f74e29ab772a33d4a9765998f0b6d398f0d4c827496
+related: [index-drift-self-heal-architecture]
 ---
 
 Proposed adding SessionStart auto-heal to rebuild INDEX if drifted. Rejected as over-engineering.

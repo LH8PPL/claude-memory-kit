@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 04bc1662da562adc49eb6a137cc813ecef77f69e97d8f512a5c3e3c6eecd95dc
+related: [live-test-workflow-for-kiro-cli-project-fix]
 ---
 
 - **Default behavior**: when a dependency advisory publishes and fix is available within SDK's declared range, apply it (e.g., hono 4.12.31)

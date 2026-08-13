@@ -755,6 +755,21 @@ export function reindexFull({ projectRoot, userDir, db, now }) {
     DROP TABLE IF EXISTS transcript_chunks;
     DROP TABLE IF EXISTS files;
     DROP TABLE IF EXISTS edges;
+    -- Task 262 / D-447: the autolink backfill's resume markers. Derived state
+    -- in the rebuildable index, so a FULL rebuild drops it exactly as it drops
+    -- every other derived table (ADR-0002) — losing it costs a re-consideration,
+    -- which is idempotent work, never lost work.
+    --
+    -- LOAD-BEARING, not tidiness. link_eval is keyed by (id, content_sha), so
+    -- an unedited fact marked "considered, nothing above the floor" is never
+    -- re-considered. That is correct when the floor was usable and wrong when it
+    -- was not, and until this line existed the table survived every reindex with
+    -- no command able to clear it — which made a bad marking permanent. This
+    -- drop is what makes "cmk reindex --full" (and "cmk repair --index", which
+    -- calls it) the real, documented repair. The table is re-created lazily by
+    -- ensureLinkEvalSchema on the next backfill, so it is deliberately absent
+    -- from INDEX_DB_SCHEMA.
+    DROP TABLE IF EXISTS link_eval;
   `);
   db.exec(INDEX_DB_SCHEMA);
   invalidateSemanticKeying(db);

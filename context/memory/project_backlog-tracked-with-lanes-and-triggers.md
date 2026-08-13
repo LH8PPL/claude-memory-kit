@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b6cbe50cd91f804d5eb4f577e077070858ec0cacc556cff1120f15ad1453a3f9
+related: [task-185-backlog-triage-trigger, readme-changelog-update-timing, task-entry-boundary-definition-specs-tasks-md]
 ---
 
 Open tasks are assigned a lane or a trigger (e.g., Task 279, Task 262, D-438). A backlog validator confirms all open tasks meet this constraint.

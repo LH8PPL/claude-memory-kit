@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9c8a19574deffe360ddb0fba242af47b11ff2c05945cab6764804253ed63a48e
+related: [memory-learn-loop-as-converged-system, architectural-thesis-the-kit-as-cross-session-runtime]
 ---
 
 The kit's core identity:

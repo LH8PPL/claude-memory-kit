@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 20cda04873b34d9531d637e5d467f3eaa5f35af7c6527d634cb40ba9b4aa1b53
+related: [research-task-workflow-pattern, distinguish-code-gems-from-pitch-copy, commit-guardrail-blocks-ambiguous-include-exclude-instructio]
 ---
 
 Articles are staged to tasks with verdicts that:

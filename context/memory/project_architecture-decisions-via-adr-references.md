@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d0f8537f24086ec133393a54bacbf195d54c10a0815dfdbdce1387f232caf868
+related: [self-healing-pattern-for-safe-operations, markdown-link-case-sensitivity-issue, prior-research-outputs-d-218-and-d-227]
 ---
 
 - ADR-0002: forbids two-writer hazards (read-modify-write on shared state).

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8885cbf204c0f75ef95da3d782daef18c05812ab
+related: [doctor-is-reactive-only-memory-write-search-are-automatic, auto-compact-fidelity-loss-mid-task]
 ---
 
 The kit's memory recall in autonomous (user-unprompted) work operates across three channels:

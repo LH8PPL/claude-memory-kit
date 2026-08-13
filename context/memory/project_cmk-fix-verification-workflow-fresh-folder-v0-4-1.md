@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 35d5f6736dc0a7f02c9bef232681edb02201cc24e189dcd7a75999eba1fa5b80
+related: [re-pack-verify-workflow-for-cut-gate-testing, verification-sequence-for-task-169-170-fresh-folder-gate, live-test-workflow-for-kiro-cli-project-fix]
 ---
 
 **Re-pack cmk:**

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 77b10a018aa61aafb5a3fd3880415f47ccdc34a66163b341970b17a796f47e31
+related: [claude-code-hook-activation-requires-restart, cmk-install-scaffolding-and-wiring, hc-6-native-auto-memory-runs-alongside-kit]
 ---
 
 After `cmk install` completes:

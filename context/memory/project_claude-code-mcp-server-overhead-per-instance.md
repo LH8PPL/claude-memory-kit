@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2a34a052cb0af7ce74f7c4ac60fb5f19ece33fdbaf481378c91c1a4e102b0d5f
+related: [vs-code-windows-are-independent-claude-code-sessions, claude-code-window-close-leaves-zombie-claude-exe-processes, windows-dll-locking-during-cmk-reinstall]
 ---
 
 Each Claude Code window spawns its own independent MCP server stack (fetch server with uv + Python, AWS knowledge proxy, memory server, kit's cmk mcp serve). This adds ~400 MB per instance; two concurrent windows means ~800 MB total duplicated overhead.

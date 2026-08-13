@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 18208e25ae9c291bcd9269bc75487b84d661b1b594cf4f08aaaae9de21f71587
+related: [adopt-third-party-skills-via-installer-personal-tier, cut-gate-v050-scaffold-gitignore-transcript-leak, modular-skill-architecture-read-write-separation]
 ---
 
 - `.claude/` directory is **fully gitignored** — nothing travels with `git clone`

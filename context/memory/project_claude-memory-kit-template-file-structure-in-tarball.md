@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3b7a652b1f4b0cc88aa35391d53feb5718aac602
+related: [three-tier-memory-architecture, claude-memory-kit-cmk-doctor-baseline-pre-first-turn, claude-memory-kit-health-check-suite-hc-1-through-hc-9]
 ---
 
 The npm pack for `@lh8ppl/claude-memory-kit@0.3.0` produces a 268.5 kB tarball (839.3 kB unpacked) containing exactly 22 template files:

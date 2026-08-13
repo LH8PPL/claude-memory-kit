@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 032cd7410d9f8a819564b2b1ae39f0d9b080c2236fbf67918b9e51ff2f3a5f70
+related: [episode-based-architecture-principle-refined, claude-memory-kit-judge-as-the-per-host-adapter, claude-code-vs-kiro-hook-architecture-difference]
 ---
 
 **Core framing:** Claude Code runs in bounded sessions that start and end independently. The kit is the substrate that spans those boundaries, making N disconnected runs behave like one continuous agent.

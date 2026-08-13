@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b1355fb31c4bfce950432c82b75503947556ddc5f575c6336605273e9556bfdf
+related: [kit-s-haiku-backend-has-undeclared-claude-cli-dependency, kit-versioning-uses-lane-themed-releases-not-strict-semver, v0-3-5-patch-vs-v0-4-0-versioning-logic]
 ---
 
 The v0.4.x breadth lane (one agent per patch) stalled after Kiro (v0.4.0), when Cursor was displaced by:

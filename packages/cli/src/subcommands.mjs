@@ -65,6 +65,8 @@ import {
   markCronRegistered,
   unmarkCronRegistered,
 } from './lazy-compress.mjs';
+import { appendHealthEntry, HEALTH_CODES } from './health-log.mjs';
+import { planRepairs, runRepairs } from './doctor-repair.mjs';
 import {
   registerCron,
   unregisterCron,
@@ -2283,6 +2285,26 @@ export function runRegisterCrons(options /* , command */) {
         `command above by hand in an ordinary PowerShell window.`,
       );
     }
+    // Task 47.0 (D-439's handover): the console is not a durable surface. The
+    // warning above scrolls away, and HC-5 passes on the `cron-registered`
+    // sentinel alone — so without this the kit forgets, within one screenful,
+    // that it left a registered-but-starving task behind.
+    //
+    // BOTH outcomes are recorded, not just the failure: an `ok` is what resets
+    // the streak, so a user who re-registers successfully stops being warned
+    // without anything having to clean up (D-412's structural self-clean). The
+    // `undefined` case — a dry run, or any POSIX platform, where there was no
+    // settings call to have an outcome — records nothing at all.
+    if (typeof r.settingsApplied === 'boolean') {
+      appendHealthEntry(projectRoot, {
+        class: HEALTH_CODES.CRON_SETTINGS_UNAPPLIED,
+        outcome: r.settingsApplied ? 'ok' : 'fail',
+        // A machine token, never a message (DETAIL_TOKEN_PATTERN): it names
+        // WHICH job, which is the only thing a reader of the log cannot
+        // otherwise recover.
+        detail: job.entryName,
+      });
+    }
     if (r.output) console.log(`  output: ${r.output.trim()}`);
   }
   // Task 35.3: maintain the cron-registered sentinel so lazy-compress
@@ -2358,7 +2380,77 @@ export function formatDoctorReport(checks, durationMs) {
   return { lines, counts, failCount: counts.fail };
 }
 
-async function runDoctorCli(/* options */) {
+/**
+ * Task 47 — the `--repair` pass, after the report has already been printed.
+ *
+ * Kept out of runDoctorCli's body so the report path stays readable and so the
+ * repair flow can be driven in a test without re-running fifteen health checks.
+ * The prompter is created HERE rather than in doctor-repair.mjs: a module that
+ * opens stdin cannot be unit-tested, and the seam is the whole reason the
+ * consent logic is testable at all (this is Task 47.3's `promptUser`, landing
+ * WITH its consumer rather than as the forward-compat hook Task 37 correctly
+ * refused to leave lying around).
+ */
+async function offerRepairs({ checks, projectRoot, options, deps = {} }) {
+  const log = deps.log ?? console.log;
+  const plan = planRepairs(checks, { knownVerbs: subcommandNames });
+  if (plan.length === 0) {
+    log('');
+    log('Nothing to repair — no failing check carries a recovery command.');
+    return;
+  }
+  const interactive = deps.interactive ?? Boolean(process.stdin.isTTY);
+  const assumeYes = options?.yes === true;
+  log('');
+  log(`--repair: ${plan.length} repair(s) available.`);
+
+  let rl;
+  const prompt =
+    deps.prompt ??
+    (async (q) => {
+      if (!rl) {
+        const { createInterface } = await import('node:readline/promises');
+        rl = createInterface({ input: process.stdin, output: process.stdout });
+      }
+      return rl.question(q);
+    });
+  try {
+    const { counts, unfinished } = await runRepairs({
+      plan,
+      projectRoot,
+      // process.argv[1] is THIS cmk's entry — repairs run the version the user
+      // actually invoked, never whatever `cmk` happens to be on PATH.
+      cliEntry: deps.cliEntry ?? process.argv[1],
+      interactive,
+      assumeYes,
+      prompt,
+      ...(deps.spawn ? { spawn: deps.spawn } : {}),
+      log,
+    });
+    log('');
+    log(
+      `Repairs: ${counts.fixed} applied · ${counts.failed} failed · ${counts.declined} declined · ${counts['not-run']} left for you.`,
+    );
+    // Deliberately does NOT claim the checks now pass. The checks were run
+    // BEFORE the repairs; saying "fixed" about a state nobody re-measured is
+    // the same false-green this task exists to remove.
+    log('Re-run `cmk doctor` to confirm what actually changed.');
+    // M7: `--repair` asked for something. If a repair failed, or one was
+    // withheld only because nobody could consent, the run did not finish what
+    // it was asked to do — and a script must be able to see that even when
+    // every underlying check was merely advisory (see runRepairs for the full
+    // policy). Never LOWERS an exit code doctor already set.
+    if (unfinished > 0) process.exitCode = 1;
+  } finally {
+    try {
+      rl?.close();
+    } catch {
+      /* best-effort */
+    }
+  }
+}
+
+async function runDoctorCli(options, _command, deps = {}) {
   const projectRoot = resolvePath(process.cwd());
   // Task 270 (D-446): the SHARED resolver, not an inline `homedir()` join —
   // that hardcoded form ignores `MEMORY_KIT_USER_DIR`, so every user-tier check
@@ -2382,6 +2474,13 @@ async function runDoctorCli(/* options */) {
     const { lines, failCount } = formatDoctorReport(r.checks, r.duration_ms);
     for (const line of lines) console.log(line);
     if (failCount > 0) process.exitCode = 1;
+
+    // Task 47 — `--repair`. Strictly additive: without the flag this function
+    // behaves exactly as it did, which matches every doctor-style CLI surveyed
+    // (brew / flutter / npm all report and hand you a command).
+    if (options?.repair === true) {
+      await offerRepairs({ checks: r.checks, projectRoot, options, deps });
+    }
 
     // Task 144 (D-130): the memory-HEALTH section — content quality, not
     // plumbing. Informational only: read-only, never changes the exit code,
@@ -3501,7 +3600,13 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
   const log = deps.log ?? console.log;
   const logError = deps.logError ?? ((s) => process.stderr.write(`${s}
 `));
-  const { linkBackfill, BACKFILL_DEFAULT_MAX } = await import('./link-backfill.mjs');
+  const {
+    linkBackfill,
+    linkBackfillToCompletion,
+    syncIndexAfterBackfill,
+    auditIndexSyncFailure,
+    BACKFILL_DEFAULT_MAX,
+  } = await import('./link-backfill.mjs');
 
   const tier = String(options?.tier ?? 'P').toUpperCase();
   // DRY RUN IS THE DEFAULT — writing takes an explicit `--apply`.
@@ -3523,13 +3628,23 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
   }
   const dryRun = options?.apply !== true || options?.dryRun === true;
 
-  // `--max` is a bound, and an unparseable bound is not "no bound".
-  // `Number('abc')` is NaN, and `considered >= NaN` is always false — which
-  // turned a typo into an UNBOUNDED walk of the whole corpus, the opposite of
-  // what the flag exists for.
+  // `--max` IS THE EXPLICIT BOUNDED SLICE, and it is the only way to get one.
+  //
+  // Without it the verb runs to completion: the ADR-0020 bound exists so a
+  // killed job keeps what it finished, NOT so a human has to re-type the
+  // command nine times to link their own corpus ("that is stupid, what would a
+  // real user do?" — the live run that found this). Each batch still commits
+  // durably exactly as before; the loop only removes the human from the middle
+  // of it. `--max` stays for the case the bound is genuinely wanted at the
+  // interface: one slice now, the rest later.
+  //
+  // An unparseable bound is not "no bound". `Number('abc')` is NaN, and
+  // `considered >= NaN` is always false — which turned a typo into an
+  // UNBOUNDED walk of the whole corpus, the opposite of what the flag is for.
   const rawMax = options?.max;
+  const sliced = rawMax !== undefined;
   let max = BACKFILL_DEFAULT_MAX;
-  if (rawMax !== undefined) {
+  if (sliced) {
     const parsed = Number(rawMax);
     if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed <= 0) {
       logError(`cmk autolink: --max must be a positive whole number (got ${JSON.stringify(rawMax)})`);
@@ -3572,7 +3687,28 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
     }
   }
 
-  const r = linkBackfill({ projectRoot, userDir, tier, max, dryRun, similarity });
+  const verb = dryRun ? 'would link' : 'linked';
+
+  const r = sliced
+    ? linkBackfill({ projectRoot, userDir, tier, max, dryRun, similarity })
+    : linkBackfillToCompletion({
+        projectRoot,
+        userDir,
+        tier,
+        // `deps.batchSize` is the injection seam for tests + the live probe: it
+        // changes how the work is DIVIDED, never how much of it gets done.
+        batchSize: deps.batchSize ?? BACKFILL_DEFAULT_MAX,
+        dryRun,
+        similarity,
+        // Progress, but only when there is more than one batch to have progress
+        // through — a corpus that finishes in one pass just gets its summary.
+        onBatch: ({ batch, evaluated, linked, remaining }) => {
+          if (batch === 1 && remaining <= 0) return;
+          log(
+            `  batch ${batch} · ${verb} ${linked} of ${evaluated} considered · ${remaining} to go`,
+          );
+        },
+      });
   if (r.action === 'error') {
     for (const e of r.errors) logError(`cmk autolink: ${e}`);
     process.exitCode = 2;
@@ -3584,15 +3720,50 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
       'cmk autolink: no linking floor could be derived for this corpus yet — it needs at least a few dozen facts.\n' +
         '  Nothing was linked. This is the honest answer, not a failure.',
     );
-    return r;
+    return { ...r, indexSynced: false };
   }
 
-  const verb = dryRun ? 'would link' : 'linked';
+  // THE DEGENERATE FLOOR — REFUSE LOUDLY, AND DO NOT PRETEND TO BE DONE (B1).
+  //
+  // A floor at/above the near-dup ceiling, or at/below the random-pair median,
+  // means the corpus cannot separate a relationship from noise. The backfill has
+  // marked NOTHING (so nothing is poisoned and a later run re-decides freely),
+  // and the one thing this must never print is "the corpus is fully considered".
+  if (r.degenerate) {
+    const why =
+      r.degenerate === 'floor-above-neardup'
+        ? 'the linking threshold came out at or above the near-duplicate ceiling — every pair looks like a duplicate, so there is no "related" band left to fill'
+        : 'the linking threshold came out at or below the median of random pairs — the corpus is too uniform for similarity to mean anything here';
+    logError(
+      `cmk autolink: REFUSED (${r.degenerate}) — ${why}.\n` +
+        '  Nothing was linked and nothing was marked as considered, so this run costs you nothing and a later run over a\n' +
+        '  grown or more varied corpus will decide again. This is the honest answer, not a partial result.',
+    );
+    process.exitCode = 1;
+    return { ...r, indexSynced: false };
+  }
+
   log(
-    `cmk autolink${dryRun ? ' (dry run)' : ''}: considered ${r.evaluated} fact(s) in tier ${r.tier} ` +
+    `cmk autolink${dryRun ? ' (dry run)' : ''}: considered ${r.evaluated} fact(s) in tier ${r.tier}` +
+      `${r.batches > 1 ? ` across ${r.batches} batches` : ''} ` +
       `· ${verb} ${dryRun ? r.wouldLink : r.linked} ` +
       `· ${dryRun ? r.wouldAddEdges : r.edges} edge(s) · backend=${r.backend} floor=${r.floor.toFixed(4)}`,
   );
+  // A run that inherited finished work says so — this is what a Ctrl-C'd run
+  // looks like from the NEXT invocation, and the honest thing is to name it
+  // rather than let the numbers look like the whole corpus was small.
+  //
+  // "AT LEAST", deliberately: `alreadyDone` is the `link_eval` marker count,
+  // which is only ONE of the two resume artifacts. A fact an earlier run
+  // actually LINKED leaves the pending walk through its own `related:`
+  // frontmatter and is not in this number (the live probe: a 100-fact slice
+  // linked 40 and marked 60, so the next run inherited 100 and could only
+  // count 60). The marker count cannot be widened to cover the other half
+  // either — a fact carrying `related:` may have been linked by hand and never
+  // touched by any run. So the number is a floor, and it says so.
+  if (r.alreadyDone > 0) {
+    log(`  resumed — at least ${r.alreadyDone} fact(s) were finished by an earlier run and were skipped, not redone.`);
+  }
   log(
     `  bands — related ${r.bands.related} · near-dup ${r.bands.nearDup} (not linked; a merge is a human call) · nothing ${r.bands.none}`,
   );
@@ -3600,14 +3771,76 @@ export async function runAutolink(options = {}, _cmd, deps = {}) {
     log(`  ${s.id} ${s.title ?? ''} → ${s.links.map((l) => `${l.slug} (${l.score})`).join(', ')}`);
   }
   if (r.remaining > 0) {
-    log(`  ${r.remaining} fact(s) remain — re-run to continue (bounded per run, resumes where it stopped).`);
+    // Two ways to get here, and they are not the same news:
+    //   · `--max` — the user ASKED for a slice, so "re-run" is the answer;
+    //   · a loop that stopped early — a state we could not make progress from,
+    //     which must be reported as the anomaly it is, never as normal paging.
+    if (sliced) {
+      log(`  ${r.remaining} fact(s) remain — this was a --max slice; re-run to continue (it resumes where it stopped).`);
+    } else {
+      // An ANOMALY, not paging: the loop ended in a state it could not make
+      // progress from. It is already recorded in the audit log (Door 5), and
+      // the exit code is non-zero so a wrapping script can see it too.
+      log(
+        `  stopped with ${r.remaining} fact(s) still pending (${r.stopped}) — everything finished is durable; ` +
+          're-run to continue. This is unexpected: it is recorded as `backfill-incomplete` in\n' +
+          '  context/.locks/audit.log, and that entry is what to report if it repeats.',
+      );
+      process.exitCode = 1;
+    }
   } else {
     log('  nothing remains — the corpus is fully considered.');
   }
+
+  // THE FOLLOW-UP COMMAND, RUN FOR YOU. Links that exist only in the markdown
+  // are invisible to `cmk links` / `cmk expand` / the viewer graph until the
+  // index catches up, and the user was doing that catch-up by hand. It is
+  // plumbing; the run owns it (D-85). Best-effort by construction — the
+  // markdown is already written and every reader self-heals, so a cold index
+  // is a slower path, never a lost link.
+  let indexSynced = false;
+  let indexSyncError = null;
+  if (!dryRun && r.linked > 0) {
+    // Announced BEFORE the work, not after: on a real corpus the rebuild is a
+    // multi-second pause, and a silent pause immediately after "nothing remains"
+    // reads as a hang.
+    log('  syncing the search index so the new edges are live…');
+    const sync = (deps.syncIndex ?? syncIndexAfterBackfill)({ projectRoot, userDir });
+    indexSynced = sync.synced;
+    if (sync.synced) {
+      // TWO NUMBERS, BOTH LABELLED. `r.edges` is what THIS RUN wrote;
+      // `sync.edgeCount` is the whole graph, every edge type (related, body
+      // wikilinks, citations, supersession chains). Printing only the second
+      // next to the run's own count left an unexplained gap that looked like a
+      // bug in the run.
+      log(
+        `  index synced — this run's ${r.edges} edge(s) are live in \`cmk links\`, \`cmk expand\` and \`cmk view\` ` +
+          `(the graph now holds ${sync.edgeCount} edges of all types).`,
+      );
+    } else {
+      // NOT fixed reassurance: say what failed. The links are on disk either
+      // way, so this is a slower path and not a loss — but a user debugging why
+      // `cmk links` looks empty needs the actual error, and so does the log.
+      indexSyncError = sync.error ?? 'unknown error';
+      log(
+        `  index NOT synced: ${indexSyncError}\n` +
+          '  Your links are written and safe — the index rebuilds itself on your next search, or run `cmk reindex --boot` now.',
+      );
+      auditIndexSyncFailure({
+        projectRoot,
+        userDir,
+        tier,
+        error: indexSyncError,
+        linked: r.linked,
+        edges: r.edges,
+      });
+    }
+  }
+
   if (dryRun && (r.wouldLink > 0 || r.remaining > 0)) {
     log('  (dry run — nothing was written. Re-run with `--apply` to write these links.)');
   }
-  return r;
+  return { ...r, indexSynced, indexSyncError };
 }
 
 export const subcommands = [
@@ -3776,6 +4009,18 @@ export const subcommands = [
     name: 'doctor',
     description: 'run health checks HC-1..HC-16; print structured report with self-repair commands',
     milestone: 37,
+    optionSpec: [
+      {
+        flags: '--repair',
+        description:
+          'after the report, offer to run each failed check\'s recovery command, one at a time [y/N]. Destructive or incomplete recoveries are always printed for you to run yourself, never executed.',
+      },
+      {
+        flags: '--yes',
+        description:
+          'with --repair: apply the offered repairs without prompting (for scripts and CI). Never covers the ones marked "run this yourself".',
+      },
+    ],
     action: runDoctorCli,
   },
   {
@@ -3793,12 +4038,12 @@ export const subcommands = [
   {
     name: 'autolink',
     description:
-      'populate `related:` on facts that have none — scores each unlinked fact against the corpus and applies up to 3 edges above a floor derived from this corpus. Bounded + resumable; re-run to continue.',
+      'populate `related:` on facts that have none — scores each unlinked fact against the corpus and applies up to 3 edges above a floor derived from this corpus. One run does the WHOLE corpus (in resumable batches) and syncs the index when it is done.',
     milestone: 262,
     optionSpec: [
       { flags: '--apply', description: 'actually write the links. WITHOUT it this is a dry run — bare `cmk autolink` never modifies memory.' },
       { flags: '--dry-run', description: 'the default; report what WOULD link (band distribution + sample edges) and write nothing' },
-      { flags: '--max <n>', description: 'facts to consider this run (default 250) — the run is bounded and resumes where it stopped' },
+      { flags: '--max <n>', description: 'do a bounded SLICE of n facts and stop, instead of the whole corpus. Without it the run finishes the job; interrupting any run is safe either way and the next one resumes.' },
       { flags: '--tier <tier>', description: 'tier to link within: P (default) | L | U. Links never cross tiers.' },
       { flags: '--semantic', description: 'score with the local embedder instead of token-Jaccard (needs the optional embedder)' },
     ],

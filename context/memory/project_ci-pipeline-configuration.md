@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7871c7f521629c210c8567a170a3336929e927205dcdcf461ec00074b6382636
+related: [gate-verification-system-architecture, v0-6-2-published-release-state-and-contents, sonarcloud-coverage-gate-threshold]
 ---
 
 The project runs 6 automated workflows on each PR merge; all must pass for green status:

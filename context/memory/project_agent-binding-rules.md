@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: be4cecb00f36ac657c170302c7506c11266d84c356f73d80fa7836d4c4b55bd8
+related: [standing-outward-step-rule]
 ---
 
 Each agent definition includes role-scoped binding rules:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e015f95638715ffcb10c8e04c1e2cd8913dd9655b2368077c149ec68fda41e8d
+related: [cursor-native-windows-powershell-support-confirmed, cut-gate-validation-includes-paraphrase-recall-check]
 ---
 
 Cursor installer bug (through May 2026) could deposit Unix CLI binary under Git Bash without functional Windows support, passing PATH discovery but failing at invocation. Single source of truth: `agent --version` (or equivalent version probe) exit code. PATH-based discovery (where/which) is necessary but not sufficient.

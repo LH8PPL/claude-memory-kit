@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4d17ee6bb2aa668ca0bfdf00d05cb2836d6f9f7531279569635de33401bbb46a
+related: [task-140-has-byte-identical-output-hard-constraint, stress-gate-required-before-pr-for-spawn-hook-boundary-chang, one-line-pointer-design-for-numbering-validator-consistency]
 ---
 
 Archive split operations require byte-preservation as a hard constraint. Three boundaries must be selected and validated to maintain exact byte integrity.

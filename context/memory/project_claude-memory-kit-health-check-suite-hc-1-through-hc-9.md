@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 0f0544e3915f15efe47dd7bc8c6df29ff3e572804bfb444defddf3f4b48359ba
+related: [fresh-cmk-install-expected-cmk-doctor-baseline, cmk-health-check-status-2026-06-20, fresh-cmk-install-health-baseline-cmk-0-4-5-with-semantic]
 ---
 
 The kit includes 9 health checks validating completeness and health:

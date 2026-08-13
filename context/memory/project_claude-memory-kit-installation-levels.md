@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3b2c7ab7de2d29a8d9927ad618a305834a3aa333b583d73a3c9b25de50bfe74d
+related: [gate-testing-isolated-throwaway-folders, clean-start-procedure-for-session-1-test, kiro-ide-hook-testing-multi-step-gate-sequence]
 ---
 
 The kit has two distinct installation scopes:

@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: c44f45209ff14b6e384db14404c0b2f4258070b6
+related: [vitest-workers-spawned-from-the-claude-code-bash-tool-inside]
 ---
 
 PowerShell 5.1 silently mangles git commit messages containing embedded double quotes — even inside single-quoted here-strings. The commit fails with pathspec errors, and in a chained command the failure can scroll past unnoticed (it happened twice on 2026-06-12; the second time the suite output buried it).

@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 93cdedcaf9456658a96d94d4e8ba64112c88e271c52429aeb4cc191ced5fc756
+related: [open-cmk-mcp-per-tool-prompt-systematic-investigation-pendin, mcp-prompt-two-gate-model-gate-1-server-approval-is-the-unte, mcp-serve-is-long-lived-restart-after-rebuild-or-you-test-st]
 ---
 
 PROCESS: when diagnosing a hard live bug, stop forming and half-shipping rapid-fire theories ("running around like a headless chicken"). Be systematic: gather evidence FIRST (docs, changelog, observed behavior in a clean state), build an evidence table, form ONE hypothesis, test it, THEN decide. Do not propose a new fix direction every message. A machine restart to clear stale process/lock state is a legitimate clean-slate step before re-testing.

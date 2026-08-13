@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7ca22e98531eab218b85f98c12cf8fdb1b46475a2dede0f913e63a9f96f2b9e8
+related: [minor-release-triggers-backlog-sweep, post-release-documentation-reconciliation-workflow, catch-task-changelog-version-mismatches-pre-release]
 ---
 
 The release automation (part of the publish workflow) automatically resets the [Unreleased] section in CHANGELOG after a version is published. The released version gets a [Version] header with a date; a fresh [Unreleased] skeleton is generated for the next development cycle.

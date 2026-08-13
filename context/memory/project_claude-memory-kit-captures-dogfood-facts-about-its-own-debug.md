@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 41481778bcb37b7ebed4c9e02a1aa5fe80f15f9e6bc8953ff1f386caa9bdd819
+related: [core-memory-kit-dogfoods-its-own-memory-system, skill-review-imported-facts-staleness-bug-fixed, memory-system-dogfooding-internal-use-as-test-case]
 ---
 
 The kit has a built-in mechanism to capture "dogfood facts" — learnings about the memory system's own operation and debugging — as part of normal workflow

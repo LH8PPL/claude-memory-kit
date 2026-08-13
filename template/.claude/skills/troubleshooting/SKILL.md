@@ -173,6 +173,33 @@ working correctly. This code means the handler itself broke.
 - **Meanwhile the CLI verbs are a complete fallback** — recall and capture both
   work without the tools. Say so; the user has not lost access to their memory.
 
+### `cron-settings-unapplied` — the nightly jobs registered, but their settings did not
+
+**Severity: advisory. Fix class: CONFIRM — propose it, wait for approval.**
+**Windows only.**
+
+Registering a scheduled task on Windows is two steps: create it, then apply the
+settings that decide whether Windows will ever start it. The second step
+failed, so the task exists but is likely to refuse to run on battery and to be
+killed when the user comes back to the keyboard.
+
+**Nothing is lost and nothing is broken.** Memory still self-heals every
+session through the lazy roll — the nightly job is an optimization. Say this
+plainly; a user told their memory is broken when it is not will stop trusting
+the warnings that matter.
+
+- **Fix:** propose `cmk register-crons`. It is idempotent and re-registering IS
+  the repair — it recreates the task and re-applies the settings.
+- **If it keeps failing:** the settings step is a PowerShell call, and
+  `cmk register-crons` prints it on the `settings:` line. Offer that line for
+  the user to paste into an ordinary PowerShell window themselves.
+- **Confirm it cleared:** re-run `cmk register-crons`; a successful run records
+  the success that clears this code, and `cmk doctor` **HC-5** and **HC-14**
+  both stop reporting it.
+
+Do not run this one unasked — it rewrites host scheduler state, which is the
+user's, not the kit's.
+
 ## Step 3 — nothing above matched
 
 Run `cmk doctor` and work its output top-down. It reports one line per check

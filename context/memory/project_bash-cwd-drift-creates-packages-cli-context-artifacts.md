@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 0276f55531c705f29f9fc059a481b9debdcb7292
+related: [cmk-install-auto-updates-managed-block-version-stamps, windows-npm-uninstall-eperm-on-better-sqlite3-is-benign, kiro-cli-env-passing-limitation]
 ---
 
 When bash CWD drifts during operations, stray artifacts appear at `packages/cli/context/`.

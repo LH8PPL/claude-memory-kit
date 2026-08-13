@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ac19f8889bffe7fef54c887ce845a2618bfc97d98df6721e89294433e81667af
+related: [dual-readme-files-must-stay-synchronized, validate-docs-enforces-catalog-consistency, version-snapshot-in-recent-md-guards-against-cross-session-a]
 ---
 
 Each new archive must be registered in `docs/DOCUMENTATION-MAP.md` (Spine block for main files; `docs/journey/` block for journey docs). This makes archived content discoverable to users.

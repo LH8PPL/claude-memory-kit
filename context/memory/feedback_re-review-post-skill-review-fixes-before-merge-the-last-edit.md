@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 08e58be0b70153da4fbe65e81e61a113e7ad0587cc679968ee988c6a7a11a119
+related: [consult-the-user-before-shipping-a-fix-mid-live-diagnosis, stress-test-gating-rule-for-pr-approval, task-167-drop-hc-10-doctor-check-keep-only-the-free-auto-log]
 ---
 
 Two-pass review process gap: when a skill-review surfaces a finding and I FIX it (especially a non-trivial refactor like extracting a shared helper), the FIX itself ships without its own skill pass — the skill reviewed the pre-fix code. Re-run the skill (or at least self-review) on the post-fix diff before merge, OR review the final diff as the last step. Happened on PR #237 (Task 168): the DRY extraction of discoverRootUpward was made after the skill pass; the post-merge review cleared it (no Blocking/Important) but the process had the hole.

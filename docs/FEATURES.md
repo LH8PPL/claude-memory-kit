@@ -64,7 +64,7 @@ The threshold is **derived from your own corpus** — the 99th percentile of you
 
 A candidate that looks like a near-*duplicate* is deliberately not linked: merging two facts is a decision, so it becomes a proposal in `cmk queue conflicts` instead. And a link never crosses tiers, so a committed project fact can't point at a machine-local one.
 
-**`cmk autolink` is the way in.** Running it bare is a **dry run** — it shows you what it would do and changes nothing; writing takes an explicit `--apply`. To also link new facts as they are captured, turn the write path on with `cmk config set memory.link_facts true`. It is bounded and resumable, so a long corpus is several short runs rather than one that must not be interrupted.
+**`cmk autolink` is the way in.** Running it bare is a **dry run** — it shows you what it would do and changes nothing; writing takes an explicit `--apply`. To also link new facts as they are captured, turn the write path on with `cmk config set memory.link_facts true`. One invocation does the whole corpus — it works in small batches and reports progress — and because each batch is committed as it lands, interrupting it costs nothing and the next run continues where it stopped.
 
 Turn the write path on with `cmk config set memory.link_facts true` (or `CMK_LINK_FACTS=1` for one command); `cmk autolink` needs no flag.
 
@@ -95,6 +95,20 @@ Memory that silently stops saving is the one failure worth catching, and it used
 Claude can then load a **troubleshooting skill** that holds the repair steps per failure, and repairs your memory only with your say-so (it rebuilds its own index unasked; anything touching your files or settings is proposed for you to approve).
 
 It's quiet by design: a one-off hiccup that recovers on its own never says a word, evidence older than a week is ignored, and the moment the next run succeeds the warning disappears on its own — nothing to dismiss, nothing to reset. If capture is fully down you also get a visible heads-up, because that's the case where silence costs you sessions. `cmk doctor` reports the same thing when you go looking (HC-14).
+
+### Fixes what it finds — one repair at a time, and only if you say yes
+
+`cmk doctor` on its own has always printed a repair command next to each failure and left the running to you. That's what `brew doctor`, `flutter doctor` and `npm doctor` all do, and it stays the default. **`cmk doctor --repair`** adds the obvious next step: it walks the failures afterwards and offers each fix — showing the problem, the exact command, and a `[y/N]` whose default is **No**.
+
+It reports what happened honestly and separately — applied, failed, declined, left for you — and it never claims a check now passes, because the checks ran *before* the repairs. It tells you to re-run `cmk doctor` to see what actually changed.
+
+Three things it will not do:
+
+- **It won't delete anything for you.** A fix that removes a file — a stale lock, say — is always printed for you to run yourself, with the reason why. So is one that still contains a `<placeholder>` only you can fill in. Neither is covered by `--yes`.
+- **It won't take silence for a yes.** Piped, or in CI, there's no terminal to ask on: it prints the commands and tells you `--yes` would apply them. It doesn't assume, and it doesn't quietly exit as though everything were fine.
+- **It won't install anything without being asked.** Where a fix means installing software on your machine, that's a prompt of its own — the kit never runs your package manager behind your back. (`--yes` counts as asking, in advance, for that one run.)
+
+Every offer, answer and result is written to `context/.locks/doctor-repair.log`, including the ones nobody ran.
 
 ### Rescues memory an older version stranded
 

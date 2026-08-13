@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 57de5f483b084b461020e947f8827a626aeb0d6a8f2eb7b743325c53a0892f61
+related: [pointer-format-for-archived-task-entries, task-entry-boundary-definition-specs-tasks-md, work-items-require-task-entry-before-implementation]
 ---
 
 A parent task is archive-eligible only when the **PARENT *and every one of its sub-boxes*** is closed or spun off. This rule is now documented in both the live `specs/tasks.md` header and the archive header, with the exact phrasing of the criterion. Instruction: grep the entry for `- [ ]` before moving it to archive.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ccb14324c64c79eb910a16c8ea93f5e1c8972a90aa447ea5f991363b55312e4b
+related: [task-252-review-completed-six-bugs-fixed-via-multi-round-fix, full-gate-re-run-on-final-code-after-code-review, production-code-must-go-through-pr-ci]
 ---
 
 All PRs require two sequential review passes before merge is permitted:

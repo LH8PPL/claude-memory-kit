@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 1daf2f88521303e0e6158284cdd7016c6540178afca3710040e5afe4e63342d7
+related: [review-based-decision-correction, decision-log-system-for-known-limitations, project-decision-trail-lane-preservation-habit]
 ---
 
 Major decisions (feature posture, constraints, rationale) are recorded in ADR entries (e.g., ADR-0023) or decision entries (e.g., D-436, D-438). These form a durable record of what was decided and why.

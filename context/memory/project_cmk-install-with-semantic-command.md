@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a68a0b0b0875552505125a791e2589e3d1d9c7f989dc60a9e3378593617eb44e
+related: [cmk-install-with-semantic-scaffolds-semantic-recall, cmk-install-activation-and-native-memory-options, test-repo-1455-facts-activated-semantic-mode-today]
 ---
 
 `cmk install --with-semantic` enables semantic search in a project.

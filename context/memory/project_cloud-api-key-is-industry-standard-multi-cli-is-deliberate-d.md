@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0137a2630e140bc6fbea4a3f856ac264778a98a9939305289e6e9361804baea9
+related: [codemem-validates-multi-cli-auto-detect-approach-in-producti, zero-server-local-first-is-the-kit-s-deliberate-design, project-origin-and-core-problem]
 ---
 
 Across 42 surveyed projects (including all major, well-funded ones like Supermemory, Honcho, OpenHands), the standard choice for background LLM invocation in memory/automation tools is cloud-API-key (direct calls to OpenAI, Anthropic, etc.). Zero projects route through multiple agent CLIs for extensibility. codemem is the sole exception—and it is the reference the kit follows.

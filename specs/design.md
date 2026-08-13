@@ -1830,9 +1830,16 @@ The Python option is preserved in [`tasks.md`](../specs/tasks.md) Task 33.2 alon
 
 **Migration — re-registration IS the repair.** Existing installs carry the bad flags; there is no separate migration command and no upgrade hook. `/Create /F` re-creates the task and the settings call is issued unconditionally on every successful create, so running `cmk register-crons` again repairs a bad registration.
 
-**The failed-repair signal is CONSOLE-ONLY, and that is a known gap.** The result carries `settingsApplied`, and a failed settings call prints a warning naming the consequence — so the user who is watching the command see it. But console output scrolls away and nothing durable records it: **`cmk doctor` HC-5 still passes on the `cron-registered` sentinel alone**, which is the same heartbeat-not-outcome shape as D-298's own false-green, one check over. The durable half is **Task 47's** — it gives HC-5 a registered-target check that reads `schtasks /query /XML`, and it consumes `inspectWindowsTaskSettings` from the same read to give the bad-flag state a real home. Until then a repair that fails while nobody is looking is invisible to `doctor`.
+**The failed-repair signal was CONSOLE-ONLY, and Task 47 closed that gap from both ends.**
 
-**Detection is a separate task.** `inspectWindowsTaskSettings` is deliberately pure and **not yet wired into `cmk doctor`**. Task 47 gives HC-5 a registered-target-exists check that already reads the same `schtasks /query /XML` payload; it reads once and asks both questions there. Wiring note for that task: `schtasks /query /XML` emits UTF-16 with a BOM and CRLF — decode before calling (the D-306 class); `verdict: 'unreadable'` exists so a check that cannot tell SKIPs rather than FAILs.
+**Original state (Task 265, 2026-08-08 — preserved per the decision-trail rule):** the result carried `settingsApplied` and a failed settings call printed a warning naming the consequence, so a user watching the command saw it. But console output scrolls away and nothing durable recorded it: `cmk doctor` HC-5 still passed on the `cron-registered` sentinel alone — the same heartbeat-not-outcome shape as D-298's own false green, one check over. `inspectWindowsTaskSettings` shipped pure and deliberately unwired, with detection handed to Task 47.
+
+**Closed (Task 47, 2026-08-09), two independent halves — deliberately both, because they fail in different directions:**
+
+- **The DURABLE record (Task 47.0).** `register-crons` now appends a `cron-settings-unapplied` entry to the §23 health log on **both** outcomes. The failure survives the terminal; the success is what clears it, structurally, with nothing to clean up. HC-14 and the per-prompt whisper pick it up with no code of their own — that is the registry seam working as designed. This half reports what the kit OBSERVED first-hand, which is the only way to know that a settings call was *attempted and refused*. **It is the registry's first PER-SUBJECT class (added at review, I3):** `register-crons` registers TWO jobs and writes one outcome per job, and because §23's streak was computed per CLASS with `detail` ignored, the weekly job's `ok` erased the daily job's `fail` *inside a single command run* — the warning never appeared. The registry entry now declares `perSubject: true` and `computeActiveWarnings` buckets that class by class + `detail`. Deliberately a declared per-class flag rather than a change to the streak key for everyone: for every other class `detail` is a REASON for one failure (`haiku_timeout` vs `spawn-enoent`), so those must keep streaking together and clearing each other. The OUTPUT still collapses to one warning per code — "one root cause, one whisper" is what the cascade dedup rests on — with the affected subjects named, so HC-14 says *which* job.
+- **The LIVE probe (HC-5).** [`scheduler-state.mjs`](../packages/cli/src/scheduler-state.mjs)'s `readRegisteredJob()` reads `schtasks /query /TN <name> /XML ONE` once and asks BOTH questions of it — does the registered target still exist (D-354), and does the posture match (this section, via `inspectWindowsTaskSettings`). This half sees a bad posture the kit never observed: a task registered by an older kit version, or edited in the Task Scheduler UI, has no health-log entry anywhere and is invisible to the first half.
+
+Wiring notes, now implemented: `schtasks /query /XML` emits **UTF-16 with a BOM and CRLF**, so the module reads BYTES (`encoding: 'buffer'`) and sniffs the BOM — asking Node for utf8 yields mojibake in which every regex silently misses, which would present as a permanent innocent-looking SKIP (the D-306 class). `verdict: 'unreadable'` maps to SKIP, never FAIL. And the Task-215 `.vbs` launcher means the path D-354 stranded **is not in the task XML at all** — it is inside the VBS — so the probe follows the launcher through to the script it actually runs. A check that stopped at the task's own `<Arguments>` would have declared D-354's exact bug healthy.
 
 **Cross-platform: nothing equivalent to fix.** This is a Task Scheduler concern only, and the POSIX legs are pinned by non-regression tests. **cron** (Linux) has no battery or idle conditions — a plain 5-field entry either fires or, if the machine is off, is skipped (§8.2.1's lazy-on-read fallback is what covers that, not a scheduler flag). **launchd** (macOS) exposes no power- or user-activity-conditional keys at all, and `StartCalendarInterval` already coalesces runs missed during sleep to next wake — `StartWhenAvailable`'s behavior for free. The plist deliberately leaves `ProcessType` unset, keeping the job out of the throttled `Background` class.
 
@@ -2359,6 +2366,46 @@ by content sha means an EDITED fact is reconsidered automatically. The backfill 
 near-dup (both facts already exist and were both accepted, often months apart) and never touches a
 fact that already carries links.
 
+**THE BOUND IS A RECOVERY PROPERTY, NOT A UX (D-447).** ADR-0020 requires that a killed job has
+persisted what it finished; it does not require that a human drive the loop. The first shipped
+version processed ONE batch and printed *"1,895 fact(s) remain — re-run to continue"*, which leaked
+the internal property into the interface. `linkBackfillToCompletion` now runs the bounded batches to
+completion inside one invocation — **each batch is still a `linkBackfill` call, byte for byte the
+same durable unit**, so killed-at-80% still loses nothing; the loop adds iteration, never a
+transaction or a window in which work is held. It terminates on `remaining === 0`, on a batch that
+made no progress, or on a batch-count cap derived from the first batch's own arithmetic, and
+`stopped` names which. The DRY RUN loops too (otherwise a first look at a 2,000-fact corpus would
+report the first 250 and call it the picture), using a `dryRunSkip` cursor because a dry run persists
+no artifact to advance the walk with. `--max` is the explicit bounded-slice opt-in and keeps the
+"re-run to continue" report. **The index sync is in-band too**: `syncIndexAfterBackfill` runs
+`reindexBoot` after a run that wrote links, so the new edges are live in `cmk links` / `cmk expand` /
+`cmk view` without the user typing `cmk reindex --boot` — the D-85 contract, the same idiom
+`forget()` and `redact()` use. `reindexBoot` rather than the narrower `rebuildEdges`, because
+`rebuildEdges` walks the whole corpus regardless (so it is not actually narrower) and calling it
+alone would leave the `files` checkpoint stale for exactly the files the run rewrote; `reindexBoot`
+re-parses only those files and rebuilds the edges itself. Best-effort: the markdown is the truth and
+every reader self-heals, so a cold index is a slower path, never a lost link — but a failure is
+REPORTED with its error and audited (`index-rebuild-failed`), never papered over.
+
+**A DEGENERATE FLOOR IS A REFUSAL, AND IT MUST NOT MARK (D-448).** `autoLinkFact`'s two degeneracy
+guards return zero links **with a non-null floor**. The backfill originally read that as the ordinary
+"nothing above the floor" band and wrote a `link_eval` marker for every fact — so on a corpus whose
+distribution cannot separate signal from noise, ONE looping invocation marked the entire corpus as
+considered and reported "nothing remains". Because the marker is keyed by `(id, content_sha)`, an
+unedited fact was then never re-decided, silently revoking the write path's own promise that "a later
+backfill over a grown corpus re-decides". `linkBackfill` now threads `decision.degenerate` up, marks
+NOTHING, and stops at the first fact (the floor is corpus-wide, so one verdict is every verdict); the
+loop stops as `stopped: 'degenerate-floor'` and the verb prints the reason and exits non-zero.
+**The recovery is now real, too:** `reindexFull` DROPS `link_eval` with the other derived tables, so
+`cmk reindex --full` / `cmk repair --index` is a genuine un-mark for a corpus a bad run marked. Until
+2026-08-10 the module header documented that drop and the code did not perform it — the table
+survived every reindex and no command could clear it, which is what made a mis-marking permanent
+rather than merely wrong. **The loop's other stops are named for the same reason** — `no-floor`
+(underivable), `stalled`, `batch-cap` — and the two ANOMALY stops write a `backfill-incomplete` audit
+entry plus a non-zero exit, because "if this repeats please report it" is worthless without an
+artifact to report. The dry-run cursor is an **id set, not a count**: a fact captured mid-run
+reorders the pending walk, and an index cursor would skip a fact nobody looked at.
+
 **Flag + observability.** `CMK_LINK_FACTS` > `context/settings.json` `memory.link_facts` > **default
 OFF** (D-436, lead-ratified 2026-08-08 — see the measured outcome below; the write path is opt-in,
 `cmk autolink` is the no-configuration entry point). Every applied link writes an `auto-linked`
@@ -2631,16 +2678,44 @@ Sixteen yes/no checks, run on demand by `cmk doctor`. Each has a documented self
 | HC-2 | MEMORY.md distill is fresh (≤2 days) | Manual `cmk daily-distill` |
 | HC-3 | Transcripts firing (≤3 days) | Root cause: project not primary cwd in Claude Code. Fix: reopen project as primary |
 | HC-4 | INDEX.md matches `context/memory/` files | `cmk reindex` rebuilds |
-| HC-5 | Cron jobs registered with host scheduler | `cmk register-crons` (idempotent — registers daily-distill + weekly-curate via Task 33's Node implementation; design §8.6.3 documents the Python → Node pivot) |
+| HC-5 | Cron jobs **actually** registered with the host scheduler (Task 47 / D-354) | `cmk register-crons` (idempotent — registers daily-distill + weekly-curate via Task 33's Node implementation; design §8.6.3 documents the Python → Node pivot). **The sentinel decides only whether cron is in USE; the verdict comes from the host** — [`scheduler-state.mjs`](../packages/cli/src/scheduler-state.mjs)'s `readRegisteredJob()` reads the real registration (`schtasks /query /XML`, following the Task-215 `.vbs` launcher through to the script it runs · the tagged `crontab -l` line · the LaunchAgent plist), stats the command, and on win32 passes the same XML to §8.6.5's `inspectWindowsTaskSettings`. **FAIL** on a missing entry or a missing command (the v0.5.4 rename stranded a task on a dead package path for four nights while the sentinel-only check reported PASS — D-298's heartbeat-not-outcome false green, one check over); **WARN** on the stale §8.6.5 posture (it runs badly, not never — and cron is an optimization, so it must not redden an exit code); **SKIP**, saying which, when the scheduler could not be read |
 | **HC-6** | Native Anthropic Auto Memory status detected | **Inspect `~/.claude/projects/<slug>/memory/` existence + contents. Log result to `context/.locks/native-memory-status.log` as `{active: true \| false \| unknown, last_modified: <ISO>, file_count: N}`. Non-fatal — informational only, lets users see whether their kit is supplementing or substituting Anthropic's. Per Kiro's spec-pattern of explicit detection + audit logging.** |
 | **HC-7** | **Stale lock files under `context/.locks/` + `<userDir>/.locks/`** | **Per-stale-lock recoveryCommand emitted in the report (e.g. `rm "<path>"`). Library: [`packages/cli/src/lock-discipline.mjs`](../packages/cli/src/lock-discipline.mjs) `detectStaleLocks(projectRoot, {userDir})`. Closes the residual leak window left after PR-A's subprocess timeout (external SIGKILL / OS OOM / hardware failure — see §6.9 for the composition). Non-fatal — `cmk doctor` reports + the next auto-extract invocation's in-band stale-recovery also handles it.** |
 
 | **HC-8** | **Native bindings present (npm 12 readiness, Task 141a / D-129)** | **`require('better-sqlite3')` must load its `.node` binding; when `search.default_mode` is `hybrid`/`semantic` the embedder import is probed too (the probe distinguishes not-installed from installed-but-binding-broken — the semantic-backend loader collapses both). Fail emits the exact global remediation (`npm install -g @lh8ppl/core-memory-kit --allow-scripts=better-sqlite3` / `npm install -g @huggingface/transformers --allow-scripts=onnxruntime-node`) with `requiresInstall: true`. The PRIMARY UX is upstream: `cmk install` runs the same probe and asks to fix inline (the user's 2026-06-12 install-time-ask steer); HC-8 is the backstop. Library: [`packages/cli/src/native-binding.mjs`](../packages/cli/src/native-binding.mjs). Verified against the npm v12 changelog + npm config docs 2026-06-12: the `allow-scripts` config is the documented path for global installs; project-level `npm approve-scripts` does not apply to `-g`.** |
 | **HC-9 (stale-global half, Task 245 / D-388)** | **Installed binary vs the npm registry's published `latest`** | **`checkPublishedLatest` (version-drift.mjs): a plain registry-metadata GET (the same request `npm view` makes) with `UPDATE_CHECK_TIMEOUT_MS` = 2500 ms; ANY failure (offline / HTTP / payload / timeout) degrades to `{checked:false}` silently — a health check must never fail because the machine is offline. Skipped under `CI` (the install-matrix runs doctor on every PR; a registry hiccup must not flake a gate), `VITEST` (the doctor suite would otherwise hit the real registry dozens of times per local run; a test opts in by injecting a fake fetcher, which bypasses the gate), and `CMK_SKIP_UPDATE_CHECK=1` (the user's out). Escalates HC-9 `pass`→`warn` and `skip`→`warn` (the fact is about the BINARY, not the project) but NEVER touches `fail` — a real drift failure's message + recovery must not be replaced by the softer nag. `warn` is advisory: surfaced with its repair command, never the exit code. Closes the D-382 class cause-independently: whatever makes an `npm i -g` quietly no-op, the next doctor says the binary is behind.** |
 
-**Critical rule** (per design §14, 2026-05-28 amendment): any repair requiring `pip install` / `npm install` / system-level changes MUST ASK the user first. Previously cited as "NFR-9" — NFR-9 is actually "Memory poisoning defense baseline" per [`requirements-revisions-proposed.md:125`](../archive/specs/v0.1.0/requirements-revisions-proposed.md). The ask-before-install rule has no FR/NFR backing today; promoting it to a proper requirements entry is a v0.1.x cleanup.
+**Critical rule — now [NFR-10](requirements.md), "Consent gate for system-level installs" (Task 48, 2026-08-09).** Any repair requiring `pip install` / `npm install` / system-level changes MUST ASK the user first. Consent is satisfied by an install-time opt-in flag, a runtime `[y/N]` prompt, or an explicit `--yes`; **a missing terminal is not consent**, and a recovery that deletes or overwrites user data is printed for manual execution regardless of any flag.
 
-**Implements**: FR-22, all NFRs.
+**Citation history, preserved rather than tidied away** (the decision-trail rule — the drift is the instructive part): the rule was originally cited as **NFR-9**, which is actually "Memory poisoning defense baseline" — a different rule entirely. Task 37's review caught the mis-citation on 2026-05-28 and corrected the citation to "design §14", which was honest but left the rule as an **unsourced design assertion** for over a year. Task 48 finally gave it a number, and the trigger was that Task 47 built the first feature that actually executes an install. The lesson is the one PR-C of the audit campaign already recorded: a citation is a claim, and "it points somewhere real now" is not the same as "it points at something that backs the claim."
+
+Enforced structurally by [`validate-install-consent.mjs`](../scripts/validate-install-consent.mjs), which reads `doctor-repair.mjs`'s exported `EXECUTABLE_BINS` and requires a declared consent channel per binary, both directions.
+
+### 14.1 `cmk doctor --repair` — prompt-then-fix (Task 47)
+
+**Tail-appended 2026-08-09.** `cmk doctor` itself is unchanged and remains report-only; `--repair` is opt-in.
+
+**Why opt-in, against the field.** Every doctor-style CLI surveyed for this task is report-only and hands the user a separately-named command instead: `brew doctor` never fixes; `flutter doctor` prints *"to resolve this, run: flutter doctor --android-licenses"*; `npm doctor` diagnoses while `npm audit fix` repairs. That convergence is a real signal, so the default did not move. `--repair` earns its place because the kit's recoveries are overwhelmingly its OWN idempotent verbs (`cmk reindex`, `cmk register-crons`, `cmk repair --hooks`), which the user gains nothing by retyping.
+
+**Three rules, each from a verified primary source:**
+
+1. **No terminal is never an implicit yes.** `gh` refuses when stdin is not a TTY and names the flag that would have worked (`--yes required when not running interactively`, exit 1); `brew bundle cleanup` likewise returns 1 when the prompt *"cannot be shown."* We print the commands and name `--yes` — doctor's own non-zero exit already stands, so the run cannot read as success. Silent-yes is dangerous; silent-no exits 0 while leaving the system broken, which is the HC-10 false-green class.
+2. **`--yes` does not cover everything.** `gh repo delete` *ignores* `--yes` when the target is ambiguous, and `apt -y` aborts anyway on held / unauthenticated / essential packages. The kit's manual class — destructive recoveries, ones still carrying a `<placeholder>`, and prose instructions — stays print-only under `--yes` exactly as without it.
+3. **Default-deny, not deny-list — at BOTH levels.** A recovery string the planner does not RECOGNISE is print-only. The executable set is `REPAIR_VERBS` — an explicit **allowlist** of the kit's repair verbs (`install` / `reindex` / `repair` / `register-crons` / `daily-distill`, each a literal `recoveryCommand` emitted somewhere in the package) — plus the `npm install -g <pkg>[@version] [--allow-scripts=…]` shape HC-8 and HC-9 emit. **The verb allowlist was added after review (I5):** the first implementation checked only membership of the live command registry, so all 42 registered verbs classified runnable, `cmk purge --all` and `cmk uninstall` among them. Nothing reachable emitted those, so it was latent — but this section's default-deny claim rested on a check that did not exist. A deny-set was considered and rejected for the reason the rule already gives: it closes today's hole and leaves tomorrow's open, because a verb added later would default IN. An allowlist defaults OUT, and a test asserts the allowlist and the print-only set **partition the live registry**, so adding a verb surfaces the decision in a diff. Verbs that mutate or remove memory (`purge` / `uninstall` / `forget` / `redact` / `roll` / `prune`) are additionally named, so the printed line says *why* it is the user's to run rather than a generic "unrecognised".
+
+**Considered and REJECTED: npm audit's tiered model** — auto-apply the safe subset with no prompt, gate only the range-changing tier behind `--force`. It is the right model for a package manager and the wrong one here: Task 48 exists because the ask-first rule had no requirement backing it, and shipping a no-prompt tier in the same change that finally writes that requirement down would be arguing both sides. Every runnable repair is offered; none is assumed. (`git clean -i`'s numbered selection menu — `clean` / `filter by pattern` / `select by numbers` / `ask each` — is the proven shape if per-item prompting ever proves too slow; the kit's failure counts are small enough that "ask each" is the whole interaction today.)
+
+**Repairs run THIS binary.** A `cmk` recovery is spawned as `process.execPath <this cmk's entry> <verb> …`, never `cmk` off PATH — a PATH `cmk` resolves to whatever is installed globally, which is precisely the stale binary HC-9 exists to warn about.
+
+**It never claims the checks now pass.** The checks ran BEFORE the repairs, so the summary reports what was applied / failed / declined / left, and tells the user to re-run `cmk doctor`. Asserting a state nobody re-measured is the false green the whole health surface exists to remove.
+
+**Exit-code policy (added at review, M7).** `--repair` is an explicit REQUEST, so its exit code answers *"did the thing you asked for happen?"* — **1** when a repair FAILED or when a runnable repair was withheld for want of consent (no terminal and no `--yes`); **0** when the user was asked and DECLINED (honouring an answer is not a failure) and for manual-class items (nothing was withheld — those are never runnable). Without this, a plan of only `warn` findings left doctor's `failCount` at 0, so `cmk doctor --repair` printed *"here are 2 repairs you could apply"* and exited **0**, indistinguishable from a clean run — the false-green shape arriving through the exit code instead of the report. **Plain `cmk doctor` is untouched**: `warn` still never reddens an exit code there, preserving HC-13/HC-14's advisory posture.
+
+**An unverifiable posture is never a verified one (added at review, M8).** A task whose `<Command>` reads fine but whose `<Settings>` block does not gets its own verdict, `settings-unknown` → HC-5 **WARN**. It is deliberately neither neighbour: `settings-stale` would assert flags nobody saw, and failing the whole read as `unreadable` would discard a target check that succeeded.
+
+**Observability.** Every offer, answer and result — including the ones nobody ran — appends to `context/.locks/doctor-repair.log` as NDJSON (`{ts, schema, hc, command, decision, outcome, exit_code?, reason?}`). Logging only the actions would make a declined repair indistinguishable from one never offered.
+
+**Implements**: FR-22, NFR-10, all NFRs.
 
 ---
 
@@ -3467,7 +3542,7 @@ Provenance: Task 37 code-review Suggestion #1 (2026-05-28).
 
 ### 16.48 Promote ask-before-install rule to a proper FR/NFR
 
-**v0.1.x candidate.**
+**SHIPPED 2026-08-09 (Task 48) as [NFR-10](requirements.md) — "Consent gate for system-level installs", with [`validate-install-consent.mjs`](../scripts/validate-install-consent.mjs) as its structural half and §14.1 as its first consumer.** The original entry is preserved below per the decision-trail rule; note that the ship trigger it names (an audit campaign verifying every design assertion has a backing FR/NFR) is NOT what fired it. What fired it was Task 47 building the first feature that actually EXECUTES an install — which is the more useful lesson: the trigger written in 2026-05-28 imagined a systematic sweep, and the rule got its number the moment a real consumer needed it to mean something.
 
 Surfaced by Task 37 code-review-excellence Important #1 (2026-05-28). The "any repair requiring `pip install` / `npm install` / system-level changes MUST ASK the user first" rule lives in design §14 as an unsourced design assertion. The original citation was "NFR-9" but NFR-9 (per [`requirements-revisions-proposed.md:125`](../archive/specs/v0.1.0/requirements-revisions-proposed.md)) is "Memory poisoning defense baseline" — different rule entirely. Task 37 PR corrected the citation to "design §14" but the rule still lacks a backing FR/NFR.
 
@@ -4350,14 +4425,17 @@ ONE append-only NDJSON log at `context/.locks/health.log` (the gitignored run-ti
 
 **The registry** is Tailscale's `Warnable` struct, kit-shaped: `code` (the stable id the troubleshooting skill's repair book is sectioned by), `title`, `severity`, `dependsOn`, `primaryAction`, `fixClass`, plus the kit's two additions — `deterministic` and `strikeThreshold`.
 
-| Code | Severity | Deterministic | dependsOn | primaryAction | Fix class |
-| --- | --- | --- | --- | --- | --- |
-| `agent-cli-missing` | memory-off | yes (1 strike) | — | `cmk doctor` | advise |
-| `extract-failing` | memory-off | no (2 strikes) | `agent-cli-missing` | `cmk doctor` | advise |
-| `inject-failing` | degraded | no (2) | — | `cmk doctor` | advise |
-| `precompact-failing` | degraded | no (2) | `agent-cli-missing` | `cmk doctor` | advise |
-| `index-drift` | advisory | yes (1) | — | `cmk reindex` | **silent** |
-| `mcp-tool-failing` | degraded | no (2) | — | `cmk doctor` | advise |
+| Code | Severity | Deterministic | dependsOn | primaryAction | Fix class | Subjects |
+| --- | --- | --- | --- | --- | --- | --- |
+| `agent-cli-missing` | memory-off | yes (1 strike) | — | `cmk doctor` | advise | single |
+| `extract-failing` | memory-off | no (2 strikes) | `agent-cli-missing` | `cmk doctor` | advise | single |
+| `inject-failing` | degraded | no (2) | — | `cmk doctor` | advise | single |
+| `precompact-failing` | degraded | no (2) | `agent-cli-missing` | `cmk doctor` | advise | single |
+| `index-drift` | advisory | yes (1) | — | `cmk reindex` | **silent** | single |
+| `mcp-tool-failing` | degraded | no (2) | — | `cmk doctor` | advise | single |
+| `cron-settings-unapplied` | advisory | yes (1) | — | `cmk register-crons` | confirm | **per-subject** |
+
+`cron-settings-unapplied` (Task 47.0) is the registry's first entry added after wave 1, and it is what the seam was built for. §8.6.5's settings call is the second half of a Windows registration, it can fail on its own, and Task 265 could only report that to the **console** — so a registered-but-starving task became invisible the moment the terminal scrolled, with HC-5 still passing on the sentinel. It is **advisory** because cron is optional and the lazy roll is the floor (§8.2.1): the nightly optimization is what broke, not memory. It is **deterministic** because nothing re-runs the settings call — the flags stay wrong until someone registers again, so waiting for a second strike is waiting for a second manual registration that may never come. Its `primaryAction` is the command that also writes its `ok` (the §23 pairing rule): `cmk register-crons` records the outcome on every run, success or failure.
 
 `deterministic` means exactly one thing: **can this condition transiently recover on its own?** A missing binary cannot (it is missing until someone installs it); a spawn timeout can (the machine was busy). `strikeThreshold` is therefore DERIVED from it, not independently chosen, and a test pins the two together so they can never drift apart.
 
@@ -4495,7 +4573,7 @@ Wave 1 shipped with the brief "legibility over polish", which was never a ratifi
 - **Motion is guarded and focus is keyboard-only.** Every transition sits above a `prefers-reduced-motion: reduce` `*` rule; `:focus` clears the outline and `:focus-visible` draws it.
 - **System fonts only**, per the survey's stacks — and NOT `"Segoe UI Variable"` (on Windows 11 `system-ui` resolves to Segoe UI, deliberately). `tabular-nums` on ids, dates and counts; `slashed-zero` on the mono stack.
 
-### 24.1.3 Live refresh — the SSE stream (Task 259, 2026-08-09; D-447)
+### 24.1.3 Live refresh — the SSE stream (Task 259, 2026-08-09; D-450)
 
 Wave 1 shipped manual refresh and a per-view "as of HH:MM" label, with live refresh filed as Task 259 and its one platform-sensitive part (`fs.watch`) deliberately excluded. This is that task. An open tab now reflects a new capture without a reload. Everything §24.1 ratified is unchanged — this adds one GET route and one client, and takes nothing away.
 

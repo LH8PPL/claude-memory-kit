@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c0d63dc7bbe4d0a4dc6f084a67e0675d57be0a11d3a77d9c5e00127ebb1d97d8
+related: [task-167-testing-agent-run-unit-live-agent-loop-user-does-no, a-health-check-behind-a-command-does-not-surface-a-silent-fa, lazy-on-sessionstart-roll-doesn-t-fire-on-size-bloated-now-m]
 ---
 
 The fix for Task 167 must be fully automatic with zero user action. D-169 (automatic-path rule) is BINDING.

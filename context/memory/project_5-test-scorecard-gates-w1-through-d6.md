@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: cb741aeae3efa5f78ce66de1f9813afe3ae7a04e1aaaa2116f77976535e66d90
+related: [nested-claude-spawn-timeout-in-test-harness, version-0-3-3-release-cut-gate16-test-session-state, live-test-gate-structure-and-blocker-findings]
 ---
 
 **W1, D1** ✅ in-chat recall works (skill fired, cited, currency-checked). **W2, W3, W4** ✅ terminal checks pass (paraphrase, transcripts, raw record). **D6** ⚠️ roll timed out in nested-claude harness; logic is sound but validation blocked by environment. **R2-quality, D2, D3** not yet run or behavioral (user's Session 3 half).
