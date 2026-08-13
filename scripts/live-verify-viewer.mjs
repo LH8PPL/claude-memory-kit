@@ -19,7 +19,7 @@
 // Run: npm run live-verify:viewer   [--keep] [--verbose]
 
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, mkdtempSync, rmSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { request as httpRequest } from 'node:http';
 import { connect as netConnect } from 'node:net';
 import { tmpdir, platform } from 'node:os';
@@ -138,7 +138,11 @@ function sseOpen(url) {
             const ev = { type, json };
             events.push(ev);
             for (let k = waiters.length - 1; k >= 0; k--) {
-              if (waiters[k].type === type) { waiters[k].resolve(ev); waiters.splice(k, 1); }
+              const w = waiters[k];
+              if (w.type !== type) continue;
+              if (w.where && !w.where(ev)) continue;
+              w.resolve(ev);
+              waiters.splice(k, 1);
             }
           }
         });
@@ -146,11 +150,16 @@ function sseOpen(url) {
           contentType: res.headers['content-type'],
           contentLength: res.headers['content-length'],
           events,
-          waitFor(type, ms) {
-            const seen = events.find((e) => e.type === type);
+          // `where` exists because the SECOND change on one stream is a
+          // different question from the first: without it, a buffered `change`
+          // from the previous write answers immediately and the next check
+          // passes on stale evidence rather than on the write it just made.
+          waitFor(type, ms, where = null) {
+            const match = (e) => e.type === type && (!where || where(e));
+            const seen = events.find(match);
             if (seen) return Promise.resolve(seen);
             return new Promise((res2, rej2) => {
-              waiters.push({ type, resolve: res2 });
+              waiters.push({ type, where, resolve: res2 });
               setTimeout(() => rej2(new Error(`no "${type}" frame in ${ms}ms (saw: ${events.map((e) => e.type).join(',') || 'nothing'})`)), ms).unref();
             });
           },
@@ -676,6 +685,39 @@ async function main() {
           'a fact captured by the real `cmk remember` reaches the OPEN stream as a change event',
           !!(change && change.json && change.json.fingerprint && change.json.fingerprint !== hello?.json?.fingerprint),
           JSON.stringify(change),
+        );
+
+        // THE QUEUE HALF (review finding I1). The queue is the one tier surface
+        // this gate can reach that `cmk remember` does not touch, and it is the
+        // one that drives the pinned health strip on EVERY view — so a queue
+        // growing while the strip still reads "all clear" is the feature
+        // failing on the page's most prominent line. The reviewer probed 16
+        // poll cycles against the pre-fix build and saw nothing.
+        //
+        // Written DIRECTLY rather than through a bin, deliberately and on the
+        // fingerprint's own terms: the audit half of I1 (`REVIEW_QUEUED` from
+        // `routeMedium`) is covered by tests/cli-auto-extract.test.js and needs
+        // a live medium-trust Haiku extraction to reach from a bin, while the
+        // fingerprint entry exists precisely as the belt for writers that are
+        // NOT the kit — a second agent, a `git pull`, a merge. This is that
+        // writer. It is also the harder case: an APPEND to an existing file
+        // does not move the containing directory's mtime, which is why the two
+        // queue files are named individually rather than covered by `queues/`.
+        const queuePath = join(proj, 'context', 'queues', 'review.md');
+        mkdirSync(dirname(queuePath), { recursive: true });
+        const beforeQueue = change?.json?.fingerprint ?? hello?.json?.fingerprint;
+        appendFileSync(
+          queuePath,
+          `\n## 2026-01-01T00:00:00Z — live-verify (medium-trust, pending review)\n- (P-LIVEVRFY) a queued item the open stream must notice\n`,
+          'utf8',
+        );
+        const queueChange = await live
+          .waitFor('change', 30_000, (e) => e.json?.fingerprint && e.json.fingerprint !== beforeQueue)
+          .catch((e) => ({ error: e.message }));
+        check(
+          'an append to queues/review.md — the queue behind the pinned health strip — reaches the OPEN stream too (I1)',
+          !!(queueChange && queueChange.json && queueChange.json.fingerprint !== beforeQueue),
+          JSON.stringify(queueChange),
         );
       } finally {
         live.close();
