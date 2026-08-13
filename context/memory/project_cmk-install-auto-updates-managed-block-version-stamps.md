@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5895660ce91be98d9fe82c5d418b594a3ca04e98157cc0e030fc8006968204e2
+related: [hc-9-drift-after-claude-code-update-v0-3-4, cmk-version-bumping-convention, bash-cwd-drift-creates-packages-cli-context-artifacts]
 ---
 
 When running `cmk install` to upgrade the global binary, the tool automatically updates managed blocks' version stamps (e.g., v0.6.2 → v0.6.4). This is intentional behavior (Task 230's refresh mechanism), not a stray edit.

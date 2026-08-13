@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 474abcb4c2a1c12d0b94112cbae71ba37c687af35dcf90813c8118ec7d34ecb3
+related: [release-trigger-tag-push-publishes, v0-3-2-release-scope-and-141b-gate]
 ---
 
 - Assistant can trigger workflows with `gh workflow run` (e.g., `gh workflow run "Bench (storage bake-off)"`).

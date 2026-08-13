@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ddae1bdfd0a66a3409390977c2994b6892f4d75ef84771554ecb39b7c6d50c44
+related: [three-tier-model-delegation-pattern]
 ---
 
 Claude Code supports model delegation via Agent tool in three patterns:

@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 44e4fedc687b92e7cd57d2df8a415d1717da49c560f14009ba42200bf2cc2535
+related: [release-workflow-cold-open-testing-discipline, claude-memory-kit-v0-4-3-release-workflow, rebuilding-the-global-cmk-binary-after-code-changes]
 ---
 
 Three-tier verification for shipping fixes:

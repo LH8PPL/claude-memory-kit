@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 28f8a450239a3d58e2d33cff45026686450deaf8ce2b8b49d29b2e433a0e57d9
+related: [release-workflow-cold-open-testing-discipline, post-merge-clean-build-verification, claude-memory-kit-fix-verification-protocol-v0-4-3]
 ---
 
 - Develop and test fix on branch (PR #246)

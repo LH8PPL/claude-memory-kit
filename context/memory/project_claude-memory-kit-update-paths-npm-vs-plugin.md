@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 597608ee38627d685f9f25477ab99835681a8c0d78334defc750e8ad823d35ac
+related: [plugin-install-and-bootstrap-are-separate-one-time-steps, updating-cmk-requires-re-running-bootstrap-on-project-files, kit-update-workflow-npm-global-per-project-cmk-install]
 ---
 
 Two parallel update workflows with identical structure:

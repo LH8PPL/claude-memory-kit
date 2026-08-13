@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0da8ebf62735c79c5c679174c1cbbcd1bb8e8b1a0e901febd393c7544573b1af
+related: [release-workflow-tag-before-merging-new-work, tag-ready-criterion-core-features-pass-known-issues-cleanly, changelog-unreleased-auto-reset-during-release]
 ---
 
 Task tracking errors—shipped task ticked under the wrong version, changelog entry filed under the wrong version number—should be caught before shipping, not caught by user review post-release.

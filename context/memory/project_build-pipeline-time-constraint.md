@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9fe71ac6e7913c9299689e26a4135e7889b4d7c33867598f34ac7d6bd0e06300
+related: [release-philosophy-ship-finished-work-don-t-hold-for-version, patch-release-strategy, backlog-for-v0-3-x-and-v0-4]
 ---
 
 New features/fixes require build pass (two-pass review + CI), taking approximately one day or more ("day-plus"). This is the genuine scheduling constraint.

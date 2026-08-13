@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e8ae5cc2453af75f1241cdab9ff8b4d1da36df5301f525462b527daaef2ec31b
+related: [proper-verb-for-clearing-stale-locks, dogfood-memory-contamination-in-v0-5-1-release, non-destructive-flagging-with-blocked-placeholders]
 ---
 
 Use `cmk forget` to remove facts; it tombstones them (recoverable in `archive/tombstones/`). Never hand-delete memory files.

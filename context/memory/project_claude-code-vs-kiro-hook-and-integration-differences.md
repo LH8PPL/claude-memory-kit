@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 5b4f7407bf59d3df4a435cad96401891f0d01b85f9c8aedc514b32155c660c8b
+related: [kiro-vs-claude-code-integration-the-core-is-shared-verified, kiro-hook-environment-verified-live-2026-06-21-the-probe-cap, kiro-transcript-format-resolved-verified-on-a-real-kiro-inst]
 ---
 
 These differences are architectural necessities (discovered during live-testing), not arbitrary divergence:

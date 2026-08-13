@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: b8df7ca1fa21547ca5eb18282bc6e36f347a33f0
+related: [doctor-health-check-baseline-fresh-install, fresh-cmk-install-expected-cmk-doctor-baseline, fresh-cmk-install-health-baseline-cmk-0-4-5-with-semantic]
 ---
 
 Before the first session turn, `cmk doctor` should report:

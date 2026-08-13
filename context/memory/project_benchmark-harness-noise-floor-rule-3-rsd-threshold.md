@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1be1d2396ffb0e79c8365075934a8ec0c6f43a1c59f32fa09b318738900c5a6c
+related: [v0-3-2-release-scope-and-141b-gate, sqlite-vec-incompatibility-between-better-sqlite3-and-node-s]
 ---
 
 The performance benchmark harness refuses to report a verdict if measurement noise (RSD) exceeds 3%.

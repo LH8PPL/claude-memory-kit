@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 290f4b5daa1455d3f7505424bd44127bbaa5d36abe0b310076a8d61c015247bc
+related: [github-repository-seo-optimization-topics-about, github-about-topics-require-manual-paste, live-test-workflow-for-kiro-cli-project-fix]
 ---
 
 **Recommended GitHub About text (option B):**

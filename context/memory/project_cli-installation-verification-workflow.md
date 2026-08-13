@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2599de8e224a2a50e3d46bd5b17cbb626badf969e277309da62a15600a4598ff
+related: [global-cli-rebuild-and-reinstall-workflow, rebuilding-the-global-cmk-binary-after-code-changes, re-pack-verify-workflow-for-cut-gate-testing]
 ---
 
 To install & verify claude-memory-kit CLI globally:

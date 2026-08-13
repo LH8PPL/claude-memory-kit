@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f7afadbd3a62f9986b1b6192b9420d60e5838c5d2f724a9a552faa9c404eca50
+related: [windows-dll-lock-prevents-global-npm-install-during-active-c, windows-ebusy-when-updating-cmk-during-claude-code-runtime, npm-uninstall-ebusy-error-with-better-sqlite3-node-on-rebuil]
 ---
 
 Global install via `npm install -g @lh8ppl/claude-memory-kit` may fail with EBUSY if Claude Code's MCP servers are running.

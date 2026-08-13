@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3eda14125b234e41511b171b7f2f6cf5138acece9cf6700f24a4db640fa92ec6
+related: [workflow-green-commit-green, ci-watch-pattern-must-await-all-checks-not-subset, claude-md-ci-validator-binding-rule]
 ---
 
 When monitoring CI health, explicitly watch the ci.yml workflow status—not proxy signals like a passing CodeQL report. The rule is now in CLAUDE.md.

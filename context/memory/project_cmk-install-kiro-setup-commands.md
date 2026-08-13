@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6c03d737c73ebf6d5a341bc40671fab98cb251be526d7342d34962071ee8c9b8
+related: [kiro-cli-integration-test-gate-and-reinstall, d-303-test-environment-confirmed-ready, gate-testing-isolated-throwaway-folders]
 ---
 
 Working bootstrap sequence for Kiro IDE gate testing:

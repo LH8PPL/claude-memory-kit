@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract-session
 source_line: 1
 source_sha1: 517806448c30af39d985a19825ba653c0efd4786a8be56f124acf9d7833aa635
+related: [index-md-is-the-kit-s-metadata-index-of-94dqylbm, i-used-https-github-com-spillwavesolutio-4elvtgqb, claude-directory-is-fully-gitignored-in-x59wsm9d]
 ---
 
 awrshift/claude-memory-kit is the predecessor project that prompted renaming of the current project

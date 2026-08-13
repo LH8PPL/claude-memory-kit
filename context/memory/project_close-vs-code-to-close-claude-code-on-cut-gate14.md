@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: fc05ada6030d0facb1fa913746cc4b25cbca16d3e97aac9203a0634223b3e7f7
+related: [hook-binary-spawned-fresh-each-turn, windows-terminal-path-refresh-after-visual-studio-build-tool, mcp-server-may-retain-stale-code-in-memory-after-package-upd]
 ---
 
 On cut-gate14, Claude Code cannot be closed independently. Closing the VS Code window is the only way to close Claude Code.

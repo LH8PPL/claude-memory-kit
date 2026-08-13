@@ -16830,3 +16830,285 @@ _(retracted 2026-07-22)_
 
 **When:** 2026-08-05 · **Fact:** `P-KEHEJaPH`
 **Why:** Repeated pattern observed multiple times; resource competition has invalidated stress runs in this project
+
+<!-- decision:P-3AT2GaSE -->
+
+## Research phase 2 ongoing—fetching PAI/Pulse tokens and screenshots as secondary
+
+**When:** 2026-08-05 · **Fact:** `P-3AT2GaSE`
+
+<!-- decision:P-TETWUFPS -->
+
+## Task 260 visual pass completed with all gates passing: 3916 full suite green, 5/
+
+**When:** 2026-08-05 · **Fact:** `P-TETWUFPS`
+
+<!-- decision:P-N4K4NVA6 -->
+
+## Markdown tokenizer is security-critical component (XSS threat on untrusted fact
+
+**When:** 2026-08-05 · **Fact:** `P-N4K4NVA6`
+
+<!-- decision:P-BFW296WG -->
+
+## PR #338 open with CodeQL/Sonar checks active; v0.6.5 release pending on green
+
+**When:** 2026-08-05 · **Fact:** `P-BFW296WG`
+
+<!-- decision:P-R9QN2J4G -->
+
+## PowerShell silently parses `stash@{0}` as hashtable literal when unquoted; quoti
+
+**When:** 2026-08-05 · **Fact:** `P-R9QN2J4G`
+
+<!-- decision:P-PZ6QNHQA -->
+
+## Edge Headless Screenshot Testing Blocked (VBS Enclave Error 577)
+
+**When:** 2026-08-05 · **Fact:** `P-PZ6QNHQA`
+**Why:** Cannot visually verify rendering via automation; all graph/UI changes require manual user verification
+
+<!-- decision:P-4GENaCFM -->
+
+## Graph Layout Fixed—Window-Responsive, No Scroll Required
+
+**When:** 2026-08-05 · **Fact:** `P-4GENaCFM`
+**Why:** UX defect caught through user question; design pattern mistake where explanatory text duplication wasted the primary viewport
+
+<!-- decision:P-E3QSZH4S -->
+
+## Pagination Defect—91% of Facts and Decisions Unreachable
+
+**When:** 2026-08-05 · **Fact:** `P-E3QSZH4S`
+**Why:** Core UX defect breaks knowledge discoverability; discovered via user exploration rather than automated testing
+
+<!-- decision:P-6aVCa69L -->
+
+## Design Contract Enforcement via Tests + Code
+
+**When:** 2026-08-06 · **Fact:** `P-6aVCa69L`
+**Why:** This prevents spec-code drift and makes design decisions durable and explicit. It catches unintentional regressions and makes intentional changes visible.
+
+<!-- decision:P-JZN7Y5DL -->
+
+## Fact List vs. Graph Endpoint Population Differences
+
+**When:** 2026-08-06 · **Fact:** `P-JZN7Y5DL`
+**Why:** Prevents incorrect hero numbers and avoids expensive computations for display purposes.
+
+<!-- decision:P-ES4M4PGR -->
+
+## Health Strip State-Aware Height for Fold Calculation
+
+**When:** 2026-08-06 · **Fact:** `P-ES4M4PGR`
+**Why:** This prevents jank and visual incorrectness; the fold height fix initially missed this because it didn't account for the state transition.
+
+<!-- decision:P-WVVMCW99 -->
+
+## WCAG Compliance and Contrast Verification
+
+**When:** 2026-08-06 · **Fact:** `P-WVVMCW99`
+**Why:** Ensures accessibility compliance and catches regressions.
+
+<!-- decision:P-6BK7E49P -->
+
+## SonarCloud Coverage Gate at 80% on New Code
+
+**When:** 2026-08-06 · **Fact:** `P-6BK7E49P`
+**Why:** Prevents regressions in new features; this per-PR constraint is stricter than total coverage measurement
+
+<!-- decision:P-L3EGQURX -->
+
+## Co-occurrence Edge Layer Rider for Task 262
+
+**When:** 2026-08-07 · **Fact:** `P-L3EGQURX`
+**Why:** mnemory's dense graph is a visual artifact of coarse category tagging; cmk's sparse stored links are semantically richer but look empty to users. This rider improves UX perception without compromising link quality.
+
+<!-- decision:P-ZZ2RGKYV -->
+
+## Three Design Patterns from mnemory to Explore
+
+**When:** 2026-08-07 · **Fact:** `P-ZZ2RGKYV`
+**Why:** mnemory research surfaced mature architectural patterns addressing cmk's eviction, TTL strategy, and quality-measurement gaps. Lazy TTL especially deserves weight given cron-starvation history.
+
+<!-- decision:P-7LXF3U3Q -->
+
+## D-366 Verification: Session File Unboundedness Risk
+
+**When:** 2026-08-07 · **Fact:** `P-7LXF3U3Q`
+**Why:** Comparable codebase had unbounded accumulation; cmk may have same risk.
+
+<!-- decision:P-6CNM6W9K -->
+
+## Episodic-to-Semantic Clustering Promotion
+
+**When:** 2026-08-07 · **Fact:** `P-6CNM6W9K`
+**Why:** Fully automatic path from observation to fact; parallel to cmk's consolidation mechanisms.
+
+<!-- decision:P-4AN6G5FK -->
+
+## HMAC-Bound Audit Log Design
+
+**When:** 2026-08-07 · **Fact:** `P-4AN6G5FK`
+**Why:** Better security posture; prevents cross-host replay and offline tampering.
+
+<!-- decision:P-3C9YL6MQ -->
+
+## KiroCrew's Procedural Skill Learning Loop
+
+**When:** 2026-08-07 · **Fact:** `P-3C9YL6MQ`
+**Why:** Represents the most complete reference for cmk's §6 blank region on durable procedure capture.
+
+<!-- decision:P-FBYSTWZ7 -->
+
+## Multi-Legacy Onboarding Migration Framework
+
+**When:** 2026-08-07 · **Fact:** `P-FBYSTWZ7`
+**Why:** Generalization of cmk's import-anthropic verb; adoption lever for switching users to retain prior memory.
+
+<!-- decision:P-24J6aGWU -->
+
+## Task Management Discipline (D-248)
+
+**When:** 2026-08-07 · **Fact:** `P-24J6aGWU`
+**Why:** Prevents backlog rot — valid long-term research tasks stay alive with explicit conditions, while zombie tasks without triggers/lanes are killed. Validator + sweep enforce discipline.
+
+<!-- decision:P-aL9aSS6L -->
+
+## Lane Naming Convention
+
+**When:** 2026-08-07 · **Fact:** `P-aL9aSS6L`
+**Why:** D-431: a fuzzy lane caused tasks 47 + 48 to sit unfixed for three weeks because their target was ambiguously named. Concrete naming ("v0.6.6") grounds actual commitment.
+
+<!-- decision:P-ENSC4M2U -->
+
+## Dark-Theme Port Workflow Initiated
+
+**When:** 2026-08-07 · **Fact:** `P-ENSC4M2U`
+**Why:** Structured gating ensures quality gates pass before user review; async workflow allows parallel work and keeps user out of critical path
+
+<!-- decision:P-7GVXWaUW -->
+
+## Design Direction: Dark-Default-with-Light-Supported
+
+**When:** 2026-08-07 · **Fact:** `P-7GVXWaUW`
+**Why:** Balances dark appearance preference with accessibility contracts; avoids dark-only's contract deletion and narrowed test scope
+
+<!-- decision:P-aVB7LZG9 -->
+
+## D-390 Agent Allocation System
+
+**When:** 2026-08-07 · **Fact:** `P-aVB7LZG9`
+**Why:** User explicitly asked if the system is being used, confirming this allocation is binding and central to project operations.
+
+<!-- decision:P-RAPFC7A7 -->
+
+## Benchmark Baseline Results — Task 262 Sub-task 1
+
+**When:** 2026-08-08 · **Fact:** `P-RAPFC7A7`
+**Why:** Concrete baseline numbers are essential for measuring progress on sub-tasks 2–4. These come from real benchmark runs and define the validation targets.
+
+<!-- decision:P-PQHTULJ3 -->
+
+## Traversal Dilution — Binding Design Constraint
+
+**When:** 2026-08-08 · **Fact:** `P-PQHTULJ3`
+**Why:** This is a real finding from benchmark data, not speculation. Violating it would cause the mechanism to fail its linking objectives.
+
+<!-- decision:P-MQ5RYUHQ -->
+
+## Test-Suite Isolation Guard Required (Known Risk)
+
+**When:** 2026-08-08 · **Fact:** `P-MQ5RYUHQ`
+**Why:** This is a real production risk that was encountered in a previous incident. Without the guard, future test runs could silently corrupt the corpus again.
+
+<!-- decision:P-9NBLW5ZC -->
+
+## 177-File Incident — Structural Prevention Now in Place
+
+**When:** 2026-08-08 · **Fact:** `P-9NBLW5ZC`
+**Why:** Prior incident destroyed large corpus subset; structural guard needed to make recurrence impossible, not just less likely.
+
+<!-- decision:P-WC6VDB23 -->
+
+## Task 262 — cmk autolink Measured Insufficient for Auto-Linking
+
+**When:** 2026-08-08 · **Fact:** `P-WC6VDB23`
+**Why:** Completed multi-tool analysis with concrete metrics; negative result has shaped next ADR decision. Canary discipline allowed feature to be killed by test rather than default-blessed.
+
+<!-- decision:P-VY4MVXF7 -->
+
+## Architecture Decisions Recorded in ADRs
+
+**When:** 2026-08-08 · **Fact:** `P-VY4MVXF7`
+**Why:** Future sessions need to know what was tried, what failed, and why the current state exists.
+
+<!-- decision:P-2TN42F6P -->
+
+## Backlog Tracked with Lanes and Triggers
+
+**When:** 2026-08-08 · **Fact:** `P-2TN42F6P`
+**Why:** Enforces discipline; prevents orphaned tasks.
+
+<!-- decision:P-CGDDGLaS -->
+
+## Canary Discipline — Validate Features Before Enabling Defaults
+
+**When:** 2026-08-08 · **Fact:** `P-CGDDGLaS`
+**Why:** Prevents shipping features that regress live performance. Negative measurements are equally valuable — they inform next moves (e.g., pivot to LLM-cues candidate) and prove the validation system works as designed.
+
+<!-- decision:P-GHESKaMA -->
+
+## codeql-action Workflow Bumps Held by Standing Rule
+
+**When:** 2026-08-08 · **Fact:** `P-GHESKaMA`
+**Why:** Prevents unintended CI/CD drift.
+
+<!-- decision:P-T5TCV92E -->
+
+## Feature Branch → Reviewer → Merge Hold Workflow
+
+**When:** 2026-08-08 · **Fact:** `P-T5TCV92E`
+**Why:** User retains final say on all merged code; prevents unintended auto-merges.
+
+<!-- decision:P-Ga92WPT6 -->
+
+## Assertion-Based Measurement Instrumentation
+
+**When:** 2026-08-08 · **Fact:** `P-Ga92WPT6`
+**Why:** A silent failure (flag is off, code never runs, no assertion fires) produces misleading benchmarks. Loud failure is better than silent data corruption.
+
+<!-- decision:P-QGXC337T -->
+
+## Review-Based Decision Correction
+
+**When:** 2026-08-08 · **Fact:** `P-QGXC337T`
+**Why:** Maintains audit trail; the next reviewer knows the true reason, not the misattribution. Decisions are only valid with correct evidence.
+
+<!-- decision:P-CNGSL2KR -->
+
+## Minting Process Failure — Self-Managed Worktree Workaround
+
+**When:** 2026-08-09 · **Fact:** `P-CNGSL2KR`
+**Why:** Unblocks builds when minting fails; allows pipeline to continue.
+
+<!-- decision:P-XBP5CZTQ -->
+
+## Run cmk register-crons After PR #351 Ships
+
+**When:** 2026-08-09 · **Fact:** `P-XBP5CZTQ`
+**Why:** Crons starved for five nights; one-off command fixes them without code changes.
+
+<!-- decision:P-LYQMPDX2 -->
+
+## Paging Test Fixtures Below Real-World Scale Gap
+
+**When:** 2026-08-09 · **Fact:** `P-LYQMPDX2`
+**Why:** Paging regression tests are systematically too small to catch merge-blocking defects; this is a known gap the repo's live-test rule exists to address.
+
+<!-- decision:P-DFCJLVUA -->
+
+## PR Review Workflow — Worktree + Reproduction + Severity Ranking
+
+**When:** 2026-08-09 · **Fact:** `P-DFCJLVUA`
+**Why:** Worktree isolation + runnable reproducers catch real merge-blocking bugs (paging drop-dup, offset overflow, budget registry gaps) before code ships; catching at review time beats user-reported bugs.

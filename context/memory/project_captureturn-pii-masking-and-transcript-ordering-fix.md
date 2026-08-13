@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b40ffae94fbfc1e7c511c162d254b1b6f3bbbccec2f395cac95125f6abb5c45c
+related: [d-303-fixed-kiro-auto-extract-user-prompt-empty-recovered-fr, skill-review-imported-facts-staleness-bug-fixed, fixed-bugs-in-task-50-kiro-console-flash-branch]
 ---
 
 `captureTurn` updated to prefer `payload.user_message` from Kiro Stop hook, apply identical PII masking as assistant turn, and write transcripts in user→assistant order.

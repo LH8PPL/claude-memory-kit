@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: a0d73ca5d2890fee04d73c59267e95aabc216c209d26066a7133ceaa90a8b3da
+related: [re-pack-verify-workflow-for-cut-gate-testing, cmk-fix-verification-workflow-fresh-folder-v0-4-1, cc-update-does-not-fix-mcp-prompt-task-171-validated]
 ---
 
 Cut-gate folder discipline: every time a bug is found mid-gate and the gate must restart, create a BRAND-NEW gate folder (e.g. cut-gate-v041, then cut-gate-v041b, cut-gate-v041c, ...). NEVER reuse a folder that already ran install/captures — it carries contaminated state (a manually-approved settings.local.json, captured facts, a stale settings.json) that masks whether the FIXED artifact is clean from zero. A fresh folder + a fresh `cmk install` is the honest test of the fix.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d556a7f68e911d1bd21726d975ed5109e1e498f99882d804b338445f93f07a5f
+related: [skill-review-imported-facts-staleness-bug-fixed, three-tier-memory-architecture, file-pointer-format-and-interpretation]
 ---
 
 During Task 248, discovered that fact files marked with BOM metadata are invisible to the kit's scanning and extraction systems. This gap was identified but intentionally NOT fixed mid-flight (left for a dedicated BOM task). Root cause unclear; impact is that BOM'd knowledge files don't surface in recovery or validation passes.

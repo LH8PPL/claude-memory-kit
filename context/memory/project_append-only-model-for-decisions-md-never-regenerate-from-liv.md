@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f2a83bc62cc660a324acdb82e062042545e26185f13af5253d705a3b0ade17c2
+related: [decisions-md-is-append-only-permanent-journal-not-regenerate, regenerated-surfaces-vs-append-only-surfaces-digest-vs-decis, automatic-recall-never-reads-tombstones-recovery-is-human-on]
 ---
 
 DECISIONS.md must be append-only, kit-maintained, never regenerated from current live facts.

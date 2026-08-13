@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3a603c3665b030e33c6987495e82d72a1c4590f28fe95b51cf725676cd2b4345
+related: [task-141b-spike-results-node-sqlite-migration, sqlite-vec-incompatibility-between-better-sqlite3-and-node-s, 141b-is-rejected-decision-rationale]
 ---
 
 The benchmark harness works correctly, but the dev laptop cannot reliably measure the perf gate (D-147):

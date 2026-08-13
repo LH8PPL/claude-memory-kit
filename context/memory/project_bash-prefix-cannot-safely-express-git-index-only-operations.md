@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0b8ebca9fe852e35d7a80a36bcfc15a6679285f140e84ff8f8eda025aacc7da5
+related: [cmk-version-bumping-convention, use-deterministic-comparators-for-sorting-committed-files, readme-changelog-update-timing]
 ---
 
 The `Bash()` prefix pattern lacks safe support for `--index`-only git flags (e.g., staged-only file operations)

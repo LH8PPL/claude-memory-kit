@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: bca0626e87a1d82dee25168ac69f2237e44c3e516d21f638e716bfadaf61604c
+related: [release-laning-and-task-dependencies-v0-4-4-v0-5]
 ---
 
 **Group A — Keep (real gaps, never re-laned):**

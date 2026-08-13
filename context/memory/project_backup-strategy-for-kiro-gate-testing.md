@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3a15b8005b5c476c0a0ca327967689c0ffd71bd3c57bc16be1179a089357e1db
+related: [kiro-gate-0c-backup-recovery-procedure, cut-gate-sandbox-isolation, cut-gate-backup-convention]
 ---
 
 Before running the Kiro gate test, isolate the real user config to prevent contamination:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f79b5d2195a51ef20eb5791e14e63e5955ddebdbfbcfe103a2b1c82bee7663ee
+related: [codemem-validates-multi-cli-auto-detect-approach-in-producti, npm-11-x-deprecate-command-with-version-ranges-fails-with-sp, two-tier-backend-architecture-for-headless-llm-invocation]
 ---
 
 The ordering that works in production:

@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: ca1c327a7f82cadd6c5f16c2874d5b743727dfd2c1a5c85ae06e8a4137c3ce1d
+related: [g4-gate-upgraded-to-mandatory-full-sweep, three-tier-memory-architecture, use-c-temp-or-c-tmp-for-test-scratch-never-the-repo-or-home]
 ---
 
 Cut-gate / scaffold-verification discipline: ALWAYS read EVERY memory file across ALL THREE tiers (user ~/.claude-memory-kit, project context/, local context.local/) plus the .locks logs — not just the named spot-check files (MEMORY.md/SOUL.md). A scaffold regression (leaked username, unrendered {{TODAY}}, malformed frontmatter, real path in a committed tier) can hide in a file the named gate checks skip. Check for: real username (public-repo leak), unrendered placeholders, well-formed frontmatter, example bullets marked (example), and that no real machine path lands in a committed (non-local) tier. The user 2026-06-16: "we always need to check all the memory files to see if we didnt break anything."

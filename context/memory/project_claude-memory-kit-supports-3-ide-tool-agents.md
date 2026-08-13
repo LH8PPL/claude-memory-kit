@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 20f0124bb88d0bfa996df4e989905b55e395b829d6846f09146cfaffd999cf28
+related: [cut-gate-release-validation-guides-per-agent, documentation-structure-and-prerequisite-locations, gate-guides-as-standalone-documentation-siblings]
 ---
 
 - Claude Code (web / Claude IDE)

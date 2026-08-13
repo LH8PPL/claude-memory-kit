@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 8a67998aba7dff9b2e5707b65779841502e33501cee5d1a4470a019043f2a126
+related: [three-tier-research-evaluation-system, prior-art-research-discipline-and-filing, scratchpad-inline-html-provenance-is-the-lint-outlier]
 ---
 
 Research-project selection criteria (state it up front when researching): prefer (1) projects already in our research collection (docs/research/INDEX.md — claude-mem, claude-remember, mem0, Letta, Graphiti, MemPalace, Taskmaster, OpenHands, etc., already vetted as adjacent), then (2) canonical primary-source references for the specific mechanism (e.g. logrotate/anacron/systemd/Postgres-autovacuum for the scheduled-job problem — cited as mechanism refs, not cloned as peers), then (3) new finds. NOT random projects. Declare which bucket each candidate is in and why.

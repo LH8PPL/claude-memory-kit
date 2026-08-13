@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 7ca1eea30399ca287298abd05e70d46acf7d1823853f9f4877c692e6081bb217
+related: [claude-code-2-1-191-requires-both-skill-forms-in-allow-list, cc-2-1-x-mcp-server-wildcard-does-not-auto-approve-mcp-tools, skill-gate-docs-say-skill-name-space-kit-writes-skill-name-c]
 ---
 
 Claude Code 2.1.x changed skill-permission matching: the bare Skill(<name>) allow-list rule alone NO LONGER suppresses the "Use skill?" approval prompt — it now ALSO needs the Skill(<name>:*) wildcard form. Ground truth: when a user clicks "allow for this project", Claude Code itself writes BOTH Skill(memory-write) AND Skill(memory-write:*) into settings.local.json. The kit (settings-hooks.mjs KIT_ALLOW) now writes both forms for memory-write + memory-search. settings.json is still honored (permissions merge across settings.json + settings.local.json). The Skill() permission syntax is UNDOCUMENTED in the CC docs (a confirmed gap) — CC's own write-behavior is the spec.

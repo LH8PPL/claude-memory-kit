@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9306debc57954a2fdc36195d84b39e5651e28581746abca7cb128c313ef39aff
+related: [hook-architecture-differs-across-claude-ai-products, kiro-cli-requires-global-chat-defaultagent-because-hooks-are, kiro-cli-agent-resolution-requires-global-default]
 ---
 
 **Claude Code** — hooks (automatic scripts on session events) belong to the PROJECT:

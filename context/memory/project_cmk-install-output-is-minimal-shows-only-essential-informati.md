@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 84e0ac8668b49b430c4f735afa135736e4e3684045157080e8f3b5822b069976
+related: [better-sqlite3-eperm-cleanup-warning]
 ---
 
 **Shows:** package count (added/changed), install completion status, activation reminder, config guidance (native memory behavior, semantic recall enablement)

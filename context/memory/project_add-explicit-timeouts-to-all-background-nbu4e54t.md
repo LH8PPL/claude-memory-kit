@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract-session
 source_line: 1
 source_sha1: b1b4143c08c0f8be8f85cc3461188795eb61751622cdca34c062e2527a191158
+related: [don-t-proactively-restructure-documentat-4mw445n2]
 ---
 
 Add explicit timeouts to all background/foreground processes; don't wait indefinitely.

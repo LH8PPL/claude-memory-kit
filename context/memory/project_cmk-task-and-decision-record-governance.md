@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8a22e694accb7850e44d78c06a14b70d3b0aff16
+related: [task-filing-convention-with-metadata, task-queue-organization-naming-convention]
 ---
 
 - Tasks assigned sequential IDs (142, 143, etc.) with optional letter suffixes (141a for subtasks)

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e89c3c1a5957d3352032957275f482035ad81ee19c61aa06f1860e2fa615b0bf
+related: [v0-4-6-release-roadmap, adapter-architecture-per-profile-seam-zero-bespoke-code, task-50-research-revisit-gate-and-multi-agent-pattern]
 ---
 
 Prior-art research for agent integrations is documented in `docs/research/`:

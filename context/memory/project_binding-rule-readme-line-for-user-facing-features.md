@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7433c9e26385f5e3836ac453e31953546fe3949a9f7fa422e3759f627504a9b5
+related: [doc-review-is-pr-body-based-direct-merges-bypass-it, memory-kit-architecture-complementary-kit-and-claude-md, claude-md-checkpoint-4-pre-commit-screening-rule]
 ---
 
 User-visible capability must receive a README line in the same PR as the merge. This is stated as a binding rule but currently not enforced by automation.

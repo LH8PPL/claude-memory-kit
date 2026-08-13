@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: user-explicit
 source_line: 1
 source_sha1: b76ff25c643cb92326836d4a94e21666f751eef50695ebe855510ec7a88f883c
+related: [vitest-output-buffering-and-process-verification, open-cmk-mcp-per-tool-prompt-systematic-investigation-pendin, task-95-dream-re-curation-path-settled-2026-07-17-ship-v0-5]
 ---
 
 A background job's completion notification cannot survive the session dying: the job is a child of the session process and dies with it, silently, and no timeout on the CHILD helps — the child is not hanging, it is gone. After ANY session interruption/resume, re-verify every background job's liveness from ground truth (process table for heavy workers, output-file mtime+size growth) BEFORE reporting it as running or waiting on it.

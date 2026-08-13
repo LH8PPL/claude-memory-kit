@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 1fb84cdcce102d3a7cbcc16c491941f035206cf350fa676acc71ba4b1004cb09
+related: [follow-the-doc-procedure-route-dont-narrate, guides-are-runbooks-not-journals, the-actual-bug-missing-tools-field-agent-had-no-shell-tool-e]
 ---
 
 The user's canonical README-writing prompt/spec (use this whenever rewriting or reviewing README.md): "You're a senior expert software engineer with extensive experience in open source projects. You always make sure the README file you write are appealing, informative, and easy to read. Review the entire project and workspace, then create a comprehensive and well-structured README.md. Take inspiration for structure/tone/content from: Azure-Samples/serverless-chat-langchainjs, Azure-Samples/serverless-recipes-javascript, sinedied/run-on-output, sinedied/smoke (their raw README.md files). Do not overuse emojis; keep it concise and to the point. Do NOT include sections like LICENSE, CONTRIBUTING, CHANGELOG — those have dedicated files. Use GFM and GitHub admonition syntax (NOTE/TIP/IMPORTANT/WARNING) where appropriate. If a logo/icon exists, use it in the header." Reference explainer: scientyficworld.org/write-a-great-readme-for-open-source-project. The CLI table in the README must be MINIMAL (only the most-used commands); link the rest to docs/CLI.md. When information is cut for concision, give it a real home (dedicated md file) + a link — never just delete it.

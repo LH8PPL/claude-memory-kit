@@ -113,4 +113,4 @@ Source: <https://git-scm.com/docs/git-clean>
 | Interactive mode needs no additional force flag | §5 (`git clean -i`) |
 | Per-check addressability + a selection menu | §5 / §1 — deferred, shape recorded |
 
-Landed as design §14.1, NFR-10, and D-448.
+Landed as design §14.1, NFR-10, and D-449.

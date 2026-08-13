@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 6bdb57ab86b6440ba1d2492a8e098fd1aa6cd7b3f6f6f66a960bf2f1247827f9
+related: [follow-the-doc-procedure-route-dont-narrate, cmk-permission-prompt-only-on-cd-compound-d-80-edge, decisions-md-is-write-only-for-ai-recall-not-in-any-recall-d]
 ---
 
 Guides/runbooks (docs/process/cut-gate.md, SETUP.md, HEALTH-CHECKS.md) are things the user RUNS for a manual live test — keep them terse, scannable, instruction-only: command → expected result → PASS/FAIL. Do NOT write build rationale / decision-log narrative into them (the gap that motivated a stage, "as of vX.Y" history, precedent, rule citations like per-D-N). That rationale goes to DECISION-LOG.md (the why), design.md (the how), or the task entry.

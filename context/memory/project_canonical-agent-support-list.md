@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: dd1ea1100772c960bfd9523373dfcb3c7e6619fcb51a29e7573915c49819dfce
+related: [github-metadata-sync-pattern, documentation-structure-and-prerequisite-locations, v0-5-2-release-complete]
 ---
 
 The project supports and must mention across all metadata locations:

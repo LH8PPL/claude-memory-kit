@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f4361125bef4f49e8cf2549e3b64da7a99fd7512f2a58dab7848f616b4e33c67
+related: [orphaned-memory-tier-at-packages-cli-context-2026-06-18-thro, orphaned-memory-tier-bug-246-and-recovery-strategy, task-248-reframed-the-user-s-design-call-2026-07-22-the-pre]
 ---
 
 All 8 capture-hook bins pass `projectRoot: process.cwd()` without:

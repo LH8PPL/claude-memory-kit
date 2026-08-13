@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 47cc8b299201168b9bac0a2681824036962cbe5c0c7308c5f9745c3742e07dce
+related: [reference-implementation-alignment-strategy, fix-uses-heal-on-rewrite-legitimate-oper-4ghlssh6, task-257-bom-blindness-is-complete-root-e5haw2f6]
 ---
 
 - **The bug**: collision guard in `writeFact` read BOM'd files as id-less and overwrote them without tracing the collision — a silent data-destruction path.

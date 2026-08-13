@@ -2366,6 +2366,46 @@ by content sha means an EDITED fact is reconsidered automatically. The backfill 
 near-dup (both facts already exist and were both accepted, often months apart) and never touches a
 fact that already carries links.
 
+**THE BOUND IS A RECOVERY PROPERTY, NOT A UX (D-447).** ADR-0020 requires that a killed job has
+persisted what it finished; it does not require that a human drive the loop. The first shipped
+version processed ONE batch and printed *"1,895 fact(s) remain — re-run to continue"*, which leaked
+the internal property into the interface. `linkBackfillToCompletion` now runs the bounded batches to
+completion inside one invocation — **each batch is still a `linkBackfill` call, byte for byte the
+same durable unit**, so killed-at-80% still loses nothing; the loop adds iteration, never a
+transaction or a window in which work is held. It terminates on `remaining === 0`, on a batch that
+made no progress, or on a batch-count cap derived from the first batch's own arithmetic, and
+`stopped` names which. The DRY RUN loops too (otherwise a first look at a 2,000-fact corpus would
+report the first 250 and call it the picture), using a `dryRunSkip` cursor because a dry run persists
+no artifact to advance the walk with. `--max` is the explicit bounded-slice opt-in and keeps the
+"re-run to continue" report. **The index sync is in-band too**: `syncIndexAfterBackfill` runs
+`reindexBoot` after a run that wrote links, so the new edges are live in `cmk links` / `cmk expand` /
+`cmk view` without the user typing `cmk reindex --boot` — the D-85 contract, the same idiom
+`forget()` and `redact()` use. `reindexBoot` rather than the narrower `rebuildEdges`, because
+`rebuildEdges` walks the whole corpus regardless (so it is not actually narrower) and calling it
+alone would leave the `files` checkpoint stale for exactly the files the run rewrote; `reindexBoot`
+re-parses only those files and rebuilds the edges itself. Best-effort: the markdown is the truth and
+every reader self-heals, so a cold index is a slower path, never a lost link — but a failure is
+REPORTED with its error and audited (`index-rebuild-failed`), never papered over.
+
+**A DEGENERATE FLOOR IS A REFUSAL, AND IT MUST NOT MARK (D-448).** `autoLinkFact`'s two degeneracy
+guards return zero links **with a non-null floor**. The backfill originally read that as the ordinary
+"nothing above the floor" band and wrote a `link_eval` marker for every fact — so on a corpus whose
+distribution cannot separate signal from noise, ONE looping invocation marked the entire corpus as
+considered and reported "nothing remains". Because the marker is keyed by `(id, content_sha)`, an
+unedited fact was then never re-decided, silently revoking the write path's own promise that "a later
+backfill over a grown corpus re-decides". `linkBackfill` now threads `decision.degenerate` up, marks
+NOTHING, and stops at the first fact (the floor is corpus-wide, so one verdict is every verdict); the
+loop stops as `stopped: 'degenerate-floor'` and the verb prints the reason and exits non-zero.
+**The recovery is now real, too:** `reindexFull` DROPS `link_eval` with the other derived tables, so
+`cmk reindex --full` / `cmk repair --index` is a genuine un-mark for a corpus a bad run marked. Until
+2026-08-10 the module header documented that drop and the code did not perform it — the table
+survived every reindex and no command could clear it, which is what made a mis-marking permanent
+rather than merely wrong. **The loop's other stops are named for the same reason** — `no-floor`
+(underivable), `stalled`, `batch-cap` — and the two ANOMALY stops write a `backfill-incomplete` audit
+entry plus a non-zero exit, because "if this repeats please report it" is worthless without an
+artifact to report. The dry-run cursor is an **id set, not a count**: a fact captured mid-run
+reorders the pending walk, and an index cursor would skip a fact nobody looked at.
+
 **Flag + observability.** `CMK_LINK_FACTS` > `context/settings.json` `memory.link_facts` > **default
 OFF** (D-436, lead-ratified 2026-08-08 — see the measured outcome below; the write path is opt-in,
 `cmk autolink` is the no-configuration entry point). Every applied link writes an `auto-linked`

@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 916beeeebb38a2ef6e578614030f2131b50dac7042663519fd9c8799ff45fff6
+related: [kit-design-methodology-current-state, corpus-re-read-decision-audit]
 ---
 
 Four edits to finalize ADR-0017:

@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a5a05d5a296499759afe0324c0616caf8f79cd3da7e598d4d457db7231999697
+related: [verify-the-autonomous-loop-not-just-the-human-correction-pat, outcome-signal-portfolio-8-types-2-transferable, ide-to-autonomous-spectrum-same-loop-richer-signals]
 ---
 
 The project had conflated two independent axes. The actual **target quadrant is bottom-right: automatic AND oracle-free**.

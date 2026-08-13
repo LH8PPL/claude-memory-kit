@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 1155f0377ecc1f87a34a5ce10119dc13ae5a834c53d6d6456638a311efc0acc6
+related: [sonarcloud-quality-gate-posts-as-github-check-runs-not-workf, v0-6-4-release-workflow-and-task-ownership, stress-gate-release-workflow]
 ---
 
 After opening or pushing a PR, always monitor its CI to completion and report the result — don't open the PR and stop. The user's directive 2026-06-15: "always monitor CI."

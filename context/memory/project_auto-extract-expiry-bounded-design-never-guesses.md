@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b5c3eba6d535763079263a420b79e21d917b203b6e3ee66f48eab70af6c59322
+related: [b3-b4-wedge-test-workflow-cross-project-doctrine-capture-val, task-66-3-scoped-population-enforcement-both-required, memory-review-discipline-before-commit]
 ---
 
 Auto-extract's `expires:` field is bounded, not config-buried:

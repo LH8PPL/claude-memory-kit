@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: df560532b16051775f7b843256cc0bd6f2a880f63607c2947a3cf4059bbc1c68
+related: [ci-watch-rule-specify-ci-yml-by-name, workflow-green-commit-green, v0-5-2-release-code-complete-awaiting-final-ci]
 ---
 
 A proper watch waits for all check-runs (including Sonar) to complete. An earlier loop keyed only on ci.yml and exited prematurely, missing Sonar completion.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: user-explicit
 source_line: 1
 source_sha1: 707f42c81a4313cdacd5171d4b5729ff3b421e9856db23804470af92e6096f5a
+related: [when-an-automatic-path-fails-build-a-fallback-mechanic-that, memory-tiers-carry-mission-context-only-the-user-s-project-d, doctor-health-nudge-corrected-design-2026-07-22-supersedes-t]
 ---
 
 Auto-extract degrades to ZERO captures under heavy concurrent load in the same session. Evidence 2026-07-20: 6 of 6 extractions ended haiku_timeout, each burning the full 90s budget (duration_ms 90030), while the session ran subagents, full test suites and 24-way concurrent spawn probes. Normal days show the opposite ratio (74 successes/6 timeouts on 07-01, 52/3 on 07-15, 111 successes across two sampled days). So the loop is NOT broken - it is starved, and it fails SILENTLY: nothing in the chat says 'your last 6 turns were never captured'.

@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5939171963676b19a273e0624f945ac6e2d877b737964a6fa9ccc73e15711d1e
+related: [architectural-thesis-the-kit-as-cross-session-runtime, ide-to-autonomous-spectrum-same-loop-richer-signals, signal-portfolio-for-learning-loop-in-claude-code-ide]
 ---
 
 The real architectural axis is **judge quality**, not host type. The learn-loop is universal; the judge is per-host.

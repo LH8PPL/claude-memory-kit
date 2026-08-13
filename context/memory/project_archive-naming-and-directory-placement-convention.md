@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3521f6e02ebd28e61075345af062d656aa0f81f151aa724e956a1be0da97e8ee
+related: [three-file-archive-structure, test-gate-folders-use-numbered-sequence, archive-registration-in-documentation-map-md]
 ---
 
 Name archives `<filename>-archive-<context>.md` (e.g., `tasks-archive.md`, `DECISION-LOG-archive-pre-v0.5.md`). Place each archive in the same directory as its source file.
