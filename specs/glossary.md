@@ -428,9 +428,9 @@ Cross-refs: [[Trust]], [[Review queue]]. Spec: design §6.8.
 
 ### Tombstone
 
-A deleted-but-preserved [[Fact file]] moved to `<tier>/memory/archive/tombstones/<id>.md` with `deleted_at`, `deleted_reason`, `deleted_by` added to frontmatter. The original ID still resolves (returns content + "deleted on Y" annotation). Mirrors git revert (don't rewrite history), not git rebase.
+A deleted-but-preserved [[Fact file]] moved to `<tier>/memory/archive/tombstones/` under its [[Archive filename]] with `deleted_at`, `deleted_reason`, `deleted_by` added to frontmatter. The original ID still resolves (returns content + "deleted on Y" annotation). Mirrors git revert (don't rewrite history), not git rebase.
 
-Cross-refs: [[Forget]]. Spec: design §6.5.
+Cross-refs: [[Forget]], [[Archive filename]]. Spec: design §6.5.
 
 ### Forget
 
@@ -488,9 +488,9 @@ Cross-refs: [[Tombstone]], [[Fact shape]], [[Provenance frontmatter]]. Spec: des
 
 ### Superseded
 
-A [[Fact file]] replaced by a newer one (via [[Consolidation]] merge or `replace` action). Original is moved to `<tier>/memory/archive/superseded/` with `superseded_by: <new_id>` added. Both old + new IDs resolve forever.
+A [[Fact file]] replaced by a newer one (via [[Consolidation]] merge or `replace` action). Original is moved to `<tier>/memory/archive/superseded/` under its [[Archive filename]], with `superseded_by: <new_id>` added. Both old + new IDs resolve forever.
 
-Cross-refs: [[Consolidation]], [[Merge]]. Spec: design §3.4.
+Cross-refs: [[Consolidation]], [[Merge]], [[Archive filename]]. Spec: design §3.4.
 
 ### Merge
 
@@ -746,3 +746,13 @@ The per-view "**as of HH:MM**" stamp in the [[Memory viewer (`cmk view`)]] — e
 ## Quarantine
 
 The holding area — `context/memory/archive/quarantine/` — for a fact-shaped file the kit **cannot** repair: unparseable frontmatter, or no body from which to derive a content-addressed id. The file is MOVED there with its bytes intact and reported; it is never deleted and never silently dropped (D-394). It sits under `archive/` beside `tombstones/` and `superseded/` because all three are "not a live fact, still kept" — and because every fact walk skips subdirectories while `cmk redact` still scans them, so a quarantined file stays inside a leak scrub's reach. The repairable case is handled instead: the id is recomputed from the body and written back, every other byte preserved. See design §13.2.
+
+## Archive filename
+
+The name an archived [[Fact file]] gets on disk — a **derivation of** its [[Citation ID]], not the id verbatim. Files under `archive/tombstones/` and `archive/superseded/` are named by escaping the id alphabet's only lowercase letter, `a` → `_a`; for the ~78% of ids containing no `a` the derived name IS `<id>.md`.
+
+It exists because the alphabet keeps both `A` and `a` (design §3.1), so two valid distinct ids differing only in case map to ONE path on a **case-insensitive filesystem** (Windows, macOS default) — collapsing two [[Tombstone]] files into one and destroying the first. That is a durability failure, not a cosmetic one: the install-time recovery census reads the tombstone archive to avoid resurrecting a forgotten fact, so a destroyed tombstone can **undo a [[Forget]]**. Escaping makes the map injective under case folding.
+
+The derivation lives in ONE helper (`fact-store.mjs`) that every write / read / purge / parse site shares; reads fall back to the legacy raw-id spelling so existing corpora keep working with no migration, and archive files are never renamed after the fact. The alternative — dropping `a` from the alphabet — was rejected because it would not fix ids already minted (D-451).
+
+Cross-refs: [[Tombstone]], [[Superseded]], [[Citation ID]], [[Quarantine]]. Spec: design §6.5 + §3.1.

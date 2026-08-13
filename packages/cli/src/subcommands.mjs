@@ -1841,7 +1841,9 @@ async function runDigestCli(options) {
 
 /**
  * `cmk forget <id-or-query>` — wired in Task 9. Tombstones the matching
- * fact (moves it to <tier>/<memory|fragments>/archive/tombstones/<id>.md
+ * fact (moves it to <tier>/<memory|fragments>/archive/tombstones/ under its
+ * derived archive name — = <id>.md unless the id contains a lowercase `a`,
+ * Task 281
  * with deleted_at/deleted_reason/deleted_by frontmatter) and strips any
  * citing bullets from same-tier scratchpads.
  *
