@@ -332,6 +332,113 @@ describe('validate-references — D-nnn decision-log citations (Task 247)', () =
     expect(r.exitCode, r.stdout + r.stderr).toBe(0);
   });
 
+  // ====================================================================
+  // The ANCHOR side: no two entries may claim the same id (v0.6.6 sweep)
+  // ====================================================================
+  //
+  // The citation check above asks "does this id RESOLVE?" and is structurally
+  // blind to the duplicate: two entries shipped as D-439 (Task 264's hygiene
+  // entry, Task 265's scheduler entry) a day apart, and every citation to
+  // either one resolved cleanly for a week. That is worse than a dangling
+  // reference — a dangling one fails loudly, an ambiguous one reads as correct
+  // while pointing at whichever entry the reader lands on first.
+
+  it('FAILS when two entry headings claim the same id, naming BOTH line numbers', () => {
+    writeLog(
+      [
+        '# Decision log',
+        '',
+        '## 2026-08-08 — D-500 · FIX — the first claimant',
+        '',
+        'Body.',
+        '',
+        '## 2026-08-08 — D-500 · FIX — the second, which has to move',
+        '',
+      ].join('\n'),
+    );
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(1);
+    expect(r.stderr).toMatch(/D-500 is already claimed/);
+    // Reported against the SECOND site (the one that must renumber), naming
+    // the first so the reader can see both without opening the file.
+    expect(r.stderr).toMatch(/DECISION-LOG\.md:7:/);
+    expect(r.stderr).toMatch(/docs\/journey\/DECISION-LOG\.md:3/);
+  });
+
+  it('catches a duplicate SPLIT ACROSS the live log and its archive', () => {
+    // The union is what citations resolve against, so the uniqueness question
+    // is a union question — a per-file check would miss the split case that
+    // the Task-249 archive boundary makes possible.
+    writeLog('# Decision log\n\n## 2026-08-08 — D-501 · FIX — in the live log\n');
+    writeFileSync(
+      join(sandbox, 'docs', 'journey', 'DECISION-LOG-archive-pre-v0.5.md'),
+      '# Archive\n\n## 2026-01-02 — D-501 · DECISION — in the archive\n',
+    );
+    const r = runValidator(sandbox);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toMatch(/D-501 is already claimed/);
+  });
+
+  it('passes on a log whose entry ids are unique, and says so in the summary', () => {
+    writeLog(SAMPLE_LOG);
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(0);
+    expect(r.stdout).toMatch(/ids unique/);
+  });
+
+  // ── The false-positive edges. Each of these repeats an id in a HEADING and
+  // must NOT fail: the check compares only the entry-id SLOT (first em dash,
+  // then the `·`/`:` separator), because a false positive here fails the build
+  // on correct history.
+
+  it('a heading that CITES another entry alongside its own id is not a duplicate', () => {
+    writeLog(
+      [
+        '# Decision log',
+        '',
+        '## 2026-08-09 — D-443 · FIX — the path covered the D-427 orphan all along',
+        '',
+        '## 2026-08-08 — D-427 · BUG — the orphan itself',
+        '',
+      ].join('\n'),
+    );
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(0);
+  });
+
+  it('an older archive shape that REPORTS on its own decision is not a duplicate', () => {
+    // Two real archive entries have this shape (`D-266 SHIPPED: …`, `D-270
+    // RESEARCH DONE: …`) — an id followed by a WORD, not by the type
+    // separator. They report on a decision that already has its own entry, so
+    // a looser "first D-token in the heading" rule would indict frozen history.
+    writeLog('# Decision log\n\n## 2026-07-04 — D-266 · DECISION — the decision itself\n');
+    writeFileSync(
+      join(sandbox, 'docs', 'journey', 'DECISION-LOG-archive-pre-v0.5.md'),
+      '# Archive\n\n## 2026-07-04 — D-266 SHIPPED: Task 198 merged (the D-266 decision executed)\n',
+    );
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(0);
+  });
+
+  it('a duplicate id inside a FENCE is an example, not a second claim', () => {
+    writeLog(
+      [
+        '# Decision log',
+        '',
+        '## 2026-08-08 — D-502 · FIX — the only real entry',
+        '',
+        'The heading shape looks like this:',
+        '',
+        '```',
+        '## 2026-08-08 — D-502 · FIX — an illustration',
+        '```',
+        '',
+      ].join('\n'),
+    );
+    const r = runValidator(sandbox);
+    expect(r.exitCode, r.stdout + r.stderr).toBe(0);
+  });
+
   it('reports the indexed D-entry count in the family summary', () => {
     writeLog(SAMPLE_LOG);
     const r = runValidator(sandbox);

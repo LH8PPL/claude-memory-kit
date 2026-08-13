@@ -41,7 +41,10 @@
 //                 on disk (direction 2 — NEW in the consolidation; the old
 //                 registry validator was one-directional).
 //   references  — internal-reference rot: [label](path), [label](path#anchor),
-//                 ADR-NNNN, §N.N (design.md), FR-N, NFR-N, Task N, D-nnn.
+//                 ADR-NNNN, §N.N (design.md), FR-N, NFR-N, Task N, D-nnn —
+//                 plus the ANCHOR side of D-nnn: no two decision entries may
+//                 claim the same id (a duplicate makes every citation to it
+//                 ambiguous, and the citation check cannot see it).
 //   catalogs    — the hand-maintained catalog indexes (adr/README,
 //                 research/INDEX, sources/README, process/README) list every
 //                 sibling .md, both directions.
@@ -373,6 +376,73 @@ export function parseDecisionIds(logText) {
   return ids;
 }
 
+/**
+ * The ENTRY-ID SLOT of a heading lead: the `D-nnn` that sits immediately after
+ * the lead's FIRST em dash and immediately before the `·` / `:` type separator.
+ *
+ *   `## 2026-08-08 — D-439 · FIX — …`      → 439   (current shape)
+ *   `## 2026-07-20 — D-375: DECISION — …`  → 375   (older colon shape)
+ *
+ * This is deliberately NARROWER than `parseDecisionIds`, and the narrowness IS
+ * the design. That function must index every id a lead can mint (a citation in
+ * the lead is a real anchor elsewhere), so it is the right side to be generous
+ * on: an extra anchor can only mask a citation. The DUPLICATE check runs the
+ * other way — a false positive here FAILS THE BUILD on correct history — so it
+ * only recognises the one position that means "this entry's own id", and any
+ * lead not in that shape is simply not compared.
+ *
+ * What that costs, measured rather than asserted: 189 of the ~198 ids the
+ * corpus anchors sit in this slot. The ~9 that do not are all pre-v0.5 archive
+ * shapes where the id trails in parentheses (`… (D-254)`) or is followed by a
+ * word (`D-266 SHIPPED: …`) — frozen history, and two of them legitimately
+ * repeat an id they are REPORTING ON, which is exactly the false positive a
+ * looser rule would raise. Every entry written since uses the canonical shape,
+ * so the check has full teeth on the surface that still grows.
+ */
+const D_ENTRY_SLOT_RE = /^#{1,6}\s+[^—]*—\s*D-(\d+[a-z]?)\s*(?:·|:)/;
+
+/**
+ * Find decision ids claimed by more than one entry heading (v0.6.6 sweep).
+ *
+ * WHY THIS EXISTS. Two entries shipped as `D-439` — Task 264's hygiene entry
+ * and Task 265's scheduler-posture entry — merged a day apart, each correct in
+ * isolation, and nothing noticed for a week. The citation check (Task 247) is
+ * structurally blind to it: it asks "does this id resolve?", and a duplicated
+ * id resolves fine. It resolves to TWO different decisions, which is worse than
+ * dangling — a dangling citation fails loudly, an ambiguous one reads as
+ * correct while pointing at either entry depending on who is reading.
+ *
+ * Fenced blocks are stripped, matching the citation side: a heading-shaped
+ * EXAMPLE inside a ``` block is documentation, not an entry.
+ *
+ * @param {Array<{rel: string, text: string}>} sources decision-log files
+ * @returns {Array<{id: string, sites: string[]}>} duplicates, `file:line` sites
+ */
+export function findDuplicateDecisionIds(sources) {
+  const sites = new Map();
+  for (const { rel, text } of sources) {
+    let fenceLen = 0;
+    String(text)
+      .split(/\r?\n/)
+      .forEach((line, i) => {
+        const fence = fenceToggle(line);
+        if (fence) {
+          if (fenceLen === 0) fenceLen = fence[1].length;
+          else if (fence[1].length >= fenceLen) fenceLen = 0;
+          return;
+        }
+        if (fenceLen > 0) return;
+        const m = line.replace(/`[^`]*`/g, '').match(D_ENTRY_SLOT_RE);
+        if (!m) return;
+        if (!sites.has(m[1])) sites.set(m[1], []);
+        sites.get(m[1]).push(`${rel}:${i + 1}`);
+      });
+  }
+  return [...sites]
+    .filter(([, where]) => where.length > 1)
+    .map(([id, where]) => ({ id, sites: where }));
+}
+
 function slugify(headingText) {
   return headingText
     .toLowerCase()
@@ -463,11 +533,31 @@ function familyReferences() {
   // 2 — DECISION-LOG.md is a backticked manifest entry in DOCUMENTATION-MAP.md.
   const decisionSources = globMd(DECISION_LOG_DIR, DECISION_LOG_PREFIX);
   let decisionIds = null;
+  const decisionTexts = [];
   for (const rel of decisionSources) {
     const text = readMdIfExists(rel);
     if (text === '') continue;
     if (decisionIds === null) decisionIds = new Set();
+    decisionTexts.push({ rel, text });
     for (const id of parseDecisionIds(text)) decisionIds.add(id);
+  }
+
+  // The ANCHOR side of the D-nnn check (v0.6.6 sweep). Reported against the
+  // SECOND site, because that is the entry that has to move: the first claimant
+  // owns the number, every citation written before the collision meant it, and
+  // renumbering it would break them. The message names every site anyway so the
+  // reader can judge rather than obey.
+  for (const dup of findDuplicateDecisionIds(decisionTexts)) {
+    const [first, ...rest] = dup.sites;
+    for (const site of rest) {
+      const [file, lineNumber] = [site.slice(0, site.lastIndexOf(':')), site.slice(site.lastIndexOf(':') + 1)];
+      errors.push(
+        `${file}:${lineNumber}: D-${dup.id} is already claimed by an entry at ${first} — two decision ` +
+          `entries cannot share an id. Every citation to D-${dup.id} now resolves to BOTH, which reads ` +
+          `as correct while pointing at either one. Renumber this entry to the next free id and update ` +
+          `the citations that mean IT (grep the repo; classify each hit by which entry it means).`,
+      );
+    }
   }
 
   // Design-section anchors (§N.N).
@@ -659,7 +749,7 @@ function familyReferences() {
     decisionIds === null
       ? `D-nnn SKIPPED (no ${DECISION_LOG_DIR}/${DECISION_LOG_PREFIX}*.md)`
       : `${decisionIds.size} D-entr${decisionIds.size === 1 ? 'y' : 'ies'} indexed ` +
-        `from ${decisionSources.length} source${decisionSources.length === 1 ? '' : 's'}`;
+        `from ${decisionSources.length} source${decisionSources.length === 1 ? '' : 's'}, ids unique`;
   return {
     errors,
     summary:
