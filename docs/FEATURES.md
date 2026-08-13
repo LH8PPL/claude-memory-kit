@@ -64,7 +64,7 @@ The threshold is **derived from your own corpus** — the 99th percentile of you
 
 A candidate that looks like a near-*duplicate* is deliberately not linked: merging two facts is a decision, so it becomes a proposal in `cmk queue conflicts` instead. And a link never crosses tiers, so a committed project fact can't point at a machine-local one.
 
-**`cmk autolink` is the way in.** Running it bare is a **dry run** — it shows you what it would do and changes nothing; writing takes an explicit `--apply`. To also link new facts as they are captured, turn the write path on with `cmk config set memory.link_facts true`. It is bounded and resumable, so a long corpus is several short runs rather than one that must not be interrupted.
+**`cmk autolink` is the way in.** Running it bare is a **dry run** — it shows you what it would do and changes nothing; writing takes an explicit `--apply`. To also link new facts as they are captured, turn the write path on with `cmk config set memory.link_facts true`. One invocation does the whole corpus — it works in small batches and reports progress — and because each batch is committed as it lands, interrupting it costs nothing and the next run continues where it stopped.
 
 Turn the write path on with `cmk config set memory.link_facts true` (or `CMK_LINK_FACTS=1` for one command); `cmk autolink` needs no flag.
 
