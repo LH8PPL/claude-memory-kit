@@ -1,4 +1,4 @@
-﻿# Security scanning (Task 53). Three gates, run on every push + PR:
+# Security scanning (Task 53). Three gates, run on every push + PR:
 #   - secrets : gitleaks (in-repo, config-controlled; complements the
 #               GitGuardian app already installed on the repo)
 #   - audit   : `npm audit` HARD-GATE on high/critical (dev-only moderates
@@ -65,7 +65,7 @@ jobs:
       actions: read
       security-events: write
       contents: read
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.8
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.5.0
 
   # Task 237 ג€” delivery. A failed CHECK on a scheduled run notifies nobody
   # (there is no PR to annotate), so the standing watch reports to an ISSUE.
@@ -95,7 +95,7 @@ jobs:
       - name: Collect npm audit
         run: npm audit --omit=dev --json > audit.json || true
       - name: Collect osv-scanner
-        uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
+        uses: google/osv-scanner-action/osv-scanner-action@v2.5.0
         continue-on-error: true
         with:
           scan-args: |-
