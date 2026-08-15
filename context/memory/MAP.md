@@ -4,7 +4,7 @@
 <!-- Browse this folder as an Obsidian vault. Each [[link]] opens a fact file. -->
 <!-- How to open + the read-vs-write rule: docs/OBSIDIAN.md -->
 
-Facts: 2316
+Facts: 2328
 
 ## feedback
 
@@ -477,6 +477,7 @@ Facts: 2316
 - [[project_questioning-whether-their-approach-is-wr-5cxrtfvp]] — Questioning whether their approach is wrong, if there's a bug, or if the system
 - [[project_live-test-workflow-for-kiro-cli-project-fix]] — Live test workflow for kiro-cli --project fix
   - related: [[project_d-197-end-to-end-live-re-test-workflow]], [[project_fresh-folder-verification-workflow-for-claude-memory-kit-rel]], [[project_testing-workflow-for-claude-memory-kit-fixes]]
+- [[project_research-to-task-same-day-filing-discipline]] — Research-to-Task Same-Day Filing Discipline
 - [[project_autonomous-loop-catches-failures-not-successes]] — Autonomous Loop Catches Failures, Not Successes
   - related: [[project_cmk-view-integrates-with-core-memory-subsystems]], [[project_memory-verification-spans-session-boundaries]]
 - [[project_reference-implementation-alignment-strategy]] — Reference Implementation Alignment Strategy
@@ -718,6 +719,7 @@ Facts: 2316
   - related: [[project_claude-memory-kit-captures-dogfood-facts-about-its-own-debug]], [[project_core-memory-kit-dogfoods-its-own-memory-system]], [[project_project-origin-and-core-problem]]
 - [[project_regression-test-pinning-on-bug-fixes]] — Regression Test Pinning on Bug Fixes
   - related: [[project_data-loss-bug-pattern-echo-rm-laundering]], [[project_skill-review-imported-facts-staleness-bug-fixed]], [[project_sonarcloud-coverage-job-rate-limited-by-hf-hub-cache-miss]]
+- [[project_adversarial-second-pass-verification-for-high-consequential]] — Adversarial Second-Pass Verification for High-Consequential Research
 - [[project_post-compact-session-entry-point]] — Post-Compact Session Entry Point
   - related: [[project_task-186-wip-status-and-rebase-prerequisite]], [[project_v0-4-5-roadmap-task-196-cursor-adapter-task-198-temporal-swe]], [[project_work-items-require-task-entry-before-implementation]]
 - [[project_raptor-hierarchical-summarization-for-multi-hop-reasoning]] — RAPTOR — Hierarchical Summarization for Multi-Hop Reasoning
@@ -1049,6 +1051,7 @@ Facts: 2316
   - related: [[project_layered-backend-architecture-routes-thin-tlkqfr7z]], [[project_python-backend-convention-layered-archit-42t3nclq]]
 - [[project_cmk-install-auto-updates-managed-block-version-stamps]] — cmk install Auto-Updates Managed Block Version Stamps
   - related: [[project_bash-cwd-drift-creates-packages-cli-context-artifacts]], [[project_cmk-version-bumping-convention]], [[project_hc-9-drift-after-claude-code-update-v0-3-4]]
+- [[project_task-285-framing-open-ground-beyond-retrieval-eval]] — Task 285 Framing: Open Ground Beyond Retrieval Eval
 - [[project_live-test-harness-cannot-detect-missing-cli-dependency]] — Live-test Harness Cannot Detect Missing CLI Dependency
   - related: [[project_cut-gate-must-test-published-artifact-not-repo-code]], [[project_kit-s-haiku-backend-has-undeclared-claude-cli-dependency]], [[project_task-146-concurrent-swarm-support-testing]]
 - [[project_release-workflow-tag-timing-after-gates]] — Release Workflow: Tag Timing (After Gates)
@@ -1321,6 +1324,7 @@ Facts: 2316
 - [[project_confirmed-tests-passed-run-all-the-comma-cjcm9cjm]] — confirmed tests passed ("run all the commands nad the response looks promising")
 - [[project_sonarcloud-automatic-analysis-must-be-off]] — SonarCloud Automatic Analysis Must Be OFF
   - related: [[project_mcp-configuration-includes-redundant-memory-server]], [[project_sonarcloud-project-key-rename-coordination]], [[project_sonarcloud-server-side-analysis-scope-cannot-be-overridden-r]]
+- [[project_v0-7-backlog-three-part-structure-from-research]] — v0.7 Backlog Three-Part Structure from Research
 - [[project_d-249-documentation-walk-checklist]] — D-249 Documentation Walk Checklist
   - related: [[project_documentation-drifts-at-event-boundaries-not-pr-moments]], [[project_documentation-taxonomy-and-update-responsibility]], [[project_multi-surface-documentation-architecture]]
 - [[project_kiro-hook-environment-verified-live-2026-06-21-the-probe-cap]] — Kiro hook ENVIRONMENT verified live (2026-06-21, the probe captured it before ha
@@ -1773,6 +1777,7 @@ Facts: 2316
   - related: [[project_four-move-redesign-for-d-177-persona-graduation-loop]], [[project_resume-point-task-151-13-last-151-sub-task]], [[project_resume-point-task-151-7-trust-update-rule]]
 - [[project_youtube-to-slide-scheduled-task-shims-vbs-launchers]] — youtube-to-slide Scheduled Task Shims (VBS Launchers)
   - related: [[project_close-claude-code-before-global-cmk-install-to-avoid-ebusy]], [[project_vbs-launcher-quirk-for-hidden-scheduled-task-windows]], [[project_youtube-to-slide-uses-core-memory-kit-scheduling]]
+- [[project_longmemeval-962-lines-retrieval-stage-implemented-qa-accurac]] — LongMemEval: 962 Lines, Retrieval-Stage Implemented, QA-Accuracy Scaffold-Only
 - [[project_adapter-architecture-per-profile-seam-zero-bespoke-code]] — Adapter Architecture — Per-Profile Seam, Zero Bespoke Code
   - related: [[project_claude-memory-kit-supports-3-ide-tool-agents]], [[project_cursor-adapter-proves-generic-per-profile-seam-works]], [[project_task-196-cursor-adapter-shipped-and-merg-mv4b4wqp]]
 - [[project_user-wants-to-apply-the-kit-in-agents-he-fryn5a37]] — User wants to apply the kit in agents (Hermes/OpenClaw), expanding scope beyond
@@ -2073,6 +2078,7 @@ Facts: 2316
   - related: [[project_blocker-claude-exe-windows-incompatible-after-cc-update-live]], [[project_confirmed-enabledmcpjsonservers-cmk-narrow-form-prompt-free]], [[project_solved-permissionrequest-hook-mcp-cmk-skill-prompt-free-capt]]
 - [[project_correction-kiro-capture-prompt-wiring-is-present-not-missing]] — CORRECTION: Kiro capture-prompt wiring is present (not missing) — the bug is empty USER_PROMPT on IDE 1.0 v1 + silent no-op
   - related: [[project_confirmed-kiro-bug-user-turn-never-captured-auto-extract-can]], [[project_kiro-ide-transcript-parser-works-both-turns-extracted-from-r]]
+- [[project_prior-art-admin-repair-ux-manual-recovery-patterns]] — Prior-Art Admin/Repair UX: Manual Recovery Patterns
 - [[project_backup-location-and-naming-convention]] — Backup Location and Naming Convention
   - related: [[project_current-gate-artifact-v0-5-0-with-task-148-and-sonarcloud-fi]], [[project_cut-gate-sandbox-isolation]], [[project_release-git-choreography-memory-release-tag-in-order]]
 - [[project_kiro-cli-vs-kit-knowledge-extraction-architecture]] — Kiro-CLI vs. Kit: Knowledge Extraction Architecture
@@ -2158,6 +2164,7 @@ Facts: 2316
 - [[project_borrowable-ideas-from-awrshift-claude-memory-kit]] — Borrowable Ideas from awrshift/claude-memory-kit
   - related: [[project_three-borrowed-ideas-laned-to-tasks-versions]]
 - [[project_we-can-upgrade-to-latest-node-version-at-jrxwu6jp]] — We can upgrade to latest Node version at any time — no legacy version constraint
+- [[project_code-first-research-enumeration-with-file-line-citations]] — Code-First Research Enumeration with File-Line Citations
 - [[project_don-t-invent-new-documentation-structure-jtwul9zx]] — Don't invent new documentation structures; follow the established documentation
   - related: [[project_standard-gate-procedure-includes-cmk-ins-gzg5u2pn]]
 - [[project_assistant-overgeneralized-a-prior-contex-ju7rrut9]] — Assistant overgeneralized a prior context-specific permission ("for ruflo, you d
@@ -2771,6 +2778,7 @@ Facts: 2316
   - related: [[project_prefers-to-pause-work-at-safe-checkpoint-lwrpvyqf]], [[project_prefers-work-to-continue-incrementally-w-pnx2k5us]]
 - [[project_native-binary-swap-test-uses-v13-bundled-binaries]] — Native-Binary Swap Test Uses v13 Bundled Binaries
   - related: [[project_ci-pipeline-configuration]], [[project_core-memory-kit-dogfoods-its-own-memory-system]], [[project_production-code-must-go-through-pr-ci]]
+- [[project_research-clone-staging-at-c-tmp-research-clones]] — Research Clone Staging at C:\tmp\research-clones\
 - [[project_tarball-installation-requires-re-packing-after-main-merges]] — Tarball Installation Requires Re-packing After Main Merges
   - related: [[project_global-binary-lag-after-code-merge]], [[project_release-workflow-after-fix-merge]], [[project_tarball-artifact-must-carry-both-d-263-and-d-264]]
 - [[project_rebuild-artifact-after-bug-fix-without-re-cutting-release]] — Rebuild Artifact After Bug Fix (Without Re-cutting Release)
@@ -2972,6 +2980,7 @@ Facts: 2316
 - [[project_coverage-gate-fix-workflow]] — Coverage Gate Fix Workflow
   - related: [[project_log-sink-injection-pattern-across-install-uninstall]], [[project_release-publish-workflow-git-tag-to-npm]], [[project_rununinstall-branch-coverage-map]]
 - [[project_values-code-reuse-questions-why-kiro-int-r6wkxmbk]] — Values code reuse; questions why Kiro integration differs from Claude Code integ
+- [[project_obsidian-sync-one-way-by-design-conflict-resolution-deferred]] — Obsidian Sync One-Way by Design; Conflict Resolution Deferred
 - [[project_challenges-the-reasoning-they-avoid-it-w-r7yx4wlu]] — Challenges the reasoning: "they avoid it" ≠ "we're ahead"; other systems may sim
 - [[project_powershell-silently-parses-stash-0-as-ha-r9qn2j4g]] — PowerShell silently parses `stash@{0}` as hashtable literal when unquoted; quoti
 - [[project_research-notes-indexed-via-research-index-not-documentation]] — Research Notes Indexed via Research INDEX, Not DOCUMENTATION-MAP
@@ -3205,6 +3214,7 @@ Facts: 2316
 - [[project_lazy-on-sessionstart-roll-doesn-t-fire-on-size-bloated-now-m]] — Lazy-on-SessionStart Roll Doesn't Fire on Size-Bloated now.md
   - related: [[project_auto-heal-path-for-v0-4-1-task-167-d-169-binding]], [[project_npm-uninstall-ebusy-error-with-better-sqlite3-node-on-rebuil]], [[project_sessionstart-hook-activation-narrow-restart-caveat]]
 - [[project_values-research-grounded-recommendations-t4auhmxa]] — Values research-grounded recommendations with clear, honest attribution of sourc
+- [[project_competitive-positioning-summary-post-research]] — Competitive Positioning Summary (Post-Research)
 - [[project_crlf-line-ending-quirk-in-removekitonlyinstructionresidue]] — CRLF Line-Ending Quirk in removeKitOnlyInstructionResidue
   - related: [[project_kiro-uninstall-husk-cleanup-followup]], [[project_npm-uninstall-eperm-error-with-sqlite-vec-dll-on-windows]], [[project_windows-npm-uninstall-eperm-with-better-sqlite3]]
 - [[project_release-roadmap-v0-6-1-v0-7-0-and-task-95-timing-logic]] — Release Roadmap v0.6.1 — v0.7.0 and Task 95 Timing Logic
@@ -3404,6 +3414,7 @@ Facts: 2316
 - [[project_user-prefers-durable-written-capture-of-ulvxzuxa]] — User prefers durable written capture of research findings; signals this with "wr
 - [[project_bash-tool-cwd-persists-cd-into-a-workspace-silently-reroutes]] — Bash tool cwd persists — cd into a workspace silently reroutes npm test
   - related: [[feedback_never-overwrite-backups]], [[feedback_use-c-temp-or-c-tmp-for-test-scratch-never-the-repo-or-home]], [[project_claude-code-cd-compound-command-prompting-edge]]
+- [[project_automations-vision-thesis-reactive-substrate-not-orchestrato]] — automations-vision Thesis: Reactive Substrate, Not Orchestrator
 - [[project_do-not-reference-unshipped-task-outputs-in-config]] — Do Not Reference Unshipped Task Outputs in Config
   - related: [[project_cmk-daily-distill-scheduled-task-window-popup-at-23-00]], [[project_kiro-cli-requires-global-chat-defaultagent-because-hooks-are]], [[project_lane-membership-planned-together-vs-already-there]]
 - [[project_memory-system-deduplication-design]] — Memory System Deduplication Design
@@ -3756,6 +3767,7 @@ Facts: 2316
   - related: [[project_dj4-live-gate-test-passed-v0-3-3-headline-feature]], [[project_june-17-11-12-build-decisions-scope-implemented]], [[project_mcp-server-staleness-gotcha-d-80]]
 - [[project_post-commit-validator-suite]] — Post-Commit Validator Suite
   - related: [[project_pre-commit-hook-sanitizes-fact-files-for-security]], [[project_release-plan-md-authoritative-task-to-lane-map]], [[project_stress-gate-release-workflow]]
+- [[project_lifecycle-model-atoms-zero-lifecycle-derived-artifacts-versi]] — Lifecycle Model: Atoms Zero-Lifecycle, Derived Artifacts Versioned
 - [[project_task-195-bake-off-add-letta-term-collision-validation]] — Task 195 bake-off: add Letta term-collision validation
   - related: [[feedback_use-c-temp-or-c-tmp-for-test-scratch-never-the-repo-or-home]], [[project_design-reference-awrshift-claude-memory-kit]], [[project_new-v0-6-2-guard-candidate-undefended-cwd-as-root-assumption]]
 - [[project_d-264-entry-rewritten-to-record-both-the-xdnk47ah]] — D-264 entry rewritten to record both the review catch and red-on-main step; illu
@@ -4513,6 +4525,8 @@ Facts: 2316
 - **Task-262** ← [[project_backlog-tracked-with-lanes-and-triggers]], [[project_canary-discipline-validate-features-before-enabling-defaults]], [[project_co-occurrence-edge-layer-rider-for-task-262]], [[project_task-260-and-262-sequencing]], [[project_three-design-patterns-from-mnemory-to-explore]]
 - **Task-268** ← [[project_post-release-v0-6-6-work-non-blocking]], [[project_task-268-complete-awaiting-user-acceptance-confirmation]]
 - **Task-279** ← [[project_backlog-tracked-with-lanes-and-triggers]], [[project_npm-test-fragility-under-load]]
+- **Task-282** ← [[project_adversarial-second-pass-verification-for-high-consequential]], [[project_v0-7-backlog-three-part-structure-from-research]]
+- **Task-285** ← [[project_task-285-framing-open-ground-beyond-retrieval-eval]], [[project_v0-7-backlog-three-part-structure-from-research]]
 - **Task-47** ← [[project_backlog-disposition-audit-results-2026-07-18]], [[project_task-47-hc-5-improvement-stat-actual-win-2rtaut3d]]
 - **Task-50** ← [[project_architectural-thesis-session-runtime-learning-judge]], [[project_claude-memory-kit-judge-as-the-per-host-adapter]], [[project_concurrent-write-race-task-146-severity-tied-to-agent-multip]], [[project_correction-kiro-capture-prompt-wiring-is-present-not-missing]], [[project_kiro-transcript-format-resolved-verified-on-a-real-kiro-inst]], [[project_open-knowledge-format-okf-design-validation-and-interchange]], [[project_related-projects-mimir-memex-mcp-only-memory-integrations]], [[project_section-5-1-binding-rule-convergence-verification]], [[project_task-50-adapter-architecture-do-not-build-a-uniform-installe]], [[project_task-50-cross-agent-seam-target-kiro-cli-agent-hooks-agentsp]], [[project_task-50-highest-unverified-risk-kiro-transcript-format-is-un]], [[project_task-50-research-revisit-gate-and-multi-agent-pattern]], [[project_three-borrowed-ideas-laned-to-tasks-versions]], [[project_v0-4-x-versioning-roadmap]], [[project_v0-5-2-release-scope-and-workflow]]
 - **Task-55** ← [[project_2026-07-01-arc-complete-output-inventory-and-at-risk-layer]], [[project_four-flavors-of-memory-improvement-systems]], [[project_memory-learn-loop-as-converged-system]], [[project_pai-personal-ai-infrastructure-memory-architecture-convergen]], [[project_task-55-enrichment-relationship-memory-learn-phase]]

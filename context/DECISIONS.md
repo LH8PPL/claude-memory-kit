@@ -17314,3 +17314,150 @@ _(retracted 2026-07-22)_
 
 **When:** 2026-08-13 · **Fact:** `P-RaKMKKLK`
 **Why:** The release cut is complete; next session needs the exact tag command and to understand the automated release flow that follows it.
+
+<!-- decision:P-VT6JJT4A -->
+
+## Backfill Nearly Complete — 161 Items Unlinked
+
+**When:** 2026-08-15 · **Fact:** `P-VT6JJT4A`
+**Why:** Backfill is the final operational blocker before corpus is fully indexed
+
+<!-- decision:P-Z32GCZT9 -->
+
+## HC-9 Drift Fixed — Scaffold 0.6.5 vs Installed 0.6.6 Mismatch Resolved
+
+**When:** 2026-08-15 · **Fact:** `P-Z32GCZT9`
+**Why:** Version mismatch can cause subtle issues; parity ensures stability
+
+<!-- decision:P-TXBZ73XX -->
+
+## Task-268 Complete, Awaiting User Acceptance Confirmation
+
+**When:** 2026-08-15 · **Fact:** `P-TXBZ73XX`
+**Why:** Acceptance-based done-criterion; feature-complete but awaiting stated gate
+
+<!-- decision:P-DMDS9MNH -->
+
+## v0.6.6 Locally Installed But Not Published to NPM
+
+**When:** 2026-08-15 · **Fact:** `P-DMDS9MNH`
+**Why:** Release is functionally complete and verified against real corpus but blocked on git/npm sync
+
+<!-- decision:P-PLUGLQQR -->
+
+## Core-Memory-Kit Retrieval/Ranking Improvement Tasks
+
+**When:** 2026-08-15 · **Fact:** `P-PLUGLQQR`
+**Why:** Mapping external findings to these specific bottlenecks informs trade-off decisions and task prioritization.
+
+<!-- decision:P-2W74DK4J -->
+
+## Tactical Insights from atomic/kenforthewin—Implementable Patterns
+
+**When:** 2026-08-15 · **Fact:** `P-2W74DK4J`
+**Why:** Competitive project showing patterns that translate directly to cmk architecture; low-cost improvements
+
+<!-- decision:P-DKBJG69T -->
+
+## Competitive Research Phase 2 Complete (RepoWise & RepoSwarm)
+
+**When:** 2026-08-15 · **Fact:** `P-DKBJG69T`
+**Why:** Completes Phase 2 of systematic competitive landscape analysis. RepoWise emerged as the heavyweight direct competitor with architectural parity on core problems.
+
+<!-- decision:P-9FHXT5aC -->
+
+## RepoWise: Direct Competitor Architecture & Efficacy Loop
+
+**When:** 2026-08-15 · **Fact:** `P-9FHXT5aC`
+**Why:** RepoWise demonstrates a complete, production-grade answer to the same problem CMK solves. Efficacy loop is marked as honest-blank in CMK's SYSTEM-MAP §6. Learning their design and identifying where CMK differs is critical for product differentiation and roadmap prioritization.
+
+<!-- decision:P-YNSBPRQH -->
+
+## Technical Patterns Worth Integrating (Competitive Research)
+
+**When:** 2026-08-15 · **Fact:** `P-YNSBPRQH`
+**Why:** These patterns are battle-tested in shipping products. They solve real problems in memory lifecycle, freshness, trustworthiness, and derived-artifact staleness.
+
+<!-- decision:P-T5BUUF49 -->
+
+## Competitive Positioning Summary (Post-Research)
+
+**When:** 2026-08-15 · **Fact:** `P-T5BUUF49`
+**Why:** Informs priority and threat model for next cycles; AutoRAG's fixture approach is a direct methodological threat; Repowise is the operational competitor.
+
+<!-- decision:P-5D65V2GL -->
+
+## Research-to-Task Same-Day Filing Discipline
+
+**When:** 2026-08-15 · **Fact:** `P-5D65V2GL`
+**Why:** Keeps research output actionable and prevents ad-hoc fragmentation of competitive insights.
+
+<!-- decision:P-CJR6S52X -->
+
+## v0.7 Backlog Three-Part Structure from Research
+
+**When:** 2026-08-15 · **Fact:** `P-CJR6S52X`
+**Why:** Research findings on competitor efficacy tracking, fixture benchmarking, and temporal grounding revealed gaps in these three areas.
+
+<!-- decision:P-7D6ZZFPT -->
+
+## Adversarial Second-Pass Verification for High-Consequential Research
+
+**When:** 2026-08-15 · **Fact:** `P-7D6ZZFPT`
+**Why:** First-pass agents can miss important modules despite enumeration discipline. Second pass adds confidence on high-stakes decisions. Clones remain warm at C:\tmp\research-clones\ for fast re-runs.
+
+<!-- decision:P-JTEQ77BQ -->
+
+## Code-First Research Enumeration with File-Line Citations
+
+**When:** 2026-08-15 · **Fact:** `P-JTEQ77BQ`
+**Why:** Full enumeration caught modules marketing missed (mnemory's sanitize.py, KiroCrew's auto-skill loop). Discipline is now baked into first-pass briefs.
+
+<!-- decision:P-PGB2YACB -->
+
+## Research Clone Staging at C:\tmp\research-clones\
+
+**When:** 2026-08-15 · **Fact:** `P-PGB2YACB`
+**Why:** Reduces friction on iterative research; enables fast re-runs for second-pass and post-hoc deep-dives.
+
+<!-- decision:P-UMRYUZK4 -->
+
+## automations-vision Thesis: Reactive Substrate, Not Orchestrator
+
+**When:** 2026-08-15 · **Fact:** `P-UMRYUZK4`
+**Why:** Direct validation of positioning; citable precedent for reactive automation design.
+
+<!-- decision:P-XCW4YQDK -->
+
+## Lifecycle Model: Atoms Zero-Lifecycle, Derived Artifacts Versioned
+
+**When:** 2026-08-15 · **Fact:** `P-XCW4YQDK`
+**Why:** Crucial distinction — lifecycle management is not about memory retention, but output versioning and editorial state.
+
+<!-- decision:P-FRDJLURG -->
+
+## LongMemEval: 962 Lines, Retrieval-Stage Implemented, QA-Accuracy Scaffold-Only
+
+**When:** 2026-08-15 · **Fact:** `P-FRDJLURG`
+**Why:** Clarifies existing eval capability and open gaps. The retrieval half is already measured; the open ground is end-to-end QA accuracy and lifecycle-aware recall (whether memory systems that forget/supersede score differently than accrete-forever stores).
+
+<!-- decision:P-R7WCYVPC -->
+
+## Obsidian Sync One-Way by Design; Conflict Resolution Deferred
+
+**When:** 2026-08-15 · **Fact:** `P-R7WCYVPC`
+**Why:** Shows a common architectural tradeoff (simplicity vs. capability). Our conflict queue is the harder, more capable approach they avoided.
+
+<!-- decision:P-J3Z5CEVR -->
+
+## Prior-Art Admin/Repair UX: Manual Recovery Patterns
+
+**When:** 2026-08-15 · **Fact:** `P-J3Z5CEVR`
+**Why:** Validates operational repair as a solved problem in prior work; provides design precedent for our manual-maintenance UX.
+
+<!-- decision:P-AMDQ3MC6 -->
+
+## Task 285 Framing: Open Ground Beyond Retrieval Eval
+
+**When:** 2026-08-15 · **Fact:** `P-AMDQ3MC6`
+**Why:** Clarifies Task 285 scope and the novel measurement story; lifecycle-aware metrics differentiate our eval from prior work.

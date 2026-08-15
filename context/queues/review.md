@@ -7,3 +7,6 @@
 ## 2026-08-15T08:24:12Z — auto-extract (medium-trust, pending review)
 - (P-3HaHQBAP) Strategic opportunity—atomic announced LongMemEval as memory benchmark but shipped only scaffold; implementing real version in cmk claims ground
   <!-- proposed_trust: medium, write: auto-extract, at: 2026-08-15T08:24:12Z -->
+## 2026-08-15T08:47:27Z — auto-extract (medium-trust, pending review)
+- (P-N994N9UG) Repo research clones cached at C:\tmp\research-clones\; available for reuse across sessions.
+  <!-- proposed_trust: medium, write: auto-extract, at: 2026-08-15T08:47:27Z -->
