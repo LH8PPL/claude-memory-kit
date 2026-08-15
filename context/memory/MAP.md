@@ -4,7 +4,7 @@
 <!-- Browse this folder as an Obsidian vault. Each [[link]] opens a fact file. -->
 <!-- How to open + the read-vs-write rule: docs/OBSIDIAN.md -->
 
-Facts: 2304
+Facts: 2307
 
 ## feedback
 
@@ -1191,6 +1191,7 @@ Facts: 2304
 - [[project_metadata-column-free-form-jsonb-with-pii-flags]] — Metadata Column: Free-Form JSONB with PII Flags
 - [[project_confirmed-adding-4-new-task-proposals-to-gftyr6t3]] — Confirmed adding 4 new task proposals to cmk backlog with minimal response "slot
 - [[project_defense-in-depth-scanning-write-read-boundaries]] — Defense-in-Depth Scanning: Write + Read Boundaries
+- [[project_post-release-v0-6-6-work-non-blocking]] — Post-Release v0.6.6 Work (Non-Blocking)
 - [[project_codeql-action-workflow-bumps-held-by-standing-rule]] — codeql-action Workflow Bumps Held by Standing Rule
 - [[project_task-156-decisions-md-recall-is-v0-3-3-the-next-version-firm]] — Task 156 DECISIONS.md recall is v0.3.3 the next version firm
 - [[project_live-kg-guard-config-location-and-verification]] — Live KG-guard Config Location and Verification
@@ -1919,6 +1920,7 @@ Facts: 2304
 - [[project_kiro-hook-activation-and-git-commit-cycle]] — Kiro Hook Activation and Git Commit Cycle
 - [[project_actual-linter-output-is-md007-not-assume-ra5d4f96]] — Actual linter output is MD007 (not assumed MD013/MD033/MD041); fix: committed co
   - related: [[project_memory-format-linting-fix-md007]]
+- [[project_v0-6-6-release-ready-for-tag]] — v0.6.6 Release Ready for Tag
 - [[project_v0-5-3-roadmap-learn-loop-phase-2-confidence-gated-search-bl]] — v0.5.3 Roadmap — Learn-loop Phase 2, Confidence-Gated Search Blend First
 - [[project_merge-gate-sequence-stress-test-must-pas-s2enbvcj]] — Merge gate sequence: stress test (must pass 5/5) → live-verify (final validation
 - [[project_research-faithful-design-in-sweep-order-implementation]] — Research-Faithful Design in Sweep Order Implementation
@@ -2052,6 +2054,7 @@ Facts: 2304
 - [[project_octopoda-loop-detection-code-verified-findings]] — Octopoda Loop-Detection Code-Verified Findings
 - [[project_cut-gate-testing-structure-terminal-vs-live-session-gates]] — Cut-Gate Testing Structure (Terminal vs Live-Session Gates)
 - [[project_reliable-tarball-file-validation-with-npm-pack-json]] — Reliable tarball file validation with npm pack --json
+- [[project_v0-6-6-release-ledger-sweep-cycle-complete]] — v0.6.6 Release Ledger — Sweep Cycle Complete
 - [[project_autopilot-memory-consultation-architecture]] — Autopilot Memory Consultation Architecture
   - related: [[project_auto-compact-fidelity-loss-mid-task]], [[project_doctor-is-reactive-only-memory-write-search-are-automatic]]
 - [[project_kit-s-own-loops-are-real-detection-targets]] — Kit's Own Loops Are Real Detection Targets
@@ -2785,6 +2788,7 @@ Facts: 2304
 - **D-81** ← [[project_resolved-from-file-gives-shell-proof-and-popup-free-capture]], [[project_zero-popup-route-steer-capture-to-bash-cmk-cli-allow-listed]]
 - **D-84** ← [[project_cut-gate-testing-guide-manual-release-qa]], [[project_hardening-patch-release-may-skip-full-cut-gate]], [[project_patch-release-live-session-gate-optional]], [[project_resume-v0-4-5-main-is-green-with-the-v0-k9jexew6]], [[project_v0-5-1-cut-gate-includes-six-new-probes-4g]]
 - **D-85** ← [[project_decision-the-user-2026-06-21-the-kit-s-kiro-support-wires-al]], [[project_doctor-as-a-skill-design-2026-07-22-discussion-prior-art-ver]], [[project_fixes-must-be-automatic-in-install-upgrade-flow-not-diagnost]], [[project_kiro-cli-hooks-gap-d-181-follow-up-found-by-reading-kiro-dev]], [[project_memory-write-under-fire-is-lower-priority-than-memory-search]], [[project_task-248-reframed-the-user-s-design-call-2026-07-22-the-pre]], [[reference_cmk-permission-prompt-only-on-cd-compound-d-80-edge]]
+- **NFR-10** ← [[project_nfr-10-ask-before-install-rule-formalized-in-claude-md]], [[project_post-release-v0-6-6-work-non-blocking]]
 - **Task-105** ← [[project_cascade-starvation-lazy-distill-limitation-on-busy-repos]], [[project_cmk-health-check-status-2026-06-20]], [[project_now-md-bloat-creates-silent-failure-trap-in-lazy-roll]], [[project_task-167-lazy-roll-robustness-extension-v0-4-x]]
 - **Task-108** ← [[project_allowed-tools-history-task-108-introduced-the-mcp-popup-task]], [[project_q1-popup-is-a-cc-2-1-x-change-not-a-kit-regression-q2-allowe]]
 - **Task-110** ← [[project_f-7-spec-vs-code-mismatch-tombstone-reading-in-cmk-get]], [[project_node-sqlite-adoption-perf-gate-d-147-execution-plan]]

@@ -17239,3 +17239,78 @@ _(retracted 2026-07-22)_
 ## we need a button to switch between dark and light.
 
 **When:** 2026-08-08 · **Fact:** `P-SL5KD5Ya`
+
+<!-- decision:P-KZR4X3PW -->
+
+## Rejects manual command loops as UX anti-pattern; "what would a real user do?" si
+
+**When:** 2026-08-10 · **Fact:** `P-KZR4X3PW`
+
+<!-- decision:P-5J4CT5ZR -->
+
+## PR #357 review pass-two complete; all verification tracks green (tests, validati
+
+**When:** 2026-08-10 · **Fact:** `P-5J4CT5ZR`
+
+<!-- decision:P-LXNVRGL5 -->
+
+## Sequential Gate Execution Required; First-Invocation Gate Cannot Run in Parallel
+
+**When:** 2026-08-13 · **Fact:** `P-LXNVRGL5`
+**Why:** Repeated painful experience (this lesson has been "paid for three times" in the current version cycle) established that concurrent gate execution breaks test reliability. It's a hard constraint discovered through failures.
+
+<!-- decision:P-2RMM6CSE -->
+
+## Namespace Encoding for Purge/Tombstone Prevention
+
+**When:** 2026-08-13 · **Fact:** `P-2RMM6CSE`
+**Why:** Critical bug discovered during v0.6.6 review that causes silent data loss via irreversible tombstone destruction.
+
+<!-- decision:P-U7T2QU6R -->
+
+## CI Authority Convention
+
+**When:** 2026-08-13 · **Fact:** `P-U7T2QU6R`
+**Why:** Prevents false passes/fails from blocking releases; establishes single source of truth for test status
+
+<!-- decision:P-7X6PNHU2 -->
+
+## duplicate-D Class Eliminated (v0.6.6)
+
+**When:** 2026-08-13 · **Fact:** `P-7X6PNHU2`
+**Why:** Resolves a recurring validation problem; prevents regression in future versions
+
+<!-- decision:P-QXYKPC2C -->
+
+## npm test Fragility Under Load
+
+**When:** 2026-08-13 · **Fact:** `P-QXYKPC2C`
+**Why:** Important to recognize this as a known local-env issue, not a code defect, when debugging test failures during active development
+
+<!-- decision:P-aaA72GVa -->
+
+## Release Workflow Pattern
+
+**When:** 2026-08-13 · **Fact:** `P-aaA72GVa`
+**Why:** Establishes the standard release workflow pattern; reference for future version cuts
+
+<!-- decision:P-GGMLZEFF -->
+
+## Post-Release v0.6.6 Work (Non-Blocking)
+
+**When:** 2026-08-13 · **Fact:** `P-GGMLZEFF`
+**Why:** Follow-ups discovered during sweep; listed here to avoid forgetting them. None block the tag or npm publish.
+
+<!-- decision:P-TU4NMB4Y -->
+
+## v0.6.6 Release Ledger — Sweep Cycle Complete
+
+**When:** 2026-08-13 · **Fact:** `P-TU4NMB4Y`
+**Why:** Establishes the scope and quality bar for v0.6.6 as a complete release. Documents output for release comms and design rationale traceability.
+
+<!-- decision:P-RaKMKKLK -->
+
+## v0.6.6 Release Ready for Tag
+
+**When:** 2026-08-13 · **Fact:** `P-RaKMKKLK`
+**Why:** The release cut is complete; next session needs the exact tag command and to understand the automated release flow that follows it.
