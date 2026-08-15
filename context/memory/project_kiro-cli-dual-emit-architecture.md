@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 65ae8b363f388c889ffa3afdf090871dd3cc9be0cd6226b39cb0693586f5ef20
+related: [v0-4-0-cut-gate-structure-and-coverage, the-kit-dual-emits-to-support-both-ide-0-4h5wzl6n, kiro-1-0-v1-hook-schema-and-installation-naming]
 ---
 
 The kit dual-emits and supports both IDE 0.x (legacy) and 1.0+ (v1 format). Either version runs the gate with different probe sets:

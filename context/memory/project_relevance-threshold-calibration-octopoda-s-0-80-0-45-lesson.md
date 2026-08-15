@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c2ca4ce23d8049a6badf071967cfcd6661d69ff2405af67bbbc87c9ee5b8aca2
+related: [relevance-floor-calibration-for-fts5-backends]
 ---
 
 Octopoda initially set 0.80 relevance floor for fact retrieval/hint injection; this filtered out 5 of 7 relevant facts. Lowering to 0.45 improved coverage.

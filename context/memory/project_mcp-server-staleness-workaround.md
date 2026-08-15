@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 0aa490fce18a8b4317073875983cdd5c705dd7d99b42c1d6e56aee2f3e72e5e1
+related: [mcp-server-may-retain-stale-code-in-memory-after-package-upd, mcp-server-staleness-gotcha-d-80, mcp-server-state-isolation-in-testing]
 ---
 
 When Claude Code's MCP server becomes stale (serving pre-fix code), restart the tool with `/exit` followed by `claude`. This closes the stale MCP server and reconnects, reloading updated code without a full session restart.

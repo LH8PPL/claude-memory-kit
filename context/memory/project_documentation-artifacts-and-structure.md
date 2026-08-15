@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: eed0bccaf39a0e68a547103c1d798de7cf96b7e5410f1e7e666b9f048da34196
+related: [documentation-structure-and-authoritative-homes, core-system-concepts, external-source-ingestion-and-task-triage-workflow]
 ---
 
 - design.md — design decisions with "pivot notes"

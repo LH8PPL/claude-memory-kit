@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e998e601c7837800840b525025311aab917a0d1623db4f8e3de367650db7b55e
+related: [e1-cold-open-test-persona-wedge-successful, fastapi-project-scaffolding-workflow-and-structure]
 ---
 
 - **Directory structure**: `app/` organized as `api/` (routes + dependencies), `services/` (business logic), `repositories/` (data access), `schemas/` (Pydantic boundaries), `models/` (SQLAlchemy ORM), `core/` (config + database)

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 401cc085197d37472a8223e991d7b29aff28c23769c474fabf8d81e8bd734452
+related: [kiro-requires-full-restart-to-load-updated-hooks, mcp-server-staleness-gotcha-d-80, claude-code-hook-activation-requires-restart]
 ---
 
 MCP server processes spawned at session start do not auto-update when the binary changes. A session from before an MCP build update will serve stale code to Claude until killed.

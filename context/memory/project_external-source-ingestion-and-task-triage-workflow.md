@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6e7a1f136dfa4ee6e35083161f8a97f08818fcd0ab41f2042fb1302d4e076dc2
+related: [architecture-decisions-recorded-in-adrs, decision-log-system-for-known-limitations, scope-documentation-discipline-record-why-not-just-what]
 ---
 
 The project processes external sources (repos, papers, articles) through a standardized four-outcome triage workflow:

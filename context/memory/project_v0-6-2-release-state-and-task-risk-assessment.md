@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 1b1a2e6d5aa2b8d34b414fd8875b44fa6f05d40a22ddfed770981e3d8777934e
+related: [version-roadmap-v0-6-1-through-v0-6-2]
 ---
 
 **Shipped (2/5):** 237 (supply-chain watch), 240 (Node pin — code + doc complete, PR open)

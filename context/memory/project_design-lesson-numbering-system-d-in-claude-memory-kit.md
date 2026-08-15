@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 4228a421dbe17a06140d1d64834ae360398f790f
+related: [pr-168-cmk-import-claude-md-command-complete, stress-testing-omitted-for-pure-read-cli-changes, stress-tests-skipped-for-pure-file-mutation-in-process-ops]
 ---
 
 Project uses D-### numbered patterns to reference prior design decisions and apply them consistently:

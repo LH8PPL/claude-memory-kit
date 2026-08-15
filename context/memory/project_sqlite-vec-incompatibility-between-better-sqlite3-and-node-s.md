@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e8a516d642ee57eea91258b1b4a1d831ee89204244ea5114d35669963503515c
+related: [task-141b-spike-results-node-sqlite-migration, task-141b-spike-results-perf-inconclusive-on-dev-machine, node-sqlite-fts5-module-availability-gate-for-task-141b-migr]
 ---
 
 better-sqlite3 and node:sqlite cannot both load the sqlite-vec extension in the same Node.js process — they crash. This forces benchmarking comparisons to run the two libraries in separate processes rather than in-process (alternating), which adds process-startup overhead and measurement noise.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 83d0f8e3680d680e07a2c39759b42958b55a2a25b7548ba9947affc13bc4e9be
+related: [task-186-wip-status-and-rebase-prerequisite, release-gate-structure-v0-3-0, resume-fact-convention-capturing-uncommitted-code-intent]
 ---
 
 The file `docs/process/cut-gate.md` has an uncommitted modification (user's earlier edit, not made by assistant during this session). It was deliberately left untouched and requires a decision on resumption.

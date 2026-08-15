@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2c2bf0750866c4355d35a04d7fc4398236167b823d0b1687e177878c4a63f880
+related: [release-workflow-npm-script-git, release-script-correctly-bumps-version-0-hrfkjppc, v0-4-1-release-gate-workflow]
 ---
 
 After running `npm run release -- minor`, before committing, verify all four points in `git diff`:

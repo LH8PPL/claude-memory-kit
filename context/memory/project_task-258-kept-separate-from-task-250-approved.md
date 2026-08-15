@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5f9e811d8ae8aa4fe9c7b52c278577d179ec69ca378d637706d501c0ea3b20e6
+related: [v0-4-6-release-roadmap]
 ---
 
 Task 258 (stale-refs scan) will NOT be folded into Task 250 (whisper instrumentation). Instead, Task 258 will ship later as a standalone, low-severity advisory task once its noise-floor measurement is completed on the real corpus.

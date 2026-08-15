@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 64e3d75a6f1be9c766addfda80bd2764046ac7f80dc32fe4af249b1ba8bff7c0
+related: [misplaced-memory-files-recovered-to-root-context, preserve-legacy-id-when-creating-derived-ids, decision-trail-preservation-rule]
 ---
 
 When migrating memory files between directories (e.g., from staging to canonical location), preserve files' original metadata by faithful relocation + reindexing, rather than re-ingestion via `cmk remember`. Re-ingestion via `cmk remember` re-stamps `created_at` to today, misrepresenting when knowledge was captured. Faithful relocation treats already-screened files as vetted artifacts and preserves semantic integrity of the archive.

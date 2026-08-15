@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: bc4dfe6393a186c36a8496d4133ed22452ed6dcc
+related: [backlog-for-v0-3-x-and-v0-4, v0-6-3-released, v0-5-2-release-complete]
 ---
 
 v0.3.0 is live on npm. All 31 hotspots reviewed and triaged: 1 true positive (Task 140, canonicalize regex), 30 marked SAFE with written justifications. Quality gate passing.

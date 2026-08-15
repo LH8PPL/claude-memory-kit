@@ -9,6 +9,7 @@ source_file: auto-extract
 source_line: 1
 source_sha1: 6df00f6d841d049036fe36b8becf8288680da47648e534b6c18dd01f7c1dcc5e
 recurrence_count: 2
+related: [cmk-view-integrates-with-core-memory-subsystems, design-reference-awrshift-claude-memory-kit, fts5-and-sqlite-vec-are-chosen-by-design-per-adr-0002-and-ad]
 ---
 
 When making comparative claims about how related projects (memsearch, mempalace, graphiti, etc.) handle a capability, must verify by reading actual research materials first, not by inferring from partial data or one example. User maintains comprehensive research briefs in the maintainer's personal research wiki including a competitive-recall research brief covering memory project architectures. These are the authoritative reference.

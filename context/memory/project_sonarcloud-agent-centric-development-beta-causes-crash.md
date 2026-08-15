@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 009af6aab84ba3a6d0ce8fe390e95106580c2367a97203c0112fc472abbc7d0c
+related: [sonarcloud-sonarjs-13-3-0-does-not-fix-crash, sonarcloud-project-key-update-procedure, missing-tools-field-was-the-shell-blocker]
 ---
 
 SonarCloud's "Agent-Centric Development" beta feature is the root cause of the opendir crash.

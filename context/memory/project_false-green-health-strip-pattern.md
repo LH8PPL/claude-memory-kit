@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 633c44db3c71daa414c0dfe3943fc2afd73f99902b9eb9879659790b2cc421de
+related: [live-test-gate-structure-and-blocker-findings]
 ---
 
 Quick check claims "capture is fine" while `cmk doctor` shows failures below it (composition gap between two correct components). Happens when cheap checks make positive claims instead of honest "no failures detected (quick check)" phrasing.

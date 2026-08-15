@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 356755dd65007d3a3a398379b6544d79391f72c54a16b39abff14576f46a25d7
+related: [known-environmental-artifact-laptop-sleep-during-tests, stress-gate-process-for-pr-merge, five-point-stress-gate-and-auto-launch-pr-workflow]
 ---
 
 - Gate criterion: 5× full suite runs on committed, clean tree

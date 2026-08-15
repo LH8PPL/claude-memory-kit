@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1f69d30f9fad7a4aefb898551efc0691524efa6160e3fbc09dd7dfa6cc934c7a
+related: [v0-3-3-bug-semantic-backend-attempted-for-keyword-only-decis, false-embedder-unavailable-alert-on-scope-decisions, misleading-embedder-unavailable-note-fires-on-keyword-only-s]
 ---
 
 `cmk search --scope decisions` attempts semantic backend first. Semantic correctly rejects it (decisions is keyword-only by design per search.mjs:163). CLI then prints "semantic default unavailable (unknown-scope:decisions) — falling back to keyword" to stderr.

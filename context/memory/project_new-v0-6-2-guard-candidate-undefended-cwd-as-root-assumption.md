@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e29a7bc9055e34b7216fb8d220ec85a7dd2bf53f5bc05ba0bda58e9822e37abd
+related: [pre-commit-pii-validator-on-context-commits, core-memory-kit-dogfoods-its-own-memory-system, project-dogfooding-principle-use-kit-s-own-mechanisms]
 ---
 
 The kit treats any cwd as a potential project root and scaffolds memory tiers accordingly. This exposes artifact classes that standard .gitignore patterns don't cover (e.g., agent-scaffolded memory, stray `.core-memory-kit/` directories). A name guard caught a stray artifact before this session.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 08c34a4fec02d7cec4235703578140da94044d448888087a9ca9a19c3a544336
+related: [node-sqlite-migration-decision, 141b-is-rejected-decision-rationale, semantic-search-vs-grep-trade-off-d-111-design-rationale]
 ---
 
 - Decision date: June 2026 (documented in D-162)

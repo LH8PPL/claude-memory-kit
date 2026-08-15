@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f21bfedc466c6af7d6a40641939c7358e5bc3caba75697ed862163f20026df2f
+related: [tombstone-auto-recall-design-decision, near-duplicate-handling-in-autolink, autopilot-merge-rules-for-install-surface-changes]
 ---
 
 Updates to the codeql-action workflow are held and not auto-applied; explicit user review and approval required.

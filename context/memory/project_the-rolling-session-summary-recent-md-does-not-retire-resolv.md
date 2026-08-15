@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: ae8a368d76542719e816af449f5596780b9d58ae3d89adf9ea4d090d8d829dc1
+related: [version-snapshot-in-recent-md-guards-against-cross-session-a, lazy-on-sessionstart-roll-doesn-t-fire-on-size-bloated-now-m, two-post-v0-3-2-bugs-index-corruption-and-stale-snapshot-for]
 ---
 
 The rolling session summary (recent.md) does NOT retire RESOLVED threads — a completed multi-day epic leaves a stale 'pending' line in the injected snapshot (e.g. v0.4.0 shipped but recent.md still injected 'Kiro adapter seam: RESEARCH-FIRST, pending'). MEMORY.md auto-capture works; the gap is thread-RESOLUTION not propagating to the rolling summary tier.

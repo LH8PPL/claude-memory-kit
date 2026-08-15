@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 99e6c4ea9b56a1ddb1122b1059c0d23bcd0826a212ae4c757daf31d880c2fb77
+related: [claude-memory-kit-v0-4-3-release-workflow, post-merge-clean-build-verification, claude-memory-kit-fix-verification-protocol-v0-4-3]
 ---
 
 - Merge PR to main

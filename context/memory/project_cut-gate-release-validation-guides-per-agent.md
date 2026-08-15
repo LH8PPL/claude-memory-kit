@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2a5a367b10012592e6dfb57d65490cffb3d8989924a37b9aee4588376bb8391d
+related: [claude-memory-kit-supports-3-ide-tool-agents, cut-gate-backend-pattern-template-4f, documentation-structure-and-prerequisite-locations]
 ---
 
 - cut-gate.md (Claude agent checklist)

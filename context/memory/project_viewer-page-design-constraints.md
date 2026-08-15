@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: cd8bdf6056d8ed47f1cac0a4f5ee593249e15485a340f920cceb830cfec23205
+related: [design-spec-24-1-2-muted-text-contrast-target]
 ---
 
 - **Colour**: 3-colour cap (accessibility requirement; prevents CVD separation failures; NOT negotiable)

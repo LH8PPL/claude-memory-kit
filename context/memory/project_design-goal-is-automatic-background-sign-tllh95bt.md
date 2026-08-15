@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract-session
 source_line: 1
 source_sha1: 1800f22dc71358727561395b79f95581c1e091938ce021d8344c3927797aebfc
+related: [two-separate-axes-were-being-conflated-1-xezzdbmd]
 ---
 
 Design goal is automatic background signals that don't depend on human feedback OR oracle grounding — human input is optional, not required

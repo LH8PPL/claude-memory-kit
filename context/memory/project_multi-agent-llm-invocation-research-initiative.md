@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c3c2fd07cc8d8ead99e1e6cf9894c48dc397ea62a66e2b03d291f83cf2d531ec
+related: [d-271-deep-research-headless-llm-invocation-patterns, two-tier-backend-architecture-for-headless-llm-invocation, wave-based-agent-research-for-cursor-windows-invocation]
 ---
 
 Investigation targeting ~70+ repos in the multi-agent/cross-IDE ecosystem, with focus on multi-agent installers (claude-mem, Taskmaster, mimir, memex, EverOS) to map headless LLM invocation patterns. Core research question: When a project needs an LLM in headless/automated contexts, does it require (a) per-agent CLI, (b) cloud API + key, (c) agent's own headless mode, (d) other? How does each handle Windows paths?

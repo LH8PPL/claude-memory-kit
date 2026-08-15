@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2f010f7ec3ed36b5fc0070394749f1407b9621b5
+related: [decision-journal-view-gap-now-task-147, session-state-at-pause-2026-07-20-pre-compact-v0-6-0-shipped, kit-produces-facts-not-views-the-decisions-md-gap]
 ---
 
 Review of squad's memory/orchestration repo complete. Outcomes:

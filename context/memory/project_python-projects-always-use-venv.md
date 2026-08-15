@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0bc0658cc242e7192803bdfaefc844e56d791ef3b88a084b28055c91876747d2
+related: [venv-setup-requirement, always-use-venv-for-python-package-installs, always-deploy-venv-and-install-all-pytho-x7esvwdl]
 ---
 
 Standing rule (stated with "always"): deploy .venv, install all packages into it, run via venv interpreter—never system Python

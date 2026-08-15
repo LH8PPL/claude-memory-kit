@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e1585262c74194dbd364b28a58692805c11056d77366688c094b8506a12105cc
+related: [documentation-artifacts-and-structure, public-repo-memory-policy, index-md-is-a-committed-human-readable-artifact]
 ---
 
 Project uses RESUME-HERE.md file and numbered decision items (D-###: D-192, D-193, etc.) to persist decisions and state across context compactions. Decision log items track major incidents, follow-ups, and key choices.

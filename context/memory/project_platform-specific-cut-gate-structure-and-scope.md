@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3df0798c9ed579ffee58308e5339337603542401d3e4a14d7097c6210e29c2a2
+related: [claude-memory-kit-supports-3-ide-tool-agents, cut-gate-structure-convention, cmk-version-bumping-convention]
 ---
 
 When creating platform-specific cut-gate guides (e.g., Cursor, Kiro):

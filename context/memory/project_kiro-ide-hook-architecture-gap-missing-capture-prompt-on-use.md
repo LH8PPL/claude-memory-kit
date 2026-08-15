@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 081602abbe3ef618f91552e5ff6e448e53518316cfa6054186c725d14f8e206e
+related: [claude-code-hook-activation-requires-restart, kiro-vs-claude-code-integration-the-core-is-shared-verified, claude-code-vs-kiro-hook-architecture-difference]
 ---
 
 **Current configuration:**

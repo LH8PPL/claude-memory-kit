@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4292dfc85f3fb86b60dcdb2beba555a2da2fa80119dbab47867d61898d54679f
+related: [claude-code-hook-activation-requires-restart, sessionstart-hook-activation-narrow-restart-caveat, memory-kit-hooks-are-project-scoped]
 ---
 
 When installing claude-memory-kit, the SessionStart hook that injects the persona snapshot only loads if Claude Code is fully quit and reopened **after** running `cmk install`. Sessions opened before or during installation will not load the hook.

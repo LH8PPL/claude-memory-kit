@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 216b273c634bebd8538b2abb36f0bb9bb6e4e46566169b4a2f998d00f990c7c7
+related: [documentation-artifacts-and-structure]
 ---
 
 - **Source-trust tiers** — evidence-before-belief governance model for facts

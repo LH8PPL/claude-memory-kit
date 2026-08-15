@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 43073ca19d7ca633cf9ab93c5ee33f0a9b49b4f25f59c9018de7fc0fff344d8d
+related: [v0-5-2-release-complete, ci-pipeline-configuration, v0-6-3-released]
 ---
 
 - Published as npm version 0.6.2

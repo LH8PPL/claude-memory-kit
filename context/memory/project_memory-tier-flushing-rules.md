@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2c480143d56f0bad0bbd4288160c671e63cc7777a6ab4f4c3155a0e9ab2e9ac5
+related: [cleanup-discipline-no-debugging-artifacts-in-repo, git-fixture-byte-normalization-verification, three-tier-memory-architecture]
 ---
 
 - All memory tiers are flushed together (whole-tier model)

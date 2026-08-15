@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: dfa6dc89437a9d6c592107d1930a76cf5123b0cf242993027757b5c2f34318b2
+related: [memory-persistence-validation-workflow-end-to-end, kiro-cli-memory-integration-test-procedure, cmk-install-kiro-setup-commands]
 ---
 
 Live integration environment for validating memory persistence:

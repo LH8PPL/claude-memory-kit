@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 38134ed6112fb0aa14fc6655d9e730ccff3d32cae58ab0adc0da2ceafccd35bd
+related: [live-test-harness-cannot-detect-missing-cli-dependency, v0-4-5-agent-relative-llm-backend-feature, kit-compatibility-requirement-clarified]
 ---
 
 Concrete build steps (in order):

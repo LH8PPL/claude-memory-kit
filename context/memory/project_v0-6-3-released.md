@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d2e3c19a7791d9ac189cf9631a5d57776e7251f55af22cdd1d76ba310b569250
+related: [release-workflow-tag-driven-automation-via-publish-yml, core-memory-kit-dogfoods-its-own-memory-system, v0-6-3-release-plan-task-queue]
 ---
 
 v0.6.3 shipped to npm with provenance and GitHub Release. Eight-day sprint, ten completed tasks. Board state is clean.

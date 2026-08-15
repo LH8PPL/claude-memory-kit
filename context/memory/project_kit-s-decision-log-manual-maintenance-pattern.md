@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1086833c40909af72b1de1ed637db1bb46e6e52f
+related: [kit-feature-gap-chronological-decision-rendering, decision-journal-view-gap-now-task-147, project-dogfooding-principle-use-kit-s-own-mechanisms]
 ---
 
 The claude-memory-kit build repo maintains `DECISION-LOG.md` (entries D-1 through D-131+) as a chronological decision journal. This predates the kit's ability to dogfood itself and remains the authoritative record of decisions; the kit's memory system provides recall over it. Manual editing has kept it a first-class artifact.

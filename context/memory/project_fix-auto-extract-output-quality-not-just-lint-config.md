@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 78bf3e3c8a141487d77814656ba15af5e2f378c7ad88b5d1bae6938688652ef5
+related: [md007-is-model-output-indent-not-provenance-format, lint-clean-memory-output-plan-and-progress, super-linter-results-and-markdownlint-json-fix]
 ---
 
 **Option (b): Fix the source** — improve auto-extract to emit lint-clean markdown by construction (4-space sublists, auto-linked URLs instead of bare URLs). This eliminates the root cause (prose formatting rules don't fire on clean output).

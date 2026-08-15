@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: b9d56e2af7f64a983bea52ae71026752401f324af2ed0381319e63fca466189f
+related: [live-test-gate-structure-and-blocker-findings, v0-3-3-bug-semantic-backend-attempted-for-keyword-only-decis, decisions-scope-semantic-fallback-warning-task-156-bug]
 ---
 
 **Root cause:** The decisions scope is keyword-only (journal is flat file, not semantically indexed), but the search command was passing it to the semantic backend → "unknown-scope:decisions" warning or exit-2 failure.

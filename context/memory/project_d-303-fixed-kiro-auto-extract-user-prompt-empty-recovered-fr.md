@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 52015fc54e441dce914e93f8e6f37a3b758f806b7efb181d24cad3f01334cb03
+related: [d-303-test-environment-confirmed-ready, captureturn-pii-masking-and-transcript-ordering-fix, task-172-live-verified-from-packed-kit-no-popup-full-suite-s]
 ---
 
 - **Root cause:** Kiro IDE 1.0 USER_PROMPT hook var arrives empty → capture-prompt no-ops → auto-extract misses user turn → nothing saved

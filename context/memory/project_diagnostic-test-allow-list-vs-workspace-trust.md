@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1fc294e31167dd1bb00ce606fc92a273fce7bd50df4817db9a05e8f4e0ba2ee7
+related: [cmk-fix-verification-workflow-fresh-folder-v0-4-1, fresh-folder-verification-workflow-for-claude-memory-kit-rel, diagnostic-test-statement-for-skill-capture]
 ---
 
 **Folder setup:** Back up user-tier `.claude-memory-kit` to timestamped directory. Create `C:\Temp\cut-gate-v041d`, run `git init && cmk install --with-semantic`, open in Claude Code.

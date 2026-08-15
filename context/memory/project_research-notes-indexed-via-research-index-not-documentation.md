@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b0f60062ea6d9a59d9cd305794db52dac9c1adb5d60a9c4d7bae9214ce266255
+related: [three-tier-memory-architecture, canonical-registry-for-persona-search, claude-md-ci-validator-binding-rule]
 ---
 
 In the claude-memory-kit project, research notes are catalogued via the research INDEX, not DOCUMENTATION-MAP. The doc-registry validator confirms this organization (index-completeness verified).

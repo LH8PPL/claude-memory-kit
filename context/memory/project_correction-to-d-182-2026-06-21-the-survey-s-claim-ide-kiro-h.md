@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 8df0b77a103025d7aedb4e34705fdc0b613dc774e6df2c9c25395403891cd7b5
+related: [kiro-ide-kiro-hook-on-disk-format-verified-from-a-real-hook, decision-the-user-2026-06-21-the-kiro-rework-wires-both-ide, kiro-ide-hooks-are-a-better-fit-for-the-kit-than-i-first-con]
 ---
 
 CORRECTION to D-182 (2026-06-21): the survey's claim 'IDE .kiro.hook is disqualified for capture because it's askAgent-only' is WRONG — it conflated OBSERVED USAGE with CAPABILITY. PROOF: the user's own Kiro-IDE-UI-generated hook uses when.type=agentStop + then.type=runCommand (deterministic shell command on turn-end) — the IDE GUI itself emitted runCommand. So IDE hooks CAN do deterministic capture (runCommand adds stdout to agent context). The survey repos (Taskmaster 7x askAgent) CHOSE askAgent because their hooks are LLM-task-tracking, not because runCommand is unavailable. THEREFORE: the Kiro IDE is a FIRST-CLASS capture target, not 'optional convenience'. Both surfaces work for deterministic capture: IDE via .kiro/hooks/cmk-capture.kiro.hook {when:agentStop, then:runCommand:'cmk hook stop'} (automatic, NO default-agent needed) + CLI via agent-config hooks{stop} (needs default-agent). The IDE path is actually SIMPLER for IDE users (no default-agent clobber risk). Kiro was chosen as v0.4 target BECAUSE it's the user's main work IDE (P-DGN6ZNXZ) — the IDE is the PRIMARY surface, not the CLI.

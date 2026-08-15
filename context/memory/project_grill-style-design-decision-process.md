@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 623acb649c7fd1ae410200c71d6f57ec209331daf8a50f104fef7e8e5ed21091
+related: [design-documentation-pattern-durable-across-sessions, autopilot-stop-condition-for-install-surface-decisions, release-workflow-tag-before-merging-new-work]
 ---
 
 The user prefers to receive design proposals with 3 concrete options/forks, then picks the preferred approach. They call this "grill-style."

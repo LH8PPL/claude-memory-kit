@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6b679aaa387b98ffa83d8b3edf419add231ed7843f0f202163a7bcd5840ebc6c
+related: [release-workflow-tag-driven-automation-via-publish-yml, release-process-for-claude-memory-kit, release-publish-workflow-git-tag-to-npm]
 ---
 
 - **Verification step**: All tests must pass end-to-end before proceeding

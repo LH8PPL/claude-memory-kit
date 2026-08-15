@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a4849885a132923849a6ca9b40b6cbf086b141609927d3171acacf2f0875eb3e
+related: [cmk-version-bumping-convention, architecture-decisions-recorded-in-adrs, article-verdict-pattern-for-task-ingestion]
 ---
 
 Major work items are tracked with sequential numbers (e.g., #255, #258). These correspond to PRs or issues that are part of an ordered dependency chain within the release workflow.

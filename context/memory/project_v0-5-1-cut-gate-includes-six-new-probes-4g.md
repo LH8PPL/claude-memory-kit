@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f6e71c24e84c6ae2af49412fd377eb5dbc5f1299d568fa1f5d6de1be5c801dfd
+related: [cut-gate-workflow-order-cut-locally-test-tag, cut-gate-verification-probes, cursor-gate-test-path-procedure-v0-5-0-release]
 ---
 
 The cut-gate guide (docs/process/cut-gate.md §4g) added six probes (HG1–HG6) specifically for v0.5.1 release, targeting this release's specific changes to catch D-84 class bugs.

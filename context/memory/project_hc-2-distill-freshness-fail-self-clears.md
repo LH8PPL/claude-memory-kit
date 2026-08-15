@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9b62da6888e587dd50d5d7476fb16d6ed47b8a7ca445c1c4e767d6049131186e
+related: [npm-test-fragility-under-load, onnxruntime-node-postinstall-cdn-timeout, youtube-to-slide-foreign-format-fact-file-pre-existing-not-r]
 ---
 
 Health check HC-2 (distill freshness) sometimes fails due to live-Haiku API jitter. This is a known transient that self-clears on retry. Not a blocker for gating.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b8ba0087762c527806867883130c1878383827a13f618aaa791728c29bbe447d
+related: [health-log-system-architecture-ratified]
 ---
 
 - Health state uses append-only `health.log` (NDJSON format, same discipline as `audit.log`).

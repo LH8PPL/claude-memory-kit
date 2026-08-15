@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 598d2b440a7da95eb605b8da208853d18d664b95
+related: [core-philosophy-of-the-kit, index-md-is-a-committed-human-readable-artifact, kiro-cli-env-passing-limitation]
 ---
 
 Poison_Guard rejects detected PII and persists nothing (redacted log line only). Do **not** build a PII quarantine storage like memclaw.

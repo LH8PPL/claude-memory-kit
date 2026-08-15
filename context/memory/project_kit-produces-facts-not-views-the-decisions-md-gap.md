@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: da49a9d7c88cd0f9e778d292117da7d2ed48b89604539de32691116694efbba4
+related: [decision-journal-view-gap-now-task-147, task-147-design-upgraded-the-kit-gets-a-standing-committed-c, regenerated-surfaces-vs-append-only-surfaces-digest-vs-decis]
 ---
 
 - Kit's 211 facts are scattered per-file, each with title/Why/How/timestamp, but no assembled chronological view

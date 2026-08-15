@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 82c9e6ad0ebf4e137bf99f8cebe3a7a6e5de35fdf0feb635142f6c11a7c43fba
+related: [live-test-workflow-for-kiro-cli-project-fix, memory-persistence-validation-workflow-end-to-end, cut-blocker-fix-project-routing-and-claude-memory-kit-approv]
 ---
 
 Rebuild and live-test from branch:

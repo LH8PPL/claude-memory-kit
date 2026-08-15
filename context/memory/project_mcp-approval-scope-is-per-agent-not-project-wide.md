@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 41809305a07641b29c6a381672e3086250c5bcba3e21e83ea2cee5d049ee8386
+related: [mcp-prompt-root-cause-agent-config-kiro-cli-mismatch, kiro-cli-agent-resolution-requires-global-default, cmk-agent-config-missing-allowedtools-field]
 ---
 
 kiro-cli reads MCP `allowedTools` from the **active agent's config**, not the project globally. Approval prompts surface when the active agent hasn't granted permission. Prior auto-approval work targets a specific agent, not the project as a whole.

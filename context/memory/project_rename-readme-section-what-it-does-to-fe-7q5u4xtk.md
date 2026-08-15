@@ -8,6 +8,7 @@ trust: high
 source_file: auto-extract-session
 source_line: 1
 source_sha1: 2252315e68dc2b742c668a0fabad4eefe786449f17d6647a038383b4362a3b19
+related: [documentation-pattern-features-need-read-a7awbvrj]
 ---
 
 Rename README section "What it does" to "Features" — clearer language for capability list

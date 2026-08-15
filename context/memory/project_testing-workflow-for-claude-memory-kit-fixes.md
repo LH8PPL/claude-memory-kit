@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 9d379dbe0665b0e8ff62ed226253df7b80d673ff45f2a2567825927398b903d2
+related: [kg-guard-retest-failed-was-stale-artifact-not-fix, d-197-end-to-end-live-re-test-workflow, live-test-workflow-for-kiro-cli-project-fix]
 ---
 
 To test a fix in the codebase after a merge, follow this exact sequence:

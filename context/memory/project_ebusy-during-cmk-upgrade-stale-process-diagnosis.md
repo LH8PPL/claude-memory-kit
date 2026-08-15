@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6d81e2a72dca0431f6986a1f2e1a9d9feddb81d1faa3f4050ed1b12c1279975e
+related: [close-claude-code-before-global-cmk-install-to-avoid-ebusy, repack-requires-cmk-mcp-process-cleanup, windows-dll-lock-blocks-npm-reinstall]
 ---
 
 EBUSY errors during global cmk upgrades are typically caused by stale `cmk mcp serve` processes from the old installation still holding file locks.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e3b652a1894399d62dedf126129002a20cb2ccbe7663eefb28f7b49a3eb0b19e
+related: [global-cli-rebuild-and-reinstall-workflow, rebuilding-the-global-cmk-binary-after-code-changes, test-gate-folders-use-numbered-sequence]
 ---
 
 Package version: **0.5.4** (current)

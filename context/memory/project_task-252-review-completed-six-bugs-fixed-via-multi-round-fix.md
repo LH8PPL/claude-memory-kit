@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 52d2525cfb21d01f5e9558df9127f6f505feb857812f9fa971f66a3e682c2694
+related: [binding-two-pass-code-review-discipline, two-pass-fix-discipline, two-pass-review-discipline-validated-on-critical-bugs]
 ---
 
 Task 252 review fixed six bugs across multiple correction rounds:

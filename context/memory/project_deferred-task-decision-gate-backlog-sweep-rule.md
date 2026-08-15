@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 84df64b5f28afe33cdbaca1a6f4766007cab50c19f54e360fcb18ac8f8b76d42
+related: [task-laning-strategy-and-trigger-discipline, mandatory-trigger-walk-in-d-248-sweep-and-cut-gate-pre-tag, task-management-discipline-d-248]
 ---
 
 Every deferred task must specify a checkable trigger (not "when ready").

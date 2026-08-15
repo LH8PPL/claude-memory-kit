@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: fd243c3e6660a1dcb53aa26f2b5c758134cc004a
+related: [release-cut-workflow-for-claude-memory-kit, release-workflow-npm-script-git, release-cut-workflow-local-isolation-user-tag-push]
 ---
 
 When releasing, three git operations must execute in sequence:

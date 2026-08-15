@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: cf42708030f4516d76ec9c490153a69b846a1829bd3d357e2a1015a8a5b392dc
+related: [test-artifacts-can-contaminate-fresh-install-testing, cutgate-fresh-install-test-sequence, kiro-gate-testing-ritual-0b-build-1-fresh-install-session-1]
 ---
 
 Before shipping, run a structured testing gate:

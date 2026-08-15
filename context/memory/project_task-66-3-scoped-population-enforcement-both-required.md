@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2c73a1db257c0934db3dbabd3ce0448b811a9fdeaf64cb9d0564ea833367c9f7
+related: [expiry-mechanism-precedents-anti-patterns, task-66-1-complete-writefact-shape-field-validation, auto-extract-expiry-bounded-design-never-guesses]
 ---
 
 - **The problem**: enforcement without population = dead weight (D-169 pattern—feature that never fires)

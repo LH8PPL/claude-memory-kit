@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 14f4354a95b47ebc51e8fbdb59f4ef9d4c75fae0b01ee32bde641b662b229288
+related: [tag-and-publish-v0-3-5-release, cut-gate-16-setup-terminal-tests-complete, release-workflow-with-destructive-manual-steps]
 ---
 
 - Status: v0.3.3 merged, CI green, ready for tag/publish.

@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 52e156cf65244e2eeb014e24de6697733bed971a4a7e1fd66fdcdbf878a37f57
+related: [compress-logger-observability-gap, recurrence-mechanism-increments-only-whe-tlnyhyaq]
 ---
 
 The `recurrence_count` field increments only when the SAME canonical fact (matching content-hash id) is re-written, at `write-fact.mjs:240` in branch `if (existingIdAtPath === id)`. Repeated behavior in transcript (e.g., running tests 5×) produces zero recurrence bumps because behavioral repetition doesn't trigger fact writes. Auto-extract uses content-hash deduplication, not action-counting.

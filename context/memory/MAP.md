@@ -4,7 +4,7 @@
 <!-- Browse this folder as an Obsidian vault. Each [[link]] opens a fact file. -->
 <!-- How to open + the read-vs-write rule: docs/OBSIDIAN.md -->
 
-Facts: 2307
+Facts: 2311
 
 ## feedback
 
@@ -922,6 +922,7 @@ Facts: 2307
 - [[project_prefer-fresh-isolated-test-folders-over-dk6c2gkg]] — Prefer fresh, isolated test folders over reusing existing folders contaminated b
 - [[project_release-gate-verification-structure-6-sections]] — Release Gate Verification Structure — 6 Sections
 - [[project_d-194-fix-merged-to-main-pr-219-commit-96f57c9]] — D-194 Fix Merged to Main (PR #219, commit 96f57c9)
+- [[project_v0-6-6-locally-installed-but-not-published-to-npm]] — v0.6.6 Locally Installed But Not Published to NPM
 - [[project_claude-code-deferred-tools-first-turn-race-condition]] — Claude Code Deferred-Tools First-Turn Race Condition
   - related: [[project_claude-code-mcp-deferred-tool-race-issue-42148]], [[project_cli-fallback-for-mcp-tool-resolution-failures]], [[project_kiro-cli-custom-agent-tool-limitation]]
 - [[project_bash-cwd-drift-creates-packages-cli-context-artifacts]] — bash-cwd-drift creates packages/cli/context/ artifacts
@@ -2060,6 +2061,7 @@ Facts: 2307
 - [[project_kit-s-own-loops-are-real-detection-targets]] — Kit's Own Loops Are Real Detection Targets
 - [[project_v0-5-4-is-current-version-tarball-at-pac-twbh3a93]] — v0.5.4 is current version; tarball at packages/cli/lh8ppl-core-memory-kit-0.5.4.
 - [[project_non-destructive-flagging-with-blocked-placeholders]] — Non-Destructive Flagging with `[BLOCKED]` Placeholders
+- [[project_task-268-complete-awaiting-user-acceptance-confirmation]] — Task-268 Complete, Awaiting User Acceptance Confirmation
 - [[project_unverified-auto-extract-has-never-automatically-written-a-fa]] — UNVERIFIED: auto-extract has never automatically WRITTEN a fact on Kiro (0 auto-extract-sourced facts)
   - related: [[project_auto-extract-works-on-kiro-confirmed-by-direct-probe-the-not]], [[project_kiro-gate-v0-5-0-complete-all-3-sessions-pass-kit-works-end]]
 - [[project_core-threat-model-xss-through-memory-facts]] — Core Threat Model: XSS Through Memory Facts
@@ -2191,6 +2193,7 @@ Facts: 2307
 - [[project_decision-trail-preservation-rule]] — Decision-Trail Preservation Rule
 - [[project_bom-d-fact-files-are-invisible-to-scanning]] — BOM'd Fact Files Are Invisible to Scanning
   - related: [[project_file-pointer-format-and-interpretation]], [[project_skill-review-imported-facts-staleness-bug-fixed]], [[project_three-tier-memory-architecture]]
+- [[project_backfill-nearly-complete-161-items-unlinked]] — Backfill Nearly Complete — 161 Items Unlinked
 - [[project_v0-3-2-cut-gate-complete-e1-wedge-passed-ready-to-tag]] — v0.3.2 cut-gate complete E1 wedge passed ready to tag
 - [[project_mcp-server-staleness-workaround]] — MCP Server Staleness Workaround
 - [[project_v0-5-2-release-scope-and-workflow]] — v0.5.2 Release Scope and Workflow
@@ -2470,6 +2473,7 @@ Facts: 2307
 - [[project_0-4-1-release-gate-workflow-is-0a-commit-push-then-0b-pack-i]] — 0.4.1 release gate workflow is: 0a (commit/push) then 0b (pack/install) then bac
   - related: [[project_ebusy-on-vec0-dll-is-cosmetic-npm-instal-aph3ckpu]], [[project_kit-is-working-correctly-cmk-doctor-repo-ejy4trlg]], [[project_release-cut-sequencing-and-prerequisites-v0-4-4-pattern]]
 - [[project_cmake-cmk-doctor-validation-passed-all-1-z27ps9pp]] — cmake/cmk doctor validation passed all 11 file/config checks; ready for Session
+- [[project_hc-9-drift-fixed-scaffold-0-6-5-vs-installed-0-6-6-mismatch]] — HC-9 Drift Fixed — Scaffold 0.6.5 vs Installed 0.6.6 Mismatch Resolved
 - [[project_user-identified-genuine-cost-lint-portab-z3bu5t69]] — User identified genuine cost (lint-portability) not originally weighed in inline
 - [[project_tension-skill-allowed-tools-pre-grants-mcp-tools-removing-it]] — TENSION: skill allowed-tools pre-grants MCP tools — removing it fixes skill prompt but un-fixes MCP tools
 - [[project_near-duplicate-handling-in-autolink]] — Near-Duplicate Handling in Autolink
@@ -2885,6 +2889,7 @@ Facts: 2307
 - **Task-258** ← [[project_health-log-system-architecture-ratified]], [[project_task-258-kept-separate-from-task-250-approved]], [[project_v0-6-4-release-cmk-view-health-signals-live]], [[project_v0-6-4-release-workflow-and-task-ownership]]
 - **Task-260** ← [[project_design-research-memo-and-mvp-split]], [[project_memory-fact-validation-task-reference-exemption]], [[project_root-cause-of-visual-plainness]], [[project_task-260-and-262-sequencing]], [[project_task-260-viewer-awaits-user-final-verdict]], [[project_task-260-visual-pass-completed-with-all-tetwufps]], [[project_versioning-policy-d-24-differentiators-per-release-level]], [[project_viewer-page-visual-design-constraints]], [[project_viewer-visual-diagnosis-six-design-deficits]]
 - **Task-262** ← [[project_backlog-tracked-with-lanes-and-triggers]], [[project_canary-discipline-validate-features-before-enabling-defaults]], [[project_co-occurrence-edge-layer-rider-for-task-262]], [[project_task-260-and-262-sequencing]], [[project_three-design-patterns-from-mnemory-to-explore]]
+- **Task-268** ← [[project_post-release-v0-6-6-work-non-blocking]], [[project_task-268-complete-awaiting-user-acceptance-confirmation]]
 - **Task-279** ← [[project_backlog-tracked-with-lanes-and-triggers]], [[project_npm-test-fragility-under-load]]
 - **Task-47** ← [[project_backlog-disposition-audit-results-2026-07-18]], [[project_task-47-hc-5-improvement-stat-actual-win-2rtaut3d]]
 - **Task-50** ← [[project_architectural-thesis-session-runtime-learning-judge]], [[project_claude-memory-kit-judge-as-the-per-host-adapter]], [[project_concurrent-write-race-task-146-severity-tied-to-agent-multip]], [[project_correction-kiro-capture-prompt-wiring-is-present-not-missing]], [[project_kiro-transcript-format-resolved-verified-on-a-real-kiro-inst]], [[project_open-knowledge-format-okf-design-validation-and-interchange]], [[project_related-projects-mimir-memex-mcp-only-memory-integrations]], [[project_section-5-1-binding-rule-convergence-verification]], [[project_task-50-adapter-architecture-do-not-build-a-uniform-installe]], [[project_task-50-cross-agent-seam-target-kiro-cli-agent-hooks-agentsp]], [[project_task-50-highest-unverified-risk-kiro-transcript-format-is-un]], [[project_task-50-research-revisit-gate-and-multi-agent-pattern]], [[project_three-borrowed-ideas-laned-to-tasks-versions]], [[project_v0-4-x-versioning-roadmap]], [[project_v0-5-2-release-scope-and-workflow]]

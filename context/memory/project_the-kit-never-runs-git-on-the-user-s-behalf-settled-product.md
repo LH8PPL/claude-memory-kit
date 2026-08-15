@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 21ffc8900f725e8deccd14296238a539101b3ac9
+related: [automation-boundary-principle-for-claude-memory-kit, automated-capture-via-agentstop-hook, pii-handling-non-adoption-of-quarantine]
 ---
 
 The kit NEVER runs git on the user's behalf — settled product position, user-confirmed 2026-06-11. The offered opt-in SessionEnd auto-commit of context/ was DECLINED.

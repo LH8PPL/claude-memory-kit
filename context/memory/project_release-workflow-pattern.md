@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4bda0f6e8f91c37081ce61cb4973a61d39d73073626d160256b7e001ce712a16
+related: [version-cut-workflow-pattern, release-trigger-tag-push-publishes, post-merge-workflow-sequence]
 ---
 
 Release process follows this sequence:

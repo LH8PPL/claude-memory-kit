@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: dd599cbbda694a36b948fcccc36f2ccfe7cc9cf256c4cb29c321cc9e32df9930
+related: [data-loss-bug-pattern-echo-rm-laundering, d-364-discipline-for-external-source-claims, stress-gate-required-before-pr-for-spawn-hook-boundary-chang]
 ---
 
 Guardrail changes are validated via a two-pass review that includes primary-source fact-checking against actual code/research, not just proposals. This process catches both logical errors (e.g., wrong Kiro assumptions) and implementation bugs (e.g., data-loss bypasses).

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d4140b04995214c076b0bc284aceea4cbdaffe56ded31a04d6b98253b7854e08
+related: [stress-gate-release-workflow, stress-tests-skipped-for-pure-file-mutation-in-process-ops, windows-eperm-in-test-150-cleanup-diagnosed-fixed]
 ---
 
 Running `git` commands while stress tests are in flight causes an EPERM race condition (Task-150). Workaround: stay off git until stress test suite completes.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3370fe78c539bbe44322d6b3ca858a123c229c65958f5940893b6275cc5337a8
+related: [pre-session-1-gate-procedure-v0-4-1, cut-gate11-pre-session-verification-checklist, claude-memory-kit-health-check-suite-hc-1-through-hc-9]
 ---
 
 The kit's pre-Session 1 validation uses seven named gates:

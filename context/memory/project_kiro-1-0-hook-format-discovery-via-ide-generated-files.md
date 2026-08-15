@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8c5765afef2c05709d6571781c115cf385ea7fc3474d81080f999478d74a1633
+related: [kiro-ide-1-0-52-agent-hooks-v2-format-verification-gate, system-written-grants-file-as-specification, kiro-ide-kiro-hook-on-disk-format-verified-from-a-real-hook]
 ---
 
 When uncertain about Kiro 1.0 hook file format, create a hook via the Kiro IDE UI (using the "Creating hooks in 1.0" flow) and examine the generated file in `.kiro/hooks/`. This yields canonical values for:

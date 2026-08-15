@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7c5a213913fada845b4b083d7f1b986140f4dd53570bce90f187bebc4237b45a
+related: [release-workflow-and-commands-for-production, release-command-sequence-for-npm-packages, release-workflow-with-cut-gate-testing]
 ---
 
 **Step 1: Merge feature branch to main**

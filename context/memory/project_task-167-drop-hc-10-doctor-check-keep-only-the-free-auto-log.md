@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: a23896a41dcff22445ead83d556778adebb5aee7849aa1e0c024fea6f83a9bf0
+related: [a-health-check-behind-a-command-does-not-surface-a-silent-fa, hc-10-proactive-dead-cron-detection-question-7, re-review-post-skill-review-fixes-before-merge-the-last-edit]
 ---
 
 Task 167 detectability (Q7) settled — CUT the cmk doctor HC-10 from required scope. The user: 'its just another redundancy, only high-end users will do that.' Correct: the automatic heal (Q4) already fixes the real problem; HC-10 only TELLS you about a dead cron (fixes nothing), it's OPT-IN (user must run cmk doctor — regular users never do), and it targets power users who can self-diagnose anyway = effort on the audience that needs it least. 167.C shrinks to just the FREE AUTOMATIC half: a WARN line in lazy-compress.log when skipping/healing (zero user surface, it's the audit trail — exactly the log that let us diagnose THIS bug). HC-10 is dropped to optional/later (add only if a power user actually asks 'is my cron firing'). Principle reinforced: a redundant opt-in check aimed at users who need it least is ceremony, not a fix — the automatic heal that helps EVERYONE is the deliverable.

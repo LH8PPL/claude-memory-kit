@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f29d219626c0bf151efba0c76d48b93115701736762848a09a3d3a059d5601e9
+related: [windows-npm-uninstall-eperm-with-better-sqlite3, windows-npm-uninstall-eperm-on-better-sqlite3-is-benign, windows-dll-lock-blocks-npm-reinstall-better-sqlite3-node]
 ---
 
 On Windows, `npm uninstall` may report EPERM (permission denied) when attempting to remove `better_sqlite3.node` — the DLL is locked by a process or OS lock. However:

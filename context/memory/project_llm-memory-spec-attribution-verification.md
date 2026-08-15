@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 63004848a418b24c2efcadeb785d4a792ec783b735adf5390c172c85db038c10
+related: [laundering-detection-official-spec-vs-community-reimplementa, research-verification-workflow-parallel-agents-batch-integra, github-metadata-sync-pattern]
 ---
 
 Active research question: whether "100 sessions / 200-line index / four phase names" are documented Anthropic specifications OR laundered claims from community GitHub reimplementation via press coverage.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 377c2f3d0d68c0a9e76fb88aa653f1da5b4962aea05df2d80792d54a185b5de6
+related: [anti-stalling-directive-the-user-2026-07-23-we-had-it-for-6, sonarcloud-then-in-object-false-positive-schema-fields, d-24-constraint-patch-releases-skip-d-248-backlog-sweep]
 ---
 
 - "Might be useful someday" → use D-248 discipline (named triggers, gate-checked when condition fires)

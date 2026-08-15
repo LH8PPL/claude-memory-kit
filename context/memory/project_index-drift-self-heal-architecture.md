@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 251239537c5f6d514fd67f741810fc1558d33c2142a65f8dc329635e3a6b53b1
+related: [anti-pattern-rejection-sessionstart-auto-heal, version-snapshot-in-recent-md-guards-against-cross-session-a, hc-9-drift-after-claude-code-update-v0-3-4]
 ---
 
 INDEX can lag behind actual memory files (cosmetic; doesn't break recall). On next capture, `reindex()` rebuilds INDEX wholesale from all files on disk, healing the drift incidentally.

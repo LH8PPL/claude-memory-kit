@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: e83c131c64b702008215c108c35cf5c0beb6e7eb175bdf846a2d081c686d4948
+related: [billing-model-subscription-no-api-token-cost, task-167-testing-agent-run-unit-live-agent-loop-user-does-no, critical-kiro-on-windows-hook-constraint-live-discovered-202]
 ---
 
 The user runs Claude on a SUBSCRIPTION (Max/Pro), NOT pay-per-token API billing. So driving real `claude -p` / live-agent-loop tests has NO per-call dollar cost — token 'cost' is not a reason to keep live tests out of the regular flow. (There may still be subscription RATE LIMITS / time cost, but not $-per-token.)

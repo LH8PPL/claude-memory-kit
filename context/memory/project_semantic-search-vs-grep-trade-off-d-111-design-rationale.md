@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 97e0ad03fdfa938d68507230298c53b9f3120202
+related: [d-111-design-as-bridge-position, task-141b-node-sqlite-migration-rejected-in-d-162, decisions-scope-semantic-fallback-warning-task-156-bug]
 ---
 
 The kit uses optional semantic search (D-111: semantic available, keyword always works). PAI deliberately avoids vector search, relies solely on grep.

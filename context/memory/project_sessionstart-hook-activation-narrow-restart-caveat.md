@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5bcbc6d1d7538eb87d34e6a1732ced4d45b1baacfc87ffd74bea2afbec9a4de2
+related: [restart-claude-code-after-install-is-no-dpuljz33, sessionstart-hook-requires-reopen-after-install, mcp-server-may-retain-stale-code-in-memory-after-package-upd]
 ---
 
 **When restart is needed:** `cmk install` or extension update runs in a terminal window, then Claude Code is opened in the *same* window before the session loads the updated hook. In this case, a full restart (quit + reopen) is necessary.

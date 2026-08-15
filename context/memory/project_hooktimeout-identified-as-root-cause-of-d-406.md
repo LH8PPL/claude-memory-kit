@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9cc9766240c492613184a1be8647036443b8378ae08b116c91171bd34e5ce04a
+related: [doc-review-is-pr-body-based-direct-merges-bypass-it, skill-review-imported-facts-staleness-bug-fixed, d-408-housekeeping-supersedes-d-395]
 ---
 
 hookTimeout was the root-cause trigger for issue D-406; identified and resolved during D-408 housekeeping

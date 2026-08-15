@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 5d3a5bf8198250f024f975f3fd25ab6993f18c2d67b839b35334f87f0d1e7445
+related: [release-cut-workflow-local-isolation-user-tag-push, release-workflow-for-claude-memory-kit, release-workflow-after-fix-merge]
 ---
 
 Releases follow this three-step process:

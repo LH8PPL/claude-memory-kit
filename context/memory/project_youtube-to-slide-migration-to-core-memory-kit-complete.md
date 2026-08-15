@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 604d832d2528378ee2b92017a61831edbacab67872b66830f2500bb4149e36e5
+related: [workspace-trust-requirement-for-claude-skills, project-origin-and-core-problem, youtube-to-slide-uses-core-memory-kit-scheduling]
 ---
 
 Migration completed and pushed (`9be5b23`):

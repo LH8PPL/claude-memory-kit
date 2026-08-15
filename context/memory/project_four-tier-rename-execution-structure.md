@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c35442314ed6564f9a579510abe031b65f13bea2249d0dc2095d86ef174f6113
+related: [kit-update-workflow-npm-global-per-project-cmk-install, live-test-workflow-for-kiro-cli-project-fix, npm-pack-global-install-for-artifact-testing-0b]
 ---
 
 If the decision is to rename `claude-memory-kit` to `core-memory-kit`, execution follows this order:

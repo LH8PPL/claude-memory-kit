@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: bdc3b67ff5ced5f09efb33ee791568dff52f939895666524a6dcf4264472a763
+related: [kiro-uninstall-husk-cleanup-followup, fixed-bugs-in-task-50-kiro-console-flash-branch, conservative-uninstall-scope-managed-surfaces-only-never-con]
 ---
 
 - ✅ Kit-only husks removed cleanly: 0 .kiro/ files, no AGENTS.md, no ~/.aws agent

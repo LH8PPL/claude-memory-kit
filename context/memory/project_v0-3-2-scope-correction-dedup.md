@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 332e79401e1d2fc300080633a2b40efc5eddfe3679b258ec4135c1fdc6090de0
+related: [v0-3-2-release-scope-expanded, v0-3-2-scope-locked-strict-task-order-discipline, task-141b-node-sqlite-migration-rejected-on-perf]
 ---
 
 v0.3.2 scope CORRECTION (2026-06-15): the earlier "expanded scope" fact wrongly listed Task 134 (Poison_Guard catalog) and Task 154 (.gitattributes LF-pinning) as committed v0.3.2 work — BOTH already shipped in v0.3.1 (confirmed: 134 in CHANGELOG "security(134)", 154 = install.mjs buildGitattributesBlock + v0.3.1 CHANGELOG, D-126/D-145). Corrected committed v0.3.2 scope: Task 153 (FTS5 query sanitization — DONE this session, prepareFtsQuery), Task 152 (validate-index-completeness), Task 147 (cmk digest + standing context/DECISIONS.md). Conditional: Task 141b (node:sqlite migration), now gated on THREE spikes — perf bake-off, sqlite-vec loadExtension, AND node:sqlite-ships-FTS5 (openclaw #62328 signal, added from Task 153 research). Lesson: the dogfood memory + re-eval caught the duplicate-task error because the v0.3.1 CHANGELOG was checked against the proposed scope.

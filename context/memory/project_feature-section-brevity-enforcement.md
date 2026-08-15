@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e6089731d680cc524276048e7b82a52b3a22c2bf32ff960920861eaa61684a96
+related: [readme-structure-targets-field-standard]
 ---
 
 - README Feature bullets: max 25 words (enforced in `validate-docs` CI check)

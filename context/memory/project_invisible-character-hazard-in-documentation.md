@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a9bbd048a1cd34b36dae4df6bc7245757c133fa3e212e6134424f1089958eb75
+related: [stress-test-phase-in-pre-merge-workflow, validation-pipeline-for-claude-memory-kit-includes-format-an, multi-layer-gating-before-main-merge]
 ---
 
 Text editors silently eat invisible characters (zero-width spaces, line separators, etc.). Discovered via byte-scanning. Include byte-scanning as standard review discipline.

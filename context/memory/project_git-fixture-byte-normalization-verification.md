@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f25c1401b812444a45f06545e59d147a0d60e58e780e182258b96ce1b1a52744
+related: [memory-tier-flushing-rules, global-install-auto-recreates-user-tier-directory, native-binary-swap-test-uses-v13-bundled-binaries]
 ---
 
 Git's normalization machinery (line endings, encoding) can corrupt fixture bytes. Committed fixtures must survive git normalization unchanged (byte-for-byte).

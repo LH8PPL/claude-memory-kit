@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0614b0e128018a60b44ef94ae19da5b624693833337050f7a78a4c1a47c35534
+related: [cursor-hook-probes-auto-reload-without-restart, two-pass-fix-discipline, close-vs-code-to-close-claude-code-on-cut-gate14]
 ---
 
 The hook subprocess is instantiated on each turn and does not persist across turns. Fixes to hook code become active immediately without requiring session restart.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 48779310be5fc823d79c11c3532293b2cb926daf1912530c3c61095d7ac47f74
+related: [build-pipeline-time-constraint]
 ---
 
 Finished, tested tasks are released immediately; versions organize batches but don't justify delaying shipping. Real constraint is build time (day-plus pipeline). Versions land frequently (days apart).

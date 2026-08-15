@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a7e69a3d33b219d66f464e41c00af0d9e5faf0a622ef50d009e50858384a77d8
+related: [js-yaml-can-silently-rewrite-yaml-formatting]
 ---
 
 Install-path changes (recovery scan, installer safety logic) must pass heightened reviewer scrutiny on:

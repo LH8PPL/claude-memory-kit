@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 06ee9895587bb589a0af8c87c6f76a156292f5900712e465f981b44f44c23e7d
+related: [decision-the-user-2026-06-21-the-kiro-rework-wires-both-ide, plan-the-user-2026-06-21-do-the-manual-kiro-live-capture-tes, decision-the-user-2026-06-21-rework-kiro-support-properly-be]
 ---
 
 Branch `task-50-kiro-rework` has **completed**:

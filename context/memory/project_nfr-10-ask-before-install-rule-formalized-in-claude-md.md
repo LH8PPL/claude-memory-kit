@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 1c5e0d4b289381f71c72f5f1c86f30248399f124230b3311aea5fb8bcd26ae8d
+related: [agents-are-barred-from-editing-their-own-governance-rules, hc-9-drift-after-claude-code-update-v0-3-4, claude-md-ci-validator-binding-rule]
 ---
 
 The NFR-10 ask-before-install governance rule has been added to CLAUDE.md (task 48.3 deliverable). It codifies existing kit practice and now governs agent behavior. Applied by elevated agent due to self-modification restrictions.

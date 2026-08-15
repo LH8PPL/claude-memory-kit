@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: cb88ebca5c8a433e7e4959b71e13f5fcb35ffff0356b66c37897b23eb520e321
+related: [whole-tier-flush-rule-for-context-directory, index-md-is-a-committed-human-readable-artifact, name-privacy-validator-scans-only-tracked-files]
 ---
 
 Memory flushes must stage the **whole `context/` tier or nothing** — it is one logical consistency unit.

@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5f385448682ffa2f8dd0db50c7b810e8a3705d429fdea55566dc03713cbb64be
+related: [documentation-architecture-authoritative-files-and-verificat, paper-trail-convention-tasks-md-as-single-source-of-truth, release-workflow-validation-changelog-consistency-tag-and-pu]
 ---
 
 10-part checklist before tagging:

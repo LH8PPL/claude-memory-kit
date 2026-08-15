@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8d004038db37d8b2b4c8ac1c931074b14a0a7bcb383752025df070aaeefb5232
+related: [kit-status-after-cut-gate-core-merged-and-proven, d198-shipped-pr225-kiro-cli-capture-inject-proven-live, agent-capture-inject-proven-live-across-claude-code-kiro-ide]
 ---
 
 **kiro-CLI core (fully live-verified, merged):**

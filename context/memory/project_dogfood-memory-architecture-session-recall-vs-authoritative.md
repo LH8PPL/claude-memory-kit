@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 4476d4910131b45199a33ee335493b554595fc6078f83a0008ad6eb65e2b7c43
+related: [memory-review-discipline-before-commit, task-boundary-memory-flush-rule, sensitive-content-policy-for-memory-capture-system]
 ---
 
 The kit maintains two parallel documentation layers:

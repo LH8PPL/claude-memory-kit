@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1418af5227c0a6046c2dc9075b3226f98fb9dac1ce3212efc51e98c2217a665d
+related: [decisions-md-cut-gate-structure-dj1-dj4, dj4-live-test-prerequisites, memory-kit-validation-gates-d1-w4-dj4-live-gate]
 ---
 
 Three ready-to-paste prompts for testing DJ4 in live Claude sessions:

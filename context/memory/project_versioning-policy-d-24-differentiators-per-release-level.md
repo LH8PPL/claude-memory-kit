@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 341250b63a3e217e7c0b711dcaf7df285f0ce0da17814703effdc3e0eefcb5e0
+related: [v0-3-5-patch-vs-v0-4-0-versioning-logic, kit-versioning-uses-lane-themed-releases-not-strict-semver, versioning-rule-d-24-minor-carries-one-differentiator]
 ---
 
 One differentiator per minor version; each minor bump introduces one major new feature or capability. Patch = polish only: fixes, refinements, and visual improvements to existing features (no new capabilities, no new verbs). Example: visual pass on viewer UI (Task 260) is polish, classified as patch-level (v0.6.5); team layer work reserved for v0.7.0 (next minor).

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: b76b8918c1ec2fdf02d8cd1448befb50da1419923220fb7d3877ea40166f03e1
+related: [full-gate-re-run-on-final-code-after-code-review, validator-pattern-structural-guards-in-test-suite-task-128-r, stress-test-gating-rule-for-pr-approval]
 ---
 
 Pre-commit validation catches two classes of issues:

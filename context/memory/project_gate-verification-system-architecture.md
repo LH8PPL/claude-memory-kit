@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 8c7bcc6013056d56cbb9b5861fff492ddef511aaf382b3f55b178cd27a0ecc04
+related: [ci-pipeline-configuration, research-note-parking-workflow-during-ci, sonarcloud-quality-gate-posts-as-github-check-runs-not-workf]
 ---
 
 - Local gates: 3 gates that run locally (all passing on current code)

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 27376cd1ba4b5658ca5304c91c95621d378ca2ddeb19cce9d2e8c3011f4e158a
+related: [decision-trail-rule-preserve-decision-history-in-task-entrie, architecture-decisions-recorded-in-adrs, decision-trail-preservation-rule]
 ---
 
 When advancing a task from one decision/lane to another, preserve the old lane/state in the record rather than overwriting it. Cite the decision-trail rule.

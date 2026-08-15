@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: efd53001c759788eb13c471e9cffff46994ceed5d18d005936cacf218b78b343
+related: [claude-code-vs-kiro-hook-architecture-difference, kiro-cli-requires-global-chat-defaultagent-because-hooks-are, kiro-cli-agent-resolution-requires-global-default]
 ---
 
 **Claude Code** — hooks in .claude/settings.json (project-level), auto-fire, no agent concept

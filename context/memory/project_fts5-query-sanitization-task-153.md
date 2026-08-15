@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2daae2441b562ae8ab937cf31d400fecbbe2bb6657fdecc91c88080d073e5471
+related: [fts5-query-sanitization-per-token-quoting-design, fts5-tokenization-quirk-with-version-identifiers]
 ---
 
 MCP tool `mk_search` passes raw user queries to FTS5 SQL without escaping special characters. Dots in query strings (e.g., `v0.3 queue remaining tasks ship`) cause FTS5ParseError.

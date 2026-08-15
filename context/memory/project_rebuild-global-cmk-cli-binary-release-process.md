@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7479be6bf8753e51c664c2f29b7252b379ee9e21e82fe4f2d9231ec721536ce0
+related: [v0-4-0-local-installation-workflow, rebuilding-the-global-cmk-binary-after-code-changes, artifact-rebuild-for-v0-4-0]
 ---
 
 To install all fixes into the global `cmk` command, run these four steps in sequence:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a354acbfaeff4d1a9ee795d580a8e40de754a4ca873ba53ce37e09206cf26b37
+related: [v0-5-2-release-complete, v0-3-1-release-final-workflow, v0-6-6-release-ready-for-tag]
 ---
 
 - Code-complete as of 2026-07-13

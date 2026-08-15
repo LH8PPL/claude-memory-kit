@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: user-explicit
 source_line: 1
 source_sha1: dfc7bc6e7cd919704644e06b24cd4a553c73aad8a03fba091e0f7d5a5b1f6925
+related: [validator-test-coverage-tdd-conformance-gap-closed]
 ---
 
 The fact-store walk is duplicated across 10 modules with NO shared walker: the skip-idiom entry.name === 'INDEX.md' appears in 9 files, and listLiveFactFiles/listFactFiles is the SAME byte-identical body under two names in 4 files (forget, merge-facts, reindex, trust). temporal-sweep.mjs:69-93 and validity-window.mjs:42-65 share a 14-line walk-parse-skip clone differing only in the final predicate. tier-paths.mjs already exports resolveFactDir - the natural home. Task 241 (v0.6.2) fixes it.

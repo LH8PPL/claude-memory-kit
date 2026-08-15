@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5a6a7e527844cf9b487b6caf07e4d46a13d646d556fd43530eeaa7df1faa722e
+related: [decision-log-validation-gap-d-nnn-ids, kit-name-privacy-validator-for-auto-extract, updating-cmk-requires-re-running-bootstrap-on-project-files]
 ---
 
 The name-guard validator in CI does not scan untracked files. This gap allowed sensitive content in wiki/raw/ to bypass validation. Task 214 filed to fix it.

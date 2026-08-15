@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 12d3d81d6edec6277607caeee63528371c80744f0168f13909bdd741b174bc21
+related: [d-293-workaround-avoid-with-semantic-on-dev-repo-large-corpu, task-245-diagnosis-deferred-until-reproducible, ci-watch-rule-specify-ci-yml-by-name]
 ---
 
 The supply-chain watch's issue-filing workflow had output wiring omitted: it wired `shouldAlert` and `scanStatus` to the output but never included `title`, causing crashes on the first real advisory fire. Fixed in Task 237. The fix is on branch; awaiting CI re-run to confirm it now files issues correctly on real findings.

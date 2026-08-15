@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: de0107c4bb7c63268f866512184c08253724b56839ac3bf882f020f9f8ed3e51
+related: [skill-review-imported-facts-staleness-bug-fixed, kit-dogfooding-the-arc-that-redefined-memory-capture-was-its, claude-memory-kit-captures-dogfood-facts-about-its-own-debug]
 ---
 
 The claude-memory-kit repository maintains its own `context/` memory system as a working demonstration. The first `MAP.md` commit in the dogfood repo proves the system renders and links correctly end-to-end.

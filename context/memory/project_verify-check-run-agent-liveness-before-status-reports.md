@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6e0b9ad1a39dcf96890c8f424f3e65a0abc39ca2c8c9e66e9a68c993df3fa753
+related: [workflow-green-release-commit-checks-green, workflow-green-commit-green, ci-watch-rule-specify-ci-yml-by-name]
 ---
 
 When assessing CI status, "running" does not guarantee a check is responsive. During v0.6.1, a review check was reported "running" but was actually dead for 54 minutes. Do not assume a "running" state is current; verify actual responsiveness or recent activity timestamps before declaring check status.

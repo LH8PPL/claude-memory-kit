@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a48a884aa34d5cfb6092be3a7bf450707831d4eb5a604fd92b2dc4e1e2fc5ccb
+related: [signal-portfolio-for-learning-loop-in-claude-code-ide, automatic-oracle-free-quadrant-is-the-real-design-target]
 ---
 
 - **Strong + not-failure-only:** Tool-result/exit-code after recall; `/goal` acceptance-criteria pass/fail

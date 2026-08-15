@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6a801699ac7a3b9c1680d7891ed20a80d4fa65f3e39b3aee42bcddde2626d795
+related: [register-crons-for-staleness-starvation-prevention, hc-9-drift-after-claude-code-update-v0-3-4, core-memory-kit-installed-with-claude-code-hooks]
 ---
 
 The system registers two scheduled tasks (`cmk-daily-distill`, `cmk-weekly-curate`) with absolute paths. After a folder rename, these tasks fail silently (starvation-class bug).

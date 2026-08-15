@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 68eca167e5eb9088679bf0eb26bcf503e263b22faca6f00ff432a68d31b0b5d2
+related: [design-system-color-palette]
 ---
 
 Muted-text: `#676158`. Graph canvas (sunken-surface): `#eae4da`.

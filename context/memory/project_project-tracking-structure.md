@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 4c577c2dd418f5dc47eafa0062d462da2c1889d381081fde558b796c5ad76e87
+related: [version-snapshot-in-recent-md-guards-against-cross-session-a, documentation-map-spine-drifts-while-decision-log-stays-curr, current-gate-artifact-v0-5-0-with-task-148-and-sonarcloud-fi]
 ---
 
 The project uses:

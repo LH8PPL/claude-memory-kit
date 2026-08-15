@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: de574e43a9765d3fce6beb648fd8f3486229f3caea6ca639b562dc8b5ed3378c
+related: [kiro-gate-testing-workflow, kiro-requires-full-restart-to-load-updated-hooks, kiro-hook-activation-and-git-commit-cycle]
 ---
 
 - All file checks passed (cmk doctor 11/11)

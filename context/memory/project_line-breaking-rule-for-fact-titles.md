@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7059f2c14e36af4ebcf86ea51d860c74a51ca41a8bed2906164596284ee53487
+related: [project-dogfooding-principle-use-kit-s-own-mechanisms, task-entry-boundary-definition-specs-tasks-md, preserve-legacy-id-when-creating-derived-ids]
 ---
 
 Line breaks outrank other boundaries when splitting content. A short first line (e.g., `**What changed:**` at 13 chars) signals an intentional heading, not overflow to be split around.

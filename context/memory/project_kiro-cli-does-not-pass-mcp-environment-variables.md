@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 11e5682e714d0d9462ee1c08fe7997584f98ecb29a682005182e1a8b1cdf0a8e
+related: [memory-routes-by-execution-surface, kiro-cli-mcp-server-env-passing-limitation, kiro-cli-explicit-save-limitation-known]
 ---
 
 - **Issue**: kiro-cli spawns the MCP server but does NOT pass `mcp.json` `env` variables to the spawned process

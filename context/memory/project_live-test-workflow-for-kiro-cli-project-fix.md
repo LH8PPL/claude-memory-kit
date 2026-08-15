@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: bbcdc3ba990da8e81524afc4bf2d873cf54dbed648783f7fb6019fe97348b80b
+related: [testing-workflow-for-claude-memory-kit-fixes, d-197-end-to-end-live-re-test-workflow, fresh-folder-verification-workflow-for-claude-memory-kit-rel]
 ---
 
 1. Rebuild CLI from branch with --project fix: `npm pack`, then `npm install -g .\lh8ppl-claude-memory-kit-0.4.0.tgz`

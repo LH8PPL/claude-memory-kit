@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 05e60a38034ecb36f2f17e3aed766c8f8b811077a3e2ee5d72be279232573636
+related: [letta-precedent-evidence-for-tasks-149-95, git-as-sole-evidence-in-gap-cases, research-base-for-design-validation]
 ---
 
 - **Main claim**: No prior art exists for reconstructing session memory from commit history.

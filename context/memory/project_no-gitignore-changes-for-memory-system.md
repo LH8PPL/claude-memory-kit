@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 0b115af42f6915f73c516eed1066118f834fb47aff3f86096568f5b586ee258c
+related: [cut-gate-sandbox-isolation, fact-file-write-constraint-forward-only-no-mass-rewrites, commit-guardrail-blocks-ambiguous-include-exclude-instructio]
 ---
 
 User explicitly does not want gitignore modifications, transcript-commit, or related git filtering changes to the memory system going forward. This decision follows a data-loss scare that was resolved by discovering off-machine backup (Google Drive sync) was the real safety net.

@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3128b413006bcac5ecd7b7f9ab7acd4b5af30682114ea9f6f10a1f28173572d4
+related: [documentation-wiring-three-stage-prevention-pattern, binding-rule-readme-line-for-user-facing-features, stress-gate-requirement-for-spawn-boundary-changes]
 ---
 
 For any change to system shape: update D-249 or declare N/A. Structural gate, not a checklist.

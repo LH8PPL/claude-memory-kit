@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: efa58b4bab1598a89038ece11acaec9a895d8ccb5ae83c60c8c3b82984246702
+related: [v0-4-3-release-verification-process, v0-6-6-release-ready-for-tag, release-publish-workflow-git-tag-to-npm]
 ---
 
 From C:\Projects\claude-memory-kit:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: bdc31baba910d88459c7e3c0f5ad3e4bc4d978b6bc514efe01efd3cd5da42e75
+related: [v0-4-5-roadmap-task-196-cursor-adapter-task-198-temporal-swe, resume-2026-07-03-post-v044-memora, durable-state-first-principle]
 ---
 
 v0.4.4 published with green CI on checkpoint push 437d84f. Session work fully closed:

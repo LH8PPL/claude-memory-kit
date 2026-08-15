@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 62c7fe94cfc5764c984d5127632962f07eb55d02d0e97037447c02225c570d36
+related: [whole-tier-flush-rule-for-context-directory, memory-commit-workflow-hygiene-privacy-validation, memory-tier-flushing-rules]
 ---
 
 The local pre-commit name-privacy validator runs against the git index (tracked files), not the working directory. Files created but not yet staged with `git add` bypass the local check and fail only when pushed to CI.

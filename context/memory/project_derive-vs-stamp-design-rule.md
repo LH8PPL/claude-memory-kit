@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 980971fa8760323f1ee37e0f51a9157fd0b37d6a243caa1ba57a889348a2b95d
+related: [adr-0002-derive-state-from-artifacts-avoid-markers, q2-design-rule-gnu-make-4-8-derive-when-wyz57ux4, task-done-goal-explicitness-rule]
 ---
 
 Derive state when the work's product already encodes it (e.g., artifact mtimeMs encodes "a run happened"); stamp explicitly only when a signal is essential but NOT encoded in products (e.g., cron liveness heartbeat). Grounded in GNU make §4.8 and ADR-0002.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e824fdcdd56b72dc401f25723f485600ed98becfbb7bb7cdece364f9bb436b19
+related: [kiro-cli-known-limitation-bug-5873-blocks-manual-mk-remember, kiro-cli-explicit-save-limitation-known, kiro-cli-wraps-mcp-servers-in-cmd-exe-undocumented-platform]
 ---
 
 - Kiro does not provide custom agents with a working tool to execute commands

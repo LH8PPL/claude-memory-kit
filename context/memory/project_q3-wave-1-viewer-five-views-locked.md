@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7e1c3070054bc3008152c9d04c18df5bd4126403c4b624a1cae31dcd63ed0d5c
+related: [q3-wave-1-four-views-confirmed, cmk-view-proposed-wave-1-design, cmk-view-purpose-and-headline-use-cases]
 ---
 
 **Views shipping in wave 1:**

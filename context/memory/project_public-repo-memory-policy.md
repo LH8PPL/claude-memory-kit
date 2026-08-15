@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: b187d767b4db77b4d0c79c1132d678794594d13f
+related: [cut-gate-v050-scaffold-gitignore-transcript-leak, three-tier-memory-architecture, cut-gate11-memory-system-three-tier-architecture]
 ---
 
 this PUBLIC repo commits curated memory tiers only

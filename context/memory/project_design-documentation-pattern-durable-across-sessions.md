@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0aa59f41a17aff0475f1a634882d750fd595d8a6f8dd8f79c51487e27c33b7c7
+related: [grill-style-design-decision-process, task-255-viewer-design-grill, pre-commit-hook-sanitizes-fact-files-for-security]
 ---
 
 Reframes and rejected design shapes are stored in tasks.md and the fact store for durability. A fresh session picks up the corrected frame rather than rediscovering draft rejections.

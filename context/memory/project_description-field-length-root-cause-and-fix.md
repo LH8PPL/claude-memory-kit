@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 6069db40b85500b6a5f1311206bd4ab0195ee5bbe34f5a6d6302315fa40e49ef
+related: [skill-md-description-block-scalar-format, design-contract-enforcement-via-tests-code, line-breaking-rule-for-fact-titles]
 ---
 
 The skill's description field was 1,340 characters, which broke the tool entirely. Fix: trim to 1,021 chars, rewrite in third-person, add structural guards (e.g., line breaks, indentation) to preserve YAML parsing. The fix is validated by re-test (skill now fires cleanly).

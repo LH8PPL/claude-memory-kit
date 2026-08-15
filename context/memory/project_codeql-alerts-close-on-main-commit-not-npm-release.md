@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7ff2945139d47c0501e96a228586d6bef37a186981f700eb08401d601c5f2a7b
+related: [release-workflow-with-cut-gate-testing, minor-release-triggers-backlog-sweep, cmk-version-bumping-convention]
 ---
 
 - CodeQL scans `main` on every push; an alert closes when the fixed code lands on `main`, not when you publish to npm

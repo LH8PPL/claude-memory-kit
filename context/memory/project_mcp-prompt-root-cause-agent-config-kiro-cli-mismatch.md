@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: fc1d646a6cd1d6f63b4591376934f43e210d65e92a501749bb61b277f8e70cf7
+related: [mcp-prompt-gate-only-appears-in-non-default-agent-scenario, kiro-cli-mcp-trust-model-and-kit-s-workaround, task-165a-is-design-decision-linked-to-d-285-not-mechanical]
 ---
 
 **cmk agent config:** `includeMcpJson: false`, no `allowedTools` (deliberate D-198 choice to use pre-trusted shell commands, never MCP)

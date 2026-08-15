@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: aab9288e6ebdcf56df5cf7d3c4a290ace909217b382d51a4b6fd2d59fbb4b09d
+related: [release-workflow-tag-timing-after-gates, pre-release-ci-gate, release-gate-workflow-and-final-user-control]
 ---
 
 Before squash-merging a release PR into main:

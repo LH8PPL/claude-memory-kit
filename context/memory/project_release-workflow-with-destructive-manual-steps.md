@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 86b2738dea49cb818bd1685da8b284a102379185c23f1e2527d558fa422a23c7
+related: [version-0-3-3-release-cut-gate16-test-session-state, release-gate-cut-gate-guide-must-pass-before-tagging, deciding-experiment-that-gates-v0-3-1]
 ---
 
 claude-memory-kit v0.3.3 has a staged release with:

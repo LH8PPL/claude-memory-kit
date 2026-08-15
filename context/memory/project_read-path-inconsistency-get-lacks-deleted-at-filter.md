@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f7742c6f928db3e9ab89cf6c187a07a5557605aa8362c74713ca7efff87eb318
+related: [d-163-invariant-agent-must-never-see-forgotten-facts, automatic-recall-never-reads-tombstones-recovery-is-human-on, f-7-spec-vs-code-mismatch-tombstone-reading-in-cmk-get]
 ---
 
 - `get` returns "not found" for tombstoned facts (live-only behavior)

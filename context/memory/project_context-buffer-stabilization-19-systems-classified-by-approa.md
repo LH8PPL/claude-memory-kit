@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 59be431026fb28f60204a3a1f2b8bb02bbbba16ea9f0f2ad09190fcb0d95376e
+related: [a-c-core-design-pivot-memsearch-anchored-b-dropped]
 ---
 
 Empirical analysis of 19 memory-management systems against three stabilization families:

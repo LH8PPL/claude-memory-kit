@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c6e39d7e73a41bb6827deaf33bb372c5945908a1c7555060405d59415763c8bf
+related: [notification-doctrine-non-actionable-repeating-failures, github-social-preview-upload-manual-web-ui-only, task-255-viewer-design-grill]
 ---
 
 Edge's headless mode fails on this machine due to VBS enclave restrictions. Programmatic screenshot verification is not possible.

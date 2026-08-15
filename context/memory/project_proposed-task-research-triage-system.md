@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 362069b728d70299ec5a76095880a6412721d7e1907aa052f7efda6ccbffee0a
+related: [kiro-cli-popup-real-cause-cmk-is-npm-shim-not-exe-mcp-and-ho, session-state-at-pause-2026-07-20-pre-compact-v0-6-0-shipped, prior-art-research-discipline-and-filing]
 ---
 
 When deciding if a task needs external research:

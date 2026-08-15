@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: review-promote
 source_line: 1
 source_sha1: 1578e603ba31ae9605a3eac21d56b4fbd64871a824e3ce3a4fb0074616203517
+related: [reference-implementation-alignment-strategy]
 ---
 
 Cross-implementation divergence found: Node and Python generated different IDs for BOM-prefixed content; Python aligned to Node (reference) and pinned with parity vector

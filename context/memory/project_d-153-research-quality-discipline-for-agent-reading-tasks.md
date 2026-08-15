@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d2c91be98a6e4e0285e6761ba936633b1575e393f44fbaeb7dd22f57007e4b13
+related: [d-364-discipline-for-external-source-claims, multi-step-research-ingestion-integration-workflow]
 ---
 
 Agents applying D-153 discipline to source reading:

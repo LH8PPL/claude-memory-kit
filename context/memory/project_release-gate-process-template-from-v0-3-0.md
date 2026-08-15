@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d25545fea2e4a6fd1797294d677349799e546dfe
+related: [fresh-folder-verification-workflow-for-claude-memory-kit-rel, npm-pack-global-install-for-artifact-testing-0b, e1-cold-open-test-persona-carries-unprompted]
 ---
 
 Multi-stage gate before publishing:

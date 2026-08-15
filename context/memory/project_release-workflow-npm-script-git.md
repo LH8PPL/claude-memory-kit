@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 0420922f92fbd0e5eea360ab786c07b47cec6a5d613f751e8a593e1779cc90b6
+related: [two-phase-release-commit-gate-then-tag-publish, release-cut-verification-checklist-claude-memory-kit, release-workflow-and-commands-for-production]
 ---
 
 1. Run `npm run release -- <patch|minor|major>` (auto-updates CHANGELOG.md and packages/cli/package.json)

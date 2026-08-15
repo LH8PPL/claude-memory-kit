@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ebdc42069eb028f3666497faf8cfac822cf06aba9b2339c3b5329be1638d7405
+related: [config-directory-migration-is-critical-blocker-for-rename]
 ---
 
 Path comparisons in discovery walkers failed silently when one side used short names (8.3 format) and the other used full names.

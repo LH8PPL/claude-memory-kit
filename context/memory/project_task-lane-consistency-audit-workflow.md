@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3c235faa2af9db9e862837555cc20dac20e37d0b3b083744e57dd3019b6b5041
+related: [release-plan-md-authoritative-task-to-lane-map, version-snapshot-in-recent-md-guards-against-cross-session-a, zero-loss-archive-verification-method]
 ---
 
 Procedure to audit whether all tasks with lane tags are properly assigned in RELEASE-PLAN.md:

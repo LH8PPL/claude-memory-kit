@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b4848d8e0c6f9a5b47ed3701d2d12281bf7ff3c593c3d1829383b630831c5bf3
+related: [multi-agent-llm-invocation-research-initiative, d-271-multi-wave-research-execution-on-sonnet-5, two-tier-backend-architecture-for-headless-llm-invocation]
 ---
 
 - **Wave 0**: Manifest discovery (119 projects) — completed

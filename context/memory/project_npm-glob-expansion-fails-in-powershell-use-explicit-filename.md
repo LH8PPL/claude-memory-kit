@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 55c35423dc021bca8d826cdfd20989129480b68948160130527c587dd32143ef
+related: [v0-4-0-local-installation-workflow, rebuild-global-cmk-cli-binary-release-process, powershell-glob-behavior-explicit-filename-required-for-tgz]
 ---
 
 On Windows PowerShell, `npm install -g .\pattern-*.tgz` fails with ENOENT because npm does not expand glob patterns. PowerShell passes the literal string `.\lh8ppl-claude-memory-kit-*.tgz` to npm instead of the resolved filename.

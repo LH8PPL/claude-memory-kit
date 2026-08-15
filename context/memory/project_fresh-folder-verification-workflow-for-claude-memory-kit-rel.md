@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 42ed1ae240b57ea8580abb9e7a933dac7aefa49fe4baa663b2dbe2fb4d1124a4
+related: [live-test-workflow-for-kiro-cli-project-fix, re-pack-verify-workflow-for-cut-gate-testing, cmk-fix-verification-workflow-fresh-folder-v0-4-1]
 ---
 
 1. Re-pack the fixed cmk: `cd C:\Projects\claude-memory-kit && git pull && cd packages\cli && npm pack && npm install -g .\<pkg>.tgz`

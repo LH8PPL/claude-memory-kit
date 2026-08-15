@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8e5153b9568e111031df88caf78950fd8b9ad8f3
+related: [sonar-0-new-code-coverage-gate, handler-test-coverage-gap-error-exit-branches]
 ---
 
 Seam-injected tests (mocking/stubbing dependencies) pass integration tests but don't execute all branches of new function bodies. Sonar's 0%-new-coverage gate detects this: new functions appear untested in coverage reports despite passing tests. Workaround: Add no-seam tests directly exercising new functions without mocks, targeting all branch paths.

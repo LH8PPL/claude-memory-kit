@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 19d3307b312920b450c67d9dfec0636ff12fdb325fa792a43db132ba8b773bb1
+related: [cut-gate-guides-updated-for-v0-5-4-rename, v0-5-4-released-under-renamed-repo-identity, multi-tier-backup-pattern-for-release-cuts]
 ---
 
 - New location: `~/.core-memory-kit`

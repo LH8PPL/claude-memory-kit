@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c6f4cbe7f2097248aadf79516a3c17bf5de5893672d67e66ef9c9af0ddb403c7
+related: [cut-gate16-test-workflow-phases, gate-testing-isolated-throwaway-folders, cut-gate-sandbox-isolation]
 ---
 
 - **Backup:** Before testing, user renames ~/.claude-memory-kit to before-cut-gateN-.claude-memory-kit

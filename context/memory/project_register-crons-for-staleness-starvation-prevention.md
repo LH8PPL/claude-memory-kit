@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3e7751cb5e7ed5565f3a0f9a858761e8613d06a3ca22295e915cc70fc79e2775
+related: [tag-and-publish-v0-3-5-release, core-memory-kit-installed-with-claude-code-hooks, scheduled-tasks-use-absolute-paths-renaming-requires-re-regi]
 ---
 
 From C:\Projects\claude-memory-kit:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 92ed9a9ff861ea9e909476fb2555be35e3e0cdb25ce1942a3db5e977eb3a618c
+related: [v0-5-0-release-workflow-stress-commit-push-pr-merge-repack-g, codeql-prototype-pollution-guard-recognition]
 ---
 
 CodeQL alert #29 (prototype-pollution) requires the guard to be placed **inside the loop**, not before it.

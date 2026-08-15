@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 65129af03a78166e3386cacf6afd3d88289c187c
+related: [ci-authority-convention, validator-pattern-structural-guards-in-test-suite-task-128-r, release-plan-md-authoritative-task-to-lane-map]
 ---
 
 The human-readable "Tarball Contents" notice in `npm pack` output is elided by npm itself for long listings — not a kit issue.

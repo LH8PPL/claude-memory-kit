@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 855493c07932bf896bf967def5876f3a62f1e7ff9b85c06b580f8de05bbc5a42
+related: [git-as-sole-evidence-in-gap-cases, memory-system-dogfooding-internal-use-as-test-case, architecture-decisions-recorded-in-adrs]
 ---
 
 Skills are evaluated by concrete value in real work. "Producing what I would have produced anyway" doesn't count as value. By this standard, the 6 mattpocock skills produced zero concrete value this session (tdd was neutral; others unproven).

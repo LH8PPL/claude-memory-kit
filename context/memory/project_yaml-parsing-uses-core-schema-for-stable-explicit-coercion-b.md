@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 022826bfcaee71777d641f4ec4058d679db1a81e16da2d8979c6a27732144eda
+related: [vitest-pool-corruption-transient-load-failures]
 ---
 
 - **Tool**: js-yaml 4.3.0 (minor upgrade from 4.2.0)

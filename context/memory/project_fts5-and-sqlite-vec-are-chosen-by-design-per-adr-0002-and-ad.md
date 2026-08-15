@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 35ce7271ad03a80aa5643056cdffe65b062fd45eaee4864810a04f97604782ad
+related: [everos-comparison-same-thesis-opposite-architecture-not-bett, cmk-install-activation-and-native-memory-options, kiro-cli-auto-loading-verified-d-181-follow-up-kiro-dev-docs]
 ---
 
 The kit's architecture (FTS5 keyword search + sqlite-vec semantic search) stems from two non-negotiable tenets:

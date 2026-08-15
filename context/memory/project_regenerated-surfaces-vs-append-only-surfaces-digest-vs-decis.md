@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ef436af555d85ddc112183806e8766dcceec239d378a0c86241cf6e073f6bebb
+related: [decisions-md-is-append-only-permanent-journal-not-regenerate, append-only-model-for-decisions-md-never-regenerate-from-liv, kit-produces-facts-not-views-the-decisions-md-gap]
 ---
 
 Two different update strategies for different purposes:

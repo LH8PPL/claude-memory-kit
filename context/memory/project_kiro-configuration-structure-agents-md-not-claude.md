@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e2b867085b00f109520e4937d71f2398c6e2fdaeefab09694a77d6939815b6eb
+related: [kiro-has-four-install-surfaces-not-three-the-user-s-correcti, install-system-requirements-matrix-v0-4-0, kiro-cli-auto-loading-verified-d-181-follow-up-kiro-dev-docs]
 ---
 
 Kiro auto-loads configuration from `AGENTS.md` (project root) or `.kiro/steering/` — it does NOT read `.claude/` or `CLAUDE.md`.

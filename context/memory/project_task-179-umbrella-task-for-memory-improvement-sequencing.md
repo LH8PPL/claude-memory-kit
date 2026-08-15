@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 0ebecd2d46a2d9c8688884163f40ab5d9fbad90b7a31a0bcc80ea408469ebe70
+related: [four-flavors-of-memory-improvement-systems, hermes-is-skill-library-curation-not-memory-self-improvement, memory-loop-vision-continuous-autonomous-memory-improvement]
 ---
 
 Task 179 is an umbrella task to decide whether memory-improvement flavors (A/B/C/D) form ONE unified loop or are separate features.

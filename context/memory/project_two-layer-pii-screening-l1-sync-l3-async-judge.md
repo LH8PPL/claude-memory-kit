@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 91a1df3cd9a1a037faf86ac6b4a041d6205b4d4ca7b893f11adb21616c52f524
+related: [task-148-auto-judged-privacy-layered-screen-architecture]
 ---
 
 **L1 — deterministic pattern layer** (sync, ~2ms):

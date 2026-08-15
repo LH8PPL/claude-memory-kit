@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 149f695d3f2b9ba03c58f0ce64e921ccda68f365f13b7cc679a455cb2addbc8e
+related: [v0-5-4-released-under-renamed-repo-identity, v0-6-2-published-release-state-and-contents, release-publish-workflow-git-tag-to-npm]
 ---
 
 Version 0.6.4 published to npm (`@lh8ppl/core-memory-kit@0.6.4`) with GitHub Release and npm provenance verified. Key features:

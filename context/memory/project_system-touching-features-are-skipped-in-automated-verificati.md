@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1bf4bc19d02a9b93177fc95ae45f5f7907bc8693e2567f7cf2b88a6b7bb2a784
+related: [kit-design-principle-zero-git-writing-code, memory-review-discipline-before-commit, test-artifacts-can-contaminate-fresh-install-testing]
 ---
 
 Features that mutate host system state (F-6 register-crons, F-13 import real Auto Memory, F-14 long-running server, F-15 full history scan, F-19 destructive uninstall) are deliberately not auto-run during verification sweeps. They are listed explicitly and require per-item user sign-off before execution.

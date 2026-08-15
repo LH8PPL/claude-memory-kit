@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7661ef9f1b252e04e2ce802e7392524affb1710a40b80719f0d7074133f7a250
+related: [research-scope-outcome-signals-in-memory-systems, survey-scope-and-classification-taxonomy, now-md-assistant-cap-precedent]
 ---
 
 - **3 YES (ship failure learning):** memclaw (code), ReasoningBank (code), MemRL (paper)

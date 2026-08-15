@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4679564949fc7b221db31100624de639a28db05acdc0867421fee00a846a1f15
+related: [hc-9-drift-after-claude-code-update-v0-3-4, healthy-corpus-baseline-metrics]
 ---
 
 `cmk reindex --full` — one-command recovery that clears corpus poison markers (internal state corruption from edge cases)

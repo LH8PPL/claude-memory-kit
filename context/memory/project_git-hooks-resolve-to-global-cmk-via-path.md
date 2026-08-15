@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 81a5e496e7f2fd58c55d65ccf690490ad50a7ff0fb3aa0f2aa514af7457c6596
+related: [kit-update-workflow-npm-global-per-project-cmk-install, claude-memory-kit-installation-levels, rebuild-global-cmk-cli-binary-release-process]
 ---
 
 Hooks call bare binary names (`cmk-capture-turn`, `cmk-inject-context`, etc.) that resolve through PATH to the global @lh8ppl/core-memory-kit install, not the local dev tree. This causes version lag: the project has been running v0.6.1 while development reached v0.6.4, missing fixes and features from recent releases.

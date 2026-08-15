@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 1ea9147cc9674b3390b90ceb398e2deebedb8ce5a46e323ff35692a7e4dc67b3
+related: [research-complete-self-healing-cli-repair-ux-task-250, silent-failure-fixes-vs-whisper-policy, troubleshooting-skill-architecture-shape-b-confirmed]
 ---
 
 Updated design recommendation informed by completed research (Task 250):

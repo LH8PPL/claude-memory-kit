@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2e20147a9c3481af6a192a216b9dbe64b9a860183e4b6b794d8a4f9ca3ddf3dd
+related: [v0-5-0-release-workflow-stress-commit-push-pr-merge-repack-g, release-workflow-pattern]
 ---
 
 v0.6.5 release follows a defined multi-stage process:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d541d90ff7cdba80761f621dd5c55861865e278547ff47a1a11f1bebcae4a53f
+related: [related-projects-mimir-memex-mcp-only-memory-integrations, files-first-context-discovery-in-repo-versionable-memory, cursor-memory-feature-removed-in-v2-1-x-design-impact]
 ---
 
 **Three lifecycle hooks:**

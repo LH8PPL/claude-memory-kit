@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 93bf3f72ecdad1fcc9aef5fe2a5af3b5c3676756fb253b3c2088cea3c9777c5d
+related: [tarball-installation-requires-re-packing-after-main-merges, task-252-maskpii-completed-five-sonar-smells-fixed, task-255-viewer-design-grill]
 ---
 
 After PR #351 merges and ships, run `cmk register-crons` once on your machine to repair starving scheduled tasks. The root cause: cron flags were re-stamped by a catch-up fix that's already in place — this command registers them.

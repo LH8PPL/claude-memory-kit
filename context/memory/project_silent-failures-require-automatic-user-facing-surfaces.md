@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 239365d5b67722ac0c92d3780d7983f2b563650e640854e8c0d99d0216c6a7d2
+related: [memory-capture-status-emitted-at-session-start, a-health-check-behind-a-command-does-not-surface-a-silent-fa]
 ---
 
 Silent failures (e.g., memory extractor timeout, missing data) must surface automatically without user action. Users will not run diagnostic commands proactively.

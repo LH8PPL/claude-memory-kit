@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3fee21495651420eff25c51946acece28dfe996c45aa17e2e5aec825cbfd0744
+related: [powershell-silently-corrupts-utf-8-in-file-edits, commit-guardrail-blocks-ambiguous-include-exclude-instructio, kiro-cli-env-passing-limitation]
 ---
 
 Running `Copy-Item scratchpad\*.md -Destination .` to move one research note inadvertently copied ~30 unrelated scratch files into the repo root, including a README from a different project that silently overwrote the actual project README. Validators caught it (30 registry + 417 reference + 90 count failures); recovery was via `git checkout -- README.md`. Workaround: write files directly to their final destination instead of staging in scratch and using wildcard copy.

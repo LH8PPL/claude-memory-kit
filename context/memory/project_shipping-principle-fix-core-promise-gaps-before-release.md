@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5d2d32753827804e8daae9a3b4b702b18699be7beecf086bee310c66f5aec5f3
+related: [release-triage-broken-promises-vs-future-features, tag-ready-criterion-core-features-pass-known-issues-cleanly, v0-3-3-bug-semantic-backend-attempted-for-keyword-only-decis]
 ---
 
 - **Core principle:** When a core/headline promise is broken AND the fix is small AND scope is verified, fix it before shipping — don't defer to the next release.

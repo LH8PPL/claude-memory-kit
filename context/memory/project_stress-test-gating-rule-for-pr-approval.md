@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ed929f4550b4a184d1665f9501d4c8a8dddf3f7d29a0112b2ef62c8a78237e1f
+related: [stress-flake-self-induced-load-not-regression, stress-gate-release-workflow, full-gate-re-run-on-final-code-after-code-review]
 ---
 
 PRs in this project must pass a "stress gate (5x)" test requirement:

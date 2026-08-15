@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: cdd7bc76b0bf0a3ba216ec918b110c4748b9f6989c0f64b91b227e0d7124d4a9
+related: [rununinstall-branch-coverage-map, log-sink-injection-pattern-across-install-uninstall, release-publish-workflow-git-tag-to-npm]
 ---
 
 Approach taken to resolve SonarCloud coverage failure:

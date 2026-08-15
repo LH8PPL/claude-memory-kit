@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 91bf3601f4f2a1f6bd098f6489cd4c247428fefaddbfa0744efc167ec67310fb
+related: [memory-persistence-validation-workflow-end-to-end, claude-memory-kit-installation-levels, post-d194-artifact-update-workflow-for-kiro-trust-fix-verifi]
 ---
 
 To test Kiro IDE 1.0 hook capture (e.g., readKiroIdeV1Turn):

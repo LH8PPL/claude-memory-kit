@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: cd0adc02c41ab7db0faf166d009ff48d5dbed747c3fc38bfdff98652b28ef7f4
+related: [kiro-transcript-format-resolved-verified-on-a-real-kiro-inst, task-50-cross-agent-seam-target-kiro-cli-agent-hooks-agentsp, kiro-cli-env-passing-limitation]
 ---
 
 Task 50 highest unverified risk: Kiro transcript format is UNKNOWN. The kit's extract/compress path hardcodes Claude-Code touchpoints (~/.claude/projects/<slug>/<session>.jsonl, env -u CLAUDECODE); porting to Kiro requires parameterizing these per-agent and kiro.dev primary docs do NOT cover Kiro's transcript-on-disk shape. Must be discovered LIVE at build time.

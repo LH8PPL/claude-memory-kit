@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 64e0a9deacf0255841b8265e51d1f1def703262858a96e8deaf30781945476c5
+related: [claude-memory-kit-dogfooding-setup-and-conflict-surface, task-205-preflight-ux-design-wart, mcp-preflight-project-install-vs-global-upgrade]
 ---
 
 The MCP-server-stop preflight (Task 205) fires on *every* interactive `cmk install`, but the actual hazard—DLL locking from `npm install -g` upgrades—is a *different* command the kit cannot hook. Result: the prompt's correct answer is always N on normal project installs (friction ~95% of the time), while the real hazard (upgrade + live servers) goes unguarded by this mechanism.

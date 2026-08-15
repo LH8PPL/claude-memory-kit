@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ae36dfbc12797540f484d683bb3f6b0424ecbabe6d5f721615a044dac7f44afe
+related: [wave-based-agent-research-for-cursor-windows-invocation, d-271-deep-research-headless-llm-invocation-patterns]
 ---
 
 - Target research: How ~70 projects invoke LLMs headlessly (CLI, API, agent mode, per-agent CLI) across Windows/Mac/Linux

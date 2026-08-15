@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 111e68eaa0743664b6d87d34ef83e9a2ef49d1ae4d7978e674ffa2d563e19567
+related: [npm-deprecate-e422-bug-with-version-ranges, npm-glob-expansion-fails-in-powershell-use-explicit-filename, npm-11-x-deprecate-command-with-version-ranges-fails-with-sp]
 ---
 
 Using bare wildcard syntax (`npm deprecate @package@*`) results in E404 "Not Found" errors and does not persist the deprecation. Use explicit version range syntax instead: `npm deprecate "@package@>=0.1.0" "message"`. This successfully deprecates all published versions without E404.

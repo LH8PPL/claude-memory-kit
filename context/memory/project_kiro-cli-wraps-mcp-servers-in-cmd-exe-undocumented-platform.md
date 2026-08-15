@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c1cad7371380846e38b626f6437e1d9070a58b428a0d4f3e77b1d41f88489827
+related: [kiro-cli-custom-agent-tool-limitation, hc-9-drift-after-claude-code-update-v0-3-4, kiro-cli-mcp-trust-model-and-kit-s-workaround]
 ---
 
 kiro-cli has undocumented platform behavior that automatically wraps all MCP server processes in cmd.exe windows. These windows remain visible during chat sessions. No configuration option exists to disable this behavior. Verified by evaluating AWS documentation, community guides, and official AWS sample repos — none provide a configuration workaround.

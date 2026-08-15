@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: daad7bffcacc599f77223bbada458ded639442f0
+related: [pai-personal-ai-infrastructure-memory-architecture-convergen, now-md-assistant-cap-precedent, task-179-umbrella-task-for-memory-improvement-sequencing]
 ---
 
 Task 55 (pattern detection in agent loops) should incorporate two new input types beyond pattern detection:

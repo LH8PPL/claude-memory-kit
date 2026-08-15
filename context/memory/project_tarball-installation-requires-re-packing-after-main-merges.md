@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 82a50e92080296f774491565f20ddf64bd0f6a71c5155185d73b3c4a9d2c4a33
+related: [global-binary-lag-after-code-merge, tarball-artifact-must-carry-both-d-263-and-d-264, release-workflow-after-fix-merge]
 ---
 
 The release workflow includes a tarball-based distribution:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5a5ff1d7faba19c61fe65f44712a52418986ceab61c1fe6b35c32b4b37dc54ae
+related: [three-file-archive-structure, full-repo-audit-complete-131-tasks-0-fabricated-ships, three-archive-splits-at-v0-5-release-boundary]
 ---
 
 Recommended scope for formal archiving task:

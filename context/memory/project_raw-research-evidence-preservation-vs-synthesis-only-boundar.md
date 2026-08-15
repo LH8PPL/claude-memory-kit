@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 30b61d35372163e4109df45cdd9a278b4b3ee65ccebc9d9645f400bac312787e
+related: [2026-07-01-arc-complete-output-inventory-and-at-risk-layer, research-cycle-workflow-enumerate-triage-deep-read-synthesiz]
 ---
 
 Raw evidence from the 2026-07-01 research arc exists in session temp files (4 files, ~420 KB):

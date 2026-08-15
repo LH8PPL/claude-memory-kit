@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 712a5a57455ad4c2763ec5ddeae78227e95ad0578bde293148b401df42b812f3
+related: [kit-shell-permission-command-trust-boundary, cmk-version-bumping-convention, root-cause-skill-md-allowed-tools-frontmatter-triggers-the-a]
 ---
 
 Skill definitions use `allowed-tools` to restrict operations. Wildcards or overly-broad patterns (e.g., `cmk repair *`) inadvertently allow powerful operations that should require explicit user confirmation (root cause of B3). Rule: enumerate tools by name, never wildcards. Test requirement: verify both sides—allowed tools work, denied tools are blocked. Fix: narrow to `doctor`/`reindex`/`repair --index` only, with bidirectional boundary tests.

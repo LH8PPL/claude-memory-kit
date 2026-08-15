@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ebc8859e0f886c21713bf4fb8af3ed32e04f7e0eeb167a68d51e373244bf2f91
+related: [reference-implementation-alignment-strategy, prior-research-outputs-d-218-and-d-227, defense-in-depth-scanning-write-read-boundaries]
 ---
 
 The transcript write happens on the Stop-hook path with a ~500ms budget. This constrains design choices for the transcript screen implementation.

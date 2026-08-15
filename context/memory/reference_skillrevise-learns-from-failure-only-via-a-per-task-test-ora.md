@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: user-explicit
 source_line: 1
 source_sha1: 8d0ef947be181f53d59e53f6dfbafbe667516aa4c14b25f018f23ad291a3bd0a
+related: [skillrevise-earns-better-skill-via-benchmark-verifier-oracle, evo-memory-survey-passive-benchmark-oracle-discards-failure, a-memguard-consensus-driven-lesson-memory-learn-from-failure]
 ---
 
 SkillRevise (arXiv 2606.01139, HKUST-KnowComp) is ORACLE-GATED and NOT transferable to a session host as a learn-from-failure signal. The "verifier" that decides skill pass/fail is a per-task test harness ("a verifier entrypoint under tests/") copied from the benchmark bundle — pass/fail assertions, output paths, schemas, terminal sentinels. Selection is succ(S,T)=1 (verifier-passing); ri is "the outcome score or pass/fail reward". Empirical utility U(S,T) is oracle-gated (gsucc=1[succ=1]) AND used only as a tie-breaker among FAILED candidates when none pass — an inert-until-fallback utility, not a ranking signal. The cross-task Principle Memory (7 seed principles) is FROZEN by default: "online absorption is not used to improve later test tasks unless explicitly stated." So the memory layer is passive across tasks; only within-episode revision learns, and it learns from a ground-truth test oracle. Limitations section states outright: "SKILLREVISE depends on verifier-visible feedback... Our evaluation is also limited to verifier-based benchmarks." No novel oracle-free signal type. Wave-2 verdict: learns-from-failure = partial (within-episode only), needs benchmark oracle = yes.

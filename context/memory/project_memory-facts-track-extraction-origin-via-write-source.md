@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0695498a724d0e3748061e89e233753f281969d4b12a92dec8776b0d2eddf6b6
+related: [d-303-blocker-closing-via-live-kiro-re-test, kiro-hook-trust-system-configuration-d-194, three-tier-memory-architecture]
 ---
 
 Saved facts include a `write_source` field indicating extraction method: `auto-extract`, `mk_remember`, explicit call, etc. Enables diagnosing which pathway succeeded and whether deduplication is masking auto-extract writes.

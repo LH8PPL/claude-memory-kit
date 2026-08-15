@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9e038175f21c437079f54f40b3be859164f58124c26794b4cfd420e476b5a582
+related: [kiro-cli-agent-resolution-requires-global-default, kiro-cli-requires-global-chat-defaultagent-because-hooks-are, kiro-global-agent-config-documented-decision-d-283]
 ---
 
 Kiro supports both local (project-scoped) and global agents:

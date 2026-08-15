@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 53240cdd7702153905fa2320e8832bf6d030508cd9b94173a963bfdc6c78bc1e
+related: [q1-refined-auto-fix-vs-whisper-boundary-cmk-doctor, fixes-must-be-automatic-in-install-upgrade-flow-not-diagnost, health-log-system-architecture-ratified]
 ---
 
 User selected per-code repair book shape for core-memory-kit troubleshooting skill.

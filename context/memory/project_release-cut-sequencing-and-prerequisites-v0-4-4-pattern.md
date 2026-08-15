@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: aa7d668d0d0f48a68ee2b227d2c7cd633dd70d35193e3ab5ae6020badd71266e
+related: [release-workflow-full-sequence-for-v0-4-3-and-future-cuts, v0-4-1-release-gate-workflow, tool-quirk-cmk-pack-uses-committed-tree-version]
 ---
 
 Release cut workflow for v0.4.4 requires strict sequencing with preconditions:

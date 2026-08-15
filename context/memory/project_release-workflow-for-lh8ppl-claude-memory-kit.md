@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d4bb6dc1550181cca1d43327ff7e01144f72d2333bbf5276a26b19f0bc5a5c7d
+related: [release-workflow-tag-driven-automation-via-publish-yml, release-workflow-for-claude-memory-kit, release-publish-workflow-git-tag-to-npm]
 ---
 
 1. Ensure CI tests pass on main branch

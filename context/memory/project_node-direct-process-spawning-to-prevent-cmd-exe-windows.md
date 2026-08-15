@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 5a220452678c049cd0652062da1c9db36db4f57a96b2b4498fadb7f69c8ebc1c
+related: [kiro-cli-mcp-registration-configuration-gap, kiro-cli-mcp-popup-is-6th-cross-agent-instance-mcp-command-n, kiro-cli-popup-fix-is-task81-node-direct-windowshide-pattern]
 ---
 
 Established pattern (Task 81, D-190) for avoiding persistent cmd.exe windows on Windows:

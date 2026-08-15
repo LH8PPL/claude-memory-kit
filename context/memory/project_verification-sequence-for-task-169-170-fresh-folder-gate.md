@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: cee3903051030c4687a3ff78cc4dad98ac18a95d724d26c74a7a89d134423a00
+related: [cmk-fix-verification-workflow-fresh-folder-v0-4-1, live-test-workflow-for-kiro-cli-project-fix, fresh-folder-verification-workflow-for-claude-memory-kit-rel]
 ---
 
 After global `npm install -g` (EBUSY-warns but succeeds), validate both fixes in a clean slate:

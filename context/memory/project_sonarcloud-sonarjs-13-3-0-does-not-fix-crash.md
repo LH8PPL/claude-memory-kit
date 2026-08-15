@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 84c478f50894d56e7b3f8ef70b2af5b2c70079d8bd6c553155571783bf5a9ff6
+related: [sonarcloud-agent-centric-development-beta-causes-crash, cmk-version-bumping-convention, sonarcloud-taint-analysis-context-collector-crashes-not-fixa]
 ---
 
 SonarJS 13.3.0 shipped today. Verified that it does NOT fix the opendir `C:/proj/context` crash — identical gRPC stack signature persists across versions.

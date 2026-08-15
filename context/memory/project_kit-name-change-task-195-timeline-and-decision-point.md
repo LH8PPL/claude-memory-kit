@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: dbee082af77b0500f55a1fbcd4428c8fbe30b7ed28f2c22dc428a85308581b03
+related: [adr-0012-deferred-product-rename-cross-agent-trigger, decision-the-user-2026-06-21-rework-kiro-support-properly-be, four-tier-rename-execution-structure]
 ---
 
 Task 195 addresses renaming the kit to reflect multi-harness support (claude-code, Kiro IDE/CLI, Cursor, Codex, etc.).

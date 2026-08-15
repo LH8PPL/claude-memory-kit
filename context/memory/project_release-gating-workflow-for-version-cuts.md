@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f2537724187de4a7db06d9b59d44e9ec58b3a912
+related: [resume-v0-3-1-cut-gate-2-bugs-found-fixed-pr-179-in-flight, v0-3-1-release-final-workflow, pre-session-verification-checklist-structure]
 ---
 
 Complete release workflow before cutting a new version:

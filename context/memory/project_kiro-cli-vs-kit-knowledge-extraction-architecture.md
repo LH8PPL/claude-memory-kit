@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0f176ea54dbcfbece1ab9babc58b864272678efe1a71b5ebd552833967ae9264
+related: [kiro-cli-vs-kit-activation-pattern-design, zero-server-local-first-is-the-kit-s-deliberate-design, two-tier-backend-architecture-for-headless-llm-invocation]
 ---
 
 - **kiro-cli's approach:** extraction happens inline within the interactive turn, no separate backend

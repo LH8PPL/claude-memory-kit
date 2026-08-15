@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 22005cca64ab685f2fcd50a21f6081574aa87a93f3c9823daca601d6bd3e40a9
+related: [doc-archiving-task-recommendation-post-task-246, work-items-require-task-entry-before-implementation]
 ---
 
 - All shipped tasks verified against live code; zero claimed-but-missing implementations

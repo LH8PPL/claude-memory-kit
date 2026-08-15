@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ca7bf8566bd9b0f0981506cc0b0dbdaeb9a27712dd272f519d55ae1995b1f907
+related: [research-verification-workflow-parallel-agents-batch-integra, research-verification-process-uses-paral-zsfnnkgq]
 ---
 
 User maintains a structured research pipeline:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 6885d3f57de196195bfbd35e62ad8a121542efed77de76696fa55f11d324713f
+related: [test-artifacts-can-contaminate-fresh-install-testing, kiro-gate-0c-backup-recovery-procedure, kiro-cli-agent-config-reads-from-kiro-agents-not-aws-amazonq]
 ---
 
 Whether a `q_cli_default.json` file exists in `~/.aws/amazonq/cli-agents/` **before** running the gate determines:

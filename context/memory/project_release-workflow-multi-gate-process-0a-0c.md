@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c4e80b2a06e3aaf109952c9200dc44a4a89f74054245ccb6ce43c4aa1350d4dd
+related: [npm-pack-global-install-for-artifact-testing-0b, release-workflow-full-sequence-for-v0-4-3-and-future-cuts, release-workflow-tag-timing-after-gates]
 ---
 
 claude-memory-kit uses sequential numbered gates to ensure safe releases:

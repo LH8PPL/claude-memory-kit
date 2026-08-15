@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: bbca981883bdb5d667dcebec84fd8f58cd9e4843
+related: [kit-skills-are-modular-thin-orchestrators-over-a-deep-cmk-su, decisions-scope-uses-direct-file-read-not-vector-db, cmk-view-task-255-architecture-and-constraints]
 ---
 
 The kit's two core skills are deliberately separated by capability boundary:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2be7ce382639f5afe610afd531961cecd1bf6f601481551a18c81c9273a88871
+related: [patch-release-strategy, v0-3-3-bug-semantic-backend-attempted-for-keyword-only-decis, d-157-rule-version-assignment-at-shipment]
 ---
 
 When evaluating competing projects for mechanism adoption:

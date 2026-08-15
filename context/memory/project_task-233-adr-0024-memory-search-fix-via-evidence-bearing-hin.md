@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 927445bfd3b0f80b116b33df3c88765efbe25919a41c8f80d1e86cbb363e026e
+related: [kit-lacks-skill-fire-telemetry-for-measuring-recall-improvem, decisions-md-is-write-only-for-ai-recall-not-in-any-recall-d]
 ---
 
 **Design (settled, ready to build):**

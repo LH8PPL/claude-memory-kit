@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9605f03fb065cca96b5f2a18cac7e7a045e843d258cd3a41fad4b82f74caf518
+related: [stress-testing-omitted-for-pure-read-cli-changes, decision-log-system-for-known-limitations, stress-test-gating-rule-for-pr-approval]
 ---
 
 Sonar suppressions must be backed by a formal decision-log entry (D-### number) with per-class threat analysis. Real findings are fixed in code; false positives are suppressed. Pre-approved scopes (e.g., `packages/cli/src/**`) acceptable only if threat class has been reviewed AND structural safeguards (like `validate-spawn-discipline`) exist to catch violations.

@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c23b9efa27511c6871c46f1977feae9f28ff61d1959e4b8953a002b5efd4c1e5
+related: [gate-verification-system-architecture, 5-concurrency-stress-gate-as-pre-pr-verification, stress-test-gating-rule-for-pr-approval]
 ---
 
 Test gates must execute sequentially, never concurrently. The 5/5-first-invocation gate is particularly sensitive and cannot run while other gates are active — parallel execution causes test state contamination and failures.

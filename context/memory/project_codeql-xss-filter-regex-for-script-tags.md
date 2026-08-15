@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9330810ec5f02e54e014281016798b52f343c56793b2806c07cfeaf212f359ef
+related: [cut-gate-testing-practice, test-anti-pattern-setup-commands-masking-automation]
 ---
 
 The anti-XSS filter for script-tag endings uses the regex `<\/script\b[^>]*>`. This pattern handles edge cases where whitespace and attributes appear in the HTML end tag (e.g., `</script\t\n bar>`), which is legal per the HTML spec. Earlier patterns that only handled uppercase and trailing whitespace were incomplete and could be bypassed.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 22bd033d9c3bb5405554a4c05023e9024136ce3a260584ad351b132621e9dcd7
+related: [v0-3-2-new-validation-gates, current-gate-artifact-v0-5-0-with-task-148-and-sonarcloud-fi, release-workflow-commit-cut-gate-tag-push]
 ---
 
 The release cut-gate (manual verification step, cut-guide §0b onward) uses four named probes:

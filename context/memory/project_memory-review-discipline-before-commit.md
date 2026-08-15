@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7aa91953284f8a802d510133618ad2fea284c5a51d44257f26cbccd03c4beac4
+related: [dogfood-decisions-md-committed-post-merge-not-with-feature-p, dogfood-memory-architecture-session-recall-vs-authoritative, always-fix-markdown-lint-warnings-md022-blanks-around-headin]
 ---
 
 Auto-generated memory captures are produced to `context/` by the extraction system but must NOT be auto-committed. They require manual review by the user and are committed separately, never auto-committed in the user's voice.

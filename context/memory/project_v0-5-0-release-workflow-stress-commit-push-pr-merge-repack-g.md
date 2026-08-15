@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5a392ff9bb8197ee6c5afee5c29b71878906cb20ff52bd0c5e5c1e6f92bb23b3
+related: [v0-6-2-release-tail-workflow, v0-6-4-release-workflow-and-task-ownership, stress-gate-required-before-pr-for-spawn-hook-boundary-chang]
 ---
 
 Release sequence for v0.5.0:

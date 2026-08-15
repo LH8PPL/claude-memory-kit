@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 244a4deeb591113b60f094087d92a715f774dbf30402e2e08f9a63f89e374aa1
+related: [archive-registration-in-documentation-map-md, release-cut-verification-checklist-claude-memory-kit, always-use-venv-for-python-package-installs]
 ---
 
 - Root `README.md` and `packages/cli/README.md` must contain identical content

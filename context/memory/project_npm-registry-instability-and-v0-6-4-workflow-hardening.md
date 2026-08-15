@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e31145ab476c9b1d3d49ae1ca88abb6770052772682d426957cb831d91a864bf
+related: [prebuild-install-deprecation-causing-npm-ci-failures, v0-4-5-roadmap-task-196-cursor-adapter-task-198-temporal-swe, v0-3-0-released-with-green-quality-gate]
 ---
 
 - Observed: Five npm registry blips this week affecting CI

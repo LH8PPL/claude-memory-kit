@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 71f85b937be45e66ed27a610ef567c2f1241a082003f5cdff9037d2b503ccd77
+related: [kiro-v3-hooks-redesigned-first-class-delete-guard-fallback-t, plan-the-user-2026-06-21-do-the-manual-kiro-live-capture-tes, two-sub-test-method-for-isolating-skill-permission-gating]
 ---
 
 Two fixes merged to complete Kiro IDE 1.0 support:

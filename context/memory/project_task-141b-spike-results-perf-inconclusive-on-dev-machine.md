@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 69d30cf5f3d9fd7884a137cf5828248f745f11dec9e8ea6a0dac3cccb9e530a6
+related: [task-141b-spike-results-node-sqlite-migration, sqlite-vec-incompatibility-between-better-sqlite3-and-node-s]
 ---
 
 - **Gate 1** (FTS5 support): ✅ PASS — node:sqlite 24.4.1 ships FTS5

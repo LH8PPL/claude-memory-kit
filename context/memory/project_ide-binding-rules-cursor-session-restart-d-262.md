@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 20caca1ceb4bf8618ab1fcb0863fd65d5da7f78bcbd03433cb1e0a92b8cb0ddc
+related: [sessionstart-hook-activation-narrow-restart-caveat, kiro-gate-testing-workflow, kiro-requires-full-restart-to-load-updated-hooks]
 ---
 
 **Cursor (VS Code fork):** Hooks load at session start, so "fully quit + reopen Cursor after install, before any live check" is a ★★ binding rule

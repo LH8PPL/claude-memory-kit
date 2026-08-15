@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 318f4895aa1ade7f0ba9ae13fcbf63a335cc14008cb7aa742ce26e54c15bebc5
+related: [sessionend-hook-no-retry-constraint, compression-retry-strategy-for-claude-memory-kit]
 ---
 
 Retry logic in Task 161 is configured differently by execution path to respect ceiling contracts:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f2aeced2ece768d479ed501ccec6c5c44cfae28d
+related: [task-159-multi-stage-verification-gate, live-test-gate-structure-and-blocker-findings, hook-inject-capture-tests-faked-dependencies-masking-bugs]
 ---
 
 Across the v0.3.x queue (11 merged PRs), the green unit test suite (1883 tests) was necessary but not sufficient. Four additional gates each caught distinct real bugs:

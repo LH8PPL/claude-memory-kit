@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 17a97978e7995254c723d19ec41b09ce70bad914d2e60d878790eee6a6eb0823
+related: [kiro-live-test-session1-d194-d196-proven, task-165-a-root-cause-found-advanced-to-fix-lane, post-d194-artifact-update-workflow-for-kiro-trust-fix-verifi]
 ---
 
 - **Status:** D-196 (MCP-tool auto-approve fix) merged to main

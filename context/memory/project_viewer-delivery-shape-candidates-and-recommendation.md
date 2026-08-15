@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 41794b5d90f76e9fb0462a762fbaf9a7b3c78d9b465555689b96d1f25b0cc9d6
+related: [q1-viewer-runtime-model-ephemeral-localhost-pending-ratifica, cmk-view-proposed-wave-1-design, two-phase-viewer-rollout-obsidian-v0-6-3-kit-viewer-v0-6-4]
 ---
 
 Three candidate shapes under evaluation for the viewer (v0.6.4's headline):

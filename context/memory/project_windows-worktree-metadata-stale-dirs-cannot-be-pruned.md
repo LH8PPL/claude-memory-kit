@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: be4a867d9b7ff5bb456f99736012fcc011dc851f42bd1b7f6b9e818da950baa8
+related: [windows-temp-dir-teardown-causes-eperm-in-test-cleanup, windows-npm-uninstall-eperm-on-better-sqlite3-is-benign, windows-npm-uninstall-eperm-with-better-sqlite3]
 ---
 
 `git worktree prune` cannot delete stale worktree metadata directories on Windows due to handle retention. This leaves orphaned .git/worktrees/* metadata. Not a regression; a known Windows-specific limitation.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7fef0e9b187e7f586bf5317a25eee40378bb0a350a2987decd3aae3423025a55
+related: [stress-gate-process-for-pr-merge, onnxruntime-node-ci-download-flakiness, cmk-hook-capture-fails-during-stress-gate]
 ---
 
 Vitest can experience transient pool corruption that causes all test suites to fail to load (displaying 0 actual test failures). Fresh `npm test` re-runs clear the corruption automatically (verified 5/5 re-runs in this session).

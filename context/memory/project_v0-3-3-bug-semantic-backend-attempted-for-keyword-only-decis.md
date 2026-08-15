@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c60b9ad0e13cc99f570675af3fbef29394219546e6eb93a6c8ebe48065ca4841
+related: [decisions-scope-semantic-fallback-warning-task-156-bug, false-embedder-unavailable-alert-on-scope-decisions, misleading-embedder-unavailable-note-fires-on-keyword-only-s]
 ---
 
 `subcommands.mjs` attempts the semantic backend for `--scope decisions` even though `search.mjs` already validates that decisions is keyword-only. The semantic backend correctly rejects it, then the search command prints a scary stderr warning: "semantic default unavailable (unknown-scope:decisions) — falling back to keyword". This makes the working, intentional design look broken. The message is indistinguishable from the stale-MCP-server bug the guide warns about.

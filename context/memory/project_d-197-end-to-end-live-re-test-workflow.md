@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 0fcbede4ed6049f05807a40a8c7140151f02bd59ae209144d90bf7139fc87e1e
+related: [d-197-delete-guardrail-matcher-fix-pr-224-commit-0dae3f3, testing-workflow-for-claude-memory-kit-fixes, live-test-workflow-for-kiro-cli-project-fix]
 ---
 
 **Gate project location:** `C:\Temp\kiro-gate2`

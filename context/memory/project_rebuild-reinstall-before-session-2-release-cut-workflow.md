@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 542a27860e81bea869bfa8d1909ee2db56e70089c113ecf5bc5d2e4bc93df67a
+related: [artifact-rebuild-for-v0-4-0, rebuilding-the-global-cmk-binary-after-code-changes, testing-workflow-for-claude-memory-kit-fixes]
 ---
 
 Before starting Session 2 (recall verification), rebuild and reinstall the fixed 0.3.2 package. The cut-gate14 session is running stale pre-fix code with an outdated MCP server.

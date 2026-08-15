@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6d7148e4441c09bb7d2a62283b3fccafe33b09cd32339ef15d0d450b132abb25
+related: [zero-server-local-first-is-the-kit-s-deliberate-design]
 ---
 
 Letta (GitHub: letta-ai/letta) is an LLM operating system addressing memory hierarchy + agentic recall—same problem space as kit, different architectural bets.

@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5c5d09757ae08ca0152a267671265d4e937f56b7889e96dcdde59429c8a4838d
+related: [user-tier-memory-backup-before-testing, multi-tier-backup-pattern-for-release-cuts, version-0-5-4-tarball-ready-for-gate-testing]
 ---
 
 Before testing a new global package release, back up the current user-tier memory installation to a timestamped directory (e.g., `C:\cut-gate-backups\user-tier_YYYY-MM-DD_HH-mm-ss`), uninstall the old global package from npm, and install the new .tgz version from the local package directory.

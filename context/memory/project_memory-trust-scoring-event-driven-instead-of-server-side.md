@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8e6551017ca613c0dedc977007bc19ffece6de2c
+related: [pii-handling-non-adoption-of-quarantine]
 ---
 
 Kit uses event-driven trust earning via audit log rather than memclaw's server-side outcome scoring.

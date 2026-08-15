@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7ef68b56890bd44155ff35ec90648f1a1575822054bb1a36c2ce6f1484b0dbe2
+related: [v0-5-2-code-complete-pr-286-pending-ci-merge, v0-5-1-released-to-npm-and-github, v0-6-2-published-release-state-and-contents]
 ---
 
 - Published to npm as @lh8ppl/claude-memory-kit@0.5.2 with provenance

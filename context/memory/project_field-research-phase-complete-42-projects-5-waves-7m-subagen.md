@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f4a249b4474b3b8892998e4cb9ad8fd4c201a90fb8906b875ba825a4711200bd
+related: [codemem-validates-multi-cli-auto-detect-approach-in-producti]
 ---
 
 The landscape survey is closed:

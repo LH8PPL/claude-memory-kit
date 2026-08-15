@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: user-explicit
 source_line: 1
 source_sha1: 1c802814b397821d387d334ede33f795bddc4d8fd997c188c48d59d948e5d3dc
+related: [bug-live-probed-2026-07-20-concurrent-scratchpad-writes-sile, unverified-auto-extract-has-never-automatically-written-a-fa, vitest-can-show-a-module-resolution-failure-cannot-find-modu]
 ---
 
 RETRACTION of D-365: there is NO concurrent-write data-loss bug. The probe was wrong, not the kit. It counted bullets remaining in MEMORY.md and called the difference LOST, never checking where they went. Ground truth (16 serial writes, verified by grep across the whole tier): 8 bullets stayed in MEMORY.md, the other 8 GRADUATED into individual fact files under context/memory/ - each with its own file, an INDEX.md entry, and full searchability. All 16 accounted for, zero loss. Serial, staggered and parallel runs all produced the identical 9/16-in-MEMORY.md result, which is what proved it was never a concurrency race: a real lost-update race cannot reproduce with zero concurrency.

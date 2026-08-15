@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 9c0289761cb35c0295cf252cee55bc4d66d937ae
+related: [deferred-task-trigger-convention, task-185-backlog-triage-trigger, task-planning-laning-workflow]
 ---
 
 Section §16 of design.md holds v0.1.x-era candidates kept intentionally as non-tasks. Each has a written ship-trigger condition — "promote when X happens" — that determines when to elevate it to a full task. These are seed ideas waiting for conditions to fire.

@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 78c7c8a4361982ad2f57a51901566ef7ae080eea271d32256a9290911bd2db11
+related: [cursor-adapter-proves-generic-per-profile-seam-works]
 ---
 
 Task 50 adapter architecture: do NOT build a uniform Installer base class across agents (claude-mem proved it breaks when agents differ in format/mechanism). The reusable seam is a shared tested mutateAgentConfig primitive (touch-only-our-keys, refuse-to-clobber-on-parse-error, idempotent changed-boolean) + per-agent metadata as DATA not classes. No other product in our 66-note corpus solved core-identical-plus-thin-per-agent-wiring cleanly.

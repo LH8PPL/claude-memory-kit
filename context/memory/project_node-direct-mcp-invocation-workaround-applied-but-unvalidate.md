@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ed04b22aabe74a05ed7c51247d16af841e9f7b19c091f86067f515b9970f77d8
+related: [kiro-cli-mcp-registration-configuration-gap, kiro-cli-spawns-mcp-in-cmd-exe-wrapper-claude-code-spawns-he, kiro-cli-project-workaround-for-project-path-passing]
 ---
 
 - **Attempted fix:** change mcp.json from `command: 'cmk'` to `command: 'node'` + absolute path to cmk.mjs

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: adbd90810666e945b19989d11991aa5c6a7eccff95a8767ae83573fdd5e108e8
+related: [v0-4-5-roadmap-task-196-cursor-adapter-task-198-temporal-swe, work-items-require-task-entry-before-implementation, task-186-wip-status-and-rebase-prerequisite]
 ---
 
 Next session begins at **Task 225** (`cmk import-sessions`).

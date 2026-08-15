@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e670c2cf3a086e4df3e39f8a19a28e22eeffbb9d635f1f6d1a1e33dde725f726
+related: [cmk-version-bumping-convention, clean-pre-existing-table-lint-warnings-by-default, minor-release-triggers-backlog-sweep]
 ---
 
 Three advisory fires on transitive deps (fast-uri, hono, ip-address) landed in one week during v0.6.5 prep. Current workflow: manual triage + separate PR per fire (e.g., PR #343) to avoid coupling with features. No proactive audit cadence exists.

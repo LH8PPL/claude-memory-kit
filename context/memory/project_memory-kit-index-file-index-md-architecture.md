@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 0b757025837522d26a5058025eb50ff752896c3150ad54895c69c587bb41da44
+related: [task-159-auto-updating-decision-journal, journal-staleness-check-uses-index-md-mtime-proxy, index-md-is-a-committed-human-readable-artifact]
 ---
 
 **What:** INDEX.md is the kit's unified metadata index. It contains pointers/listing for all memory facts in the project.

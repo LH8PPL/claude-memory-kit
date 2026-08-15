@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a6c27bc52c35d2b58c3f86efbee6d6659ec6cb6d0f6fe166786ff344a7ad7b2d
+related: [two-pass-review-discipline-validated-on-critical-bugs, full-gate-re-run-on-final-code-after-code-review]
 ---
 
 Code review process for claude-memory-kit PRs:

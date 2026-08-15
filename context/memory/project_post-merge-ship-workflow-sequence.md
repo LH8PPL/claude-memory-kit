@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4ccd6be79a0b1376466f099fbeaf2ace6fd2c8f98055b0c33d09eb81c527247b
+related: [core-memory-kit-gate-chain-and-post-merge-workflow, release-workflow-sequence, task-254-shipped-obsidian-memory-integration-2026-07-23]
 ---
 
 - Squash-merge feature PR to main

@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: dba23b96c1fa3bfdba03653b9d7980c3c12cd583093cbaba1c377b20b0bda36f
+related: [npm-test-fragility-under-load, known-environmental-artifact-laptop-sleep-during-tests, windows-temp-dir-teardown-causes-eperm-in-test-cleanup]
 ---
 
 Ubuntu CI is the authoritative gate for test passes. Local `npm test` results are not reliable under load and should not block releases.

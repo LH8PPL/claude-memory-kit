@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7317ce23862dbd35b64ed5f3e5036813643c1577cd1b7fdf2eecc500d65d1a2c
+related: [memory-tiers-contain-only-mission-context, memory-tiers-carry-mission-context-only-the-user-s-project-d, two-host-kit-architecture-proposed]
 ---
 
 Kit-operational signals (errors, timeouts, health notices, scorecard snapshots, task status) never enter memory tiers (`additionalContext`, fact storage, session tiers). When a user-facing notice is needed, it uses the ephemeral `systemMessage` display channel: shown once, not remembered. Persistent tiers carry only mission context, user decisions, and project facts.

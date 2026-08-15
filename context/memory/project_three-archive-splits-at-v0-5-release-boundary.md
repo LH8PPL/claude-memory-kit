@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c2c5ba9b5ece36b9378eec6a0bfac07fba7c6013dd1d6eb2226d868c825aeef1
+related: [byte-preservation-verification-workflow-for-archive-splits, three-file-archive-structure, doc-archiving-task-recommendation-post-task-246]
 ---
 
 **specs/tasks.md** → `tasks-archive.md`

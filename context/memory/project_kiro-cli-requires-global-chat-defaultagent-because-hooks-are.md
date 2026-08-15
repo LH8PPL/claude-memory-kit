@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a802a0c54184e6cfba35c8e9dc233721be16e236358a0960cde5f28af88b9241
+related: [hook-architecture-differs-across-claude-ai-products, kiro-cli-agent-resolution-requires-global-default, claude-code-vs-kiro-hook-architecture-difference]
 ---
 
 Kiro CLI stores hooks inside individual agent configs (~/.kiro/agents/<agent>/config → hooks{}), not at project level. Hooks only fire when the agent is active.

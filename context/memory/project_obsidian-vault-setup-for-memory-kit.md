@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 076132b24667db82efd0e970edf2c62c4c1cb44f3b270cd89622e2a5239318c9
+related: [memory-system-now-obsidian-browsable, memory-review-discipline-before-commit, memory-kit-validates-itself-as-dogfood-test-subject]
 ---
 
 Open `context/memory/` folder as separate Obsidian vault, not repo root; repo root creates visual noise from node_modules and repo docs. Once open: use MAP.md as navigation hub, Graph view for fact clustering, backlinks for traversal, search for discovery. **Critical rule:** browse and search facts freely in Obsidian, but do not edit — all changes must flow through `cmk remember` to maintain audit trail, dedup, and secret-screen processing.

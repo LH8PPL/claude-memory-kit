@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4b67bab78547a1575f6450d67eeec3af1d57a479f310ce72fa4494f3bfac6666
+related: [memory-verification-spans-session-boundaries, learn-loop-artifact-paths-for-cut-gate-checks-recall-expecta, verify-the-autonomous-loop-not-just-the-human-correction-pat]
 ---
 
 The loop is four interconnected tasks (all merged in v0.5.0):

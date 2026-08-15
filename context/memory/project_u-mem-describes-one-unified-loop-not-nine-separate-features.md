@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 94b517a7b05c2e0d5275fd082985d2391003ead24016c430db03920ec5f7984c
+related: [memory-learn-loop-as-converged-system, recurrence-roi-advantage-update-is-internal-learning-signal, four-flavors-of-memory-improvement-systems]
 ---
 
 The U-Mem research paper (Lines 50, 87, 89, 151) describes a single closed-loop system: the Retrieve-Infer-Evolve cycle. Four functional organs:

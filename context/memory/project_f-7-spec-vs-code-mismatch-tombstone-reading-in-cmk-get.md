@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 34c0de2e96eee9ef40c0200ccacc5f29f3dff7e64c357872a8ccf7b3d420c161
+related: [tombstone-data-lifecycle-forget-vs-purge, decisions-scope-uses-direct-file-read-not-vector-db, scope-documentation-discipline-record-why-not-just-what]
 ---
 
 The cut-gate F-7 spec and CLI.md documentation claim `cmk get` reads tombstoned facts as a recovery path. In reality, the code is live-only: `forget` prunes the database row, and `get` cannot return a tombstoned fact. The tombstone *file* persists in `archive/tombstones/` as a disk recovery artifact, but `get` does not read it. Root cause: Task 110 design decision (live-only by design).

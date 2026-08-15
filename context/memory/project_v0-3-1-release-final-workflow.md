@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e176ad0f689a52e9fe1125bd5bc912aca378e29e
+related: [release-workflow-for-claude-memory-kit, v0-4-5-release-workflow, release-workflow-for-lh8ppl-claude-memory-kit]
 ---
 
 **Complete (gates verified):**

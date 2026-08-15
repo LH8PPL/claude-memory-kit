@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 69515c4aa236d8342c4078f7c0bf67305bcc80c6db8ea0c17c1800b26d9e8f5d
+related: [v0-3-2-scope-correction-dedup, v0-3-2-scope-locked-strict-task-order-discipline, task-141b-node-sqlite-migration-rejected-on-perf]
 ---
 
 v0.3.2 final scope (expanded 2026-06-15): committed = Task 153 (FTS5 query sanitization for dots/version strings like v0.3), Task 152 (validate-index-completeness), Task 134 (Poison_Guard catalog extension, fixed-prefix providers), Task 154 (.gitattributes LF-pinning, the Task-139 CRLF follow-up), Task 147 (cmk digest + standing context/DECISIONS.md). Conditional = Task 141b (node:sqlite migration), gated on BOTH spikes passing: perf bake-off (node:sqlite p95 <= 1.03x better-sqlite3 on read/search paths) AND cross-platform sqlite-vec loadExtension under node:sqlite (Win/mac/Linux). If either spike fails, 141b defers and v0.3.2 ships without it.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b89b63780444194a6da78f59dd64479ca9d04767d8dcf93751bbcfd7bdc09baa
+related: [npm-test-fragility-under-load, fixture-time-bomb-in-cli-backfill-test-2026-07-21, sonarcloud-then-in-object-false-positive-schema-fields]
 ---
 
 The kit's privacy masking system masks the word "runner" (GitHub Actions' default username on ubuntu-latest). This causes FTS test failures on Linux only when fixtures reference "runner", because fixture content is masked but the test query is not. Workaround: reword test fixtures to avoid the word "runner". Issue documented in test class.

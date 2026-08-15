@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: b524c9d276351b1b9c11680cca0902e6287a791a
+related: [stress-tests-skipped-for-pure-file-mutation-in-process-ops, stress-gate-requirement-for-spawn-boundary-changes, stress-gate-required-before-pr-for-spawn-hook-boundary-chang]
 ---
 
 For code changes that consist of pure-read analysis + CLI print output with no spawn/hook/concurrency surface, stress testing is consciously omitted. This decision is documented per the D-120 precedent.

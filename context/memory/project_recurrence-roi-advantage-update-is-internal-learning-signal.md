@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 935896b7988f9707e1b02178a6e1eba607ea5940dcdffac52e03320080b8df5c
+related: [u-mem-describes-one-unified-loop-not-nine-separate-features, hermes-is-skill-library-curation-not-memory-self-improvement, memory-measurement-is-part-of-learn-loop]
 ---
 
 The advantage-update score measures whether a memory helped: `score = with-memory-performance − without-memory-performance`. This is NOT user-facing. It's internal to the kit's memory-improvement loop—it drives which memories get kept, ranked, or consolidated.

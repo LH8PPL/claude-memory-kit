@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d2b4d54b31d590ad7f43ca20c65a39938f916c04132964a3b9ab7d4891ee765b
+related: [d-343-disposition-cmk-install-scaffold-refresh-bug-task-230, resume-fact-convention-capturing-uncommitted-code-intent, cmk-install-skips-existing-files-cannot-repair-stale-skills]
 ---
 
 The kit's automatic layer is robust—it captured all session facts silently. However, agent-driven recall (via memory-search skill) is unreliable because the operator defaults to faster shortcuts (git, grep, direct source reads) rather than invoking recall. When recall WAS finally used, it immediately caught documentation drift (D-343 finding without Task 230 disposition). The real bottleneck is not the skill itself; it's reliance on operator judgment to use it instead of equivalently-fast alternatives. Design fix: make memory recall automatic, not operator-choice.

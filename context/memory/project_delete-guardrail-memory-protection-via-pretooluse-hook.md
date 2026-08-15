@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7145389838944c9063985744d78b28e9a83f2524b752b72dac9cc1fd1bb18ad1
+related: [kiro-cli-v3-hook-redesign-guard-dormant-fallback-active, kg-guard-kiro-cli-two-gates-rm-rewritten-to-removeitem, memory-safety-guard-prevents-agent-bypass-attempts]
 ---
 
 The kit wires a `preToolUse` hook (`cmk-guard-memory`) that inspects all shell commands before execution. It blocks destructive commands (`rm`, `Remove-Item`, `git clean`, `git reset --hard`, `del`, `find -delete`, `>`-truncate) aimed at memory paths:

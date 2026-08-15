@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e759a1ee52fd359ab8e0c00a48f1dcfd83401bdc3fd7226a23ed7c3710a4dce8
+related: [kiro-hook-authoritative-confirmations-2026-06-21-from-the-aw, kiro-trusted-commands-auto-approve, kiro-kiro-hook-path-lesson-2026-06-21-paths-in-a-kiro-hook-c]
 ---
 
 The `.kiro.hook` command and prompt-capture pipeline naturally prevents shell injection:

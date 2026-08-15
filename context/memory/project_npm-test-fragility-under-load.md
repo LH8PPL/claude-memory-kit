@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4910252e69c1782efb946ae96f9b1cef46ae1f6ce4aa58bd6331f83f711ba8a7
+related: [ci-authority-convention, hc-2-distill-freshness-fail-self-clears, onnxruntime-node-postinstall-cdn-timeout]
 ---
 
 Local `npm test` execution is unreliable when run under machine load on both development machines. Observed: D-430 class suite-level failures on live-Haiku near their 90s ceiling. Flagged for v0.7 backlog (Task 279).

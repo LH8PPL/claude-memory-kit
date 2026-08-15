@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 573529f36feb4ade2d3886cdb59333c2a12069abb1f6ad56aa44536e00b78482
+related: [kiro-cli-allowedtools-doc-correct-but-still-prompts, claude-code-2-1-x-needs-skill-name-wildcard-to-suppress-skil, kiro-cli-mcp-trust-model-and-kit-s-workaround]
 ---
 
 Kiro CLI is in early-access V3 with a new trust model. The V2 config format (`allowedTools: @cmk` in kiro-cli-agent.mjs) works perfectly in the IDE but does not fully honor in V3 CLI — MCP tools still prompt for permission despite pre-configuration.

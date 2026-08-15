@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 304d1270ea096a0e47be3324fa10c397503f4a3bcb530fd094402e3caed0412f
+related: [task-220-duplicate-block-handling-design, install-system-requirements-matrix-v0-4-0, kiro-cli-memory-integration-test-procedure]
 ---
 
 - **Root Cause**: `install-agent.mjs` uses non-global regex (missing `g` flag) to refresh managed blocks

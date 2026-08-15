@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e0e3c314807be3f39379f412ab711424e11e1bc92985afd036844b39631d0e48
+related: [core-memory-kit-dogfoods-its-own-memory-system, memory-system-dogfooding-internal-use-as-test-case, design-reference-awrshift-claude-memory-kit]
 ---
 
 claude-memory-kit was created to solve the core problem: **Claude Code forgetting all the time**. The entire project was directly inspired by a video on hybrid memory architecture for multi-project/client work.

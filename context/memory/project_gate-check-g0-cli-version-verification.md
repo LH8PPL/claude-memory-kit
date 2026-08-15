@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a8f4f25902e0331f06601b1a419f057b0800dfffe8e60e48bf6c9d2ab87c100b
+related: [npm-pack-global-install-for-artifact-testing-0b, rebuilding-the-global-cmk-binary-after-code-changes, rebuild-artifact-after-bug-fix-without-re-cutting-release]
 ---
 
 After `npm install -g .\lh8ppl-claude-memory-kit-*.tgz`, run `cmk --version` and verify it outputs exactly `0.4.1`. If it outputs `0.4.0` or earlier, the global install failed or is stale — re-run `npm install -g .\lh8ppl-claude-memory-kit-*.tgz`.

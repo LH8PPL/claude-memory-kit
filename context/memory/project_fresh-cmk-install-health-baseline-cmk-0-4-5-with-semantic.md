@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b0bcc24a989fb466fe36f9c1c3163c69c908d693b336ad077831be4a36a03a42
+related: [fresh-cmk-install-expected-cmk-doctor-baseline, claude-memory-kit-health-check-suite-hc-1-through-hc-9, doctor-health-check-baseline-fresh-install]
 ---
 
 After `cmk install --with-semantic` on a fresh git repo, doctor output is:

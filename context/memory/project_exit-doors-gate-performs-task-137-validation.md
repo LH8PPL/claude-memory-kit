@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 9b7beb98b9aabe1c5fd0d63cc76cf73031775814
+related: [task-135-integrated-pack-completeness-validator-into-prerun]
 ---
 
 The exit-doors gate validates Door-3 header forms using Task-137 validators.

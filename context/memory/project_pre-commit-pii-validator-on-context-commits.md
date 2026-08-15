@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 31ffecf2d2ba3eb7ce58d8bc023360c44d8fcefb446c9640b7ddd1601f92b7e9
+related: [pre-commit-hook-sanitizes-fact-files-for-security, new-v0-6-2-guard-candidate-undefended-cwd-as-root-assumption, memory-commits-screened-before-release]
 ---
 
 A pre-commit hook validates `context/` commits using a "name-confinement validator" that detects and rejects PII/secrets (emails, API keys, tokens, etc.). If PII is detected, the commit fails and must be cleaned before re-staging. This prevents accidental leaks of sensitive data to the public repository.

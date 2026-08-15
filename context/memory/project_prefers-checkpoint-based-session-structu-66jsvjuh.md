@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract-session
 source_line: 1
 source_sha1: 14f5bb0a2ce4e4aee3349ab66fc12b662ce313687a0b395cd47e0b6ca48f1a08
+related: [prefers-to-pause-work-at-safe-checkpoint-lwrpvyqf, prefers-work-to-continue-incrementally-w-pnx2k5us]
 ---
 
 Prefers checkpoint-based, session-structured work; asks agent to pause at safe states

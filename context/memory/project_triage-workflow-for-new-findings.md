@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7d8cd2a574740b9d181b024bcc3be4f4fc5dce094e238944c99d89576892db5e
+related: [cmk-version-bumping-convention, minor-boundary-backlog-sweep-d-248-convention, research-findings-task-filing]
 ---
 
 - After each release, user provides list of "new things found" for discussion

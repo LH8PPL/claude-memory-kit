@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: fd3b659401a0acbdfb93a1b149970e66460561a4cbf6809a983606def565f705
+related: [v0-4-6-release-roadmap, mcp-prompt-root-cause-agent-config-kiro-cli-mismatch, task-165a-is-design-decision-linked-to-d-285-not-mechanical]
 ---
 
 **Previous state:** Task 165(a) parked under D-196, mis-diagnosed as "doc-correct format, unclear why"

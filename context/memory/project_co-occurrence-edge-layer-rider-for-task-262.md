@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 077fcd9f5e7468aa5c6ca5c22598f6eea2a456f495563357e52d7b6f70fa3bcb
+related: [task-260-and-262-sequencing]
 ---
 
 Add toggleable co-occurrence edge visualization to the memory viewer. Edges computed at render-time (zero storage), drawn between facts that share ≥1 type or topic tag. Implementation ~1 day. Addresses the "4% linked = looks empty" perception while Task 262 pursues semantically meaningful stored links. Client-side rendering means the layer is cheap and composable.

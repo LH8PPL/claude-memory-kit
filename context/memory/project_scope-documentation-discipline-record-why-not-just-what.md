@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 70bb0bd6aae823900727ec8679474a1f139f1d6168582a6764784dd83a47945a
+related: [f-7-spec-vs-code-mismatch-tombstone-reading-in-cmk-get, updating-cmk-requires-re-running-bootstrap-on-project-files, file-pointer-format-and-interpretation]
 ---
 
 When a feature deliberately defers or does NOT build something (e.g., `cmk restore`), document in `tasks.md` the *rationale*, not just the deferral. Example: "`cmk restore` deliberately not built — read flag + archive file cover recovery; un-tombstone is write-path with reindex/composition surface deserving its own task."

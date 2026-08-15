@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3428cd95611d2880aedbbb85a7691ca79b441e23ff117cd2dbf277840ed7ca21
+related: [fresh-folder-verification-workflow-for-claude-memory-kit-rel, session-checkpoint-v0-4-1-cut-gate-3-fixes-merged-awaiting-c, claude-code-2-1-198-permission-hook-regression]
 ---
 
 - **Bug 169** (CC 2.1.x skill form): Skill gate syntax was correct, but Claude Code 2.1.x's permission prompt form changed; gate expected old form

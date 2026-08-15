@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: cfd7dd3a3f1f6723e122dd14b52f62b2438eeb5a3730102b46ab7a3e40a6b2bc
+related: [v0-6-3-lane-pr-composition-and-release-purposes, post-fix-integration-workflow, v0-6-2-release-approved-before-auto-recovery]
 ---
 
 - **First**: PR 233 (recall hint + fire telemetry)

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a2b56bc33b0b6e28ed620fcd4fda902d6ff5dcd5bca9c3f2820bdf19234a4e35
+related: [d-303-test-environment-confirmed-ready, cursor-gate-test-path-procedure-v0-5-0-release, kiro-auto-extract-trigger-works-write-unproven]
 ---
 
 D-303 (gates: Cursor submission, v0.5.0 tag) requires successful live Kiro re-test.

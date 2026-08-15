@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: af7c6970ccdea55c767543928d3fd0d649fcd959d8c2628a5ef76d0b23f844e9
+related: [cut-gate-kiro-deliberately-tests-both-kiro-clients-across-th, kiro-ide-and-kiro-cli-have-different-hook-architectures, kiro-cli-mcp-configuration-disable-to-kill-popup]
 ---
 
 - **Kiro IDE** (GUI) — hooks defined in `.kiro/hooks/*.json` (Stop, UserPromptSubmit, PreToolUse, PostToolUse)

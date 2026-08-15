@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a44bf3c03fedcafa40e12e653a88bb6cc6146db942b9bbde98251bb22a7654f3
+related: [codeql-action-workflow-bumps-held-by-standing-rule, tombstone-auto-recall-design-decision, never-hand-edit-memory-rule]
 ---
 
 The autolink process identifies near-duplicates but deliberately does NOT auto-merge them. Near-duplicates are marked as "not linked" and held for human review and decision.

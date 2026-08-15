@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 94ff4aa211c0050785054f42c3d8845291d5d60d36a405bc59aa3d9cfe222e86
+related: [documentation-drifts-at-event-boundaries-not-pr-moments, validate-docs-enforces-catalog-consistency]
 ---
 
 Four independent validators (`validate-references`, `validate-doc-registry`, `validate-doc-completeness`, `validate-index-completeness`) merged into one `scripts/validate-docs.mjs`, driven by `DOCUMENTATION-MAP.md`.

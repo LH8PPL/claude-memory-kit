@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ad46c0fbb21f41e9ca4d14d7bb1c7a2c579c783d506f7ffac40f0757bd9ffe4b
+related: [d-157-rule-version-assignment-at-shipment, tag-ready-criterion-core-features-pass-known-issues-cleanly, documentation-map-spine-drifts-while-decision-log-stays-curr]
 ---
 
 Tasks can ride the same release lane without being merged into each other.

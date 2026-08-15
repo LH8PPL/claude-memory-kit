@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 32f55bcc396ccfd621391ba128886decd852adeff8382897294342ba4d4df604
+related: [doc-completeness-validator-hook-behavior-coverage-gap, kiro-cli-v3-delete-guardrail-pretooluse-known-limitation, cmk-install-auto-updates-managed-block-version-stamps]
 ---
 
 The delete-guardrail is implemented as a `preToolUse` hook behavior (not an MCP tool).

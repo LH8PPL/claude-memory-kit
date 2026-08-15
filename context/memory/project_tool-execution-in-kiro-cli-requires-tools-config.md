@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ab9c6a256f7ed5626e0548c24669feef614d62f7c1f46784ad44dc58d202a0f6
+related: [kiro-cli-agent-tools-field-configuration-fix, global-mcp-tool-prompts-suppressed-via-settings-allow-list, missing-tools-field-was-the-shell-blocker]
 ---
 
 kiro-cli agents cannot execute tool calls during chat without an explicit `tools: ['*']` field in their configuration. Without this field, tool calls are generated but silently fail to execute. The fix was a one-line config addition to grant the agent shell/system access.

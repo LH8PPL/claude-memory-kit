@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: fe0da12970240f80fd755530e98d39b414cc0b6f
+related: [e1-cold-open-test-persona-carries-unprompted, fastapi-layered-backend-scaffold-async-postgresql-sqlalchemy, live-test-workflow-for-kiro-cli-project-fix]
 ---
 
 Standard structure and workflow established for FastAPI projects:

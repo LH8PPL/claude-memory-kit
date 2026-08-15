@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0b17e1542d519758aecd598ab560112529eb707437a02be553519b3f47e0802f
+related: [claude-memory-kit-v0-4-3-release-workflow, stress-gate-release-workflow, core-memory-kit-gate-chain-and-post-merge-workflow]
 ---
 
 After PR stress tests pass:

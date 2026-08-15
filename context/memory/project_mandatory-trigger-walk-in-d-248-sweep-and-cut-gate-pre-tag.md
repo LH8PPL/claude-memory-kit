@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 63bcbcf9b09976e5845f08bf71755da6dbf5fb0cd6e31866e543ffda85d229b4
+related: [minor-release-triggers-backlog-sweep, deferred-task-decision-gate-backlog-sweep-rule, minor-boundary-backlog-sweep-d-248-convention]
 ---
 
 - **What**: Walk every named trigger (~39 total), ask "has this condition become TRUE?"

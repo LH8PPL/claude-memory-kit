@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 50281a237d462728c1d1eb9606d0a848834080ac8ffa441cd36d648cb231a65d
+related: [automated-capture-via-agentstop-hook, kiro-cmk-setup-checklist-pre-session-1, d-303-test-environment-confirmed-ready]
 ---
 
 - **Setup:** Restart Kiro (§1 hooks + MCP load), open `C:\Temp\kiro-gate`

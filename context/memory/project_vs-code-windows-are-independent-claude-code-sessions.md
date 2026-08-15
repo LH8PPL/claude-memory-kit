@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 9a88f14cef00ea8a6abf06fa77583c88bfac6a190c2b02da8a5080ba67f93fe9
+related: [claude-code-mcp-server-overhead-per-instance, hook-binary-spawned-fresh-each-turn, mcp-activation-restart-behavior]
 ---
 
 Each VS Code window runs its own independent process with:

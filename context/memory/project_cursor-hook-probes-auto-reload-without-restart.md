@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d7169c96ea9ff749a72487300832e3670594045cf0d4c90a9e1826c4316ee6a9
+related: [hook-binary-spawned-fresh-each-turn]
 ---
 
 Cursor invokes the probe script fresh each turn via `cmd.exe /c node ...probe.mjs`, so edits to the probe file take effect immediately without restarting Cursor.

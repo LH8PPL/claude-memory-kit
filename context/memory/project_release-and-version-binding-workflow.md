@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e64506212a84d8481587528477014f58c8bb28c0b39d8523e4eca854aa1c2529
+related: [release-workflow-tag-driven-automation-via-publish-yml, release-workflow-tag-and-automated-publishing, release-workflow-for-claude-memory-kit]
 ---
 
 - **Pre-tag requirement**: Wait for CI to be fully green before creating a release tag

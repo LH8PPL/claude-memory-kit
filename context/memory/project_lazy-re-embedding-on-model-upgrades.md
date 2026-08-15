@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 5901896684cacc30a6ab8835baecf086a1ca3919
+related: [test-repo-1455-facts-activated-semantic-mode-today]
 ---
 
 When embedding models change, mark facts stale rather than immediately recomputing.

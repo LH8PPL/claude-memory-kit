@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: review-promote
 source_line: 1
 source_sha1: 35891cf124087024a3562e67dc5d42369b1e8be39e167958ef127ee6af19d978
+related: [test-suite-scale-full-suite-2223-0-all-p-ftbvrebe]
 ---
 
 Task 260 visual pass completed with all gates passing: 3916 full suite green, 5/5 stress first invocation, 25/25 live-verify unchanged; zero new dependencies.

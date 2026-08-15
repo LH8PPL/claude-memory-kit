@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 4ba5dcc83bd19c892c91519594414f26cfb17cce4a9d951bf7d15b031bd4eb06
+related: [now-md-assistant-cap-precedent, a-c-core-design-pivot-memsearch-anchored-b-dropped, overflow-handling-caveat-single-buffer-vs-memsearch-s-many-f]
 ---
 
 - **Decision:** Bound the compaction input; do NOT raise the timeout.

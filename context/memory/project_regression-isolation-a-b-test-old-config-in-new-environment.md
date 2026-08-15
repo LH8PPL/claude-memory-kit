@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e3b64fc771a46c03cc55453e9898bafe36ded6928e361953e0fd221a6df82906
+related: [claude-code-2-1-198-permission-hook-regression, npm-pack-global-install-for-artifact-testing-0b, npm-11-x-deprecate-command-with-version-ranges-fails-with-sp]
 ---
 
 To isolate whether a regression is code/config vs environment:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d14adcaf5f9bb732ba01b8d6f278662d70f026a6dedb26027bd716286e44940f
+related: [mcp-prompt-root-cause-agent-config-kiro-cli-mismatch, task-165a-is-design-decision-linked-to-d-285-not-mechanical, kit-shell-permission-command-trust-boundary]
 ---
 
 **cmk-default path:** cmk config has `includeMcpJson: false` → no MCP load, steers to pre-trusted shell commands (cmk remember/cmk search). Normal users on this path never see approval popup.

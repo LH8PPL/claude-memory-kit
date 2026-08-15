@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 604d75169ed704314e6567201e8c1e51ac8a2d2bd60c98eaaf03dd7e529c556c
+related: [sonarcloud-zero-coverage-from-missing-cache-step, regression-test-pinning-on-bug-fixes, stress-testing-omitted-for-pure-read-cli-changes]
 ---
 
 - **Problem**: test:coverage job in SonarCloud workflow gets rate-limited by Hugging Face Hub when run without HF-model cache, causing semantic tests to fail, vitest to abort, and lcov (coverage report) not to be written.

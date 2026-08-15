@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2de07c4c5dcee8383f013bad0fd953c620f65edc3056f73a470803ea0d12cb23
+related: [windows-temp-dir-teardown-causes-eperm-in-test-cleanup, resume-fact-convention-capturing-uncommitted-code-intent, onnxruntime-node-postinstall-cdn-timeout]
 ---
 
 For Windows `rmSync` EPERM race flakes in test teardown (e.g., `cli-install.test.js`), apply `maxRetries: 10, retryDelay: 100` to cleanup code.

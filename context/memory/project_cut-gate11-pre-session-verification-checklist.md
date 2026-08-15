@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c1838b8fd2b222ef98ebc962e418f0a4c8494b02766bfda2d2dbf442bfac8016
+related: [cmk-install-with-semantic-scaffolds-semantic-recall, cut-gate-pre-release-validation-checklist-g0-g7, cmk-install-scaffolding-and-wiring]
 ---
 
 16-point checklist run before Session 1:

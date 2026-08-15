@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 8375781d0e2cb5f3015ba9fad553868770e62ceaa73b1705aa7d04a82526c8dd
+related: [cut-gate-kiro-deliberately-tests-both-kiro-clients-across-th, cut-gate-validation-includes-paraphrase-recall-check, claude-memory-kit-supports-3-ide-tool-agents]
 ---
 
 - **Problem**: The guide's title ("cut-gate-kiro", singular) and session numbering (1/2/3) obscure that Session 2 switches from IDE to CLI. Readers expecting an "IDE gate" may be confused.

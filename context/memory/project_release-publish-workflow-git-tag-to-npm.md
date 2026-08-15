@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 87d56bf81e57fa2aea7adfe5dbd566dd38e0b058cbe3d0393af9813e5e3778b4
+related: [release-workflow-tag-driven-automation-via-publish-yml, release-workflow-for-claude-memory-kit, release-workflow-for-lh8ppl-claude-memory-kit]
 ---
 
 1. Tag locally: `git tag v0.3.2`

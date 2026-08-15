@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 18bf778346aaa3c7d5081d2e170625c3b01af5fe
+related: [live-test-gate-structure-and-blocker-findings, two-sub-test-method-for-isolating-skill-permission-gating, claude-memory-kit-gate-test-phase-structure]
 ---
 
 Release validation is gated through numbered check groups:

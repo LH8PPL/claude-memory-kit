@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 762deff956de938f5f8c72fb40f894448a67468e9ad598943029da7762f211bb
+related: [release-workflow-for-claude-memory-kit, release-workflow-for-lh8ppl-claude-memory-kit, release-workflow-with-cut-gate-testing]
 ---
 
 - **Staging steps** (assistant-driven):

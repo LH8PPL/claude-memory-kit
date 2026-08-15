@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e44d64e5462dde6e1cb08b760ddfd95031654b4dca05c0c8f2fb66484bff082b
+related: [v0-6-2-minor-release-gate-process-d-248-d-267-rule, version-cut-workflow-pattern, release-workflow-after-fix-merge]
 ---
 
 The release cut-prep workflow includes a 250-disposition stage controlled by grill-gating. By default, 250 automatically moves to the next lane. However, you can halt/examine it by "grilling" it first—an optional review checkpoint that gates progress if needed.

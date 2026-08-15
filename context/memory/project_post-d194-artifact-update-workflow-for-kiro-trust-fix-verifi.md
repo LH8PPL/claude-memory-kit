@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 271ce91a4003004a9926bd995aea6a045b9a79794d6b365b765f05a688a1d6c6
+related: [d-194-fix-merged-to-main-pr-219-commit-96f57c9, fresh-folder-verification-workflow-for-claude-memory-kit-rel, d-197-end-to-end-live-re-test-workflow]
 ---
 
 After PR #219 (D-194) merges and passes CI, rebuild and reinstall the artifact to activate the Kiro IDE trust fix in the test environment:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4fae578b26221ba2963733185d79b261f5f8d7caf2daae7b950d46f0b2030eb3
+related: [cmk-hook-capture-fails-during-stress-gate, bash-cwd-drift-creates-packages-cli-context-artifacts, sonarcloud-then-in-object-false-positive-schema-fields]
 ---
 
 Fable 5 (the model tier in this environment) includes extra dual-use safety measures that flag defensive security work as potentially offensive. In code reviews, this triggers flags on vocabulary like "XSS audit," "seeded payloads," "DNS-rebinding probes," "ReDoS," and "exfiltrate" — all used defensively in security reviews.

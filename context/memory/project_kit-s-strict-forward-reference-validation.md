@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ac495efdb645c6517bc87786e6c5a9a5d6b28ee5758818c92e7c9ebf64944e85
+related: [memory-fact-validation-task-reference-exemption, git-as-sole-evidence-in-gap-cases, kit-name-privacy-validator-for-auto-extract]
 ---
 
 The memory-kit's validator enforces that all references to ADRs/decisions actually exist. Because the kit captures live session conversations, it catches forward-references (references to not-yet-existing ADRs) even in the kit's own use. This is self-validation through dogfooding.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 68ba3f333800c7d0e516d08ee1e6f96ea9d35bfebba906920205aa9acd6a1353
+related: [cursor-gate-test-path-procedure-v0-5-0-release, kiro-ide-hook-testing-multi-step-gate-sequence, d-197-end-to-end-live-re-test-workflow]
 ---
 
 Test folder: `C:\Temp\cursor-gate-v050d` (fresh, pre-scaffolded)

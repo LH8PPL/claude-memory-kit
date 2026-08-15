@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d55d1a5add0be28aff6a89fb478e200ca4248c95b88ee65c440689664685641e
+related: [version-stamping-and-scaffold-isolation, windows-ebusy-when-updating-cmk-during-claude-code-runtime, claude-memory-kit-update-paths-npm-vs-plugin]
 ---
 
 **Windows EBUSY:** npm can't overwrite DLLs when loaded. Workaround: close Claude Code before updating.

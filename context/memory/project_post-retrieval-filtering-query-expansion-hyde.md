@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f1ff59c6cc36ade4d5aa7df84a7b8a2517e583dfaf8fffb5efc93a7047ab3d6f
+related: [memory-as-tool-pattern-external-validation, rrf-configuration-fusion-strategy, closed-products-recall-architecture-validation]
 ---
 
 - **Post-retrieval filtering:** Re-score all retrieved candidates against the *immediate task context* before injection; drop low-scoring docs. "Significantly improves output quality" vs retrieve-and-inject-all pattern.

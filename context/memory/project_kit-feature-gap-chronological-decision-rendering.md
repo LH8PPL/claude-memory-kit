@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 838b933822c7f1dcbf6d5f4e015815e5c33d2414
+related: [decision-journal-view-gap-now-task-147, kit-s-decision-log-manual-maintenance-pattern, kit-produces-facts-not-views-the-decisions-md-gap]
 ---
 
 The kit auto-captures decisions via `cmk remember --why --how` and stores them as individual facts, but lacks a view rendering them chronologically ("show me this project's decisions in order, with their whys"). The team works around this by manually maintaining DECISION-LOG.md. Squad's `decisions.md` natively provides chronological rendering.

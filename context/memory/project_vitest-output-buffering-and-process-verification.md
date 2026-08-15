@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: aa03a19a13d00136d42f3bf729416f9643c644ae8f17b9c50ccba396495448ef
+related: [a-background-job-s-completion-notification-cannot-survive-th, stress-test-configuration-constraints, verify-check-run-agent-liveness-before-status-reports]
 ---
 
 - Vitest runner buffers stdout until run completion; empty output file early in execution is normal and does not indicate failure

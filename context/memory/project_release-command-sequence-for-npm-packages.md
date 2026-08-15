@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f23d0bac0ee4c7d3609fe25afc5c2be9ff2b247074018f66ebce1449966f8b58
+related: [release-workflow-full-sequence-for-v0-4-3-and-future-cuts, release-workflow-and-commands-for-production, release-workflow-npm-script-git]
 ---
 
 The repeatable workflow to publish a release:

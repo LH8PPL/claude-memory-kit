@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7050d671fa651c16791c1d737dea39e3375bd06b
+related: [sonarcloud-then-in-object-false-positive-schema-fields, architecture-decisions-recorded-in-adrs, reference-implementation-alignment-strategy]
 ---
 
 SonarCloud's hotspot review interface does not offer "Acknowledged" status. For assessed risks (especially negligible exposure in bounded contexts), record the review by marking as **Safe** and commenting with:

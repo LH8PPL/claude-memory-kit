@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 6e2a12481e07de79887b540fd4e6d8356553fb1f00b18d3e762b47a90d32479f
+related: [contract-lock-testing-pattern, auto-recall-agents-are-blind-to-tombstoned-facts, read-path-inconsistency-get-lacks-deleted-at-filter]
 ---
 
 Core privacy/integrity contract: the agent (via MCP or auto-call surfaces) must never be able to access a fact that was explicitly forgotten (`cmk forget`). Enforced by: `includeTombstoned` flag defaults to false (opt-in only), MCP surfaces never pass this flag, CLI-only `cmk get --include-tombstoned` exposes recovery.

@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a3a98b32f25f4771ac2c2c14f09d49ad5f0c30eff9b0d339bd92a7dc14092199
+related: [v0-4-1-release-gate-workflow, release-workflow-multi-gate-process-0a-0c, task-planning-laning-workflow]
 ---
 
 **Stages (sequential):**

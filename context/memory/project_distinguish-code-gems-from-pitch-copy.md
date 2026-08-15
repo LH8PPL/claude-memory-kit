@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 005d516b37a9c33ddee3ee32aa38f1e68f12adda3949833beaee0e9396a894d6
+related: [pitch-line-copy-candidates-d-224, article-verdict-pattern-for-task-ingestion, release-plan-md-authoritative-task-to-lane-map]
 ---
 
 When ingesting references (articles, discussions, etc.), classify captured knowledge into two categories:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f0c8866ba1abbb96e966879650ddb90dd6d704553839cef12a2a0aadbc785678
+related: [now-md-assistant-cap-precedent, a-c-core-design-pivot-memsearch-anchored-b-dropped]
 ---
 
 - Cap `now.md` at N turns (e.g., 10–15, similar to MemoryOS's `deque(maxlen)`)

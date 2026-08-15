@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4131b5dec9169b54eb1fe5da28a3ee4ed1cea40a1621d7554c2694262ebb1cd4
+related: [evo-memory-survey-passive-benchmark-oracle-discards-failure, hc-9-drift-after-claude-code-update-v0-3-4, memento-2508-16153-learns-from-failure-survey-verdict]
 ---
 
 1. Agent self-reports outcome: "I acted on memory X and it failed"

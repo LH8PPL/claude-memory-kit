@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 05edd1d1728d100d766773fc1f126729cbf13ae401a80915514bbfa323b097f2
+related: [hook-ceiling-enforces-operation-time-caps, design-contract-enforcement-via-tests-code, bom-d-fact-files-are-invisible-to-scanning]
 ---
 
 The health strip (indicating fact freshness / data staleness) has multiple visual states: healthy (baseline), warn, and bad. The healthy state is used for initial layout calculations. When health changes to warn or bad after page load, the strip expands intentionally — full width, larger text, pushes the freshness label to a second line — adding ~45px of height. If the fold height (viewport height minus chrome) is calculated once at load time assuming the healthy state, the strip's later expansion will push content below the fold and trigger a scrollbar mid-session. To fix this, the fold height calculation must be state-aware and account for the potential ~45px expansion in warn/bad states.

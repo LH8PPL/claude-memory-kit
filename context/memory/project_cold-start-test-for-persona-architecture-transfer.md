@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: b4854c8d5d4d686b9831894e9ef520ff5f1ac0ffcabed532bbafac9fac13e694
+related: [e1-cold-open-test-persona-carries-unprompted, session-3-e1-cold-open-test-procedure, fresh-folder-verification-workflow-for-claude-memory-kit-rel]
 ---
 
 To verify persona facts about backend architecture transfer to new projects, perform a fresh cold-start test:

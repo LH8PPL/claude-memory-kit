@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: user-explicit
 source_line: 1
 source_sha1: 0ee89a052cf7139f3ba5627b4cd7d0d35d8b626c6f8822b508e248f6e605c843
+related: [version-stamping-and-scaffold-isolation, updating-cmk-requires-re-running-bootstrap-on-project-files, npm-pack-global-install-for-artifact-testing-0b]
 ---
 
 Updating the kit to a new version is a TWO-STEP process: (1) update the global binary: 'npm install -g @lh8ppl/core-memory-kit@latest'; (2) per-project refresh: 'cd <project> && cmk install' (idempotent — re-stamps the version-marked block in CLAUDE.md + re-wires hooks). Then RESTART Claude Code to load the new hooks/MCP server. Updating npm alone does NOT update project scaffolds — 'cmk doctor' HC-9 flags the drift if you skip step 2.

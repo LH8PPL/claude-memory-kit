@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 29a0295ee225aad1400bc7cd5749f1ce6091874279dafcc871468a26175fada2
+related: [yaml-validator-lenient-parser-blind-spot, skill-md-yaml-colon-space-bug, name-guard-flags-templated-patterns-in-frontmatter-metadata]
 ---
 
 `validate-skill-sources.mjs` upgraded from naive lenient parsing to strict YAML parsing with integration tests. Catches invalid skill frontmatter (e.g., unquoted colons: "update memory: X is now Y") during validation, before Kiro deployment. The canonical validator now matches Kiro's strict parsing (PyYAML) instead of Claude Code's lenient parsing.

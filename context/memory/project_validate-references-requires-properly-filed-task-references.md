@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: bc06171bee6b732c97e0c0d06b2998ba3a72d5cc42faf4c635d89bdff443f218
+related: [decision-log-validation-gap-d-nnn-ids, tag-ready-criterion-core-features-pass-known-issues-cleanly, test-gate-folders-use-numbered-sequence]
 ---
 
 The `validate-references` workflow validator fails if a task ID (e.g., "Task 202") is referenced in docs/commits but not formally filed in the project task system. During v0.4.5 cut, main turned red because D-281 cut-gate log referenced Task 202 without it being formally filed.

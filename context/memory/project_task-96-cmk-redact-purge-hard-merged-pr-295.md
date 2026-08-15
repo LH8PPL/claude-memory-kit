@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: bb603f592dbf46d52bc466ebb700354af8e0a4a516229b16711f6bb1b5bde02e
+related: [task-205-complete-mcp-server-install-dll-lock-fix, task-completion-workflow-code-test-doc-review-live-test-merg, fixed-bugs-in-task-50-kiro-console-flash-branch]
 ---
 
 **Status:** Merged and live (CI green)

@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0bb19e9ccddff15f45e6aeed82cd1dc71eed1b818ad777494bbad1b57d8f3909
+related: [architecture-decisions-recorded-in-adrs, decision-trail-recording-convention-for-divergences, qa-verification-discipline-before-release]
 ---
 
 When a review identifies incorrect evidence for a decision:

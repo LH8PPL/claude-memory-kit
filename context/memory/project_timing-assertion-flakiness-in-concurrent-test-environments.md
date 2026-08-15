@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 431c8330a82a591daaf32795bb3e96cb6767287568398c8f4a45699716622a61
+related: [validation-gate-chain-and-stages, npm-test-fragility-under-load, 5-concurrency-stress-gate-as-pre-pr-verification]
 ---
 
 Earlier suite failure (4/5) was CPU contention from concurrent live-test + review agent running simultaneously, not a code bug. Single-isolated stress test runs avoid this collision.

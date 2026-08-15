@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2c60aadb0ad02bc8513501facd3fdb03caac767555915429d2dc0de92f9a747b
+related: [d-197-end-to-end-live-re-test-workflow, kg-guard-retest-failed-was-stale-artifact-not-fix, testing-workflow-for-claude-memory-kit-fixes]
 ---
 
 The fix updates the guard matcher from a pipe-string pattern to `matcher: '*'` in the hook config.

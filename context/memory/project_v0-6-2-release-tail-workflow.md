@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5cd0c05de0e869e4939c13211d554691a47fd683dff8412b8d51417626736de8
+related: [v0-5-0-release-workflow-stress-commit-push-pr-merge-repack-g, release-workflow-sequence, post-merge-workflow-sequence]
 ---
 
 - Precondition: stress test passes (5/5)

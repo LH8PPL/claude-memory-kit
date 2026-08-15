@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3adb2c2a56c2fb1ab2fb78ac169bb1d815fe842eccc0d76a7bb07b8774416c3c
+related: [core-memory-kit-dogfoods-its-own-memory-system, v0-3-0-released-with-green-quality-gate, v0-5-0-release-workflow-stress-commit-push-pr-merge-repack-g]
 ---
 
 - **PRs merged**: 16 (all findings from sweep incorporated)

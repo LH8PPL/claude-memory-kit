@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 643a5a708156faf6a0e22051c7c1e8a96ac5c8063eb8063218a726ee1922b742
+related: [memory-tier-at-1-949-facts-index-md-capacity, link-out-convention-for-design-md-evidence, ci-authority-convention]
 ---
 
 D-228 kernel decision establishes design.md as the single canonical architecture mechanism doc. Explicitly forbids spinning up separate `docs/design/` files. Size (429 KB, 3777 lines) is intentional comprehensiveness, not cruft.

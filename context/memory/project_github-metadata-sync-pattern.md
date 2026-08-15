@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a793f13e5f7d701f64ede0776b9060c85138b97adf1f389fe85888ad6bbb832c
+related: [canonical-agent-support-list, claude-memory-kit-supports-3-ide-tool-agents, multi-surface-documentation-architecture]
 ---
 
 Multiple metadata surfaces track the same configuration facts:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3646bdd23928b86751f2f447120e4553c97adc5c2af3cc1a7cad194c5f5c0337
+related: [tool-execution-in-kiro-cli-requires-tools-config, missing-tools-field-was-the-shell-blocker, agent-definitions-load-at-session-start-not-invokable-in-tha]
 ---
 
 The kiro-cli agent lacked a `tools` field in its configuration, preventing the model from invoking shell commands. Adding `tools: ['*']` enabled all tool execution.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 73d600cc5ccc5afde6e4f0e6dfca4ce237316dafad98ad73f0b8f797047be861
+related: [when-an-automatic-path-fails-build-a-fallback-mechanic-that, auto-extract-reliability-pattern, notification-doctrine-non-actionable-repeating-failures]
 ---
 
 **Current state**: 7 of 8 turns captured nothing silently; failure modes broader than timeout alone (timeout 166/295, concurrent_run 82, haiku_failed 47, others).

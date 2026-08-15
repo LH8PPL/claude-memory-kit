@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 8129a077084c7fb47172b3bb99fbf5dd7dc13c217834502da0bf27e887a7ffa6
+related: [bom-prefixed-files-and-id-generation, stop-hook-path-budget-constraint, powershell-utf-8-corruption-in-changelog-handling]
 ---
 
 When a cross-implementation divergence is discovered (Node vs Python, etc.), the ruling is to align non-reference implementations to the reference (Node in this case) and pin the alignment with a parity vector in the branch. The parity harness is used to validate and document the alignment, not merely record a fork.

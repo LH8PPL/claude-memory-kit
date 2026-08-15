@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a7b1a799612499ec6b348a29fb9644c0382257fe
+related: [npm-v12-mitigation-plan-tasks-141a-141b, npm-12-the-141a-141b-migration-strategy]
 ---
 
 **Problem (npm v12, July 2026)**: npm disables install scripts by default → better-sqlite3 native binding build skips → fresh installs hit crashed search (requires `npm approve-scripts` to fix).

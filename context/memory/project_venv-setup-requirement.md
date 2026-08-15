@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 27988adfe17672263e1d17931beb515c48c5f733420f65a2181f496cf15e1627
+related: [always-use-venv-for-python-package-installs, python-projects-always-use-venv, always-use-uv-for-python-packages-in-thi-gb6hwr94]
 ---
 
 Always create .venv in project root before installing Python packages. Use venv interpreter for all subsequent python/pip commands. (.venv already covered by .gitignore.)

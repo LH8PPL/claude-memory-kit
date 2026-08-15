@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6e385937600e78642569e5271b4bf33520eb05ae0beb9503833d8207031c6977
+related: [stress-gate-requirement-for-spawn-boundary-changes, vitest-pool-corruption-transient-load-failures, stress-gate-process-for-pr-merge]
 ---
 
 Runs on `npm test`. Structurally enumerates every spawn site in the kit (child_process, execa, etc.). Prevents unreviewed new spawns from appearing.

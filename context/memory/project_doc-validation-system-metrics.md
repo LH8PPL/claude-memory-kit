@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 84e1352dcc9ed8c6e59cb7e8e9ac6b6646691766c0953b565d89ae83dc9499ad
+related: [multi-surface-documentation-architecture, doc-completeness-validator-hook-behavior-coverage-gap, documentation-taxonomy-and-update-responsibility]
 ---
 
 Established doc-validator with five check families across corpus:

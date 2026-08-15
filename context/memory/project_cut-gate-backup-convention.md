@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 60f53c266d71271e4586ab41137204bdcd5991f37e6a137abfe2ee77da9e91f0
+related: [test-gate-protocol-backup-real-paths-instead-of-env-var-sand, kiro-gate-0c-backup-recovery-procedure, backup-strategy-for-kiro-gate-testing]
 ---
 
 Cut-gate backups live in a central root C:\cut-gate-backups\, one folder per run named NN_version_gate (e.g. 12_v0.4.0_kiro), each holding BEFORE-/AFTER- snapshots + NOTES.md. NOT flat in the home dir anymore.

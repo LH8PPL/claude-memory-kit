@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d8f59b3c6aa35ba5d27b7c0e7cff7273b4594cdf9a520543aa299e2e2a618e8e
+related: [actionable-failure-threshold-for-whisper-triggers, notification-doctrine-non-actionable-repeating-failures, stress-test-gating-rule-for-pr-approval]
 ---
 
 **Design**: automated whisper (hooks-layer detection) surfaces diagnostic guidance via skill when failures occur.

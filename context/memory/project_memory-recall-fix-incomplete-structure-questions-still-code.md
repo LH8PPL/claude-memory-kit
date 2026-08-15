@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 668481721bddcdbac0589c3e3f48948e2bfb48bef2110ca8dd08282796ee960a
+related: [claude-code-2-1-x-needs-skill-name-wildcard-to-suppress-skil, deciding-experiment-that-gates-v0-3-1, session-2-validation-gates-cut-gate15]
 ---
 
 Test 3 ("where does business logic live and why") showed the assistant still performed a Glob+Read code crawl rather than leading with memory, despite D-153 changes (skill description, per-prompt hint, CLAUDE.md preamble). The fix addresses what the *instructions* say; live re-test post-merge will determine whether the *model behavior* changed.

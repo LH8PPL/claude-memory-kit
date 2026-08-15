@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5a79ca9adcbdc61e4490e58b898b6b8e7dd0900022f2e094454381ad469362a2
+related: [fable-5-dual-use-safety-flagging-behavior, cmk-install-auto-updates-managed-block-version-stamps]
 ---
 
 Fable 5's security keyword filter is intentionally overly-broad and classifies defensive security coding (e.g., building secret guards, poison guards) the same way it classifies attacks. Task 216 (screening content for secrets before committed writes) is vocabulary-dense enough to trigger the filter constantly, causing automatic model swap to Opus 4.8.

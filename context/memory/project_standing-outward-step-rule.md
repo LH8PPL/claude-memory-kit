@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4e038eaa9c8de922cf2e7349469a9b4675d385b1c6f55cc11e2dadd4fe4b3732
+related: [release-ownership-role-boundary, release-handoff-pr-creation-vs-merge, release-workflow-for-claude-memory-kit]
 ---
 
 Assistant stages all preparatory work (PRs, testing, commits, package updates, CI verification). User performs final steps: tag push, live-session verification of feature gates, and shipping.

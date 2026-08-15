@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: b6f57974e1b608436e0977909b8d4d85ced26ed7cca9b5a0d1649dee8e072823
+related: [kiro-ide-hooks-live-test-wins-2026-06-21-the-user-ran-it-in, critical-kiro-on-windows-hook-constraint-live-discovered-202, windows-kiro-hooks-execute-via-wsl-require-cmd-exe-c-prefix]
 ---
 
 SOLVED — the Windows Kiro-hook command form (LIVE-VERIFIED 2026-06-21): 'cmd.exe /c cmk <args>' WORKS from a Kiro IDE hook on Windows. Proven: a .kiro.hook with command 'cmd.exe /c cmk --version' fired on agentStop and output '0.3.5' in the Kiro chat. This bypasses the WSL-routing problem (Kiro runs hook runCommand via WSL on Windows; WSL has no node so bare 'cmk'/'bash'/'node' fail) by forcing the Windows-native shell where node+cmk live. So the kit's Kiro IDE hooks emit: Windows → 'cmd.exe /c cmk hook <event>'; macOS/Linux → 'cmk hook <event>' (native, no WSL). This is a platform-commands.mjs concern (the binding cross-platform rule). The realcmd probe (cmd.exe /c cmk --version → 0.3.5) is the proof.

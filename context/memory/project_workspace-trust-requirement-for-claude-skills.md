@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 51a54036c675e1a7939983034a19bff131c50bbf5dabe441ba6d57392fc166b6
+related: [skill-gate-clicking-allow-persists-nothing-workspace-trust-i, skill-gate-is-likely-workspace-trust-one-time-not-rule-synta, skill-gate-docs-say-skill-name-space-kit-writes-skill-name-c]
 ---
 
 In Claude Code, projects with a `.claude/skills/` directory require a one-time workspace-trust acceptance before permission rules take effect.

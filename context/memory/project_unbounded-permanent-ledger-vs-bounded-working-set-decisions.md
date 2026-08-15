@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 25f98c6050093840f7e093bc2354af6440090518418570503089ce42c2fcbdca
+related: [decisions-md-is-append-only-permanent-journal-not-regenerate, regenerated-surfaces-vs-append-only-surfaces-digest-vs-decis, append-only-model-for-decisions-md-never-regenerate-from-liv]
 ---
 
 Opposite constraints, opposite purposes:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 898b2efa6f1b59e9cae12dbd54843bc2061bf77b44f35395255dd4d98a5e8737
+related: [agent-model-delegation-for-token-cost-control, three-tier-agent-split-trial-on-task-233, d-390-multi-agent-architecture-active-configuration]
 ---
 
 For this repo, adopting:

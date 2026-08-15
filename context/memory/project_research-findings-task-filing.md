@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 781b1e72cf587f73781d72cf5a6fd0e86b7317b4c3be2d39329caf8d80408670
+related: [clean-pre-existing-table-lint-warnings-by-default, research-notes-indexed-via-research-index-not-documentation, task-entry-boundary-definition-specs-tasks-md]
 ---
 
 When conducting research or review work, organize all actionable findings into the task system. Create new discrete tasks for major work items, fold smaller ideas into existing related tasks. Research documents are generated, but task-based organization is primary.

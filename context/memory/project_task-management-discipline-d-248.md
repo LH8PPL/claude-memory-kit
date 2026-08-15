@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 49b6aee7476ed071efa52ac5dd2ceeb00d1466eeec262bb61a5178424d11f9fc
+related: [deferred-task-decision-gate-backlog-sweep-rule, release-plan-md-authoritative-task-to-lane-map]
 ---
 
 Every open task carries either a **lane** (assigned work in current release) or a **trigger** (a named, checkable condition for starting work).

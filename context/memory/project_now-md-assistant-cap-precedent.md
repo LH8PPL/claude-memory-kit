@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e8d57c17f8ddbfd95c132b7d8b6e11137e8c3888b35d5ad3337a750228237b6e
+related: [compression-spiral-bug-at-three-identical-call-sites, durable-tiers-enable-safe-buffer-trimming, cmk-install-skips-existing-files-cannot-repair-stale-skills]
 ---
 
 The kit already bounds assistant turn size via `NOW_MD_ASSISTANT_CAP` in capture-turn, before turns land in `now.md`. The gap is it doesn't bound (a) user turn size, (b) the number of turns, or (c) input to the three compress call sites (compress-session, daily-distill, weekly-curate).

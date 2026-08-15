@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6f0d85d6b81ac18871e10da52ba43b574aabeafd26ce86057fb0ffcfa2ae7b5d
+related: [two-pass-fix-discipline, task-255-viewer-design-grill, feature-branch-reviewer-merge-hold-workflow]
 ---
 
 - Validated fix lifecycle: PR → merge → housekeeping

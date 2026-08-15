@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2c20c5691daf897a4b86ba3dbafbcb724eb60a43d83875642e08a2f6811c77c1
+related: [post-retrieval-filtering-query-expansion-hyde]
 ---
 
 - **RRF constant:** `k=60` is the standard academic/implementation default (not a free parameter to tune in isolation)

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ed1bb01465155a494004f1ac5d271dfe69f4fb4e72effc5b6b8ca6be75e3d479
+related: [kiro-cli-rejects-bom-in-agent-config-ps-convertto-json-adds, kiro-cli-agent-configuration-and-verification, d-198-fix-agentspawn-hook-now-fires]
 ---
 
 **Agent location:** `~/.kiro/agents/cmk.json` (not `~/.aws`; this is the D-198 bug now caught by gate check KCG2).

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 19f2af77281fddc02c6214eda625531da58fd3d3f76dbc940a0671131a2b8c5b
+related: [d-197-end-to-end-live-re-test-workflow, cursor-gate-v0-5-0-test-procedure, kiro-ide-hook-testing-multi-step-gate-sequence]
 ---
 
 3-phase sequential testing to validate hook installation and firing:

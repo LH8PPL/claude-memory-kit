@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 897395a57d41044c07abc8c69142038fc7a944db4092f7adf5836814fda2e79b
+related: [research-agents-use-sonnet, cmk-search-scope-limitation-with-decision-queries]
 ---
 
 Ran prior-art search on `patent` tool; returns ~38 fuzzy matches per query ranked by blurb-similarity. Low signal-to-noise ratio — most results are tangential (coding-agent CLIs that aren't memory systems). Confirmed not worth adopting for focused research.

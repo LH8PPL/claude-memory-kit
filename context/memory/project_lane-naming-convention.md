@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 63815cc05b3a0c998da931e344123902f41f623431b46fa48f3f5a06ce6bdb6d
+related: [task-laning-strategy-and-trigger-discipline, d-157-rule-version-assignment-at-shipment, deferred-task-decision-gate-backlog-sweep-rule]
 ---
 
 A lane without a digit is not a lane. Lanes must carry numeric identifiers (e.g., "v0.6.6" is valid; "candidate" or "v0.7" without a cut number creates ambiguity). Without concrete naming, lanes decay into the same rot as unnoticed fired triggers.

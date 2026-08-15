@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 8e7e3ebb5990dd909de2525be19d5bb97c3770606ceb6dad38a62b1d82f7cb9d
+related: [dogfood-facts-generated-after-commits, claude-memory-kit-captures-dogfood-facts-about-its-own-debug, auto-extract-reliability-pattern]
 ---
 
 The kit's memory system records facts about ongoing work as it happens—task state, pauses, resumptions, tool observations—creating a live, self-documenting record of the session.

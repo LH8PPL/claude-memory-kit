@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 5823b6b270967594d158973c5cccc2a04cc62ba3985b095bae60a836de79874c
+related: [vitest-pool-corruption-transient-load-failures, stress-gate-requirement-for-spawn-boundary-changes, stress-test-gating-rule-for-pr-approval]
 ---
 
 vitest can show a module-resolution failure (Cannot find module /@id/...) on the newest test file under stress/parallel runs — an SSR-graph concurrency artifact in the harness, not necessarily a code defect

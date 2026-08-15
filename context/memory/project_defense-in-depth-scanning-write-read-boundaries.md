@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9585f095b1a5fcdced85fb993ace39930d941d74a8abc9532dafa642761be95a
+related: [stop-hook-path-budget-constraint, release-workflow-tag-before-merging-new-work, poison-guard-mjs-specific-provider-patterns-are-by-design]
 ---
 
 Content scanned at write-time AND re-scanned when read from disk into prompt snapshot. Catches on-disk poisoning that bypassed write-time check.

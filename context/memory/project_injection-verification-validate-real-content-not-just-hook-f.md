@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 70e6edbb6af10902baf5c3eeaff35dfa4b63731adb51d1e3fd2baf42c7fb979c
+related: [ide-live-check-verification-events-cursor-pattern]
 ---
 
 CH2/W1 (inject/recall) must verify **actual memory content**, not just successful hook execution

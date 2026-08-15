@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f67a392c3c3f23ae84e218e8b747baeaff399a1b
+related: [test-anti-pattern-setup-commands-masking-automation, cmk-version-bumping-convention]
 ---
 
 Task 124 shipped auto-reindexing of `INDEX.md` when using `cmk forget`. Validated during v0.3.0 memory curation: three `cmk forget` calls left INDEX.md current with no manual reindex step.

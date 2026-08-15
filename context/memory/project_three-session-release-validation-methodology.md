@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 9500b979016c4429deda2c9e0a99a0cd441d6abcf0097a228816feea3c95c103
+related: [session-2-validation-gates-cut-gate15, session-3-e1-cold-open-test-procedure, e1-cold-open-test-persona-wedge-successful]
 ---
 
 The release workflow uses three consecutive session/test phases with named validation gates:

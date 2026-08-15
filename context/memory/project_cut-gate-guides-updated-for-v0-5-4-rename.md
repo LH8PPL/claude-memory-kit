@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0ea70a4a329724007fb4f0d25ad76bce33aac691dbcaf694b3f98771ac1f3fbd
+related: [v0-5-4-released-under-renamed-repo-identity, persona-directory-moved-to-core-memory-kit, version-0-5-4-tarball-ready-for-gate-testing]
 ---
 
 All 4 cut-gate guides (base, cursor, kiro, kiro-cli) updated for v0.5.4 rename:

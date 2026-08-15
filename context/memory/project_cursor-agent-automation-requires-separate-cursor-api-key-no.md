@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c1aa73fdca8c742ecc93e4144e31d58aa275f0d2db8461edcb64aba7ace0b14d
+related: [kiro-configuration-structure-agents-md-not-claude, documentation-structure-and-prerequisite-locations, cmk-disable-semantic-environment-variable]
 ---
 
 `cursor-agent` CLI in headless scenarios requires explicit `CURSOR_API_KEY` environment variable; it does NOT reuse desktop IDE login credentials (unlike Kiro, which reuses existing session). Missing or unset key causes silent no-op with no error.

@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 86d8870201753002838d797aa511b2c2ffbaee5c4a7fc0050be77a4a20835745
+related: [skill-review-imported-facts-staleness-bug-fixed, v0-6-2-published-release-state-and-contents]
 ---
 
 During v0.6.5 visual review, investigation into corpus sparsity revealed semantic recall was returning wrong facts for 86.7% of the corpus. This became the release's primary driver.

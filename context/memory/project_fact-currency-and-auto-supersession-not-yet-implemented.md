@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 6d5fa52d97010fbb4d658b31afa67961e42f1b4ed36f2ea0d3e0fc64ab680500
+related: [kit-s-decision-log-manual-maintenance-pattern, frozen-decision-log-philosophy, project-decision-trail-lane-preservation-habit]
 ---
 
 When multiple versions of a fact exist (e.g., old `ChatService` architectural pattern vs. new `ClaudeAgentService`), the kit returns both in search results without auto-filtering or auto-selecting current. The recall system surfaces this honestly (flagging ambiguity: "both are live; app likely evolved") rather than hiding it, but auto-supersession logic is not yet implemented.

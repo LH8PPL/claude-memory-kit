@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0f76af3248e00892dc62d09d06c017e7945f597829f655f6af888d1af5984360
+related: [capture-hook-bins-create-orphaned-memory-tiers-due-to-missin, bash-cwd-drift-creates-packages-cli-context-artifacts, new-v0-6-2-guard-candidate-undefended-cwd-as-root-assumption]
 ---
 
 Location: `packages/cli/context/`

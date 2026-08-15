@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: b28748bc2be87263d02fd08de71b6eb0e4cf6162
+related: [npm-v12-breaking-change-and-better-sqlite3-migration-plan, npm-12-the-141a-141b-migration-strategy, install-time-consent-for-better-sqlite3-binding-replaces-err]
 ---
 
 **Problem:** npm v12 (~July 2026) turns install scripts off by default. Our two native deps will silently fail to build:

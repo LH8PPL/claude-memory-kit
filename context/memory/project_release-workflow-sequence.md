@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 891ceed8734ab0fc4eed504304c712723f5071215b6a43c903b8b2fb9945d7c5
+related: [v0-6-4-release-workflow-and-task-ownership, v0-5-0-release-workflow-stress-commit-push-pr-merge-repack-g, release-workflow-after-fix-merge]
 ---
 
 After gates pass and merge is approved, a queued sequence executes in order:

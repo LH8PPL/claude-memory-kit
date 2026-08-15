@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 8025c03122043771f8479009c2c0cc602782ab70bd6082db0308e369f95747cb
+related: [sonarcloud-typescript-analyzer-exit-code-quirk, ci-authority-convention, claude-md-ci-validator-binding-rule]
 ---
 
 Core discipline (recorded as `D-250`): When a tool reports status (exit code, gate color), verify by reading full logs first.

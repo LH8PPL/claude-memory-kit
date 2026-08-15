@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 10ed0008c21c0c3ad9105c0de98ac29913e3474a944f7b80ea79ccad165b47cd
+related: [release-workflow-full-sequence-for-v0-4-3-and-future-cuts, release-workflow-multi-gate-process-0a-0c, release-git-choreography-memory-release-tag-in-order]
 ---
 
 The release process is gated in three phases:

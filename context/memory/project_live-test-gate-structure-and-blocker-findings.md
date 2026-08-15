@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 0e891b30120a5fb71f8c49247d3849aac11aaad1b36e3085b7af2883dac84c99
+related: [v0-4-0-final-gate-kh-kc-live-hook-firing-tests, kiro-v0-4-0-release-code-complete-pre-release-checkpoints, d-197-end-to-end-live-re-test-workflow]
 ---
 
 The gate has 5 runs and two phases of checks:

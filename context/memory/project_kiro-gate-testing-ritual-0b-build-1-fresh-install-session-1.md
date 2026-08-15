@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 451e9dd337247bd8a6a2f54c9b555639ad6063bd58b59552b3e76d0b0f4b0733
+related: [rebuild-artifact-after-bug-fix-without-re-cutting-release, testing-workflow-for-claude-memory-kit-fixes, live-test-workflow-for-kiro-cli-project-fix]
 ---
 
 **Backup first**: User creates copy (e.g., `kiro-gate` → `failer3-kiro-gate`) before starting, as evidence and recovery point.

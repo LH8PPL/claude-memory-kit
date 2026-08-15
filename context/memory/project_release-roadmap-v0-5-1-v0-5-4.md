@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 469affa2a51635328ace3261c1a608feb794b40837bf635b4ef796197fe8ec8e
+related: [backlog-for-v0-3-x-and-v0-4, v0-4-roadmap-kiro-first-editor-integration, v0-6-4-and-follow-up-work]
 ---
 
 - v0.5.1: security fixes; Task 216 (screen-before-write) is first priority

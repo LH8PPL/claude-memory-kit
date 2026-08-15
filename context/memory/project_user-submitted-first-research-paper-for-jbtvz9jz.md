@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract-session
 source_line: 1
 source_sha1: c9eba369f1e874779b517927c3287edec8669b53b801bb4950b2f3edb8c99297
+related: [user-confirms-design-first-approach-for-nr2kfgzm]
 ---
 
 User submitted first research paper for Task 95 review (Language Models Need Sleep)

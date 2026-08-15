@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 90252a68c09cc423db4eb68e432b09cfbf3f22d7aa8b97b083ea138e2885b283
+related: [claude-code-2-1-x-needs-skill-name-wildcard-to-suppress-skil, manual-verification-gates-for-tasks-74-and-151, open-cmk-mcp-per-tool-prompt-systematic-investigation-pendin]
 ---
 
 **What happens:** SessionStart hook at `settings-hooks.mjs:87` has no matcher — fires unconditionally on every SessionStart. Claude Code emits SessionStart with `source: "compact"` after compaction. Hook calls `cmk-inject-context`, re-injecting the snapshot.

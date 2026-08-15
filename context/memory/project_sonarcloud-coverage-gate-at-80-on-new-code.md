@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 038d9b325f7c69ab683dab7676aabe9d379ff3e4aa175d730c9c2c9df65f785c
+related: [sonarcloud-coverage-gate-threshold, sonar-0-new-code-coverage-gate, handler-test-coverage-gap-error-exit-branches]
 ---
 
 - Enforces **80% coverage on new code** (per-PR basis, not total codebase)

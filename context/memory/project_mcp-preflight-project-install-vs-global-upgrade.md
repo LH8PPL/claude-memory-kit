@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 64cd7d2325ba6fb8e73d662e815f4edfaf48d7885751c6db17dd88e221c64b4d
+related: [task-205-preflight-fires-on-wrong-trigger-design-flaw, npm-uninstall-ebusy-error-with-better-sqlite3-node-on-rebuil, windows-dll-lock-blocks-npm-reinstall]
 ---
 
 The `cmk install` command includes a preflight check (Task 205) that detects running MCP server processes via PID scan and reports command lines.

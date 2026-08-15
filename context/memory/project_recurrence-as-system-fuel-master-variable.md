@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 14fb5ba70759cfc860bfd527a8668f4547e196931e0f9585d0b5e8dc3e89a51c
+related: [two-host-kit-architecture-proposed, memory-learn-loop-as-converged-system]
 ---
 
 Recurrence is not one signal among eight — it is the resource the system runs on. Five artifacts converge on it without naming it:

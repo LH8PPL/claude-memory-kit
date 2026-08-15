@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 379e1800ddb0face55548f65cd80fa8945637116f9917e63b3a59a3dc41e6b99
+related: [pointer-format-for-archived-task-entries, one-line-pointer-design-for-numbering-validator-consistency, line-ending-normalization-risk-in-python-rewrites]
 ---
 
 Pointers in live `tasks.md` are marked as `→ [archive](<path>)` and represent links, not entries. The file's "How to read this file" section must explain this so readers don't mistake pointers for task data or assume incompleteness.

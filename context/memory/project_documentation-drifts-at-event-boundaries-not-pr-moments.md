@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e1390fc3d27e7d8614f7c5e0195de8b8aec34ed15551126dd3efdbe67a4338b9
+related: [doc-update-release-boundary-rule, multi-surface-documentation-architecture, catch-task-changelog-version-mismatches-pre-release]
 ---
 
 Documentation updates have two distinct moments:

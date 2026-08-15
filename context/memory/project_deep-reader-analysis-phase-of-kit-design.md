@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 398043233a4b67ceb74f34a2142e27405f3226798a49f9c7380ab4bc209e17d1
+related: [letta-precedent-evidence-for-tasks-149-95, closed-products-recall-architecture-validation, design-reference-awrshift-claude-memory-kit]
 ---
 
 Three deep-reader instances (all Sonnet) are actively analyzing prior art systems to inform the final design proposal:

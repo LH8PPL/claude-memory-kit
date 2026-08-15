@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 010dba8a755583f8d1385b6a8f7e7ff9346826f479c63630756779c5b8c3ab82
+related: [d198-proven-agentspawn-fires-but-pretooluse-not-on-2-9-0-exe, final-kiro-cli-v3-redesigned-hooks-pretooluse-superseded-by, kg-guard-failed-matcher-pipe-alternation-not-literal]
 ---
 
 **Tool rename:** kiro-cli 2.9.0 renamed the shell execution tool from `execute_bash` → `execute_command`.

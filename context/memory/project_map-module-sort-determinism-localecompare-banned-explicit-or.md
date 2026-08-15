@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c74f32c9f615dc1c80f068b917436914f2d21da0aabbd7e3a6d6923704fb5f14
+related: [use-deterministic-comparators-for-sorting-committed-files, cross-machine-file-sorting-must-be-byte-deterministic, b3-b4-wedge-test-workflow-cross-project-doctrine-capture-val]
 ---
 
 Sort ordering in the map module must be explicit and deterministic across all machines:

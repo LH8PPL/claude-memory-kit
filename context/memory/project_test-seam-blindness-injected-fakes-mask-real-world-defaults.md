@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2ae4e17bbdf8620a6ba8652ea675302d9e0bc43effdd92b8a6de94b0bc5c23c9
+related: [hook-inject-capture-tests-faked-dependencies-masking-bugs, wired-but-dead-observe-legs-recurring-bug-pattern, bom-d-fact-files-are-invisible-to-scanning]
 ---
 
 Recurring bug class: tests inject fakes at a seam, but the real production default at that seam is untested. When downstream behavior changes, the real default breaks.

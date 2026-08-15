@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: cc7a7f0fa3ddbf9eae69de7c4881bea6b68dba510448a99188d94967db89409a
+related: [d-343-kit-lacks-mechanism-to-repair-stale-scaffolded-skills, test-anti-pattern-setup-commands-masking-automation, cmk-install-skips-existing-files-cannot-repair-stale-skills]
 ---
 
 The kit project's core philosophy is "use the kit's own mechanisms, don't hand-edit." Hand-editing (even when effective) violates this principle and is itself evidence of a missing feature.

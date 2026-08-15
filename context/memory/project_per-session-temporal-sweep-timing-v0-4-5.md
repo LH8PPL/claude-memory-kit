@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b9253f4bd05013fe29a4db9a9b3266fbf9727d262a710f9dfa52a719c8cbe6dc
+related: [sessionstart-hook-activation-narrow-restart-caveat, embedding-cache-is-derived-index-not-primary-memory-storage, version-snapshot-in-recent-md-guards-against-cross-session-a]
 ---
 
 The temporal sweep (stale "current state" contradiction-catch) now runs at:

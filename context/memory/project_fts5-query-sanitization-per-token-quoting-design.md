@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a88a3cbe4a35863060af2eda1a6e7b2006ff4b1dd366aee8d5171e6c4b38ae72
+related: [fts5-query-sanitization-task-153]
 ---
 
 Fix for v0.3 FTS5 crash via `prepareFtsQuery(raw)` helper in search.mjs, applied to `opts.query` before keyword search calls.

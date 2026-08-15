@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8071f76c81c30b51d283d5866e6bacdffeb23914ad070ccf29346143eb6f7bb3
+related: [install-system-dual-agent-workflows-cases-a-d, semantic-config-is-shared-agent-neutral-setting-in-context-s, uninstall-end-to-end-verification-results]
 ---
 
 - `cmk uninstall` removes only Claude Code managed surface (CLAUDE.md block + hooks), does not delete `context/` or even fully remove hooks

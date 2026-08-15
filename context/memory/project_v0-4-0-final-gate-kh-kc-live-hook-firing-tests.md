@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d3464ed49de9a3a61407d1d08dca83cdd255c0d29ca200b9eff06a31440cfe63
+related: [plan-the-user-2026-06-21-do-the-manual-kiro-live-capture-tes, cut-gate-kiro-deliberately-tests-both-kiro-clients-across-th, live-test-gate-structure-and-blocker-findings]
 ---
 
 Two groups of tests that unit tests cannot reach:

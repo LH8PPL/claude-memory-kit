@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1ce98fa7b1e2d07d536fcd080ff891f1b5b711c6
+related: [e1-cold-open-test-persona-carries-unprompted, e1-cold-open-test-persona-wedge-successful, three-session-release-validation-methodology]
 ---
 
 E1 measures whether memory affects **how code is built** (architecture, tooling, patterns), not **what** is built (product choice). Score as **PASS** if the cold-open scaffold unprompted includes:

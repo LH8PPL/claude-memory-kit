@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 5613976d65ffec1b1938adf27781d46246dbb4079688421f12efe5f5df4c0ead
+related: [persona-auto-drain-queue-for-medium-confidence-candidates, e1-cold-open-test-persona-carries-unprompted, e1-cold-open-test-persona-wedge-successful]
 ---
 
 User's preferred architecture pattern (`app/{api,services,repositories,schemas}`) is now in live persona tier (LESSONS.md + USER.md).

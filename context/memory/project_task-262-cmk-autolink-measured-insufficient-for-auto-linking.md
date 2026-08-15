@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 86d76658d9661b242ceb2ec4a4ae6a1b0676d3d2bed58e251fcc0c0c8b452cfb
+related: [canary-discipline-validate-features-before-enabling-defaults]
 ---
 
 Three-band mechanism, corpus-derived floor, and backfill implementation complete and tested on real corpus. Live-test results: automatic similarity-ranked edges regress multi-hop recall (−0.111) and recover zero of the 0.444→0.889 headroom that hand-placed edges prove is available. Root cause: automatic linking solves "related enough to link" but not "related enough to answer a question"—two semantically different relations. Feature ships with defaults OFF and limitation honestly documented. Negative result validates ADR-0023's cheap path is measured insufficient, pointing LLM-cues candidate as next direction.

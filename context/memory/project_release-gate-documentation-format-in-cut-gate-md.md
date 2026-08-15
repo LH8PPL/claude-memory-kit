@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b9804f269bef906588ed37517065333ff206bc20d61116ecb49598d0035ef438
+related: [cut-gate-testing-guide-manual-release-qa, cut-gate-backend-pattern-template-4f, documentation-map-spine-drifts-while-decision-log-stays-curr]
 ---
 
 Per-version release gates are documented in `docs/process/cut-gate.md` with a consistent structure:

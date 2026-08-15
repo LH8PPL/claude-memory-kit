@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7b49eb15ca3633c41e685ad77792289fccabcd32432b4a1d1b001f61b42f27f6
+related: [stale-mcp-process-workaround-after-build-updates, stress-test-gating-rule-for-pr-approval, dj4-live-test-prerequisites]
 ---
 
 Stale MCP servers from previous runs can mask test results by holding old environment state. When validating kiro-cli's delivery of mcp.json `env` to spawned processes, pre-existing server instances prevent clean testing.

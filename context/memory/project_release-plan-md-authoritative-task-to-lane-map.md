@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2a872cc02a9b3e65a9a41aac96feb3a9a4511bdc3496fd641bbdab53d21db6ff
+related: [task-lane-consistency-audit-workflow, planning-docs-as-standalone-commits-on-main, reliable-tarball-file-validation-with-npm-pack-json]
 ---
 
 RELEASE-PLAN.md is the single source of truth for assigning tasks to versions and lanes. The tasks.md file may include lane tags for reference, but these are not authoritative. **Binding rule:** every task must be assigned in RELEASE-PLAN.md at the same time it receives a lane tag in tasks.md. Any task with a lane in tasks.md but missing from RELEASE-PLAN.md is a dangling reference and must be fixed in RELEASE-PLAN.md.

@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3f1709f6518b8d05d0dd2549438a14d545837d62907331949c8431d97062dfa7
+related: [ide-agents-and-autonomous-agents-are-on-dh5mucd6, claude-memory-kit-judge-as-the-per-host-adapter, automatic-oracle-free-quadrant-is-the-real-design-target]
 ---
 
 IDE agents (Claude Code) and autonomous agents are not separate categories — they're points on a spectrum.

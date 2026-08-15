@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f4b88efc6ff395dd5dcd0cc8f40029cdedba64cb0e26a78bb8bd0d1bf8c3f17b
+related: [release-documentation-convention-bug-fixes-vs-features, tag-and-publish-v0-3-5-release, v0-4-3-release-verification-process]
 ---
 
 Project runs published v0.6.0. PreCompact merged to main but not active; requires new release + reinstall. .claude/settings.json has 7 events (old); PreCompact would add 8th.

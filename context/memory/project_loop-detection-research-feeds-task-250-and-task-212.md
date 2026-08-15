@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6a93e7a9c506bc39c395a5128ecf1287ecb0fc5703eef8459b39eaaa23117353
+related: [kit-missing-tool-call-log-for-full-loop-detection-coverage, link-and-reference-triage-workflow, cmk-view-integrates-with-core-memory-subsystems]
 ---
 
 Octopoda's loop-detection engine research is input to:

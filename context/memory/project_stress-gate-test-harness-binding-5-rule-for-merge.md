@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 70ff3bf67568cbd7cfd3ca4028be882677d77fb7badce8439be1f7f1d942a173
+related: [windows-eperm-spawn-concurrency-flake-class-and-fix-pattern, stress-flake-self-induced-load-not-regression, stress-gate-requirement-for-spawn-boundary-changes]
 ---
 
 The merge-gate runs 5 consecutive full test suites back-to-back. Typical run ~13–14 min total (~150–175s per suite; 2132 tests, 130 files). This 5× repetition is intentional and binding—not a tuning knob.

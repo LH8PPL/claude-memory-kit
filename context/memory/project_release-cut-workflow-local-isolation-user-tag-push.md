@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 557916403cecec304c708dfbd36d7bd622710cfcfaf8b4f69d2e72b1dc7f3857
+related: [release-workflow-npm-script-git, release-gate-workflow-and-final-user-control, release-workflow-for-lh8ppl-claude-memory-kit]
 ---
 
 Standard release workflow:

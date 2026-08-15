@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a8ea2061a26926bd5bd1f525b92ff59cadbe441ad03aea9c901a0ea76965879d
+related: [d-364-discipline-code-verified-vs-readme-only-research-taggi, guardrail-review-process-two-pass-primary-source-verificatio, primary-source-verification-protocol]
 ---
 
 When evaluating external sources or prior art (e.g., Octopoda), tag all claims as either:

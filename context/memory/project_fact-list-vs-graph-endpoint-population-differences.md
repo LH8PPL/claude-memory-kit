@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a4797f3a86edb7fd4d04feb9f7a3fdf87c9e135cdabacbd6ecb3c3e6b81431e8
+related: [embedding-cache-is-derived-index-not-primary-memory-storage]
 ---
 
 Two endpoints serve fact data with different filtering and semantics. The graph endpoint counts facts without the expiry filter, returning all facts regardless of staleness; this computation is expensive (full graph render). The fact list endpoint applies the expiry filter and returns filtered facts. In search mode, the displayed count is capped at the page limit (e.g., shows "50 matches" even for a 500-hit query because only 50 are displayed). The facts endpoint now returns a `total` field representing the actual filtered population in both normal and search modes, separate from the displayed page count. Using the graph endpoint's count for hero numbers on a facts page is both misleading (different population) and expensive (triggers a full graph computation on every page load).

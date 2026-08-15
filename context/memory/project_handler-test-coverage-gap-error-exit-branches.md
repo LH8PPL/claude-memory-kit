@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 96ebc5c092dd69b28ae9b2a8c0c5b76b508fdf23
+related: [skill-review-imported-facts-staleness-bug-fixed, fixed-bugs-in-task-50-kiro-console-flash-branch, data-loss-bug-pattern-echo-rm-laundering]
 ---
 
 Handler tests have a recurring blind spot where error/exit branch coverage in seam-injection scenarios is not exercised by unit tests.

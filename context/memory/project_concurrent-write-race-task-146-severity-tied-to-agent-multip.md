@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 63df1801f91a98046b5b8c4a569ac264455b6ff8a5b455b4e9e004d0b3d17790
+related: [release-laning-and-task-dependencies-v0-4-4-v0-5, v0-4-x-versioning-roadmap, kit-name-change-task-195-timeline-and-decision-point]
 ---
 
 **Context:** Task 50 shipped v0.4.0 (Kiro, cross-agent adapter); Task 146 addresses real race in concurrent writes to memory files (lockless file writes → data loss risk).

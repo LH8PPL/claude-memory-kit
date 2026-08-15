@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d9c79d163190c471eeb2ff276ad1f9b337b11cfdf42785df0e09d7a71a60d0d6
+related: [windows-ebusy-on-npm-global-update, windows-dll-locking-during-cmk-reinstall, windows-ebusy-when-updating-cmk-during-claude-code-runtime]
 ---
 
 On Windows, a running MCP server holds an EBUSY lock on sqlite.dll, preventing clean package reinstall of cmk.

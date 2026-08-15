@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e0647ff665b5b37ea5f13cc7a3850d0253bf83f12b5780c9fd1d18c48596a227
+related: [stress-gate-requirement-for-spawn-boundary-changes, stress-test-phase-in-pre-merge-workflow, stress-gate-release-workflow]
 ---
 
 When changes touch spawn/hook boundaries, the stress-gate (5/5 test suite) must complete and pass before pushing or opening a PR. This is a blocking requirement, not optional.

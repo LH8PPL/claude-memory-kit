@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 8bdff497d5c8413b9820b75897aaf2d1217f3293089105fe4b2235a3fb25201b
+related: [two-pass-review-discipline-validated-on-critical-bugs, three-tier-model-delegation-pattern]
 ---
 
 Three-agent model split (user-designed):

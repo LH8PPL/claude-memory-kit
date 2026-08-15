@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 439b4c9ae024780c3cacf40983602b6b25267302559f7a768a6d6a6f582dae50
+related: [rebuilding-the-global-cmk-binary-after-code-changes, cli-installation-verification-workflow, artifact-rebuild-for-v0-4-0]
 ---
 
 Standard sequence for distributing local changes to the global `@lh8ppl/claude-memory-kit` CLI:

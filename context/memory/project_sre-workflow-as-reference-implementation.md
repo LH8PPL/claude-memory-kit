@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: df7b48191b46558fd68e18139398e76146963908efbc34d4c165186f1438bace
+related: [episode-based-architecture-principle-refined, canonical-agent-support-list, post-215-merge-workflow-gate-continuation]
 ---
 
 SRE agent operates in bounded episodes:

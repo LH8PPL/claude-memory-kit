@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 9f944445807f313e6994c74540fc8545f8a08a3e
+related: [release-process-for-claude-memory-kit, release-git-choreography-memory-release-tag-in-order, memory-review-discipline-before-commit]
 ---
 
 Keep memory/capture commits (context/ changes, session logs, hook captures) in a separate commit from release commits (CHANGELOG.md, package.json version bumps). Release commits contain only the version-bump content, preserving clean audit trail.

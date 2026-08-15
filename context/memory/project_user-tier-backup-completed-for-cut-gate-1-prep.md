@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3de63d43745761b333ada9e7ec968b457abe144d39e4da5882f4563caae6da9e
+related: [gate-preparation-tier-backups-and-dogfood-isolation, persona-directory-moved-to-core-memory-kit, user-tier-memory-backup-before-testing]
 ---
 
 Backup of ~/.claude-memory-kit successfully created at `C:\cut-gate-backups\user-tier_2026-07-12_14-49-40\`. Live ~/.claude-memory-kit is now absent. Backup contents verified: HABITS.md, LESSONS.md, USER.md, .locks/, fragments/, memory/, queues/.

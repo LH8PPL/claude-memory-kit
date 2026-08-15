@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4b401244279a9f61526e9a947831a56769340138ec63b6d7d01b854e463922df
+related: [git-as-sole-evidence-in-gap-cases, mcp-prompt-root-cause-agent-config-kiro-cli-mismatch]
 ---
 
 - **Real deliverable**: the cron sweep (D-169), which runs `dailyDistill()` and fills gap days automatically.

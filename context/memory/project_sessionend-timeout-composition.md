@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f0815b9bc259eec28f1c9ee2ccac4424eeaf253060ae6ccf862f7a9c370cce57
+related: [idiomatic-timeout-composition-pattern-50s-120s]
 ---
 
 `autoPersona` default timeout is 50_000 and correctly composes with 60s ceiling across four concurrent SessionEnd Haiku calls. Timeout-composition discipline verified at all sites; recursion guard correct everywhere needed.

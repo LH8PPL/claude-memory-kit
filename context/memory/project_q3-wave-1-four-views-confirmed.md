@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a6d78ccae8895e2517f359e30639ab02b2ca1c55cc715b0167d185f22edd6910
+related: [q3-wave-1-viewer-five-views-locked, cmk-view-proposed-wave-1-design, q2-landing-design-search-first-locked]
 ---
 
 - **Landing:** From Q2 design (search + health strip + view tabs)

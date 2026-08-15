@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f9992e6c6d40732403c533957bd38de5c722b3c20060a5067ecb3154247690b2
+related: [octopoda-loop-detection-code-verified-findings, loop-detection-research-feeds-task-250-and-task-212]
 ---
 
 Kit writes audit.log, extract.log, and DECISIONS.md, which feed most of Octopoda's classifiers. Retry/nondeterminism detectors need a **tool-call log** (individual tool invocations, retries, outcomes) not yet implemented.

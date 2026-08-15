@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: bd5e119a366df2a3fe606b36cde786468b5c4cc1f95158559962ecae5ee07645
+related: [three-tier-memory-architecture, sensitive-content-policy-for-memory-capture-system, public-repo-memory-policy]
 ---
 
 - **Committed tier:** MEMORY.md, SOUL.md, INDEX.md in `context/` — travels with `git clone`

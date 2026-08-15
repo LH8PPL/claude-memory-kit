@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b0962b8023f0ed6c1e435554f6f900a27bf0341eca0e6513ed129f0807d64804
+related: [windows-rmsync-cleanup-flake-workaround, flake-root-causes-windows-eperm-spawn-concurrency, ci-authority-convention]
 ---
 
 Local `cli-install.test.js` fails with EPERM on Windows during cleanup due to temporary directory teardown semantics, not a code regression.

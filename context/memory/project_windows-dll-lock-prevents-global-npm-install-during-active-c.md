@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3af9ebf6155da922db86349db2014649ed1e0505e9bd3522715cce8ee975db5b
+related: [close-claude-code-before-global-cmk-install-to-avoid-ebusy, windows-ebusy-when-updating-cmk-during-claude-code-runtime, npm-uninstall-ebusy-error-with-better-sqlite3-node-on-rebuil]
 ---
 
 During an active Claude Code session, `npm install -g` for claude-memory-kit can fail with EBUSY on `vec0.dll`. Root cause: Claude Code + MCP server child processes hold open handles to the DLL, preventing npm from replacing files in the global install directory.

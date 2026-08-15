@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: eac82d1bed7969faf97d5237f896053422f511bcecf853dcfe6fe0154525fc6e
+related: [loop-detection-research-feeds-task-250-and-task-212, research-findings-task-filing, task-entry-boundary-definition-specs-tasks-md]
 ---
 
 When the user sends project links, they are surveyed for ideas. Each idea is mapped to one of:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 00b0b20996d6a0c946e0afc30e370b7003fccebac3fdc39205b6695971b8759b
+related: [kiro-cli-custom-agent-tool-limitation, kiro-cli-automatic-memory-capture-works, cross-project-rules-auto-promote-at-session-end-stop-hook]
 ---
 
 - **Issue:** Kiro bug #5873 prevents the `mk_remember` tool from routing to custom assistants like claude-memory-kit's Kiro CLI integration.

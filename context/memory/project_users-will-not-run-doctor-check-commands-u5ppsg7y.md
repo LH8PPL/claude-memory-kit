@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract-session
 source_line: 1
 source_sha1: 2fbc6b626fdd3b4481847bd6899f45be737494f975ecdaf3a777558e7c0ad526
+related: [does-not-want-claude-to-automatically-ex-vc4ugjtp]
 ---
 
 Users will not run doctor check commands; silent failures must surface automatically without user action

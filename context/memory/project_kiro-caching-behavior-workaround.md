@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1cac541d797b7d79eb538b83a0ad8a548fa446e211d13c85bae1230987aee45f
+related: [kiro-requires-full-restart-to-load-updated-hooks, kiro-cli-explicit-save-limitation-known, cli-installation-verification-workflow]
 ---
 
 Kiro IDE may cache hook commands. If a hook change doesn't take effect after rebuild:

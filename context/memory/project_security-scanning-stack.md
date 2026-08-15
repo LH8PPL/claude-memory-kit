@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 48d5651a36da12d60771e6368e6a6df9d1aa699f9fcbfd53f0c7db1b33b8bf99
+related: [sonarcloud-as-security-gate-for-redos-detection, node-version-floor-bumped-to-22-in-v0-6-2, ci-pipeline-configuration]
 ---
 
 - **CodeQL** — static analysis (SAST)

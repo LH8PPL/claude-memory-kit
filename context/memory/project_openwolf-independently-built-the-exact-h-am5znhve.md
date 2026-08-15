@@ -8,6 +8,7 @@ trust: high
 source_file: review-promote
 source_line: 1
 source_sha1: eaee3558a0e9eb34326cc7c22d783992b3c8188b77d9859a5d61016780fd7513
+related: [openwolf-scheduled-job-architecture-peer]
 ---
 
 OpenWolf independently built the exact heartbeat fix (last_heartbeat via mtimeMs derive-from-artifact), validating the architecture.

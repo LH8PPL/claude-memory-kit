@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 9b74983b86bf727efca1b654182a581ac9d953339809aa0d0a88c53ffb92638f
+related: [4-stage-fastapi-build-plan-with-embedded-rules, e1-cold-open-test-persona-carries-unprompted, e1-test-scoring-criteria-backend-code-generation]
 ---
 
 Four-stage test sequence in C:\Temp\cut-gate10:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e29a20a18da4a09d596199cacd4cf706c221727a
+related: [production-code-must-go-through-pr-ci, production-code-changes-need-a-pr-never-direct-to-main, full-gate-re-run-on-final-code-after-code-review]
 ---
 
 Direct-to-main commits allowed only for docs/scaffold follow-ups per campaign rules. Production code changes (e.g., install.mjs) must go through PR/CI cycle (branch → PR → CI → merge), even for fixes that seem localized.

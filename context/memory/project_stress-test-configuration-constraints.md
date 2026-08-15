@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ee026c0d90d72ce96fb3016ee152cd3cb8c389f732434ea9ffb4b4263b22b4d0
+related: [validation-gate-chain-and-stages, stress-test-suite-timing, vitest-pool-corruption-transient-load-failures]
 ---
 
 - Setup: 3 vitest workers, 5 full-suite runs ≈ 18 minutes total

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f3a97378fb692376633e829c126941865b4003d7
+related: [allow-list-entries-centralized-in-settings-hooks-mjs, kit-install-pre-configuration-expectation, scaffolded-skills-drift-after-binary-updates-without-cmk-ins]
 ---
 
 Adding new skills requires updating both the skill scaffold code (e.g., Task 75.1 for memory-search) AND Task 90's `KIT_ALLOW` permission list. Omitting the allow-list entry causes the skill to prompt for permission instead of auto-firing. Task 75.1 had this bug; Task 133 fixed it with a one-line allow-list entry.

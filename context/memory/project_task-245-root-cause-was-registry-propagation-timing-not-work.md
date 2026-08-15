@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: bf7b97ef771115dda466767e860da0e75a7170a459cc3856a39a75317325e758
+related: [bash-tool-cwd-persists-cd-into-a-workspace-silently-reroutes, cmk-permission-prompt-only-on-cd-compound-d-80-edge]
 ---
 
 **Initial diagnosis:** Working directory change (from `/c/Projects` to `/c/Temp`) appeared to enable upgrade success.

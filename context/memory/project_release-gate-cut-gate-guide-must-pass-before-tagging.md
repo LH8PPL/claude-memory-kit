@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9cf320e39d419d8148073712c356e7f810ede15f114cc6a3fd6e688e064e2422
+related: [urgent-resume-the-global-cmk-is-half-ins-3evdaurq, memory-persistence-validation-workflow-end-to-end, d-197-end-to-end-live-re-test-workflow]
 ---
 
 The release workflow for claude-memory-kit requires cut-gate guide verification BEFORE pushing a release tag. Flow:

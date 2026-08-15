@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e02ee5b351359fe03d076fcedf2f3dfae3245e89184ddafc1e777005bcc840f9
+related: [decision-log-system-for-known-limitations, decision-logging-in-task-entries, 2026-07-01-arc-complete-output-inventory-and-at-risk-layer]
 ---
 
 This project uses a structured system to preserve decisions, research, and design history:

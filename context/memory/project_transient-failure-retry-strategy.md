@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ac3255646b062a23797721a263dd2681b1adcae9
+related: [vitest-pool-corruption-transient-load-failures, hc-2-distill-freshness-fail-self-clears, known-environmental-artifact-laptop-sleep-during-tests]
 ---
 
 Jitter-class failures in smoke tests receive one automatic 5-second-wait retry. If still degraded after retry, the test asserts a degradation contract (preserving aged files for next week's retry) rather than failing the gate. Deterministic errors fail fast without retry.

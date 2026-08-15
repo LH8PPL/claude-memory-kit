@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 86999c16bc71d7490569ed1f0bf317201063e581c38f90b1b651394b94b9a4cb
+related: [f-7-spec-vs-code-mismatch-tombstone-reading-in-cmk-get, read-path-inconsistency-get-lacks-deleted-at-filter, decisions-scope-uses-direct-file-read-not-vector-db]
 ---
 
 - `forget` writes the fact to `archive/tombstones/<id>.md` (preserving body, `deleted_at`, `reason`, `deleted_by`)

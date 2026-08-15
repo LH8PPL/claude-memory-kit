@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1ae2d4d7714ba4d69db2a3a81d0dbc213de375f7
+related: [task-55-enrichment-relationship-memory-learn-phase]
 ---
 
 Daniel Miessler's PAI (15.8k stars, very active) independently converged on a memory taxonomy nearly identical to the kit's:

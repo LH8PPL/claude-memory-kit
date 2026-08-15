@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: abbadb08665942082be11c6591d432947a3e0b9dfb985251ffc44755e23b75f8
+related: [gate-testing-isolated-throwaway-folders, live-test-workflow-for-kiro-cli-project-fix, test-gate-folders-use-numbered-sequence]
 ---
 
 Use numbered test folders (`gate7`, `gate8`, etc.) to isolate each fix and validate behavior incrementally. Each gate:

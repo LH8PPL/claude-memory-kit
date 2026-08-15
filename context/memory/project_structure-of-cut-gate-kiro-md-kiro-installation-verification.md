@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 5d2e770391998f5b0bcf79c26ead1cd77050a5750a154c1e0e18f6e666c50528
+related: [cut-gate-release-validation-guides-per-agent, cut-gate-backend-pattern-template-4f, claude-memory-kit-supports-3-ide-tool-agents]
 ---
 
 cut-gate-kiro.md mirrors cut-gate.md with these documented changes:

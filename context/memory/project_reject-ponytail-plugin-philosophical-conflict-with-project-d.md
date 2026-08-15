@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 44e18c79eb51ae2f38d989590310c0aea9f601f75c2b40107e55d6d0c0dcf82f
+related: [kiro-configuration-structure-agents-md-not-claude, zero-server-local-first-is-the-kit-s-deliberate-design, two-tier-backend-architecture-for-headless-llm-invocation]
 ---
 
 This project deliberately prioritizes rigor and architecture-first foundations over minimal code. The CLAUDE.md explicitly encodes "no over-engineering" and "rigor-first, ~50 dev-days, foundations before MVP" as load-bearing rules. The kit's discipline includes: shared-module architecture, five-exit-door testing, two-pass reviews, validators-for-every-prose-rule. Ponytail's "minimal-first" philosophy (skip it if a one-liner works, does it need to exist?) would create direct friction with these design principles. Ponytail better fits greenfield or personal projects without an established CLAUDE.md guardrail.

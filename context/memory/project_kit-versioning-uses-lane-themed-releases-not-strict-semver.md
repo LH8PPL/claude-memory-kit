@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 9bc5878e41a7edea0adff602d116cc25fe2b4be7
+related: [v0-3-5-patch-vs-v0-4-0-versioning-logic, v0-4-x-versioning-roadmap, versioning-policy-d-24-differentiators-per-release-level]
 ---
 
 The kit versions releases by thematic "lane" rather than strict semantic versioning. Each lane ships one differentiator per minor version—e.g., v0.3.0 shipped the "within-paradigm polish" differentiator; v0.4.0 is reserved for the "BREADTH"/Kiro cross-agent expansion (D-127). Additive work within a lane increments patch, not minor. This follows the "one-differentiator-per-minor" rule: the differentiator ships at the minor boundary; subsequent polish within that lane is patch-level.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e2f14ba91e76b03a2b7a16ee4fef407d6eba51b3e24390be1727e6f639ccdca1
+related: [task-laning-strategy-and-trigger-discipline, cmk-version-bumping-convention]
 ---
 
 All tasks are classified as one of two types:

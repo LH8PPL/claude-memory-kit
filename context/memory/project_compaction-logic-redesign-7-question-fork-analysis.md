@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a1ba7aba19baff9688180b8740c33ab25535f7e88f7b8f93e15f4b9456fb14f1
+related: [auto-heal-path-for-v0-4-1-task-167-d-169-binding]
 ---
 
 Session compaction logic overhaul involves ~7 numbered decision points:

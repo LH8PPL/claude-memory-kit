@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 49784e9f1b70af15b45f3ab2032db19ec1b4b94ccf54e6a8807c9817284b9dd3
+related: [misplaced-memory-files-recovered-to-root-context, 177-file-incident-structural-prevention-now-in-place, kiro-hook-activation-and-git-commit-cycle]
 ---
 
 The actual Task 246 fix involves updating 8 capture-hook bins to point at the root context/memory/ resolver rather than nested paths. This prevents recurrence of the misdirection that necessitated recovery work.

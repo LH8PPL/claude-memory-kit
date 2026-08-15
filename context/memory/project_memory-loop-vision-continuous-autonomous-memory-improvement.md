@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c5b412f32432237074461e4f7948db9144ad44657cee9b4c07dde45ce60588e7
+related: [task-179-umbrella-task-for-memory-improvement-sequencing, hermes-is-skill-library-curation-not-memory-self-improvement, letta-precedent-evidence-for-tasks-149-95]
 ---
 
 - User envisions a **background loop** that periodically re-reads and improves memory files through:

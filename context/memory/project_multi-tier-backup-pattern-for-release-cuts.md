@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 04e3c4088e2ff5f0ff6dd58cd905d1c37fa38288c7bf331326b95c88b1d98b79
+related: [pre-release-testing-setup, persona-directory-moved-to-core-memory-kit, user-tier-memory-backup-before-testing]
 ---
 
 When cutting a release with path/tier migrations, maintain three independent backups:

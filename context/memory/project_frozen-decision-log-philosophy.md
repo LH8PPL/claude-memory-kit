@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f55759e149852267113b6a61a581fe4888c9ff7902e2e6fe800085ea5bb851a7
+related: [project-governance-adrs-frozen-records-and-two-phase-rename, project-decision-trail-lane-preservation-habit, retracts-and-forgets-are-semantically-distinct]
 ---
 
 Historical records (DECISION-LOG, ADRs, research notes, completed-task records) are preserved as frozen point-in-time snapshots. They are NOT updated when facts change.

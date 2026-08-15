@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 21ee8946c5bdf3f8accd297a2bf1d21c5e1ea7c8
+related: [validation-gate-chain-and-stages, 5-concurrency-stress-gate-as-pre-pr-verification, stress-test-phase-in-pre-merge-workflow]
 ---
 
 The project uses a 5-point stress gate for the "hook surface" that runs on the "final tree" before merge (~10 minutes per run). The gate validates fixes for specific bugs including dup-import count, positioned tail read, and flake root-causes. When all 5 gates pass (5/5), a PR opens automatically with the full trail of fixes. Downstream workflow: PR opens → CI → merge → housekeeping (D-137) → next queue item.

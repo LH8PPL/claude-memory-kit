@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 6a981fc32dee6d8e72f82cd76240506975fae8d43313d52ef5a79edb808e8c8d
+related: [memory-routes-by-execution-surface, pr-organization-separate-ide-pr-1-and-cli-pr-2-surfaces, kiro-cli-mcp-configuration-disable-to-kill-popup]
 ---
 
 - Setting `includeMcpJson: false` in the IDE configuration (e.g., kiro-cli) prevents MCP server initialization and eliminates the cmd.exe popup on Windows

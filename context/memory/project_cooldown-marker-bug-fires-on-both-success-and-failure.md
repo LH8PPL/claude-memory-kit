@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: b7903a57a6590756e00611a6f99d6278c7388b2968ecf3703af6df18e97fb5e7
+related: [task-167-cooldown-success-only-touch-sync-drain-bypasses-it]
 ---
 
 `touchCooldownMarker` currently fires on both success and failure from 5 callers, causing failed Haiku calls to incorrectly block the next compress for 120s even though they didn't spend budget.

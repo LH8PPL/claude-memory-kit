@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 89083a1e6a23de7a90d839cde18d1ea170e85a696b747e455c961796cb521249
+related: [task-243-2026-07-21-superseded-the-bench-storage-allowlist-c, task-240-node-version-pinning-across-workflows, d-384-regression-test-uses-conditional-composition-invariant]
 ---
 
 Bench-storage.yml divergence from .nvmrc Node pin was formalized into validator's LITERAL_ALLOWLIST. Early D-383 decision to move it onto .nvmrc would have crashed the workflow:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8f49652051ab56f9e06c066b2f9c912dff26be6e50e299a53832ae80ece91090
+related: [d-198-fix-agentspawn-hook-now-fires, kiro-cli-agent-config-reads-from-kiro-agents-not-aws-amazonq, kiro-cli-agent-resolution-requires-global-default]
 ---
 
 - Agent configuration path: `~/.kiro/agents/cmk.json`

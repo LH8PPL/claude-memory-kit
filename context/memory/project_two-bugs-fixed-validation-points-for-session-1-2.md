@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 5b2c9c75e122d10495719914f2edffe3d142cb2b
+related: [release-cut-gate-validation-pattern, skill-composition-pattern-scaffold-allow-list-must-be-update, kiro-auto-extract-trigger-works-write-unproven]
 ---
 
 During testing, two issues were identified and fixed in the PR being merged:

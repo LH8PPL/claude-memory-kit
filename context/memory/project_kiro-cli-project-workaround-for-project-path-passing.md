@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 95620d870bbf78dba6338505c8b777838a820e85e58dc22a3ab94a748049592a
+related: [kiro-cli-env-passing-limitation, live-test-workflow-for-kiro-cli-project-fix, kiro-cli-mcp-server-env-passing-limitation]
 ---
 
 Bake `--project <project-root>` into kiro-cli's mcp.json `args` array so the project path rides in on the command line instead of env. This works because stdio `command` + `args` universally translate to `spawn(command, args)`, bypassing kiro's env-routing limitation. Expected args: `[ 'mcp', 'serve', '--project', 'C:\\path\\to\\project' ]`.

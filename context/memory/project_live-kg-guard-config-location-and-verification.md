@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8b76e674f5f8000dfe5b516ad979a2bcf131c66827aeee52cca00e65bdf48014
+related: [testing-workflow-for-claude-memory-kit-fixes, d-197-delete-guardrail-matcher-fix-pr-224-commit-0dae3f3, d-197-end-to-end-live-re-test-workflow]
 ---
 
 The live KG-guard matcher config is at: `~/.aws/amazonq/cli-agents/q_cli_default.json`

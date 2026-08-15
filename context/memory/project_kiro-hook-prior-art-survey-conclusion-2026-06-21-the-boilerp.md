@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 652d6f1405d8fee5483f2bed8f877b225c9ee9bc5b14e2dc41294a6abf344a60
+related: [kiro-ide-kiro-hook-on-disk-format-verified-from-a-real-hook, kiro-hook-environment-verified-live-2026-06-21-the-probe-cap, kiro-hook-authoritative-confirmations-2026-06-21-from-the-aw]
 ---
 
 Kiro hook prior-art survey conclusion (2026-06-21, the boilerplate article + kiro-professional-toolkit + earlier survey): the ENTIRE published Kiro-hook ecosystem uses then:askAgent (LLM-prompt) hooks — NOBODY publishes then:runCommand (deterministic-script) hooks. So there is NO prior art for 'how a runCommand hook reads the turn content' — the kit's live PROBE (env+argv+cwd, no stdin JSON) is the authoritative source, not docs/repos. TWO useful new facts from the boilerplate article (awsdataarchitect/kiro-best-practices): (1) hooks require RESTARTING KIRO to activate (steering is immediate, hooks are not) — the kit must tell users to restart Kiro after install; (2) .kiro.hook confirmed fields: enabled, name, description, version:'1.0.0', when:{type,patterns?}, then:{type:askAgent|runCommand,...}. The kit is the FIRST to do deterministic runCommand memory capture on Kiro — which is exactly why live-testing was essential (no one to copy).

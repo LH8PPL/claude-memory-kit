@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 1e29cc5a9294d3a69987d3e34fa8740288375739ef75916a54052b91739c6f31
+related: [npm-install-g-silent-failure-when-run-from-repo-directory, windows-ebusy-when-updating-cmk-during-claude-code-runtime, rebuilding-the-global-cmk-binary-after-code-changes]
 ---
 
 Running `npm install -g core-memory-kit@latest` from inside the project root exits 0 but silently leaves the old version installed. Only works from a neutral cwd. Discovered by post-execution verification (`cmk version`), not by exit code.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 60f0a2abd3e6f9c5181670c396e281ef3e31280a9aae6e6fba56cef73fc7dfd5
+related: [documentation-artifacts-and-structure, decision-trail-preservation-rule, decision-log-system-for-known-limitations]
 ---
 
 - **Research**: `docs/research/` with INDEX entry

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f62b3363ce33d87a89566fb33a11327bb5c0cdb2
+related: [two-bugs-fixed-validation-points-for-session-1-2, d-197-end-to-end-live-re-test-workflow, claude-memory-kit-installation-levels]
 ---
 
 Before npm pack for a release, run formal validation gate (e.g., `cut-gate9`) that checks memory extraction system health:

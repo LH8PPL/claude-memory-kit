@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2ac0bf581f434ca0d0473637a21913b9a2a48fb42e090d7dfcdbee30d79b07fa
+related: [memory-kit-loop-system-tasks-190-193, autonomous-loop-catches-failures-not-successes, verify-the-autonomous-loop-not-just-the-human-correction-pat]
 ---
 
 Autonomous memories verify across sessions:

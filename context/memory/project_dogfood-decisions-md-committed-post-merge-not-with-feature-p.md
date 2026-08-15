@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 32148706bef55a303abbdf253708f825f4521c2351a9a65a529883b0d6f41df0
+related: [flush-memory-to-main-before-creating-feature-branch, task-boundary-memory-flush-rule, planning-docs-as-standalone-commits-on-main]
 ---
 
 Changes to `context/DECISIONS.md` made during development ("dogfood") are not committed with the main feature PR. Instead, they're committed separately in a "post-merge memory-flush commit" following the task-boundary rule.

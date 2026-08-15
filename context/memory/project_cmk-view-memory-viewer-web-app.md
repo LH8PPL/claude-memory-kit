@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6de1a75822b9949437bd21e414532069859d9121e2f5f54100d33755b82cd399
+related: [q1-viewer-runtime-model-ephemeral-localhost-pending-ratifica, cmk-view-proposed-wave-1-design]
 ---
 
 - **Command:** `cmk view` — starts ephemeral localhost browser for read-only memory store viewer

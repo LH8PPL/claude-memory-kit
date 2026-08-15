@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f7dee2dce3999ded18d7f9656033fcab67a99dd1eb9a684822218583a1c62592
+related: [stress-gate-required-before-pr-for-spawn-hook-boundary-chang, node-sqlite-fts5-module-availability-gate-for-task-141b-migr, whole-tier-flush-rule-for-context-directory]
 ---
 
 When handing off design work to another designer, demand the complete revised file as output, not a list of changes. Include in the handoff prompt: "Give me the complete file, not a description of changes."

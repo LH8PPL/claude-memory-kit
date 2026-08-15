@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9372378fb90bcf1f26b6a720875286aa80b4fdb063f758d49bb6a07130a06a6f
+related: [release-gate-documentation-format-in-cut-gate-md]
 ---
 
 The v0.4.4 gate includes five main checks (referenced in final verdict checklist as cut-blockers):

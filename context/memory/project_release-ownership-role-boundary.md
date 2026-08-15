@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7abdb28dd27b23e6a2e46e751d64bd50bd59599498bc140ecc63e3726dadaf02
+related: [release-workflow-with-cut-gate-testing, standing-outward-step-rule, release-handoff-pr-creation-vs-merge]
 ---
 
 - Merge to main, release cut (version bump), and npm/GitHub publish are **user-driven** actions

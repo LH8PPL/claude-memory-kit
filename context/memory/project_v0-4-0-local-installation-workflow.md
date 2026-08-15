@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 4ade30d645deed9258e70b4da44020920bdfb67631d708cdd3d30e1131abba2b
+related: [rebuild-global-cmk-cli-binary-release-process, artifact-rebuild-for-v0-4-0, rebuilding-the-global-cmk-binary-after-code-changes]
 ---
 
 To install v0.4.0 locally for testing before publishing:

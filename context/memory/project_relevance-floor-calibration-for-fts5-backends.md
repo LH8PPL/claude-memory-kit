@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2e4e383304c1cc86c0d46adcd744594873a226340dc64854b94abb6efe6ce78a
+related: [relevance-threshold-calibration-octopoda-s-0-80-0-45-lesson, resume-fact-convention-capturing-uncommitted-code-intent, cmk-view-integrates-with-core-memory-subsystems]
 ---
 
 Octopoda project research shows relevance floors must be conservative. Their 0.80 floor silently filtered 5 of 7 relevant facts before they lowered it to 0.45. For Task 233's FTS5-backed hint backend, the relevance floor should be tunable (not hardcoded) and set conservatively to avoid silently dropping relevant results.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ca34f1c59bc7340e72249bac352edaab4261038982c8ac201488ad12f4826d37
+related: [run-cmk-register-crons-after-pr-351-ships, stress-testing-omitted-for-pure-read-cli-changes, stress-gate-required-before-pr-for-spawn-hook-boundary-chang]
 ---
 
 - Task: "Implement Task 252 maskPii"

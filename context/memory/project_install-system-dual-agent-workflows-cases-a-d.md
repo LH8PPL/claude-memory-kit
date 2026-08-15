@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 5078fbf31ed40241a75514961900e495d6e3658f31f11ec5f472a1333e3b8219
+related: [install-system-requirements-matrix-v0-4-0, conservative-uninstall-scope-managed-surfaces-only-never-con, kit-s-haiku-backend-has-undeclared-claude-cli-dependency]
 ---
 
 Four concrete use cases that define install system requirements:

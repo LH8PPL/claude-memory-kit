@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d79dbe628ba4f8ca80de4e76425b7daefb6f9c1ba4ae6848186d9f42d3e90ad6
+related: [v0-5-0-release-workflow-stress-commit-push-pr-merge-repack-g, release-workflow-sequence, v0-3-1-release-final-workflow]
 ---
 
 Release sequence:

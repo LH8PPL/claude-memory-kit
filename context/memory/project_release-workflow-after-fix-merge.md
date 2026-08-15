@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 91656027f1f8e23501ccea9c0acca0981951ace6bb721721c5a1b5f5426eb4e1
+related: [v0-5-1-release-pr-282-must-merge-before-tag, release-workflow-sequence, v0-3-1-release-final-workflow]
 ---
 
 After a fix passes all verification gates and is merged to main:

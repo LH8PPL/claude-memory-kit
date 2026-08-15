@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6dd0b9eac01e55dbc549fdd3bfe2b4e2933c2e9aac4336ce99f0e8e5de3d43d3
+related: [resume-fix-l3-promote-timeout-wip-at-4e33935-then-v0-5-0-tag, e2-privacy-screen-verification-test, resume-v0-5-0-tag-blocked-only-on-the-cursor-gate-everything]
 ---
 
 All cut-gate issues resolved and merged:

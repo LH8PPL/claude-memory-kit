@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d60c4749c3ce13fab7ee5dee0b4e14bde867fe1e
+related: [reliable-tarball-file-validation-with-npm-pack-json, doc-completeness-validator-hook-behavior-coverage-gap, validation-pipeline-for-claude-memory-kit-includes-format-an]
 ---
 
 Validators are small scripts (~30 minutes) integrated into the `npm test` suite as structural guards.

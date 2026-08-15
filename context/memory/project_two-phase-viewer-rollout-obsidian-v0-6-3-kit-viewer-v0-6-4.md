@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 25948e69960def597ba357e81edcc62180cd61d27e3977de3310e1144a0fe352
+related: [task-255-design-grill-questions-queued, ui-viewer-design-awaits-v0-4-scope-decision, cmk-view-purpose-and-headline-use-cases]
 ---
 
 - Phase 1 (v0.6.3): Obsidian vault integration via Task 254 — near-zero build cost, leverages Obsidian's graph/backlinks

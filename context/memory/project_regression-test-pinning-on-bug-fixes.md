@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: bd35fd0e06f8a01d7f1542308611d65f48c5c66b2f15dc33993ae6922ef2fa0a
+related: [data-loss-bug-pattern-echo-rm-laundering, skill-review-imported-facts-staleness-bug-fixed, sonarcloud-coverage-job-rate-limited-by-hf-hub-cache-miss]
 ---
 
 When bugs are identified and fixed (especially critical ones), regression tests are written and committed alongside the fix to prevent reoccurrence.

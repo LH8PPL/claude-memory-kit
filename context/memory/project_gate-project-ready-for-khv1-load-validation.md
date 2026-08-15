@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 533eb59c9a6d37f6413426be42fb97480b1d1a721e7b42a0da963be93f2c0f38
+related: [kiro-cmk-setup-checklist-pre-session-1, v0-4-0-final-gate-kh-kc-live-hook-firing-tests, kiro-gate-testing-workflow]
 ---
 
 `C:\Temp\kiro-ide10-gate` installed with 4 v1 hooks, MCP, steering, skills, context/, AGENTS.md.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 363479c3ba1795d4c32111eb0301c2071ed674029c523fbb92c82c1db016886e
+related: [kiro-cli-env-passing-limitation, kit-s-haiku-backend-has-undeclared-claude-cli-dependency, two-tier-backend-architecture-for-headless-llm-invocation]
 ---
 
 Verified that Cursor has a headless agent command: `cursor-agent -p` (works in cloud/headless environments).

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c373a683431940017f3c43e125eb5e2e9ce8f6a6ccdbf0066c19f2b6403af5ac
+related: [kiro-cmk-setup-checklist-pre-session-1, claude-code-hook-activation-requires-restart, kiro-requires-full-restart-to-load-updated-hooks]
 ---
 
 Kiro hooks require a Git commit + Kiro restart to become active:

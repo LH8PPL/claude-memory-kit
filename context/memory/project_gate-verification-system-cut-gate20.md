@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ca4cd9e097a45eb32c5e0112c8f496c22085721232c390149f36c5887d335f0f
+related: [cut-gate-pre-release-validation-checklist-g0-g7, pre-session-1-gate-procedure-v0-4-1, release-gate-cut-gate-guide-must-pass-before-tagging]
 ---
 
 cut-gate20 uses a hierarchical gate verification system with two phases:

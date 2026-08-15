@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 4d15ea7e1bdbd40bf6053b5e3bbbb4156286a4b6d41936b0d02936e67efead13
+related: [uninstall-end-to-end-verification-results, kiro-cli-auto-loading-verified-d-181-follow-up-kiro-dev-docs, kiro-kiro-hook-path-lesson-2026-06-21-paths-in-a-kiro-hook-c]
 ---
 
 uninstallKiro leaves empty husk files: .kiro/steering/cmk.md (dead frontmatter), .kiro/settings/mcp.json ({}), and an empty AGENTS.md — it strips our managed content but doesn't remove a now-empty file the kit created. Minor; uninstall is conservative-correct, just messy. Follow-up: remove a kit-created file when uninstall empties it (mirror pruneEmptyParent), only when no user content remains outside our markers.

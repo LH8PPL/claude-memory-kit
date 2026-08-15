@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 85a15ad29d84fbc0de811c71052db7d215a23d1801c81737ac8330d6fed4109c
+related: [decisions-md-is-write-only-for-ai-recall-not-in-any-recall-d, claude-code-cd-compound-command-prompting-edge, root-cause-skill-md-allowed-tools-frontmatter-triggers-the-a]
 ---
 
 R2/D-80 known edge (SETTLED, not a bug): a `cmk remember` (or any `cmk`) call prompts for permission ONLY when the agent COMPOUNDS it — e.g. `cd "<absolute path>" && cmk remember ...`. Claude Code splits compounds per-subcommand; a `cd` to an absolute path doesn't qualify as read-only (only paths inside the working dir do), so the whole compound prompts. The BARE `cmk remember "..."` is allow-listed via `Bash(cmk:*)` and runs silent. Deliberately unfixed (D-80, the user 2026-06-07: "document it as an edge case we won't fix unless we have a simple solution"). RESOLVED for the primary path at D-85/Task 108b via the MCP-first surface: the memory-write skill prefers the mk_remember/mk_forget MCP TOOLS, and a tool call has no cd/compound/Bash matcher → no prompt. So the prompt is a bash-fallback edge only, NOT a regression or cut-blocker.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a5ef9c0938fe9cf7616b76f592f966378d4536590bd55a11e46b38039ff12ae8
+related: [post-215-merge-workflow-gate-continuation, mcp-server-may-retain-stale-code-in-memory-after-package-upd, rebuild-reinstall-before-session-2-release-cut-workflow]
 ---
 
 FQ1 fix (FTS5 `prepareFtsQuery`) is confirmed present in installed 0.3.2 on disk. DJ2 idempotency fix affects digest path only (`decisions-journal.mjs`).

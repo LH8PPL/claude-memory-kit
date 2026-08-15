@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: fa67952d6a0f01017f0c1502a01bd0de0a57cddb4f1d49fb76b290ce659cf0c4
+related: [kg-guard-retest-failed-was-stale-artifact-not-fix, ebusy-workaround-for-global-package-reinstalls-native-bindin, testing-workflow-for-claude-memory-kit-fixes]
 ---
 
 When installing `@lh8ppl/claude-memory-kit` globally, `better_sqlite3.node` may be locked by open Claude Code/Kiro windows. Install reports "success" but silently leaves old code in place.

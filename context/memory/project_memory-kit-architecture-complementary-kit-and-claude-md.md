@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a1a403cdf150f57e620a97b2e083a9cdaf657afa21d1e3261bdbe7625ab234ae
+related: [binding-rule-readme-line-for-user-facing-features, memory-tier-system-project-to-cross-project-promotion, claude-md-checkpoint-4-pre-commit-screening-rule]
 ---
 
 The memory kit uses two complementary systems:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7f0447cb40906bf14d804759ff45f1f1455c06a47f8c650354f08aa44d018644
+related: [gate-verification-system-architecture, validate-docs-enforces-catalog-consistency, 5-concurrency-stress-gate-as-pre-pr-verification]
 ---
 
 When a research note in `docs/` triggers a validate-docs failure (missing INDEX entry), the note is moved to the project scratchpad (untracked, local-only). Validators are re-run to confirm green. The full gate chain then re-runs. The note content remains intact and is re-integrated on main after the PR merge.

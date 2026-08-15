@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7bec19a8aa043f823ef422688f78e0eede698ce2d99df83cbad20a731a05d450
+related: [openwolf-heartbeat-cron-health-patterns, adr-0002-derive-state-from-artifacts-avoid-markers, cron-liveness-fix-167-a-solves-root-problem-sync-drain-is-se]
 ---
 
 **Anacron-style heartbeat gate gated on AGE, not existence.**

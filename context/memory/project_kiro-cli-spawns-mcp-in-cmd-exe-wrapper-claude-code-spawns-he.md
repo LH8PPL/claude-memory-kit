@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 4526d1918ad1ae1b0584737a9099f9d4fd30e1684a0b6bd51077456d2488b003
+related: [claude-code-window-close-leaves-zombie-claude-exe-processes, hc-9-drift-after-claude-code-update-v0-3-4, node-direct-mcp-invocation-workaround-applied-but-unvalidate]
 ---
 
 - kiro-cli launches MCP via `cmd.exe /C cmk mcp serve` — because cmk is a .cmd/.ps1 shim, a visible shell window opens and persists

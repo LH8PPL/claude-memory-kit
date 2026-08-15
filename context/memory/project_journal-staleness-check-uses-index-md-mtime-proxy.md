@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: edc29efc61b1253f9d3d526b2871e6e58df64f02b23311ffdddd3c208ea0520d
+related: [task-159-auto-updating-decision-journal, memory-kit-index-file-index-md-architecture, index-md-is-a-committed-human-readable-artifact]
 ---
 
 Perf optimization discovered during self-review. Initial implementation checked mtime of newest `type:project` fact (130ms). Changed to check only `INDEX.md` mtime (instant) because CMK already maintains INDEX.md on every save. This proxy is authoritative without iterating all 307 fact files.

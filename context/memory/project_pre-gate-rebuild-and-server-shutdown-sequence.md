@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d020f09a9fcbd1fca300e146c5d8fb8f996a31b25e41e8b92c435ebbfacbc335
+related: [kg-guard-retest-failed-was-stale-artifact-not-fix, re-pack-verify-workflow-for-cut-gate-testing, rebuild-global-cmk-cli-binary-release-process]
 ---
 
 **User runs:**

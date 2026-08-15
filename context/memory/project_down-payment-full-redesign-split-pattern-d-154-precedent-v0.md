@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 9de9812f03c78e2604a9c433e253429fd23d9192d6088141a68f424501f3394f
+related: [v0-3-5-patch-vs-v0-4-0-versioning-logic, task-151-classification-and-strategic-weight, memory-tier-at-1-949-facts-index-md-capacity]
 ---
 
 Complex L tasks can split into: (1) narrow, high-value down-payment (S/M scope) shipping the critical part sooner, and (2) full redesign in normal curation lane. For Task 151, down-payment is targeted routing/graduation fix (explicit promotes by topic, or exempt trust:high bullets from cap-relief); full redesign (recurrence-scoring, LLM-judged) follows later.

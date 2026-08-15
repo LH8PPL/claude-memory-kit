@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a5096ce7c8bbaaa38da6495f9e55cd4392ee4032adb38a834d0676a75fcdd59e
+related: [cost-role-agent-separation-principle-use-g9tg4ggc, field-survey-zero-multi-cli-routing-32-projects]
 ---
 
 Enable users to specify a different agent's CLI for automatic memory operations than the one used for primary coding.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: cedf14087d95016c6a15b76054bc81df31234b48f270883139531c594cd538ba
+related: [v0-5-3-learn-loop-phase-2-the-user-chose-queue-order-over-v0, v0-5-3-release-complete-ready-for-publication, post-v0-5-2-roadmap-decision-v0-5-3-or-v0-6-0]
 ---
 
 - **Decision**: learn-loop Phase 2 chosen over v0.6.0 (day-one cmk import-sessions). See memory P-6WEaBE9M (commit dfebca5).

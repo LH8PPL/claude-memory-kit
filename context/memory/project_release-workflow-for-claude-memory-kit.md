@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 4d44dc9d94a76f2348daa18df4843e259ec22770d47f9587b2274340f278dfe9
+related: [release-workflow-for-lh8ppl-claude-memory-kit, release-publish-workflow-git-tag-to-npm, release-workflow-tag-driven-automation-via-publish-yml]
 ---
 
 1. Assistant merges all task PRs, updates CHANGELOG and package.json version

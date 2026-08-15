@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 856ec8b3e2084aa716706c4410fb50c03bab7f9582a0f32e1573447cc1439c09
+related: [documentation-drifts-at-event-boundaries-not-pr-moments, documentation-taxonomy-and-update-responsibility, multi-surface-documentation-architecture]
 ---
 
 When closing a PR, verify these doc areas match the code changes:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e4ebc663fdf000d33a8ed7946499860a8dd08bfdfd9915f15c7a0fd0b0867849
+related: [d-386-documents-known-sonarcloud-server-side-failure, onnxruntime-node-postinstall-cdn-timeout, autopilot-merge-rules-for-install-surface-changes]
 ---
 
 - SonarCloud fails on every push with a server-side crash (vendor bug)

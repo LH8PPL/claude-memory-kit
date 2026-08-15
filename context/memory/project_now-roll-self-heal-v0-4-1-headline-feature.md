@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7ebf9e05d0b381ff381aadd362ad9ce368c6767b5d40712b8db6d13054f111c4
+related: [cmk-version-bumping-convention, pre-session-1-gate-procedure-v0-4-1, global-install-auto-recreates-user-tier-directory]
 ---
 
 The now-roll feature auto-detects and self-heals `claude --print` format changes across releases.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 4f3a7fb45c547e030f01e53f3009f7155c70c6302bcdffece573bc82cd8d4d67
+related: [install-system-dual-agent-workflows-cases-a-d, kiro-has-four-install-surfaces-not-three-the-user-s-correcti, kiro-configuration-structure-agents-md-not-claude]
 ---
 
 - `--ide kiro` must NOT create `.claude/skills/` or `CLAUDE.md` (Kiro-only install should not litter Claude files; Case A)

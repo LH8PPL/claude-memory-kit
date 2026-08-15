@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8016745d321f49fdeb2366068913d1b4234c0d62e7f167db8daa6b90f6ed30b2
+related: [kiro-cli-automatic-memory-capture-works, b3-b4-wedge-test-workflow-cross-project-doctrine-capture-val, automated-capture-via-agentstop-hook]
 ---
 
 The claude-memory-kit automatically promotes cross-project doctrine (rules marked "in every project" or "from now on always") to the user tier (HABITS.md) at session end via the stop hook. Mechanism: session-end-tasks.mjs runs `autoPersona` on the stop hook, which reads the per-turn fact corpus and auto-promotes cross-project rules. This is the designed primary path; explicit `cmk lessons promote` mid-session is an optional alternative.

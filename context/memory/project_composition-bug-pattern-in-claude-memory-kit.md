@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ec7a63534805492711d0a9080a523f73ab84011b
+related: [d-303-blocker-closing-via-live-kiro-re-test]
 ---
 
 Unit tests passed green through ~10 releases, but integration (composition) tests failed silently because:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a8bd5f7b17fef733103fe7efa5ec500d586e6991f166aea5d386694ea63e440b
+related: [release-workflow-full-sequence-for-v0-4-3-and-future-cuts, release-command-sequence-for-npm-packages, release-workflow-with-cut-gate-testing]
 ---
 
 Release process is user-driven (assistant does not self-merge/publish) in three phases:

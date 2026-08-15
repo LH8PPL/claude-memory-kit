@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d95e8469b9a6c03fc05db9775edd46cc6b22386362de449c9d551da9bd51d080
+related: [post-v0-5-2-roadmap-decision-v0-5-3-or-v0-6-0, v0-4-5-roadmap-task-196-cursor-adapter-task-198-temporal-swe, release-roadmap-v0-5-1-v0-5-4]
 ---
 
 - **v0.4.4** (next): Task 66 (temporal validity) + riders 150, 141a

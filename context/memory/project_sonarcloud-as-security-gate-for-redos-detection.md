@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 246673b78c3f5db52442ef9b9d9f6c0714456ab98a8f6f9f31ae78a2620993b7
+related: [sonarcloud-then-in-object-false-positive-schema-fields, stress-test-phase-in-pre-merge-workflow, tests-excluded-from-sonarcloud-analysis]
 ---
 
 SonarCloud is the final CI gate in the PR workflow (after coverage thresholds and full test suite). It has previously detected ReDoS vulnerabilities not caught by functional tests or coverage checks.

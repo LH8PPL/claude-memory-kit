@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2b45067fe6cbd602e8d45b8c7959b1ebe09c2c463071093390788590c8308971
+related: [claude-memory-kit-v0-4-3-release-workflow, release-workflow-cold-open-testing-discipline, multi-gate-release-verification]
 ---
 
 - **Deterministic (§0–§1)**: tarball build, install+doctor, package-rename path, privacy leak screen, config-dir resolution, CLI verb wiring, guard-memory bin — all runnable in isolation / CI

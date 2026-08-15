@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ce7cbb91f59bf55440caf99d73dc12aa647371099315ac53271b9f4bdeb37aa3
+related: [q3-wave-1-viewer-five-views-locked, q3-wave-1-four-views-confirmed, memory-viewer-design-ephemeral-localhost-server]
 ---
 
 **Shape:** Ephemeral localhost server (loopback-only, free port, auto-opens browser, Ctrl-C stops).

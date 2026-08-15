@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ea6a31b6733f3060e5781e2a60eb1faec19549b62fda5680c141465562198668
+related: [stress-gate-release-workflow, full-gate-re-run-on-final-code-after-code-review, diagnostic-test-statement-for-skill-capture]
 ---
 
 The claude-memory-kit D-264 (empty-snapshot) fix verification uses a multi-stage pipeline before merge:

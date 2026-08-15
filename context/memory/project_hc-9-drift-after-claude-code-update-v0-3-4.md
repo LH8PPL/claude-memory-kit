@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 66768214101c2efe35f0d082869ab5778e302a3ca4c05b45f2b9dc765c02f654
+related: [cmk-install-auto-updates-managed-block-version-stamps, core-memory-kit-installed-with-claude-code-hooks, mcp-activation-restart-behavior]
 ---
 
 After updating Claude Code, `cmk doctor` may report HC-9 (health check) drift from expected state. This is expected behavior in v0.3.4 — Claude Code updates invalidate cached state that `cmk` maintains. Fix: run `cmk install` to restore alignment. This is a feature, not a bug.

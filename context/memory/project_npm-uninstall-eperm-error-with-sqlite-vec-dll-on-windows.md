@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8ea9f9f63dde4f3ad760f1dc3c8bf7590c5b0198d88e1699474d8cd59dee8eda
+related: [windows-dll-lock-blocks-npm-reinstall-better-sqlite3-node, npm-uninstall-ebusy-error-with-better-sqlite3-node-on-rebuil, close-claude-code-before-global-cmk-install-to-avoid-ebusy]
 ---
 
 During `npm uninstall -g`, cleanup may fail with EPERM on the sqlite-vec-windows-x64\vec0.dll binary if a process (Claude Code IDE, MCP server, or other tools) still holds the file handle.

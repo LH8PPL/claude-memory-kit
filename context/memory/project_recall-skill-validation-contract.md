@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 53b47f98880ec0c9cdc1ec0e333ac855ba173f5ec34b96428658dfe915d4ca7b
+related: [memory-kit-validation-gates-d1-w4-dj4-live-gate, dj4-live-test-prerequisites, task-completion-workflow-code-test-doc-review-live-test-merg]
 ---
 
 - **Should fire**: Intent-based recall questions about decisions, architecture, rationale — answers live in memory regardless of phrasing. Examples: *"Why is everything spread out?"*, *"What did we worry about with history mutation?"*

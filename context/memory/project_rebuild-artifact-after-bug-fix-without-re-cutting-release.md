@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e1096496384ce79cf2d2faceba70d6b2a8d0252df209b2939089d6364ff11b59
+related: [rebuilding-the-global-cmk-binary-after-code-changes, re-pack-verify-workflow-for-cut-gate-testing, rebuild-global-cmk-cli-binary-release-process]
 ---
 
 When a bug fix merges into the release branch after `npm run release`, rebuild the global artifact without re-running the release steps:

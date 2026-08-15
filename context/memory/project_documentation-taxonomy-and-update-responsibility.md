@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: fb5dd82c378f9228bb0de9b4f9efb9fdd9b7119eba65c330a3b83c154340bc15
+related: [multi-surface-documentation-architecture, doc-update-release-boundary-rule, documentation-drifts-at-event-boundaries-not-pr-moments]
 ---
 
 - **User-Visible Docs** (update when UX changes): CHANGELOG.md (fixed entries), QUICKSTART.md, CLI.md, MCP.md

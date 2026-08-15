@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 1b80ee7ba1e27ceadae2c4bb5ee5d3c1292e36bcdf72858a6b8fc7e8648b0517
+related: [project-dogfooding-principle-use-kit-s-own-mechanisms, full-gate-re-run-on-final-code-after-code-review, test-anti-pattern-setup-commands-masking-automation]
 ---
 
 When a whisper prescribes a command to fix a problem (e.g., "run `cmk reindex`"), executing that command must clear the whisper. Failing to do so means users see repeated warnings even after applying the recommended fix, destroying trust in the diagnostic system. Root cause of B1: the clearing logic was not part of the command's success path. Fix: move the `ok` write into the command's core success path, not into a parent caller. E2E test: whisper present → run fix → whisper gone.

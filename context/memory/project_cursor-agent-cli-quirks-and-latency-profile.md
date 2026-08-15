@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 312cc848263ceaa2348fb528601f6e8c3b813529855d6fda6a533fb2b832f66a
+related: [install-system-requirements-matrix-v0-4-0, cursor-supports-headless-agent-cli-cursor-agent-p, live-test-harness-cannot-detect-missing-cli-dependency]
 ---
 
 - **Print mode doesn't skip agent loop:** `cursor-agent -p` runs the full agent loop even in print mode; latency is 30–83s (vs. kiro-cli ~1s). This breaks synchronous 60s SessionEnd hooks.

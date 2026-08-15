@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9625b5df5e6feab2c06a7f1267617c130f110cd3017aaa0385fa9f869fc610de
+related: [multi-pass-feature-workflow-for-complex-work, task-151-implementation-cadence, v0-3-0-released-with-green-quality-gate]
 ---
 
 Two-phase process before starting implementation: (1) finish current version (v0.4.3), (2) dedicated research session to review all backlog tasks and assess relevance, (3) lane tasks deterministically based on concrete triggers (task dependencies, version scope, known issues/bugs), (4) then start coding.

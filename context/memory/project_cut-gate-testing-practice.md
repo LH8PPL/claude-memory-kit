@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d28572a4470b99fa047d0f766e49d9b89d6d661ee261e1c64afd87369c183fbf
+related: [live-cut-gate-requirement-unit-green-works-on-real-input, tag-ready-criterion-core-features-pass-known-issues-cleanly, release-gate-cut-gate-guide-must-pass-before-tagging]
 ---
 
 A "cut-gate" is a full in-chat test session run before tagging a release. It exercises the entire build in a real-world context, catching integration issues and regressions that isolated sandbox tests miss.

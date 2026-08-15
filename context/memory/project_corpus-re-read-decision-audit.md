@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 1569a5928089ff4f51a3eced10968b6b9fca11649f0422ccb036f8c725216b2d
+related: [adr-0017-finalization-agenda]
 ---
 
 Before finalizing a complex decision spanning multiple research artifacts, prior ADRs, and filed tasks, conduct a dedicated full-corpus re-read audit:

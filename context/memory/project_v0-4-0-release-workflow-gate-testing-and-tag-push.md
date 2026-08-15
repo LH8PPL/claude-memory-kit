@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 68b686b53813f36a92fddc76600a5312ff7bc8bbc4bb570152e6eb96839f5270
+related: [plan-the-user-2026-06-21-do-the-manual-kiro-live-capture-tes, post-215-merge-workflow-gate-continuation, release-workflow-with-cut-gate-testing]
 ---
 
 **State**: v0.4.0 merged, CHANGELOG complete, package.json versioned. NOT tagged/published.

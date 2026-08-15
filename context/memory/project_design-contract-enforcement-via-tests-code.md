@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 923689c652d832c924dff7f7dd21c494d6e35a8a0b0e6c4a2af1a1a0212f350d
+related: [stress-test-gating-rule-for-pr-approval, version-snapshot-in-recent-md-guards-against-cross-session-a, paper-trail-convention-tasks-md-as-single-source-of-truth]
 ---
 
 The project maintains design specifications (in design.md with numbered sections, e.g., §24.1.2) as enforceable contracts. Specifications are ratified — they represent decisions made after discussion and are enforced by corresponding test guards in the codebase. When code diverges from a spec, the standard approach is "contract wins": revert the code to match the ratified spec, restore any guards that were deleted, and flag for explicit ratification if that code change was intentional. Example: design.md §24.1.2 specifies "no Segoe UI Variable". A corresponding test guard enforces this. During integration, Variable was used; the fix was to revert the code to match design.md and restore the guard. If Variable should actually be ratified, the spec, code, and test must all be updated together after discussion.

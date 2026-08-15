@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 648ef38be317212747f8893340bb7b7e6b6d30067d84e7ee0ba4b00455f43caa
+related: [kit-guardrail-over-blocks-on-safety-as-d-x5rw6lbq, project-dogfooding-principle-use-kit-s-own-mechanisms, commit-message-guard-rejects-literal-rm-rf-context-memory-st]
 ---
 
 Guardrail can't distinguish command from documentation, so writing up an incident (describing a blocked command) triggers the block again. Both incidents treated as STOP, content rewritten rather than routed around.

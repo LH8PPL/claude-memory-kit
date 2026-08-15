@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: efea1b4c27443a23907654ecb3623a6f42a09dd443b22b517052fb10adf15943
+related: [v0-3-2-release-status, v0-3-2-release-scope-and-141b-gate, v0-3-2-scope-locked-strict-task-order-discipline]
 ---
 
 - **Version:** 0.3.1 → 0.3.2

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 1ea60d594eaeccf3f34d69f6ce49e9fef2696e977323c9c3684e5c1fc513fef6
+related: [cursor-gate-v0-5-0-test-procedure, release-workflow-after-fix-merge, v0-5-0-shipped-2026-07-10-npm-lh8ppl-cla-pyra4u7u]
 ---
 
 To execute the Cursor gate test:

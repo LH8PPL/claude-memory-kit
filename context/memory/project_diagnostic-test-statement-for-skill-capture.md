@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3760ee6752054dd2cb5a466f2a4397395498c97c4ec1c11466b0390b82da7ab7
+related: [diagnostic-test-allow-list-vs-workspace-trust, cc-update-does-not-fix-mcp-prompt-task-171-validated, two-sub-test-method-for-isolating-skill-permission-gating]
 ---
 
 Before running full Session 1, execute a single-rule diagnostic test:

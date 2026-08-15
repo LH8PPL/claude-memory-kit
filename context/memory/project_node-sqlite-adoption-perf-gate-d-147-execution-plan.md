@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 5cc1d12832635867cc9514d42705d86768af89a4
+related: [141b-is-rejected-decision-rationale, task-141b-node-sqlite-migration-rejected-on-perf, v0-3-2-release-scope-expanded]
 ---
 
 Before shipping node:sqlite in v0.3.2, run `scripts/bench-storage.mjs` to compare perf against better-sqlite3.

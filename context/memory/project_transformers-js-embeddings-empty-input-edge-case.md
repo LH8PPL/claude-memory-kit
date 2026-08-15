@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4a06983a7fb27cc6386cc2159bf18627753028a71b81a6ccea2e4caf08ddc3cc
+related: [critical-order-preservation-in-embedding-mapping]
 ---
 
 Mean-pooling over empty token sequences produces NaN/degenerate vectors. Empty or whitespace-only bodies reach embedder unfiltered. Content-addressed cache means corrupt embeddings persist.

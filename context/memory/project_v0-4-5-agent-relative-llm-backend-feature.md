@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b2f9da6e367d85a3cb7428aa122badc7056ea3673cad2bc704658e37e807e0db
+related: [v0-4-5-kiro-cli-dispatch-guard-implementation, kit-compatibility-requirement-clarified, hook-recursion-guard-cmk-backend-spawn-environment-variable]
 ---
 
 v0.4.5 (Tasks 200–202) solved the problem that non-Claude users (Kiro/Cursor only, no `claude` binary) had no LLM backend, causing automatic features (compression, extraction, summarization) to silently no-op.

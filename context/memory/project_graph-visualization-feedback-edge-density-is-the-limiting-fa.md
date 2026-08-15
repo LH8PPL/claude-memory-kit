@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 508371195e71d526f71fbc679e3a6c9ba52f9ddde3010d1ee59c33bca476b659
+related: [task-232-rebuild-edge-table-from-markdown]
 ---
 
 - **Current state**: Corpus has ~5% edge density (only ~5% of facts carry `related:` links)

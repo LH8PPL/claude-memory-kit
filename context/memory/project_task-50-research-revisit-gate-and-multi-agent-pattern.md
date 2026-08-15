@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a04732ee399a7b1d16de1409c58c2c8ab4f478de7c2fa73ddf51bcbb4d324c9f
+related: [v0-3-0-released-with-green-quality-gate, multi-agent-llm-invocation-research-initiative, agent-research-resources-location]
 ---
 
 **Task 50 workflow:**

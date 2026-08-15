@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5b09ce25c4e81c84c43df7d0471096df5f3287c8145714296c61003e99410ecc
+related: [raw-research-evidence-preservation-vs-synthesis-only-boundar, verify-then-spend-methodology-this-project, kit-dogfooding-the-arc-that-redefined-memory-capture-was-its]
 ---
 
 The 2026-07-01 arc followed a repeatable research pattern:

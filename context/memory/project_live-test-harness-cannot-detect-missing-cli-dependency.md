@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6185d9ce3dde4bcea6e34c08bb329a3873e8b4c6b5c1032615ed22a75f98e2c7
+related: [task-146-concurrent-swarm-support-testing, kit-s-haiku-backend-has-undeclared-claude-cli-dependency, cut-gate-must-test-published-artifact-not-repo-code]
 ---
 
 The `live-test.mjs` harness hardcodes `claude` CLI calls and runs on the developer's machine (which has Claude Code installed).

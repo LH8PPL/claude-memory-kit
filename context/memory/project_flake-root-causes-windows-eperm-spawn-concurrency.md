@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: da0c0994f1d5477097a810b820e1378d559e2a73b52370217f07ce386df754c9
+related: [windows-temp-dir-teardown-causes-eperm-in-test-cleanup, windows-rmsync-cleanup-flake-workaround, ci-authority-convention]
 ---
 
 Two non-product flakes identified and root-caused:

@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: c07ada4fc21e4509258ffbffddaf9f6229455eff57d59ed3cb4e8d30276580e4
+related: [decision-the-user-2026-06-21-the-kit-s-kiro-support-wires-al, kiro-skills-map-nearly-1-1-to-claude-code-skills-verified-fr, cli-route-fix-prompt-vs-skill-conflict-ide-cli-share-skill]
 ---
 
 Kiro has FOUR install surfaces, not three (the user's correction 2026-06-21): HOOKS + STEERINGS + SKILLS + MCP. The kit's adapter model treated Kiro as 3 legs (hooks/MCP/instruction) and OMITTED skills. Kiro has a native skills surface — the kit's own skills (memory-write, memory-search) may map to it. Steering VERIFIED from real files: custom steering with 'inclusion: always' auto-loads in base/IDE mode (Taskmaster/mempalace/DesignerPunk all do this), BUT under a custom CLI agent it must be re-added via the agent's 'resources':['file://.kiro/steering/<f>.md'] array — proven by 3fn/DesignerPunk where all 8 agent JSONs re-list each steering file (also uses skill:// and fileMatch resource types). So the docs' 'custom steering dropped under custom agent' claim is TRUE + the resources-re-add fix is what real projects use.

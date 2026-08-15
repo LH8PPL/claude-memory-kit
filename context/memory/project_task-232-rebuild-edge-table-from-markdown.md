@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 8e166a9fbcc5cc8ab9fd9e42cf01b9605f895eb068e977ddc8be9ce9aefef4e6
+related: [graph-visualization-feedback-edge-density-is-the-limiting-fa]
 ---
 
 User has independently re-derived need for graph traversal **3 times**. Validated per ADR-0023.

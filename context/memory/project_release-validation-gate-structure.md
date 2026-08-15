@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f07d7b076c041f51bec8d63194a8b4d881c08b8ffde98b16f90e73ee29fba53d
+related: [multi-pass-feature-workflow-for-complex-work, verification-gate-two-phase-approach, v0-4-5-release-workflow]
 ---
 
 claude-memory-kit releases follow a two-phase validation workflow:

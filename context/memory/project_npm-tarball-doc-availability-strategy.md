@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d2a41f6e42eec3182f31b97a236c977af6c6ff5979a8881845ff8bddcf9090a6
+related: [npm-package-contents-and-documentation-strategy, documentation-structure-tradeoff-in-claude-memory-kit, dual-readme-files-must-stay-synchronized]
 ---
 
 - npm tarball intentionally ships **only `README.md`** to keep the package lean

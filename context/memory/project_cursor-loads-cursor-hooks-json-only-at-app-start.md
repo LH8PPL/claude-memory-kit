@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 61a22f23eedcc8425f2aeb6dad44757a0e85da0be6f9ab83dae86a2bed8aa6ec
+related: [kiro-cmk-setup-checklist-pre-session-1, sessionstart-hook-requires-reopen-after-install, claude-code-hook-activation-requires-restart]
 ---
 
 Cursor loads hook configuration (`.cursor/hooks.json`) **only when the app starts**, not dynamically during an active session. MCP tools load live by contrast. If you create or modify `.cursor/hooks.json` while Cursor is already running, the active session will have MCP tools but not hooks.

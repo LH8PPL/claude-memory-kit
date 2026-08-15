@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c13b0770848de593d22aa5b9e068074fbc18cb5665bfa376e6fe4c69c44921b4
+related: [concurrency-flake-root-cause-real-timeout-under-load, gate-testing-isolated-throwaway-folders, test-anti-pattern-setup-commands-masking-automation]
 ---
 
 When testing behavior under a production timeout leash (e.g., 400ms git status limit), use an injectable timeout parameter to allow tests to run with a generous timeout while production retains the reviewed leash. Applied here via `testGitTimeoutMs`, mirroring the existing `testSpawnLazy` injection pattern.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 007048c78e6ed37ad2a1c9358b130e6aafac887fae188d16f126aadcabb1052c
+related: [nested-claude-invocations-from-inside-an-ya74axrj, avoid-test-folder-contamination-during-agent-sessions, 5-test-scorecard-gates-w1-through-d6]
 ---
 
 Calling `claude --print` from within an active Claude Code session can hang/timeout at 50s. This affected D6 (SessionStart self-heal compression) in this test run but is environmental to the nested harness, not a kit logic defect. Non-nested invocations work fine.

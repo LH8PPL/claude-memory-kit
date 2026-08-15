@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 863b337691f50f0de26d0d40e6bf63c4c4439b237cb00c2f7ca36ef3156f849e
+related: [cmk-health-check-status-2026-06-20, self-review-finding-now-md-unbounded-read, v0-6-2-release-approved-before-auto-recovery]
 ---
 
 A haiku_timeout occurred on the weekly compression step (07:18:37Z) — an instance of the Task 161 timeout class. This timeout predates the v0.3.4 re-install. v0.3.4 introduced automatic retry logic for compression timeouts, which is now active in this installation.

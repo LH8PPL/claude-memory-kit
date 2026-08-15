@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 917f18cb07caf62cf5d694288ee89806a8bbebccbb9847db88341bad2003bdfd
+related: [skill-gate-docs-say-skill-name-space-kit-writes-skill-name-c, claude-code-2-1-x-needs-skill-name-wildcard-to-suppress-skil, diagnostic-test-allow-list-vs-workspace-trust]
 ---
 
 Claude Code documentation specifies two forms for Skill permission rules:

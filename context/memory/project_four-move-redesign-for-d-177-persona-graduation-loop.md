@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: bf7bf124820b6c65d6d515d1434b89ff9907568d9272ed5bba44a6ebbad83575
+related: [d-177-self-defeating-loop-in-persona-graduation, resume-point-task-151-4-move-2-demote-not-evict]
 ---
 
 Task 151 addresses the D-177 self-defeating loop where promoted traits overflow the 1800B cap → graduation evicts them → fragments/ isn't injected → traits vanish at cold-open.

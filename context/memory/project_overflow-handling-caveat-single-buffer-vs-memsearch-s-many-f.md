@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d68ee78a6198e668663b8f89f2606e70c57393945ede4941f3ccdb66ab7addbd
+related: [a-c-core-design-pivot-memsearch-anchored-b-dropped, release-plan-md-authoritative-task-to-lane-map, task-260-and-262-sequencing]
 ---
 
 memsearch sidesteps overflow by aging out old files from the rolling window but keeping them on disk. We have a single monotonic `now.md`.

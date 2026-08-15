@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 843c92f7a00e9be7fd2a195b3855837b1a3b58c832249c2fe0462993f8e36cf4
+related: [powershell-glob-behavior-explicit-filename-required-for-tgz, cli-fallback-for-mcp-tool-resolution-failures, windows-ebusy-when-updating-cmk-during-claude-code-runtime]
 ---
 
 Minting process is currently broken. Workaround used in lane 270 and applicable to other builds: manage git worktree manually instead of relying on the broken minting process.

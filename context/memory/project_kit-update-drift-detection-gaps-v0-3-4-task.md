@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 521aab2342c5b5bc8ecddd37c933c18b0318742bfdfc213b443d6b0f8133ae1d
+related: [kit-update-workflow-npm-global-per-project-cmk-install, plugin-install-and-bootstrap-are-separate-one-time-steps, version-stamping-and-scaffold-isolation]
 ---
 
 - No documentation of update process in README/QUICKSTART

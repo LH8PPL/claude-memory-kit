@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3665f70bb8170d117b350b43732e03a23a6367cb
+related: [release-roadmap-v0-5-1-v0-5-4, validate-references-requires-properly-filed-task-references, v0-4-6-release-roadmap]
 ---
 
 v0.4 focuses on editor integration in this priority order:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 00f4108669827fd2a2f0b3e8b3e1996a2a3cc8a2012b25cd21ba232a2c258114
+related: [octopoda-os-github-com-ryjoxtechnologies-octopoda-os-open-so]
 ---
 
 - **Repository**: https://github.com/RyjoxTechnologies/Octopoda-OS — MIT-licensed, Python+JS, ~535 stars, v3.0.3 (April 2026)

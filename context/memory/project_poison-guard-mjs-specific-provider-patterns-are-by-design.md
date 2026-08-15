@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 59a66149423a19a8da5cc88946eb39f4536a6453
+related: [defense-in-depth-scanning-write-read-boundaries]
 ---
 
 File at packages/cli/src/poison-guard.mjs uses two-part system:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f6ab108c5f5c66eccd850df99cc6877072bb0ceb31dfb391f6394ddf9eb51204
+related: [kiro-install-contains-two-independent-clients-with-separate, disable-mcp-in-ide-wrappers-with-includemcpjson-false, cmk-install-scaffolding-and-wiring]
 ---
 
 PR-1 (IDE hooks, ✅ complete) covers `cmk install --ide kiro` wiring (MCP, steering, skills, IDE hooks with platform-correct cmd.exe activation). PR-2 (CLI hooks, planned) will cover CLI hook configuration in agent JSON. They are separate PRs because the surfaces differ fundamentally: location (`.kiro/hooks/` vs agents), activation (automatic vs default-agent), and audience (IDE vs CLI users).

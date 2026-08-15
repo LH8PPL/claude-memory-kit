@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ffddc69f7c6f1926cef990f85a268820052bc7c9eeb1d127d0443a5d73c9c5cd
+related: [kiro-cli-automatic-memory-capture-works]
 ---
 
 The kit's core value is the systematic injection/capture/read/dedup discipline layer for agent memory. Files are cheap; the hard problems are:

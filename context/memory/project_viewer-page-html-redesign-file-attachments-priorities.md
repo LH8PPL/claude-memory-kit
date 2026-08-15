@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c251b29df63e1521478702144ea56e498e83ac8f790845fce5814ff60abc3cb3
+related: [visual-redesign-for-viewer-page-issue-268-v0-6-6]
 ---
 
 Full attachment list for redesigning `packages/cli/src/viewer-page.html` using Claude's design tool, sourced from `docs/design-brief.md`:

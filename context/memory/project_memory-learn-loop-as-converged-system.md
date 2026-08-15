@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ed489a2a5da2e5eb8040f3768e407889cc9bf2801db3345a754c0c99ba3ff2b4
+related: [u-mem-describes-one-unified-loop-not-nine-separate-features, ide-to-autonomous-spectrum-same-loop-richer-signals, two-host-kit-architecture-proposed]
 ---
 
 The claude-memory-kit is converging toward a "memory learn-loop" system. Its organs are:

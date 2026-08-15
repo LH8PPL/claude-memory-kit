@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: eb3c88101f52027f902c0629277e9dfb19e80c0d37187588cf9fde4984c2f418
+related: [v0-4-5-agent-relative-llm-backend-feature, kit-s-haiku-backend-has-undeclared-claude-cli-dependency, kiro-cli-requires-global-chat-defaultagent-because-hooks-are]
 ---
 
 The kit must work for users with ONLY Cursor or ONLY Kiro installed, with no Claude Code dependency.

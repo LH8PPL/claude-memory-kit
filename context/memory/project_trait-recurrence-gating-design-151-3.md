@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 633313f1f44e8573b0fee8dacb803834bee27e330948fc7d7208da439aa1283c
+related: [task-151-3-bridge-answer-cite-and-sum]
 ---
 
 **Wiring pattern: cite-and-sum (B-strict)**

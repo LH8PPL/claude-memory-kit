@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 67097d162f97145ca9271ea47622de377258eb3da7eaa97ac41a5a2284868ed7
+related: [youtube-to-slide-scheduled-task-shims-vbs-launchers, register-crons-for-staleness-starvation-prevention, scheduled-tasks-use-absolute-paths-renaming-requires-re-regi]
 ---
 
 youtube-to-slide has been migrated from hand-built scheduled tasks to core-memory-kit management. Migration included deleting three legacy scheduled tasks (`ytslide-daily-memory-distillation`, `ytslide-weekly-memory-curator`, `ytslide-nightly-memsearch-index`), importing 7 existing sessions and 5 legacy project facts, healing the memory index (HC-4 PASS), and consolidating all memory operations under the kit's unified system.

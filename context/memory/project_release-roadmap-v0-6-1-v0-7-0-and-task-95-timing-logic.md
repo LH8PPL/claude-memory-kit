@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5babe0e0a1177b396e59a69230e6d15d844a32ac9faeb9f781ac55dcbab5552a
+related: [session-state-at-pause-2026-07-20-pre-compact-v0-6-0-shipped, version-roadmap-v0-6-1-through-v0-6-2, claude-code-2-1-x-needs-skill-name-wildcard-to-suppress-skil]
 ---
 
 - **v0.6.0** (shipped): Day-One Memory differentiator; npm published with provenance

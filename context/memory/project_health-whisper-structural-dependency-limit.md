@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 76b3770cbed47a5f1b76f2d279218d7804d28ccf0ed18a2158cfabeddf55ed5b
+related: [tombstone-auto-recall-design-decision]
 ---
 
 - The whisper rides the UserPromptSubmit hook; total hook layer death is structurally unreachable

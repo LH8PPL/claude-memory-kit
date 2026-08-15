@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 880f712bdb09fa1497dad5cb82588df9f160c8afce201ccf0432a1a14e85a542
+related: [mcp-server-and-settings-file-organization, workspace-trust-requirement-for-claude-skills, config-directory-migration-is-critical-blocker-for-rename]
 ---
 
 Project-scoped MCP servers (registered in `.mcp.json`) require one-time approval in Claude Code before their tools become available. The UI initially shows "⏸ Pending approval" status.

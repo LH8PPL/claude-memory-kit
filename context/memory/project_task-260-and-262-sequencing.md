@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e376262ab48859e273a6d6161cb7240f3f0e1ec02b2ccdae79f0d5004bf7ac06
+related: [design-research-memo-and-mvp-split, d-408-housekeeping-supersedes-d-395, user-verdict-is-final-done-criterion-for-visual-work]
 ---
 
 Task 260 (first-pass viewer UI) has an explicit closing criterion that depends on user decision: is it "good enough to call 260 done" or should the larger design memo direction be built as a separate task? Task 262 (write-time linking to densify graph) is unblocked once this decision is made. Sparse graph quality is a data problem (4% corpus linked), not a design problem—CSS improvements alone cannot fix it.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: cf92cacf989c701038a5fa755678e7f89eae3c8a8a2aec5a0cef66aefc5949d1
+related: [stress-testing-omitted-for-pure-read-cli-changes, stress-tests-require-git-isolation-task-150-eperm-race, design-lesson-numbering-system-d-in-claude-memory-kit]
 ---
 
 When a task involves only file-mutation + in-process doctor checks with no spawn/hook/concurrency surface, stress tests are intentionally skipped. Documented precedent established in Task-214 and Task-220.

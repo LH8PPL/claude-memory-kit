@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: bf4341313595578759ffeed54ba67c754f8b16c886c3e7bf7cb5aac8446818a0
+related: [skill-md-description-block-scalar-format, install-path-review-checklist, sonarcloud-then-in-object-false-positive-schema-fields]
 ---
 
 When js-yaml re-serializes YAML, it may reorder keys and change quoting styles. This silently rewrites the byte representation, violating byte-preservation guarantees if exact byte-identity must be maintained (e.g., during fact id-repair or content-addressed storage). Detected test cases include multiline strings, CRLF line endings, and quoted colons.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7614bc09a4d8f937690da50d095304afc3b51604668dbe621da428eacd9a6f35
+related: [v0-3-2-scope-correction-dedup, three-borrowed-ideas-laned-to-tasks-versions, v0-3-2-scope-locked-strict-task-order-discipline]
 ---
 
 **Queue order**: v0.5.2 → v0.5.3 → v0.5.4 → v0.6.0 → v0.7.0 (from D-309 + extensions)

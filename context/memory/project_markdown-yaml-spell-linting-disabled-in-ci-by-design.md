@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: cee75b319e3a701819f9d023f06632d8365d6f5d12bd9ec5463b57bd62a1e03d
+related: [linting-memory-files-produces-excessive-noise, research-notes-indexed-via-research-index-not-documentation, stress-testing-omitted-for-pure-read-cli-changes]
 ---
 
 - **Status:** markdownlint, yamllint, codespell NOT run in CI or npm test; Super-Linter not integrated.

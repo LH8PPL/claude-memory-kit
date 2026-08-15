@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract-session
 source_line: 1
 source_sha1: 151dc9e5537068208258306374e77b79adb7728ae0993255efe751b404a2d182
+related: [user-verdict-is-final-done-criterion-for-visual-work, user-is-not-on-kiro-cli-v3-user-is-on-ki-7tmexma3]
 ---
 
 User's verdict on visual quality (reviewing screenshots) is the final done-criterion, not assistant judgment.

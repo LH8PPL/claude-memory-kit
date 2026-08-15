@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1fd51ceef2f682d208c2db5a9ee914ed4306b9c985228da9553a53de5a2f098a
+related: [doc-completeness-validator-hook-behavior-coverage-gap, kg-guard-failed-matcher-pipe-alternation-not-literal, tool-execution-in-kiro-cli-requires-tools-config]
 ---
 
 kiro-cli `preToolUse` hook matchers are **literal strings only** — regex and pipe-alternation syntax will silently fail.

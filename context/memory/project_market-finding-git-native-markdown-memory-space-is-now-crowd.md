@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: b148e8fdef59719c304dadea5968eae62ee974c24975c875c8f06ae1bf794c99
+related: [markdown-git-native-memory-space-now-crowded-not-empty]
 ---
 
 The git-native markdown memory category is no longer sparse. This survey alone found: nestwork, pulse8-cortex-vault, nt, plus synpulse8, songth1ef, and navbytes clusters.

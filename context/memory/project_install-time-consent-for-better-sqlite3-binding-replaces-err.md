@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 563bb42e1953626eed786d48d1833906e45cd7e3
+related: [fresh-cmk-install-health-baseline-cmk-0-4-5-with-semantic, cmk-install-auto-updates-managed-block-version-stamps, windows-npm-eperm-warning-on-better-sqlite3-node-is-benign]
 ---
 
 When native binding is unavailable (npm 12), the install flow now uses inline consent:

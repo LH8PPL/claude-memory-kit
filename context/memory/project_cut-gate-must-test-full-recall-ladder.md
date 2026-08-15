@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ef60dcf969bb1e43f4ce6aaba6effa987d9ebede
+related: [byte-preservation-as-hard-constraint-for-archive-splits, memory-kit-validates-itself-as-dogfood-test-subject, node-sqlite-fts5-module-availability-gate-for-task-141b-migr]
 ---
 
 The cut-gate test suite must exercise all three tiers of the recall mechanism:

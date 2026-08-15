@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: bf78603f15bf443ab203c567f6d51e809e7a013ad90a44aea75d709d33956691
+related: [vitest-pool-corruption-transient-load-failures, vitest-workers-spawned-from-the-claude-code-bash-tool-inside, line-ending-normalization-risk-in-python-rewrites]
 ---
 
 VS Code's electron environment variables can poison vitest workers when tests are launched from Git Bash, causing spurious test failures. The same tests run clean when executed from PowerShell.

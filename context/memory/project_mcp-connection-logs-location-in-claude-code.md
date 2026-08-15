@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: dc91053a38ab2aa7618ccbd259832de8a9fdb1d7e3fbb31212cc6901ea3c7d87
+related: [global-cli-rebuild-and-reinstall-workflow, claude-code-deferred-tools-first-turn-race-condition, kiro-cli-integration-test-gate-and-reinstall]
 ---
 
 - Path: `AppData/Local/claude-cli-nodejs/Cache/c--Temp-cut-gate21/mcp-logs-cmk/`

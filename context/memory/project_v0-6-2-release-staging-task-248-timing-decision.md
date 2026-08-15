@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 35f1474104add009bb35f7d440d1062a1ae65aa49bea8481852160959c38356a
+related: [v0-6-2-release-approved-before-auto-recovery, npm-registry-instability-and-v0-6-4-workflow-hardening, version-cut-workflow-pattern]
 ---
 
 v0.6.2 is staged at commit `b4bf558`, ready to tag. Task 248 (orphaned-tier auto-recovery) timing decision pending:

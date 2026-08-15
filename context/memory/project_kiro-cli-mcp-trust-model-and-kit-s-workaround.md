@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5f0c9cf30a6e06698e0d7b0d67e29168899735dd9c10e7f36c14b3366706c88d
+related: [mcp-prompt-root-cause-agent-config-kiro-cli-mismatch, kiro-cli-auto-loading-verified-d-181-follow-up-kiro-dev-docs, claude-code-vs-kiro-hook-architecture-difference]
 ---
 
 **The platform gap:** Kiro's IDE has `autoApprove` setting for auto-trusting memory tools; Kiro's CLI ignores this by design (GitHub issue #4672 confirms intent).

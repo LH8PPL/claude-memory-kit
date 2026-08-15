@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: c42451083ef19c3af4b3f4883436462029e9c46de03174acce511d24b0fd87c0
+related: [append-only-model-for-decisions-md-never-regenerate-from-liv, regenerated-surfaces-vs-append-only-surfaces-digest-vs-decis, automatic-recall-never-reads-tombstones-recovery-is-human-on]
 ---
 
 Task 147 DECISIONS.md architecture (settled 2026-06-15, D-161): the standing context/DECISIONS.md is APPEND-ONLY + kit-maintained, NOT regenerated-from-live-facts and NOT parked/rolled like MEMORY.md. Rationale: a decision journal's value is the permanent trail (what we decided AND what we moved away from + why). Regenerating from current live facts would silently erase superseded/forgotten decisions — rewriting history to look like the current state was always obvious (violates CLAUDE.md decision-trail-preservation). So: decision captured -> entry appended; superseded -> OLD entry annotated in place (not deleted) + new appended; forgotten -> marked retracted, not removed. Contrast with MEMORY.md (bounded hot cache -> rolls/parks to dated archives) and INDEX.md (index of what-currently-exists -> regenerated, drops deleted). cmk digest is the SEPARATE regenerated render (current-knowledge snapshot — regeneration correct there). Scope for v0.3.2: only explicit signals (capture appends, forget marks retracted, explicit supersede annotates); AUTOMATIC contradiction detection is deferred to F-D/Task 95. Steal merge=union from squad's .gitattributes so teams don't conflict on the append-only file.

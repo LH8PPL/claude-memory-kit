@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 9f922fc0f78d138e1a8fe5a2a2d688dbd1d5fb2c642131d6e846d852f787753a
+related: [decision-the-user-2026-06-21-the-kiro-rework-wires-both-ide, plan-the-user-2026-06-21-do-the-manual-kiro-live-capture-tes, kiro-ide-kiro-hook-on-disk-format-verified-from-a-real-hook]
 ---
 
 Decision (the user, 2026-06-21): rework Kiro support PROPERLY before v0.4.0 ships — fix the 3 profile defects (default-agent registration + AGENTS.md instruction + Kiro-specific agent-config installer branch) + live-test on real kiro-cli before claiming 'automatic'. NOT ship-broken-and-fix-later. The default-agent question (force cmk as Kiro's chat.defaultAgent vs opt-in) is still OPEN — the user wants to know what real projects did first: AgentCore SETS it as default (full automatic); PILOT (aws-bash-hooks) + langfuse do NOT (manual --agent each session). Field is split: the automatic memory systems set default, the opt-in tools don't.

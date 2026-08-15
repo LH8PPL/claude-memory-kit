@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d93e218fa5ea9a00986e2eda68e974dc9e54c683be1b66cde839bc7a8749f479
+related: [version-0-5-4-tarball-ready-for-gate-testing, vitest-coverage-plugin-peer-versioning, release-cut-workflow-local-isolation-user-tag-push]
 ---
 
 Version: 4.2.0 (in package-lock.json)

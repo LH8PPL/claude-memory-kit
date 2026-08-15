@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9dd144b6e31909b44f1756668adc7de6924f8aee8f460b0e6987d1cd25433ebf
+related: [task-165a-is-design-decision-linked-to-d-285-not-mechanical, consult-the-user-before-shipping-a-fix-mid-live-diagnosis, plan-the-user-2026-06-21-do-the-manual-kiro-live-capture-tes]
 ---
 
 User has reprioritized to ship v0.5.0 immediately after v0.4.5 (already live). Reason: Fable model is required for v0.5.0 work and will not be available after midnight UTC (~1.5 hours from 2026-07-06 19:33 UTC, i.e., before 2026-07-06 21:00 UTC).

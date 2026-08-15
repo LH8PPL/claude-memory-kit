@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 06be02fbd571576f9d4ba2bd675505a6c388209f3d47438a4e64ab9326862a23
+related: [research-notes-indexed-via-research-index-not-documentation, always-check-every-memory-file-in-all-tiers-at-cut-gate, cut-gate11-memory-system-three-tier-architecture]
 ---
 
 - Global tier: `~/.claude-memory-kit` — USER, HABITS, LESSONS, fragments/INDEX

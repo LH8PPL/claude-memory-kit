@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f2b4f3eaa96709be6e2f54c9e85676caa62d86528d16200d52b50a1dd6fe141b
+related: [user-tier-memory-backup-before-testing, gate-preparation-tier-backups-and-dogfood-isolation, pre-release-testing-setup]
 ---
 
 To run gate tests against a fresh installation state:

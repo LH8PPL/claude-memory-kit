@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 54e3ae754622eaa3757ee600b82c212ea416f4d3d894ac5e41866bfa0b0c91c0
+related: [js-yaml-critical-path-in-memory-system, cmk-version-bumping-convention]
 ---
 
 `vitest` and `@vitest/coverage-v8` are peer-versioned (both 4.1.9)

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3e17a613a8cfee93dab6fe495d43f3bd05189169eb39c9a75292e535026308b8
+related: [post-215-merge-workflow-gate-continuation, live-test-gate-structure-and-blocker-findings, v0-4-0-final-gate-kh-kc-live-hook-firing-tests]
 ---
 
 Verification split into two phases:

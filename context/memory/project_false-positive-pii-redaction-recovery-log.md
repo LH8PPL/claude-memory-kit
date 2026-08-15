@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 338ecf8cf637da37040554f9ab28f5d7da860d775093fb406e9a2e3d05f131e0
+related: [kit-delete-guardrail-false-positive-on-commit-messages, non-destructive-flagging-with-blocked-placeholders]
 ---
 
 Gitignored `redactions.log` (NDJSON: original→placeholder) allows wrongly-redacted spans to be recovered locally. Never committed.

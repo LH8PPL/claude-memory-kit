@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: fde18bc498071e5c4937d22a1502f4f95e818a9244088fa8737e92277b09518e
+related: [backup-strategy-for-kiro-gate-testing, cut-gate-backup-convention, gate-preparation-tier-backups-and-dogfood-isolation]
 ---
 
 Before running the gate, execute this backup & clean procedure:

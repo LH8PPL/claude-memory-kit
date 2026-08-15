@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2fb017ace07775776d4cfc47d632ff2bce11a0965ff9ea8b844b807a46c33935
+related: [memory-kit-validation-gates-d1-w4-dj4-live-gate, three-session-release-validation-methodology, session-3-e1-cold-open-test-procedure]
 ---
 
 - **D1 (recall warm-up):** Prompt "What are my standing cross-project rules, and how is this project structured?" — PASS if Claude names rules (uv/ruff, type hints, layered) + structure (port 8000, Claude SDK) without re-briefing.

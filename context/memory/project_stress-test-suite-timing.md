@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 32f8ae6bf10c9bbe7586cf8837424604bd8053bd6a99bc4855abccbca9fdb766
+related: [stress-test-phase-in-pre-merge-workflow, stress-gate-required-before-pr-for-spawn-hook-boundary-chang, core-memory-kit-gate-chain-and-post-merge-workflow]
 ---
 
 Full stress suite (5× full suite) requires approximately 18 minutes to complete; skill-review gate typically completes sooner

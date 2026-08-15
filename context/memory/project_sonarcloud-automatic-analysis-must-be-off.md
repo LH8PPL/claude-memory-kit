@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 028128948d4e28358e7a10159f1fc5da24f836063843e37018bc4acc66a6dfb4
+related: [sonarcloud-server-side-analysis-scope-cannot-be-overridden-r, sonarcloud-project-key-rename-coordination, mcp-configuration-includes-redundant-memory-server]
 ---
 
 The SonarCloud CI integration requires Automatic Analysis to be disabled. If enabled, it runs with stale server-side stored configuration instead of the CI-provided sonarProperties.

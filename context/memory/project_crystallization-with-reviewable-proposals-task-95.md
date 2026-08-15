@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8a906e3be60bc187ad5ea963660514132a5efe15
+related: [core-philosophy-of-the-kit]
 ---
 
 When near-duplicate facts are identified:

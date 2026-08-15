@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 42f7faa5cba75fc8f920e5d7649674da676e8f2cf97ecd8166145d9eaaab55b0
+related: [structured-error-logging-for-compress-failures, retry-configuration-strategy-by-path]
 ---
 
 - **Max attempts:** 2, exponential backoff

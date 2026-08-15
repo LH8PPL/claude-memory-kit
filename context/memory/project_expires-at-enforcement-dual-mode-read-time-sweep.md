@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6e4eec0895a8933a679841e5ea3df768e33f9db0c75263692db24950672e6788
+related: [expiry-mechanism-precedents-anti-patterns]
 ---
 
 Enforcement happens in two places:

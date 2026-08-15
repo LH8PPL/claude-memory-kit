@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: c65426ca2ed64fb36f3f0e77febf2f7f9dd88afa208faa14eefc6cbe39d6b579
+related: [zero-server-local-first-is-the-kit-s-deliberate-design, fts5-and-sqlite-vec-are-chosen-by-design-per-adr-0002-and-ad, codemem-validates-multi-cli-auto-detect-approach-in-producti]
 ---
 
 EverOS (EverMind-AI, github.com/EverMind-AI/EverOS) is NOT better than the kit — it's a DIFFERENT product class with the SAME thesis. Same: markdown source-of-truth + local SQLite/vector index (validates ADR-0002 by convergence). OPPOSITE: EverOS runs as a SERVER and REQUIRES OpenRouter+DeepInfra cloud API keys ("no in-process library mode"); the kit is zero-server, works with no API key, installs INTO the coding agent via hooks (D-23). EverOS is the mem0/Zep/AgentCore class (a memory runtime you build apps against); the kit is the claude-mem/OpenWolf class (makes your existing agent remember, zero setup). EverOS is AHEAD on semantic search (LanceDB shipped vs our deferred Task 65) + a more principled reflection (Select→Merge→Re-extract→Deprecate — steal for Task 151). The kit wins decisively for its actual goal.

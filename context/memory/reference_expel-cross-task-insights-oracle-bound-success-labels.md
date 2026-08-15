@@ -1,13 +1,14 @@
 ---
 id: P-EXPELQRV
 type: reference
-title: "ExpeL cross-task insights — oracle-bound success labels"
+title: ExpeL cross-task insights — oracle-bound success labels
 created_at: 2026-07-01T00:00:00Z
 write_source: manual-repair
 trust: medium
 tags: [research, learn-loop, earned-judgment, oracle-free, expel, cross-task-insight]
-source: "ExpeL: LLM Agents Are Experiential Learners (arXiv 2308.10144)"
+source: 'ExpeL: LLM Agents Are Experiential Learners (arXiv 2308.10144)'
 verified: primary-source (ar5iv HTML, 2026-07-01)
+related: [skillrevise-earns-better-skill-via-benchmark-verifier-oracle]
 ---
 
 # ExpeL cross-task insights — earns "A>B" but is ORACLE-BOUND

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: dd069d370e277a30d0df68af7c0ce27d9298aad3f2027a85982547519a413031
+related: [cmk-decision-trail-requires-divergence-recording, review-based-decision-correction, project-decision-trail-lane-preservation-habit]
 ---
 
 When implementation diverges from research or original design, document in three places with what-was-planned / what-shipped / why:

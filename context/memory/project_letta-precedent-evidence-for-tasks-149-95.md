@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d10517e29563ef63ef252316c48a31fda19b8b3b9febc7021c223e1ef90307a7
+related: [kiro-cli-vs-kit-activation-pattern-design, post-compact-session-entry-point, deep-reader-analysis-phase-of-kit-design]
 ---
 
 **Task-149 (recall-trigger sweep + ADR)**: Letta's `archival_memory_search` tool exemplifies canonical "memory as a tool" pattern—direct evidence for Task-149 ADR recommendation.

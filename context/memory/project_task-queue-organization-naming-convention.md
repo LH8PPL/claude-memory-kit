@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d88d9c36aac3b4579259e9fe33a22cd06fc90792
+related: [doc-update-release-boundary-rule, minor-boundary-backlog-sweep-d-248-convention, backlog-for-v0-3-x-and-v0-4]
 ---
 
 Project work is tracked by task codes:

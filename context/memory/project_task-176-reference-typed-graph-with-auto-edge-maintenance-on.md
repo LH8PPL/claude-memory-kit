@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7963eda2387d905271d903219ce81412febc266ed0ea6858b5e565cb651fbcf3
+related: [raptor-hierarchical-summarization-for-multi-hop-reasoning, kiro-cli-vs-kit-activation-pattern-design]
 ---
 
 pulse8-cortex-vault (Apache-2.0, Python) implements the direct model for Task 176: a typed knowledge graph (NetworkX-based) with automatic edge maintenance as markdown files change.

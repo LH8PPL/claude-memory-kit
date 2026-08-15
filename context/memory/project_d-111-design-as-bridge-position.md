@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 4c3a36eacfd8014894d3507bf60e72e20c8002aa
+related: [semantic-search-vs-grep-trade-off-d-111-design-rationale, decisions-scope-semantic-fallback-warning-task-156-bug, zero-server-local-first-is-the-kit-s-deliberate-design]
 ---
 
 D-111 (keyword-first search with semantic strictly opt-in) positions the kit as the bridge between two opposing but both-valid paradigms:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f598cb734d6c2bcb8c02751444afcd22ca063fa68c903c485c49add851c82c5b
+related: [d-303-test-environment-confirmed-ready, d-303-blocker-closing-via-live-kiro-re-test, unverified-auto-extract-has-never-automatically-written-a-fa]
 ---
 
 **Proven:** Stop hook fires (extract.log confirms); capture/inject/recall/wedge/privacy all work; IDE transcript parser extracts both turns correctly.

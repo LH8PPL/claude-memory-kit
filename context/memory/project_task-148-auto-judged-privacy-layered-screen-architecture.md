@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b44862aee98d3542df99823cac1d7f93e77d50d70df016797f1482560f24ea5e
+related: [two-layer-pii-screening-l1-sync-l3-async-judge, pii-detection-landscape-regex-vs-llm-trade-offs, task-148-v050-scope-transcript-path-not-just-fact-classifier]
 ---
 
 - **L1 (hot path)**: Presidio-style JS pattern catalog (emails, phones, paths, IPs) extending Poison_Guard — ~2ms

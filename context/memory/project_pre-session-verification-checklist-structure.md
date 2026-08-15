@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c55843474562cf3a15fd07121c61bc55b1b56b6e
+related: [multi-gate-release-verification, release-gating-workflow-for-version-cuts, v0-4-1-release-gate-workflow]
 ---
 
 Pre-session verification for Session 1 has three sequential gates:

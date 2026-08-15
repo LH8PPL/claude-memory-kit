@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 8a26953f099f8860a44d77d1adce00d918b4793b7af05706790ba9f06a5cf01c
+related: [task-66-subtask-dependencies-and-next-gate]
 ---
 
 **Core approach**: same-subject grouping + batched Haiku judgment + timestamp resolution

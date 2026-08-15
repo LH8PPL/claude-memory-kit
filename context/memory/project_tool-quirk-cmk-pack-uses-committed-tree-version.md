@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c61e9c95148641c71dbd6a8d7b4aff6298805064827aa457365610d4a73e36dd
+related: [release-cut-sequencing-and-prerequisites-v0-4-4-pattern, cmk-version-bumping-convention, release-workflow-multi-gate-process-0a-0c]
 ---
 
 "`cmk pack` reads the committed tree (e.g., committed package.json), not the working directory. Version in tarball is determined by what was committed at the release step. Example: release commit 209e2aa commits package.json with `0.4.4`, so the tarball reports 0.4.4. Use `cmk --version` after install to verify."

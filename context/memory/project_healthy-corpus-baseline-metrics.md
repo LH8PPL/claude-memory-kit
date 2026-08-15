@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 89774e8a56f9f8c922f48b7af411c2a0853c6201de7c3d0f02895ad58da50e06
+related: [v0-6-2-published-release-state-and-contents, corpus-poison-repair-command]
 ---
 
 A known-healthy corpus shows:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3e8b0cf96360feb82a28093d12f05b8a01dd03fda3f9672daa60902dd2b7076d
+related: [memory-tier-flushing-rules, research-notes-indexed-via-research-index-not-documentation, kiro-cli-agent-configuration-and-verification]
 ---
 
 Three identified callers of hook/snapshot data (blast radius verified clean):

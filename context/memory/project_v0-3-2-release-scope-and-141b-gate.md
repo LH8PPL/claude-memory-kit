@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a35088b45d4624ecd8c2f80de2a8f90831ac789ca3bb63c1a419b26e0419396a
+related: [v0-3-2-release-scope-locked, v0-3-2-release-status, v0-4-5-release-workflow]
 ---
 
 - **Locked scope:** Tasks 153, 152, 147 + js-yaml security fix + README rewrite + CONTRIBUTING.md (all merged to main)

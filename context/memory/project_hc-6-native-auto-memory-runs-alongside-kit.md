@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: cc3d8c4d237ed1ba25197ee959ec04d942fa12e5d6c38dc3872e4091ce9c74e2
+related: [core-memory-kit-v0-6-4-installed-dual-memory-layers-active, cmk-install-activation-and-native-memory-options, core-memory-kit-installed-with-claude-code-hooks]
 ---
 
 Anthropic's native Auto Memory and core-memory-kit both inject at session start. Doctor warns about HC-6; remedy available: `cmk disable-native-memory`

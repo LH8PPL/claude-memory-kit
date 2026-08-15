@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 94f294f159d1337a60ebdbb0096f21a9c88ac40ebce3a286704b42a99335303e
+related: [release-workflow-for-claude-memory-kit, v0-3-1-release-final-workflow, release-gate-workflow-and-final-user-control]
 ---
 
 1. Merge PR #257 (Task 201 — split-brain backend)

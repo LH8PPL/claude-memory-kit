@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d20802e92df7e16a39b89fe7e600ebfc89f945a12b38630a2504e4d075aa0bef
+related: [testing-verification-levels, live-cut-gate-requirement-unit-green-works-on-real-input, project-dogfooding-principle-use-kit-s-own-mechanisms]
 ---
 
 Before release/merge, unverified items go to a formal "cut-gate" review session (e.g., DJ4 labels unverified decision-journal items). The gate allows manual verification or deliberate acceptance of known gaps before merge.

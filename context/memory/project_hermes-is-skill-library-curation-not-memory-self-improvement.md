@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ccedd4db44cef133166407c787d082da2dfe71f0260f6cebaba3b3e4c24c7cfa
+related: [four-flavors-of-memory-improvement-systems, task-179-umbrella-task-for-memory-improvement-sequencing, memory-measurement-is-part-of-learn-loop]
 ---
 
 Hermes's core function is skill-library curation and consolidation, not memory self-improvement:

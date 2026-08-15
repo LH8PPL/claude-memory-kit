@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5ea799d06a905be2edba27b8c1d3a1ec95d2c3280017675d7e6ccc1480a61296
+related: [cut-gate-release-validation-guides-per-agent, cut-gate-structure-convention, claude-memory-kit-supports-3-ide-tool-agents]
 ---
 
 The canonical `cut-gate.md` has a backend section (§4f) with this structure:

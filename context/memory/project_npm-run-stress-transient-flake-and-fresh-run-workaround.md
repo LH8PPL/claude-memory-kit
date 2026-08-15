@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 43de97afae94b41e80bf1782346bac1588d5d8e5282d7805442b6e07c8803900
+related: [stress-gate-process-for-pr-merge, stress-gate-requirement-for-spawn-boundary-changes, v0-5-0-release-workflow-stress-commit-push-pr-merge-repack-g]
 ---
 
 **Issue**: Load flake causes mid-run kills (e.g., killed during run-3, run-2 inconclusive). Not a real suite failure.

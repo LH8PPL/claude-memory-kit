@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 29fbdb4bd877029b6d70ae1216e02f205f6158daf84297b360a48ef49e2342a2
+related: [solved-the-windows-kiro-hook-command-form-live-verified-2026, critical-kiro-on-windows-hook-constraint-live-discovered-202, kiro-ide-hooks-live-test-wins-2026-06-21-the-user-ran-it-in]
 ---
 
 On Windows, Kiro runs `.kiro.hook` commands through WSL (Windows Subsystem for Linux), not the native PowerShell/cmd shell. WSL typically lacks standard executables like `node`, `npm`, and bare `bash`.

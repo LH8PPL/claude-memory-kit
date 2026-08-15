@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3352e759142d1e0a3809f83c2af7b7ecf7f451b568cd11037bac7d3c2cdd70d5
+related: [now-md-bloat-creates-silent-failure-trap-in-lazy-roll, auto-heal-path-for-v0-4-1-task-167-d-169-binding, a-health-check-behind-a-command-does-not-surface-a-silent-fa]
 ---
 
 **Scope:** Extend Task 105 (lazy `now.md` → `today` roll) to handle large sessions and prevent bloat traps.

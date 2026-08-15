@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: fb6e421f95bb894fbfe7a5ce8faa35f16f008a03b8c5635319dd85dc4818e7a0
+related: [design-direction-dark-default-with-light-supported, stress-gate-release-workflow, two-pass-pr-discipline]
 ---
 
 Two parallel agents deployed in execution:

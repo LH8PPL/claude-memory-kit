@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 402040a935f02f7a87faddb75f2a2adb3ef4ad9d5cdf6b16f1c4a2f2b364b7a5
+related: [release-workflow-tag-driven-automation-via-publish-yml, release-process-for-claude-memory-kit, tag-and-publish-v0-3-5-release]
 ---
 
 - **Status**: Cut and ready for release at commit c4804459

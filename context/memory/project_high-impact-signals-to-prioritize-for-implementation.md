@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 618308656fe598bcffa5f5c7e5124b559dd5053b2be55822f9e91dd4aeb50734
+related: [seven-novel-signal-types-for-memory-learning-27-system-surve]
 ---
 
 **Near-term (oracle-free, automatic, fits existing infrastructure):**

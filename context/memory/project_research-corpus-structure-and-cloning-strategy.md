@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2d4b8fec7316b48897cebfee9470f47bac360656aae0539f3914a00ec7937faf
+related: [cheap-proxy-anti-pattern, standard-cmk-installation-command]
 ---
 
 - Full research corpus: ~101 projects documented in notes

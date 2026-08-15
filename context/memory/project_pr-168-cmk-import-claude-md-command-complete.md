@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: aec23b8319f4e14a5e8ee554df644e174fdcf25b
+related: [design-lesson-numbering-system-d-in-claude-memory-kit]
 ---
 
 **Command**: `cmk import-claude-md` parses CLAUDE.md, .cursorrules, or AGENTS.md files into typed granular facts

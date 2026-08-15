@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 39341b7d3f237dc5854fa3084e55e49c8417007ebad7b7d9f6db296ce93a3d39
+related: [architecture-review-priorities-and-the-persona-routing-into, task-167-compaction-state-module-interface-two-methods-rich, v0-4-6-release-roadmap]
 ---
 
 Architecture review recommends extracting a Compaction-State module (Candidate 1, highest strength). Currently "did compaction succeed recently?" is scattered across presence sentinel, mtime marker (read/written by 5 callers), and per-date logs with no single owner.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a8b97bf464270b318f7871acc795de7b1945300d8dc26cfcbcb1d21515955c7b
+related: [commit-guardrail-blocks-ambiguous-include-exclude-instructio, kit-delete-guardrail-false-positive-on-commit-messages, sensitive-content-policy-for-memory-capture-system]
 ---
 
 The kit's auto-extract mechanism includes a validator that blocks commits when a captured fact's text includes the user's wiki name or other sensitive project identifiers. When triggered, the fact can be safely purged and re-remembered in a name-clean form, allowing the commit to proceed.

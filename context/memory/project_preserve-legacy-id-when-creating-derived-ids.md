@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e9a568b800924ec4e1ec0ac7582b3270bf438e5a5b8e19b491057ef457928b65
+related: [p-res031cg-malformed-file-recovery-plan, project-decision-trail-lane-preservation-habit, review-based-decision-correction]
 ---
 
 When a malformed fact is repaired and a new deterministic id is computed (e.g., content-addressed), preserve the original id in a `legacy_id` field. Example: malformed fact `P-RES031CG` gets a derived id with `legacy_id: P-RES031CG` stored in the repaired record.

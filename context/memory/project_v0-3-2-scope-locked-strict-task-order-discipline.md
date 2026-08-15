@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e46a7238c5e58d1332dc5e590ca0dd2874dbd77709b82934c4a4446cf2a09524
+related: [v0-3-2-release-scope-expanded, v0-3-2-scope-correction-dedup, v0-3-2-release-status]
 ---
 
 **Scope (5 committed, 1 conditional):**

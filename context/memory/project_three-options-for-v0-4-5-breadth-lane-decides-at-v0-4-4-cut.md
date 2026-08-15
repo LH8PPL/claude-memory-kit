@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4ab594cc2f42c378361fbfeff58b38fca969d4a5bf07a1293ee419a0da98fbe6
+related: [breadth-lane-stall-root-cause-four-consecutive-displacements, harness-support-roadmap-task-196-and-versioning-policy, committed-roadmap-v0-4-4-v0-5-0]
 ---
 
 **Option A — Breadth First:** v0.4.5 Cursor → v0.4.6 Codex → ordered tail → then v0.5.

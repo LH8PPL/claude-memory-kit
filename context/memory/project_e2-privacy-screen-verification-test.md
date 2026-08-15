@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9498fb1d16146209617947f4f9ea74d8372db13cb5a14f4c97e65a68636ec487
+related: [cursor-gate-test-path-procedure-v0-5-0-release, dogfood-proof-fact-path-needs-the-privacy-screen-too, post-215-merge-workflow-gate-continuation]
 ---
 
 Test procedure for privacy redaction in captured turns:

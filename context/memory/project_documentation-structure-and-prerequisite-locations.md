@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 21ce97fb76f67a5e7205c35a34c711d2f187d19e5d3efe673b04e8b16424e92a
+related: [claude-memory-kit-supports-3-ide-tool-agents, cut-gate-release-validation-guides-per-agent, documentation-wiring-three-stage-prevention-pattern]
 ---
 
 - GitHub README (distinct from npm)

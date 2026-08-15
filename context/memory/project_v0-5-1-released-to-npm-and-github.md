@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d1079fc5406e2f09d921b4e1a6442b0fc531baac7b032c076fa043a4ef40625a
+related: [v0-5-2-release-complete, v0-5-4-released-under-renamed-repo-identity, v0-3-0-released-with-green-quality-gate]
 ---
 
 v0.5.1 is now live:

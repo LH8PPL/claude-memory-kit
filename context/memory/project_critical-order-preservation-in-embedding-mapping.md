@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c7a8cb3dd65b51a8db176c4706938febb81b2819f60e275a5ee9ce47f366e77a
+related: [transformers-js-embeddings-empty-input-edge-case]
 ---
 
 When batching embeddings, output vector order must exactly match input body order. If extractor() returns fewer vectors than inputs, the tail mapping silently shifts — later plans get wrong embeddings in the durable content-addressed cache.

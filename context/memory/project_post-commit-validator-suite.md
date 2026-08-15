@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 024b44e4ac191ccd6de9b8c8a9d98094f09e4d20faf8aa8a0cd6bbdd55c8fa65
+related: [stress-gate-release-workflow, release-plan-md-authoritative-task-to-lane-map, pre-commit-hook-sanitizes-fact-files-for-security]
 ---
 
 Three validators run after commits to enforce consistency across files:

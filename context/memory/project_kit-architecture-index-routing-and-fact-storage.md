@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 54c0f5f3497abfb2513972aef5bca6eae24c5ad3
+related: [task-boundary-memory-flush-rule, test-repo-1455-facts-activated-semantic-mode-today, memory-tiers-contain-only-mission-context]
 ---
 
 - MEMORY.md serves as a bounded, actively-loaded index artifact (capped size, hot in session context)

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: b040b49b62960691af799baf6dcd7882f83701b8d0b0cc255468fbb9d7e75c85
+related: [documentation-taxonomy-and-update-responsibility, doc-completeness-validator-hook-behavior-coverage-gap, doc-validation-system-metrics]
 ---
 
 The project maintains coordinated documentation across ~10 surfaces:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 98b00fbf1730d3dfedcf67bd642db50082dc548365e9639e322aca421a626b0c
+related: [kiro-cli-memory-integration-test-procedure, memory-persistence-validation-workflow-end-to-end, live-test-workflow-for-kiro-cli-project-fix]
 ---
 
 **Root cause**: Two separate routing/approval issues prevent mk_remember facts from saving:

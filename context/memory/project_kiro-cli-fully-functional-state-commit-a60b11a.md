@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a29d96a0d5cd2b01a2d5a10685715851142b7e1b2064018ae5a2a6fb0ca5596c
+related: [live-test-workflow-for-kiro-cli-project-fix, disable-mcp-in-ide-wrappers-with-includemcpjson-false, memory-persistence-validation-workflow-end-to-end]
 ---
 
 As of branch `fix-kiro-cli-mcp-project-resolution`, commit a60b11a:

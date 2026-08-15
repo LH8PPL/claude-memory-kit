@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 441e148e6823b610a2c821f697de444fd3a343aa01a1b1f8e23dba6b7888b29c
+related: [v0-6-2-release-tail-workflow, v0-3-1-release-final-workflow, v0-3-0-released-with-green-quality-gate]
 ---
 
 1. Viewer verdict at http://127.0.0.1:62201 (or restart `cmk view` post-upgrade) — Task 268 formal close

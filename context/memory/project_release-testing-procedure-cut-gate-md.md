@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1f8448774b11e37ea46bb6bf94ef0e34a5401a1bede055945c830b053a9ca095
+related: [release-workflow-with-cut-gate-testing, publish-trigger-is-git-tag-push-not-branch-commit, release-workflow-full-sequence-for-v0-4-3-and-future-cuts]
 ---
 
 Authoritative release test script at `docs/process/cut-gate.md` with three phases:

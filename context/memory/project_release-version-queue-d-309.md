@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9809c56f59e6190a5b37ac0640575912873e15dd444651d750bd22f3fe2ffb8c
+related: [task-filing-convention-with-metadata, post-v0-5-2-roadmap-decision-v0-5-3-or-v0-6-0, current-gate-artifact-v0-5-0-with-task-148-and-sonarcloud-fi]
 ---
 
 - v0.5.1: tickets 203/204 + riders (205/206/207/213)

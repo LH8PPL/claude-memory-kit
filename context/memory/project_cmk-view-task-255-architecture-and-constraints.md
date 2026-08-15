@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b6edaafc766bedf8f9017636c6b5542087eda5efc0c7497f3de8dd2c0da5b5a9
+related: [kit-design-principle-zero-git-writing-code, modular-skill-architecture-read-write-separation, architecture-decisions-recorded-in-adrs]
 ---
 
 The viewer implementation consists of:

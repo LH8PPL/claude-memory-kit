@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: df95b6bb0560c4d823a9b8dedd7f98c0bb62d7aeddd5f2417ce81fa4debe39e8
+related: [claude-gitignore-strategy, agent-neutral-names-persist-across-any-rename, mcp-server-and-settings-file-organization]
 ---
 
 The `.claude/` directory is gitignored (per-developer settings, scaffolding, skills), but `.claude/agents/` is explicitly re-included and committed to preserve agent definitions as project doctrine and version history.

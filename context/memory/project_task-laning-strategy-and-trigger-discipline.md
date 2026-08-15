@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e0c087280563295873fa779658f4697c4be21fe0c59b62ec9b8e87fe5c662397
+related: [task-done-goal-explicitness-rule, deferred-task-decision-gate-backlog-sweep-rule, lane-naming-convention]
 ---
 
 Three categories for task management:

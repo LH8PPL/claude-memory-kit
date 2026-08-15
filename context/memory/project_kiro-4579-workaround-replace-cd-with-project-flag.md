@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 6b15c54fed4d934b520a5159ed8ea4f1a5206c5d977e125a5010b2240dbf5c06
+related: [use-mcp-mk-remember-not-bash-cli, kiro-bug-5873-explicit-tool-route-blocked, mcp-prompt-gate-only-appears-in-non-default-agent-scenario]
 ---
 
 **Problem:** Kiro #4579 — `cd` commands don't persist across tool calls in kiro-cli custom-agent sessions, breaking explicit memory save workflows.

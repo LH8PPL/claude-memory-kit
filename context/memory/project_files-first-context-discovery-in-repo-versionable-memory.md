@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0c0b383c27ba24623ec7e7980919c31e7166ecc0c257556200de90ea3701496e
+related: [index-md-is-a-committed-human-readable-artifact, cursor-adapter-lifecycle-hooks-for-deterministic-memory-inte, cut-gate11-memory-system-three-tier-architecture]
 ---
 
 Architectural differentiator: context via regular files (committed in-repo at `.claude/`, `.cursor/`, etc., versionable, traveling with `git clone`) that the agent can search and read — rather than proprietary agent-specific memory stores.

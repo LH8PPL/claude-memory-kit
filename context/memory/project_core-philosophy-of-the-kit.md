@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 62fd5e0724c50f33fb8cf9df5313e90ecfe170ef
+related: [pii-handling-non-adoption-of-quarantine, crystallization-with-reviewable-proposals-task-95, kit-design-principle-zero-git-writing-code]
 ---
 
 Memory should be "readable, diff-able, and auditable in any editor" — a local-first, git-native, human-inspectable system rather than opaque centralized governance.

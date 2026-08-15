@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c47f8c6674dcb51f6e4a84aceea5517c84e859341c83127031a3959a34e712e6
+related: [kiro-ide-hook-architecture-gap-missing-capture-prompt-on-use, correction-kiro-capture-prompt-wiring-is-present-not-missing, kiro-cli-env-passing-limitation]
 ---
 
 - **Diagnosis confirmed:** Kiro IDE 1.0 platform bug—`UserPromptSubmit` hook unreliable, `USER_PROMPT` env var empty/malformed (GitHub issues #9619, #6188, #7375, #4620)

@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 54bafd0a848aff634e1d6f2258d2962d6d9b97798687c6dd1d2ebe0b58ac9a31
+related: [solved-the-windows-kiro-hook-command-form-live-verified-2026, kiro-ide-hooks-live-test-wins-2026-06-21-the-user-ran-it-in, kiro-cli-popup-real-cause-cmk-is-npm-shim-not-exe-mcp-and-ho]
 ---
 
 CRITICAL Kiro-on-Windows hook constraint (LIVE-DISCOVERED 2026-06-21, would never have surfaced from docs): Kiro on Windows runs hook 'runCommand' through WSL, NOT native Windows. Proven live: a hook with command 'bash C:/...' failed (WSL CreateProcessEntryCommon:505 execvpe /bin/bash failed 2); 'echo hello' worked (WSL builtin). WSL has NO node (wsl which node → not found) AND the npm 'cmk' shim is a bash script that calls node → 'cmk hook stop' from a Kiro hook FAILS with 'node: not found'. So the kit's Kiro IDE hooks CANNOT simply call 'cmk hook stop' on Windows — the command must work in WSL's environment. The agentStop hook DID auto-fire (good — IDE hooks are automatic, verified) but the command form is the problem. NOTE: WSL sees the Windows npm cmk at /mnt/host/c~/npm/cmk but it can't run (no node in WSL).

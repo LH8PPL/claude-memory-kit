@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7b5f84fa76f981df3adfe69a8a6043a3750583edd834a6177424ded8464a24e8
+related: [stress-gate-requirement-for-spawn-boundary-changes, 5-concurrency-stress-gate-as-pre-pr-verification, validation-gate-chain-and-stages]
 ---
 
 When code review identifies issues and fixes are applied, the full test sequence re-runs before PR forward: suite → stress 5/5 → live-verify → plus any new live checks specific to the fix (e.g., "reindex clears the whisper"). Confirmed practice after B1/B2/B3 fixes on this PR.

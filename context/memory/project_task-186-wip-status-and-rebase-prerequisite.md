@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ba170f46e6417207cbe6b243b8226db0debaa1963b00445b43b9be7fa396aed4
+related: [uncommitted-change-in-docs-process-cut-gate-md, v0-6-0-release-contents, v0-4-5-roadmap-task-196-cursor-adapter-task-198-temporal-swe]
 ---
 
 Task 186 WIP is committed and safe on branch `task-186-validate-docs`. The branch is currently 8 commits behind `main` and requires rebase before continuation.

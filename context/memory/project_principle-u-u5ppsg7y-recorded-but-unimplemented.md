@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7eb20a9a3ef446f134ec63bd2752cf1a6d18884694c6ecb2cba7b72e5198a9cd
+related: [doctor-is-reactive-only-memory-write-search-are-automatic, d-343-disposition-cmk-install-scaffold-refresh-bug-task-230, resume-fact-convention-capturing-uncommitted-code-intent]
 ---
 
 Kit's documented lesson U-U5PPSG7Y states: "users will not run doctor commands; failures must surface automatically." The principle is archived in the project's memory but has never been mechanically implemented. Doctor remains reactive-only, contradicting this recorded intent.

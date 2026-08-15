@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 085ca5f66265a58b0b90bb4df1f703d0551d4faaa457ef7c5fb8580d6d629ab5
+related: [kiro-agent-must-be-global-empirically-validated, kiro-cli-requires-global-chat-defaultagent-because-hooks-are, kiro-cli-agent-resolution-requires-global-default]
 ---
 
 **Open Question:** Does project-local `.kiro/agents/cmk.json` auto-activate (hooks fire) when user runs `kiro-cli` with NO global `chat.defaultAgent`?

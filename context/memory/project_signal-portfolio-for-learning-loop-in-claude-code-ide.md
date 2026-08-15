@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 35244188a627dddbd591c6d67480d90bed5da02ef05f78fd854305f634193590
+related: [outcome-signal-portfolio-8-types-2-transferable, automatic-oracle-free-quadrant-is-the-real-design-target, ide-to-autonomous-spectrum-same-loop-richer-signals]
 ---
 
 The learning loop has access to multiple signal types in an IDE/Claude-Code host, not just "usage signal":

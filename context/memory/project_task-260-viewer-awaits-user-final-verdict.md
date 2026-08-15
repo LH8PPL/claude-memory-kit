@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 39d18f74f7f2a94fef149f351aa6fa0acdffe6360556a2bb086d3ec09905692e
+related: [user-verdict-is-final-done-criterion-for-visual-work, task-151-implementation-cadence, release-workflow-sequence]
 ---
 
 Task 260 — viewer design/UX final pass — is dev-complete as of v0.6.5, but remains formally open. It closes only after user review and confirmation that the viewer meets quality/design expectations.

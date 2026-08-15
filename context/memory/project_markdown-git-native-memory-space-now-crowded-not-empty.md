@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 53231b25ca16f08fc8b41426afab0e149382c7d4d557c3c20d516d79a736e20c
+related: [market-finding-git-native-markdown-memory-space-is-now-crowd]
 ---
 
 Prior-art sweep identified several active projects in competitive space:

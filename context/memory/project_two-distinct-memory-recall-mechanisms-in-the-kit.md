@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: fb5946f0cae3a0931a61bbbd9677b31bbd756a3e174cedd5c062b86241a5bdb7
+related: [auto-recall-agents-are-blind-to-tombstoned-facts, dogfood-memory-architecture-session-recall-vs-authoritative, cmk-install-activation-and-native-memory-options]
 ---
 
 The kit implements two different memory-retrieval patterns:

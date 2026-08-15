@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 088254533d0465e98d97fa3a9bb0255ac8792c4b4efcd8419b7b530ded0994cc
+related: [task-167-testing-agent-run-unit-live-agent-loop-user-does-no, task-167-shipped-live-test-overturned-the-grilled-q4-sync-dr, task-completion-workflow-code-test-doc-review-live-test-merg]
 ---
 
 All 7 grilling decisions (Q1–Q7) are locked and documented:

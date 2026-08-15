@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: fd880b6fc8d2fdbc4e93b2e8bd8b02a2b6a884665a142fcebe84da45ee5ff2cb
+related: [post-d194-artifact-update-workflow-for-kiro-trust-fix-verifi, re-pack-verify-workflow-for-cut-gate-testing, live-test-workflow-for-kiro-cli-project-fix]
 ---
 
 - PR #219 squash-merged at `96f57c9`; both self-review and `code-review-excellence` skill review completed

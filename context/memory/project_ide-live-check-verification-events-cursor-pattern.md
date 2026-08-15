@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 45a1e713862f13640557224ef47a9b91b0185ad719e13793b52369d95537b458
+related: [cut-gate-kiro-deliberately-tests-both-kiro-clients-across-th, injection-verification-validate-real-content-not-just-hook-f, hook-inject-capture-tests-faked-dependencies-masking-bugs]
 ---
 
 Platform-specific IDE gates verify these hook + integration surfaces:

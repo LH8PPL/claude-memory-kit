@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: ca5fa4e7957ccf2a1d5ce8d4a33ae3db0bccc2df
+related: [kit-produces-facts-not-views-the-decisions-md-gap, decision-journal-view-gap-now-task-147, decisions-md-feature-using-standing-journal-design-pattern]
 ---
 
 Task 147 design upgraded: the kit gets a STANDING committed context/DECISIONS.md journal (decision facts append at capture, writers-own-derived-views like INDEX.md), not just render-on-demand. The user's call 2026-06-12: 'our kit needs the decisions.md'.

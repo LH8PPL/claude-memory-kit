@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 89be480d500ad099028ef07dbfb211b49d0df388fb94454d7f08cc33a3b8d33d
+related: [live-cut-gate-requirement-unit-green-works-on-real-input, sonarcloud-then-in-object-false-positive-schema-fields, vitest-pool-corruption-transient-load-failures]
 ---
 
 When compression fails, the kit's logger discards subprocess stderr and exit code. The compressor captures these details (compressor.mjs:285-296) at runtime but compress.log stores only error_category (e.g., "compress_failed"), not the actual reason.

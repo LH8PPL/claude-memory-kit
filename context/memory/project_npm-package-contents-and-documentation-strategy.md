@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1d1170aa6909dedbba95643020b9f1fb35bce96661e8bbb39fca303bcea07633
+related: [npm-tarball-doc-availability-strategy, documentation-structure-tradeoff-in-claude-memory-kit]
 ---
 
 - **Package tarball includes**: `bin/`, `src/`, `template/`, `README.md`

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c1d1877448467964ae735e7afa83cc53da2e6d8cdfa36411be6c103cb97d2615
+related: [task-186-wip-status-and-rebase-prerequisite, task-236-counts-family-validation, v0-6-2-published-release-state-and-contents]
 ---
 
 Three tasks in the v0.6.0 cut:

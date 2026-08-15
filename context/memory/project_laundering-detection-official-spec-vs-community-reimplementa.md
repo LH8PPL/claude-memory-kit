@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: dc8d91ca2ad220df0af6f062ac932cdf32084ae48e11ffe9d65324709e226e6a
+related: [100-sessions-200-line-index-four-named-zsardqaa, llm-memory-spec-attribution-verification, research-verification-workflow-parallel-agents-batch-integra]
 ---
 
 Detect when community reimplementations (e.g., GitHub `dream-skill`, whose README states "replicates unreleased feature") are presented as official Anthropic/OpenAI specs.

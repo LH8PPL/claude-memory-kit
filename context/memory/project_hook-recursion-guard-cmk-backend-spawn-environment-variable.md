@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a60224d795ed5cda44ae999244b295ef466de3f1f866bddb40ccf642085ff1e6
+related: [kiro-cli-backend-live-probe-confirmed-working, v0-4-5-agent-relative-llm-backend-feature, v0-4-5-kiro-cli-dispatch-guard-implementation]
 ---
 
 When LLM backend is spawned from inside kit's own hooks (e.g., a hook calls `kiro-cli`):

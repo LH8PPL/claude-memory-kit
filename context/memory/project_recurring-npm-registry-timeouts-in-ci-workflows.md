@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3a65ec45b717e2dc3ca8bb81e8d54c6b4e25a82bb86c9b001ac7c3a95ff1c215
+related: [npm-registry-instability-and-v0-6-4-workflow-hardening]
 ---
 
 npm-registry connection timeouts are occurring repeatedly during `npm ci` in CI pipelines.

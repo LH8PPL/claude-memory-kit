@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ad84e2680104d935dac2d07ee2e08c9f952b6242b5425e5d94a1247b04b38dc5
+related: [design-system-color-palette, github-social-preview-upload-manual-web-ui-only]
 ---
 
 - wordmark.svg (light) — ink text with clay accent, 360×64

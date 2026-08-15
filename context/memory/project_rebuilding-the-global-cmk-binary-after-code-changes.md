@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 6cbb6dcface1d3e81c020895b15918adbb093cad057751e1a2c120bc81188b8a
+related: [artifact-rebuild-for-v0-4-0, global-cli-rebuild-and-reinstall-workflow, rebuild-global-cmk-cli-binary-release-process]
 ---
 
 After code is merged to main, the globally-installed `cmk` binary does not auto-update. Rebuild steps:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f1429ad4cc1721b092f664f007b735b9bacdbeca193d1b81635ec02bc795babf
+related: [onnxruntime-node-postinstall-cdn-timeout, vitest-pool-corruption-transient-load-failures, v0-3-2-published-to-npm-with-provenance]
 ---
 
 - The project includes `onnxruntime-node` as an optional semantic embedder dependency

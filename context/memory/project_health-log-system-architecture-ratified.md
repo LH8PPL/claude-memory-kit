@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 17bf105418e57d0442fd7da01e05d4b43253bc43e834def2880fb56639c74593
+related: [wave-1-instrumentation-scope, q1-refined-auto-fix-vs-whisper-boundary-cmk-doctor, health-state-tracking-via-append-only-event-log]
 ---
 
 - **Split rule:** Auto-fix only kit-owned + reversible + idempotent (piggybacked on existing ops, self-verified); else whispers; unknown defaults to whisper

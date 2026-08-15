@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c48850a0f6ce910eec34865d8c780a9ba590215cc4bfdbe6488b68169333f28d
+related: [corpus-autolink-workflow-after-pr-259, memory-persistence-validation-workflow-end-to-end, ci-watch-pattern-must-await-all-checks-not-subset]
 ---
 
 The `cmk autolink --apply` process is bounded per run (ADR-0020). To complete linking the entire corpus:

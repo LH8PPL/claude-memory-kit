@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: d4617d783e6464ddbb44dd33fc6b12ba5c0b9e8434819af94b61df1d308e09cd
+related: [solved-the-windows-kiro-hook-command-form-live-verified-2026, critical-kiro-on-windows-hook-constraint-live-discovered-202, windows-kiro-hooks-execute-via-wsl-require-cmd-exe-c-prefix]
 ---
 
 Kiro IDE hooks live-test WINS (2026-06-21, the user ran it in C:\Projects\Spec-Driven-Workshop): (1) agentStop hooks AUTO-FIRE on turn-end with NO agent selection — confirmed: saying 'hello' and letting Kiro finish fired BOTH installed .kiro.hook files automatically. This validates the kit's IDE-hook capture approach (50.K) — automatic, no default-agent needed. (2) A runCommand hook with 'echo hello' SUCCEEDED and its stdout showed in the chat — so runCommand works + stdout surfaces. (3) The .kiro.hook file format the kit writes (50.K kiro-ide-hooks.mjs) is correct — Kiro loaded + ran both files. The ONLY open issue is the Windows command FORM (WSL routing + no node in WSL → bare 'cmk'/'bash'/'node' fail; testing 'cmd.exe /c cmk ...' as the Windows-native form). On macOS/Linux native cmk should work directly.

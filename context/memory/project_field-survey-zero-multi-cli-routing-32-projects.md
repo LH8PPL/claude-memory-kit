@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d0014e122c9356f116ec0150bc24b74000c1390c4450ee4b2617daf786943caa
+related: [codemem-validates-multi-cli-auto-detect-approach-in-producti, two-tier-backend-architecture-for-headless-llm-invocation, multi-agent-llm-invocation-research-initiative]
 ---
 
 **Finding**: Zero of 32 surveyed projects implement multi-CLI routing (automatic routing to whichever agent CLI is installed).

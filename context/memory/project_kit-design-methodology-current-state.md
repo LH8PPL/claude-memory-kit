@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9bdc8cc831cfb2ec8c3c6a5b6e0c5eb3ace4f49d62131ad5fe88abb8dc68b88b
+related: [adr-0017-finalization-agenda, design-discipline-keep-systems-whole]
 ---
 
 The kit's synthesis method has four steps:

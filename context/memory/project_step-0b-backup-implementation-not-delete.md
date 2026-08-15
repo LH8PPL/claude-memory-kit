@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: fe9472befe44458d8ab941a0ef9f32645518d508a53bd09071b01600fae20bdf
+related: [persona-directory-moved-to-core-memory-kit, reset-procedure-for-gate-testing-clean-slate-mode, user-tier-memory-backup-before-testing]
 ---
 
 - Moves `~/.claude-memory-kit` + stray `~/context/` to `C:\cut-gate-backups\user-tier_<stamp>`

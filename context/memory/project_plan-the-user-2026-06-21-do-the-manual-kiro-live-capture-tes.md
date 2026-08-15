@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 41d0c4689ec7ffb4ae3f99b7d851d2a20a1170ee1f02bbe15f57caf4ad0256fc
+related: [decision-the-user-2026-06-21-the-kiro-rework-wires-both-ide, solved-the-windows-kiro-hook-command-form-live-verified-2026, kiro-v0-4-0-release-code-complete-pre-release-checkpoints]
 ---
 
 Plan (the user, 2026-06-21): do the manual Kiro live-capture test ONCE, after ALL v0.4.0 code is done (PR-1 IDE hooks merged + PR-2 CLI agent-config hooks). Batch it — one Kiro session verifies both surfaces (IDE .kiro.hook capture-fires + CLI agent-config + default-agent), rather than testing twice. So PR-2 proceeds now on code; the end-to-end 'a hook captures a real turn' verification is deferred to a single session at v0.4.0 cut. The 8-point live-test checklist (D-182) applies then.

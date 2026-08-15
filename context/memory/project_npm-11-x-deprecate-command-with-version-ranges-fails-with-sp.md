@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 63072511d736b3deaca74c03d35ed7532f22fe3db34728c1a6a0374fb7328b63
+related: [npm-deprecate-e422-bug-with-version-ranges, npm-deprecate-wildcard-syntax-fails-with-e404-use-version-ra, auto-detect-priority-chain-proven-from-codemem]
 ---
 
 - Running `npm deprecate @package@>=version` (or similar range syntax) returns 404 on npm 11.x

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f75266a5bf1281050a8b2f89fa89668bf0e6115e3fa27bb6638cef5d6a9327fc
+related: [health-log-system-architecture-ratified]
 ---
 
 Instrumented operations:

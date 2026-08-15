@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a2bcfcec2da8776f956e6ab2a81bb303003f571b398f2e28946471ce1bec0de3
+related: [viewer-delivery-shape-candidates-and-recommendation, memory-viewer-design-ephemeral-localhost-server, q1-locked-cmk-view-ephemeral-server-architecture]
 ---
 
 **Problem:** How should `cmk view` work at runtime?

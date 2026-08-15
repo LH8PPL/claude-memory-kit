@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e5b736498fb1f072f238f20a0895729c7b16f1fe760eaf89fcfeb2dfb54b4501
+related: [extract-shared-discovery-logic-to-prevent-drift, kiro-cli-env-passing-limitation, degradation-messaging-pattern]
 ---
 
 The discovery walkers (`discoverProjectRoot`, `resolveMcpProjectRoot`) previously could escape into `$HOME` if a stray `~/context/` existed elsewhere.

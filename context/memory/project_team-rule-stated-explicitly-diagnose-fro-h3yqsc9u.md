@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: review-promote
 source_line: 1
 source_sha1: ea7660858a34398183e6832a4e51556cd673ac024ae3823d4228478a0f7b3592
+related: [diagnose-ci-failures-before-rerunning]
 ---
 
 Team rule stated explicitly—"diagnose from logs before rerunning, so a real failure never gets waved off as a blip"

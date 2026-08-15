@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 34e5048d9a6d3dc4cff577282ef425fbbef5278538aef38766089079464df5a6
+related: [truly-final-kiro-windows-allowlist-bug-5376-7431-blocks-corr, confirmed-kiro-bug-user-turn-never-captured-auto-extract-can, the-fix-use-cmk-remember-cli-not-mk-remember-mcp-in-kiro-cli]
 ---
 
 - **Blocking pattern:** All three fact-writing paths share identical bug: slug derived from title BEFORE sanitization

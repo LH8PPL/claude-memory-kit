@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a9e215f8f73e5bd97db6b05cf280a93771e6c6365516af0ecf9b918be9d6f5df
+related: [d-343-kit-lacks-mechanism-to-repair-stale-scaffolded-skills, hc-9-drift-after-claude-code-update-v0-3-4, cmk-install-skips-existing-files-cannot-repair-stale-skills]
 ---
 
 - **What:** In dogfood repo, both memory-write and memory-search skills drifted from templates: memory-write's SKILL.md was missing entirely; memory-search's SKILL.md was stale (missing `decisions`-scope, weaker trigger descriptions).

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4b466ac1e3bde4e486f46d099b2209b9a9d6a722d186360a0b41b19514fb65b9
+related: [install-agent-mjs-non-global-regex-allows-duplicated-managed, claude-memory-kit-v0-4-3-release-workflow]
 ---
 
 **Design** (reconnaissance complete, implementation blocked on PR #280):

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 45d923dcaae700aa5b9d07b14c805129a9606fda146fd1b89704ed90bb4509be
+related: [kiro-cli-project-workaround-for-project-path-passing, kiro-cli-mcp-server-env-passing-limitation, cursor-supports-headless-agent-cli-cursor-agent-p]
 ---
 
 kiro-cli's changelog explicitly documents that `env` is only passed to registry-type MCP servers, not stdio servers. This blocks the kit's original env-based approach (`process.env.CLAUDE_PROJECT`) from working when kiro-cli invokes the kit via stdio.

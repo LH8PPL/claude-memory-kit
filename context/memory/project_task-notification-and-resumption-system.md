@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ce9c349a8e6c55b30f76a773f9a3626caa98f1a2593071e6318800ef81845d58
+related: [kiro-cli-v3-delete-guardrail-pretooluse-known-limitation, cmk-install-auto-updates-managed-block-version-stamps, one-line-pointer-design-for-numbering-validator-consistency]
 ---
 
 Task notifications fire when an agent completes with no live background children. The same task-id can notify multiple times (agent may be resumed). Users can send follow-up messages to continue/resume a paused task.

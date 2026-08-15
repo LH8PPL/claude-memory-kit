@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4e54ae4e7207b0f741e65c04b5132893886b184a143677fb3f9848a2a82dc73a
+related: [task-159-multi-stage-verification-gate, two-pass-review-catches-concurrency-bugs, sonarcloud-as-security-gate-for-redos-detection]
 ---
 
 The project uses two-pass reviews: self-review followed by skill-review. In Tasks 182+183, skill-review caught an issue (I1: local tier becomes searchable) that self-review missed. The finding was accepted and tested.

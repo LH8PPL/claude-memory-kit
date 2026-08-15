@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 470e1b1fa8b895554634738d4a04bf43e5694c4cd327450a0b691ce6e2c9bde0
+related: [multi-gate-release-verification, release-gating-workflow-for-version-cuts, release-cut-workflow-local-isolation-user-tag-push]
 ---
 
 The release validation runs six gate groups on the real tarball:

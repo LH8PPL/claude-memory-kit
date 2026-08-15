@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a29d4fd534099d0b0755f0267c5662fe9bba125dbc9578657e75a0e9c4cb3eb3
+related: [byte-preservation-verification-workflow-for-archive-splits, task-lane-consistency-audit-workflow, file-pointer-format-and-interpretation]
 ---
 
 Verify archive operations preserve all data with these checks:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: cc2de41ba8a3093abc2a087212d6f71ebfdd17f4f6bcc3223514b7c1cfa99191
+related: [pre-commit-hook-sanitizes-fact-files-for-security, now-md-assistant-cap-precedent, version-snapshot-in-recent-md-guards-against-cross-session-a]
 ---
 
 The session-start commit offer explicitly excludes `context/now.md` (the pre-roll, unscreened daily file) from:

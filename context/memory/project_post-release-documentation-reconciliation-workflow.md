@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f5c305fdb535583876811b6d6ddfdaeeb0fcafc6da8b1882f38f65e77f3245c7
+related: [changelog-unreleased-auto-reset-during-release, documentation-drifts-at-event-boundaries-not-pr-moments, release-plan-md-authoritative-task-to-lane-map]
 ---
 
 After publishing a release, systematically verify that no documentation version-latest claims are stale. Key documents to check:

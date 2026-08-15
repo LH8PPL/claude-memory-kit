@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: da4f0fbfa4d78f04018e9cd0d3b47c392ff94987f30ec3943a85e2effbfc3aef
+related: [cross-machine-file-sorting-must-be-byte-deterministic, map-module-sort-determinism-localecompare-banned-explicit-or, task-140-has-byte-identical-output-hard-constraint]
 ---
 
 When sorting committed files (e.g., INDEX.md), use an explicit, deterministic comparator instead of locale-based collation (localeCompare). Locale sorting varies by system, making committed content non-reproducible across machines.

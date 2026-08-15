@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f03981604aecef52e4077776f8dc92d067facb04fbd248157e693e7ff061256c
+related: [task-completion-workflow-code-test-doc-review-live-test-merg, viewer-page-redesign-multi-layer-validation-workflow, stress-test-gating-rule-for-pr-approval]
 ---
 
 Commit gate for high-stakes tasks:

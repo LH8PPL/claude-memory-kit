@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f96ff876dd13254c6105978d783efae66c27cb9258e7b836d22c0b39a5d12d8c
+related: [live-test-gate-structure-and-blocker-findings, kiro-install-contains-two-independent-clients-with-separate, kiro-ide-kiro-hook-on-disk-format-verified-from-a-real-hook]
 ---
 
 The `cmk doctor` HC-1 check had a nested bug in agent-awareness, caught only during skill-review:

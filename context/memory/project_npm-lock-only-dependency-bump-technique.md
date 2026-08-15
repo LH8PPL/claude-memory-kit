@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a3c08ddca526805249fda18701ed0bd98d4f0512d236c8f42462de68a7839566
+related: [cmk-version-bumping-convention, autopilot-stop-condition-for-install-surface-decisions, release-cut-verification-checklist-claude-memory-kit]
 ---
 
 When fixing security advisories in transitive dependencies, use `npm update --package-lock-only` instead of `npm install`. The latter silently modifies package.json, converting a lock-only security fix into an undisclosed dependency bump that reaches published npm packages.

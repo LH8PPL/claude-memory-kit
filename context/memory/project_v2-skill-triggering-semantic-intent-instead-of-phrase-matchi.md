@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 0a48b356018f6cf628b6daebe0fcf33e3137cffdf2fe184b0e5c77eadd05acc5
+related: [b3-b4-wedge-test-workflow-cross-project-doctrine-capture-val]
 ---
 
 - v1 used brittle phrase-matching; v2 shifts to semantic intent matching (grounded in research: Anthropic's skill-creator + 9 cloned memory repos)

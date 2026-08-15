@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a2aede64a7e2284e1ca227b2ab917f74d9b44414ef17511ba60969f7804bf2c1
+related: [memory-tiers-carry-mission-context-only-the-user-s-project-d, memory-tier-boundaries-kit-health-signals, notification-doctrine-non-actionable-repeating-failures]
 ---
 
 **Rule:** Session memory must contain mission context and genuine user facts only. Kit operational issues, debugging artifacts, and tool noise do NOT go in memory.

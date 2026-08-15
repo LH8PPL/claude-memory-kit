@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 44fe675453c5ee16dc523f8d6bee37afccd05582
+related: [research-inclusion-bar-for-sources-artifact]
 ---
 
 **Kit choice:** bge-base (smaller model)

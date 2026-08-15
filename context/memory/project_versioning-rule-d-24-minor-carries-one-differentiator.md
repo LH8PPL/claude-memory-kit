@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b6140a015c57663b55efc420972947cfbc95c697226c81ca5ce95239b2973a05
+related: [patch-release-strategy, versioning-policy-d-24-differentiators-per-release-level, post-fix-integration-workflow]
 ---
 
 - **MINOR versions** = exactly one differentiator (a user-facing wow feature)

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 6aba9f6edb4a39b8f9ce72d9a8b03c6efeec68add9a75485c3216d13c2021592
+related: [borrowable-ideas-from-awrshift-claude-memory-kit, silent-auto-drain-optional-warmth-design-pattern, auto-heal-path-for-v0-4-1-task-167-d-169-binding]
 ---
 
 1. **Git-history backfill** → Task 174 (v0.4.x): auto-reconstruct missed day's log from commits on daily-distill cron

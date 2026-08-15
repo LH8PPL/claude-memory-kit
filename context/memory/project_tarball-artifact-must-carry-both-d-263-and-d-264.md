@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 71d9db29eaf51305394bb6b8e5aeb6bb9821fccb73cb6bdbfbaf5691c0125e2e
+related: [tarball-installation-requires-re-packing-after-main-merges, two-pass-fix-discipline, hand-written-research-note-frontmatter-requirements]
 ---
 
 When re-packing the tarball after landing D-264, the artifact must include both the D-263 and D-264 fixes. This is the third re-pack/reinstall cycle.

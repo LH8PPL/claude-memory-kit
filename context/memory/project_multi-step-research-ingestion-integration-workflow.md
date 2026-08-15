@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 234b2091fbf8928b4258be47c66d26454927232034c9bb1c2bdb8e1aa6daeb06
+related: [byte-preservation-verification-workflow-for-archive-splits, d-153-research-quality-discipline-for-agent-reading-tasks, post-merge-workflow-sequence]
 ---
 
 When completing a large research reading task (29+ notes):

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3a542105d6a607c32a0b7254c0f61a11a10b625720cb29222998348638ead1f6
+related: [skill-review-imported-facts-staleness-bug-fixed, uncommitted-change-in-docs-process-cut-gate-md, pre-commit-hook-sanitizes-fact-files-for-security]
 ---
 
 The project uses "resume facts" in the codebase memory to preserve the shape and intent of code that is not yet ready for commit.

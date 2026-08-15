@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 64e30ef62db63f5eed4433efae3b473547210d76647c14439794a7db10b9adfd
+related: [kiro-cli-automatic-memory-capture-works, kit-name-privacy-validator-for-auto-extract, 356-dispatch-agent-killed-fix-batch-does-not-auto-start]
 ---
 
 The memory system (claude-memory-kit) auto-injects saved memory entries on the next session start. This mechanism is being dogfooded in this very project — Task 148's resume plan was saved in memory `P-L7C2aAaa` and will be auto-injected when the next session begins.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: bfea3e4f2b28e1ab0971629ccbc9200ad342d3b993444a599e9f1fb4009cc27d
+related: [social-card-assets-location, name-guard-flags-templated-patterns-in-frontmatter-metadata, tool-quirk-cmk-pack-uses-committed-tree-version]
 ---
 
 Version references in guides (e.g. tarball version, package.json matches) should use placeholders like `<version>`, `*.tgz`, or "matches package.json" rather than hardcoded numbers. This prevents docs from going stale when versions change.

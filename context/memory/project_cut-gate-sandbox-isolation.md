@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f8258c5dcdb1450aacfceb37abb202f79f7f2a0422f1db8573c6d891ed129332
+related: [gate-testing-isolated-throwaway-folders, backup-strategy-for-kiro-gate-testing, reset-procedure-for-gate-testing-clean-slate-mode]
 ---
 
 To safely test `cmk install` without corrupting the user's actual memory setup:

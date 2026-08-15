@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 12d1a46c15ceecedadaf209437638b0535e0fe7d38a92d292fb35fa121523c54
+related: [kiro-cli-backend-live-probe-confirmed-working, task-200-build-phase-implementation-roadmap, cursor-agent-automation-requires-separate-cursor-api-key-no]
 ---
 
 Cursor agent feasibility assessment:

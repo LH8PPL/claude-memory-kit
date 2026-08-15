@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d5b37ad7e652d9c9e1ddae47c338d7569256328469352232a65ed856f40a5df6
+related: [code-path-divergence-pattern-in-v0-4-0-bug-fixes, stress-test-gating-rule-for-pr-approval, uninstall-end-to-end-verification-results]
 ---
 
 - D-190: Console popup bug (fixed)

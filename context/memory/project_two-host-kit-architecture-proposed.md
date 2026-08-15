@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 200b1ef54f16852534a189f7f69dc837216f0ed8090d2d91196f3c0bece1df39
+related: [claude-code-vs-kiro-hook-architecture-difference, memory-tier-boundaries-kit-health-signals, memory-learn-loop-as-converged-system]
 ---
 
 The kit is proposed to function in two contexts:

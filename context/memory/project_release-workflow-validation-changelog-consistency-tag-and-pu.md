@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9199acf313de0d328ca9dadad707966ff3d5e9e34f48db43c2434c64ef88a2ee
+related: [release-gate-workflow-and-final-user-control, release-workflow-for-lh8ppl-claude-memory-kit, v0-5-1-release-ready-to-tag-and-publish]
 ---
 
 The release process for vX.Y.Z is:

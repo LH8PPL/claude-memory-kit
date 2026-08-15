@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6788ded68b15aa74657f7a7f6fc9c42a002021f0e87b28264732c1b949b60f2a
+related: [tool-quirks-discovered-in-v0-4-3-testing, config-directory-migration-is-critical-blocker-for-rename, release-merge-gate-workflow]
 ---
 
 Five non-negotiable security tests in release validation:

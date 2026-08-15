@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0a6570807ca8ce897386b95976106765645c81b09942716f33bf85eb3231e317
+related: [q1-viewer-runtime-model-ephemeral-localhost-pending-ratifica, cmk-view-proposed-wave-1-design, q1-locked-cmk-view-ephemeral-server-architecture]
 ---
 
 The `cmk view` command is an **ephemeral on-demand localhost server** (not a resident daemon):

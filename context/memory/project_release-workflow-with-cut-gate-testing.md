@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8eb58715a99ad40bae61ed2b7bbe966d2107cbdb231fa4164c27155ade2820db
+related: [release-workflow-full-sequence-for-v0-4-3-and-future-cuts, release-workflow-and-commands-for-production, release-gate-workflow-and-final-user-control]
 ---
 
 The release process has 5 steps with clear separation between local testing and publish triggering:

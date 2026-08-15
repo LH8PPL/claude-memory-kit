@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: bf07a2cec043bb38173bd72b1450fb7fc77ff4513438c735d50cd576c173b4c0
+related: [decisions-scope-uses-direct-file-read-not-vector-db]
 ---
 
 Design constraints (established by lead):

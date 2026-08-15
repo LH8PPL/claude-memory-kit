@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 42bca41399038acc13f9d100d8d81e8eb5d247bd441352493b70578950071ca7
+related: [never-hand-edit-memory-rule, memory-system-captures-work-in-real-time]
 ---
 
 The claude-memory-kit accepts overlapping, near-duplicate memory captures from the same insight (captured from different angles or timestamps within a session), deferring deduplication to post-capture processing sweeps rather than preventing duplication upfront.

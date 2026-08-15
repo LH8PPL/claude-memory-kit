@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d3089c66bba5e523ec654b6ca1eeaf34173835e585ce8231a14102b577a98606
+related: [research-cycle-workflow-enumerate-triage-deep-read-synthesiz, full-gate-re-run-on-final-code-after-code-review, vitest-can-show-a-module-resolution-failure-cannot-find-modu]
 ---
 
 Before launching expensive multi-agent runs (e.g., Wave-2 with 10+ agents):

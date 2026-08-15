@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 9f2219dc5afa3a9081082e0be0d0a96bf046488b272dfec110b6a04d1e2f835c
+related: [guardrail-hook-based-design-vs-mcp-protection, kiro-cli-pretooluse-matcher-syntax-literal-strings-only, multi-surface-documentation-architecture]
 ---
 
 The `validate-doc-completeness` validator checks CLI verbs and MCP tools only.

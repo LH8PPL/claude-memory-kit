@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 78565cda0c198dc604a2a9af6a0c32832894d01f
+related: [doc-update-release-boundary-rule, cmk-version-bumping-convention, v0-6-0-installed-precompact-task-235-waiting-for-release]
 ---
 
 - Bug fixes without new user-visible capability → CHANGELOG only

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 8e960573c704d3fcf9188539e1237361ab87071a3d74e51e69858c3251e11820
+related: [sonarcloud-project-key-rename-coordination, npm-pack-global-install-for-artifact-testing-0b, testing-workflow-for-claude-memory-kit-fixes]
 ---
 
 **Before any SonarCloud key change, use this exact sequence to avoid creating duplicate projects:**

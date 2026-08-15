@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 725dc1d56ab696f1f0b7ed72efe138a944540a2d9cba4b705b1cba231f0282da
+related: [core-memory-kit-dogfoods-its-own-memory-system, project-origin-and-core-problem, multi-agent-llm-invocation-research-initiative]
 ---
 
 The current project's name was chosen in relation to https://github.com/awrshift/claude-memory-kit. This is a sibling/predecessor kit that serves as an ongoing design reference for architecture and capability evaluation. Evaluation is done via structured research dives (7-surface model: capture, schema, recall, curation, privacy, packaging, and other).

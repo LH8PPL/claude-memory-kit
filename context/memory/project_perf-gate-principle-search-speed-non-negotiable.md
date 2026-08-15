@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 646730663ab003cecf71084634a395cb2e8d37df
+related: [task-141b-node-sqlite-migration-rejected-on-perf, node-sqlite-adoption-perf-gate-d-147-execution-plan, v0-3-2-release-scope-expanded]
 ---
 
 The kit's search latency cannot be traded for install-time UX improvements. User's decision framework:

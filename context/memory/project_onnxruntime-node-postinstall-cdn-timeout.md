@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4ff5d4917e9f2a2cd360e88f39ffd6cd492537178ecfb5d3da223366425db495
+related: [onnxruntime-node-ci-download-flakiness, sonarcloud-d-341-known-server-side-crash, vitest-pool-corruption-transient-load-failures]
 ---
 
 The postinstall script for onnxruntime-node occasionally fails due to transient CDN timeouts. This is a known, documented issue not related to code changes. Workaround: re-run the failed step.

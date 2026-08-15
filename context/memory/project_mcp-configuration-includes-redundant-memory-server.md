@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 61d8fefc2ff45ff749694eee7a5c87f2175f0229672859e8cc3f09f83e8415fb
+related: [sonarcloud-automatic-analysis-must-be-off, hc-6-native-auto-memory-runs-alongside-kit, project-dogfooding-principle-use-kit-s-own-mechanisms]
 ---
 
 User's MCP setup runs both generic `@modelcontextprotocol/server-memory` and kit's own memory MCP concurrently. Kit MCP alone is sufficient; removing generic server saves ~270 MB.

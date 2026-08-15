@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b6481ffa60a2d37fa6b875c08d6f28909e178579e68a07272d73290be032d8f4
+related: [b3-b4-wedge-test-workflow-cross-project-doctrine-capture-val, v0-5-0-release-workflow-stress-commit-push-pr-merge-repack-g, memory-persistence-validation-workflow-end-to-end]
 ---
 
 Multi-step workflow to validate learn-loop failure signals in session `cut-gate-coldopen-v51`:

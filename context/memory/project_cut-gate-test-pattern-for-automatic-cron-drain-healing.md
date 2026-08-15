@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 0a92ca0f6bfb638d2822f943efea9859ce1503b82e9614edaaf8cde364373c64
+related: [task-167-testing-agent-run-unit-live-agent-loop-user-does-no, test-hierarchy-for-automatic-path-verification, test-anti-pattern-setup-commands-masking-automation]
 ---
 
 - **Setup**: Bloated `now.md` + dead-cron sentinel (cron registered, heartbeat stale) — the trap state.

@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract-session
 source_line: 1
 source_sha1: 6e71307f714443fc1f2ef7e44f35dae834a605deae3fe62292112979c7839e8a
+related: [doctor-should-only-run-for-specific-cond-4fsypac9]
 ---
 
 Outcome learning for memory systems should not be failure-only; both success and failure signals should inform utility and updates

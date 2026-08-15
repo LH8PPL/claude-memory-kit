@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 4c2b31f2f499465cbf8ad81f78fa12a8fc02ae32c0655ffabae3f9084cd29c9f
+related: [compaction-state-module-v0-4-1-core-architecture-refactoring, hc-10-proactive-dead-cron-detection-question-7, architecture-review-priorities-and-the-persona-routing-into]
 ---
 
 Task 167 compaction-state module — interface settled (Q3): TWO methods. (1) isCompactionNeeded({projectRoot, now, ...ttls}) returns a RICH verdict object {verdict, cronStale, heartbeatAge} — not just yes/no; the lazy roll reads .verdict, cmk doctor HC-10 reads .cronStale/.heartbeatAge. (2) recordCronHeartbeat({projectRoot, now}) — the only writer, the cron bins call it on each fire. No standalone isCronAlive() method — cron-liveness is computed ONCE inside isCompactionNeeded and exposed via the return object, so there is exactly one source of truth and nothing can drift (a 3rd public predicate would be a 2nd place the freshness rule is read from, which drifts — the exact 'two sources disagree' bug class Task 167 fixes). detectStaleness is absorbed into isCompactionNeeded; the cron-registered sentinel + cronSentinelPath retire.

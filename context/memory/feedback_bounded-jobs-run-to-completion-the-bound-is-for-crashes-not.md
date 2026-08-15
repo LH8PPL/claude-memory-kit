@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: user-explicit
 source_line: 1
 source_sha1: 269e0a853939d2fc1082923e032625c5e69805a6a40f09136c29b34c7aecec5d
+related: [long-jobs-incremental-resumable-from-artifacts-never-all-or, task-248-reframed-the-user-s-design-call-2026-07-22-the-pre, when-an-automatic-path-fails-build-a-fallback-mechanic-that]
 ---
 
 Resumability is a recovery property, never a UX: a bounded/batched long job must loop its own batches to completion on ONE user invocation (each batch still durable-as-it-lands, still safe under Ctrl-C), and must trigger its own follow-up plumbing (index sync etc.) — the user is never the loop driver and never needs to know the internal steps. The 2026-08-10 precedent: `cmk autolink --apply` stopped after one 250-fact batch, printed "1,895 remain — re-run to continue", and then needed a manual `cmk reindex --boot`; the user's verdict was "that is stupid, what would a real user do?" — and they were right: ADR-0020's killed-at-80%-loses-nothing property had leaked into the interface as stops-early-on-purpose.

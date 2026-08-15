@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f14cce9b6c6e65f0b1cd84f490a5bce3be85a30a
+related: [release-workflow-cold-open-testing-discipline, claude-memory-kit-v0-4-3-release-workflow, repack-and-reinstall-before-gating-release]
 ---
 
 - After PR merges, re-install kit fresh from main branch (not dev tree), then re-run the entire CLI cut-gate sweep

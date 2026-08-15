@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2734487b8bc3853b96fe05b8aaada1a6b1c61b63f40b87b79433a1f57a44b425
+related: [artifact-rebuild-for-v0-4-0, v0-4-0-local-installation-workflow, rebuilding-the-global-cmk-binary-after-code-changes]
 ---
 
 The §0b build-and-test gate:

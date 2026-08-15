@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 469d0cb6a83050c87abba361bf4819992bad535d0b372d16f689456d43250106
+related: [vitest-pool-corruption-transient-load-failures, concurrency-flake-root-cause-real-timeout-under-load, vs-code-vitest-git-bash-environment-issue]
 ---
 
 Expose production timing constants (debounce intervals, lock timeouts) as test-injectable parameters. This allows tests to run with tight deadlines without polluting assertions. Example: `watcherDebounceMs` allows 80ms test debounce vs 500ms production default. When tests fail under concurrent load, robustify the code to meet the original deadline rather than relaxing assertions.

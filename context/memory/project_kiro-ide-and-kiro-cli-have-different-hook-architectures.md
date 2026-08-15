@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d332055c8716c68b921012dcaeade93c90cebac97c2e97f966ee7ff713a0377d
+related: [kiro-cli-agent-resolution-requires-global-default, kiro-install-contains-two-independent-clients-with-separate, kiro-agent-must-be-global-empirically-validated]
 ---
 
 - Kiro IDE stores hooks in project files (`.kiro/hooks/*.json`) — auto-fires, no global setup needed

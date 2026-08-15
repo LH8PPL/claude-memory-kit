@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 5abf0bc270bae847a1eceeb4ab833eb53ca342b0451cea9afe83daeffaeaad26
+related: [cooldown-marker-bug-fires-on-both-success-and-failure, task-167-testing-agent-run-unit-live-agent-loop-user-does-no, were-in-the-memory-business-correctness-over-startup-speed]
 ---
 
 Task 167 cooldown (Q5, the 167.F sibling bug) settled: (5a) touchCooldownMarker fires on SUCCESS only — never in the catch block — so a failed Haiku call is free to retry (today all 5 callers touch on both success+failure → a failure blocks the next compress 120s). (5b) the stale-content SYNC-DRAIN BYPASSES the cooldown entirely. Rationale: the cooldown is a COST guard ('don't burn Haiku budget twice in 120s'); per 'we're in the memory business' correctness > cost, so when stale now.md must heal, the heal wins over the cost-saver. The cooldown still gates the routine OPPORTUNISTIC compress (no stale content = no urgency = saving budget is fine). Two intents, two rules: cooldown guards the optional compress, NOT the correctness-critical drain.

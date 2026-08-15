@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: bc5a73feef052473d528bc9c42a5bf285f8ac00cf2766473dbe2deb5cecc5a8d
+related: [task-179-umbrella-task-for-memory-improvement-sequencing, hermes-is-skill-library-curation-not-memory-self-improvement, u-mem-describes-one-unified-loop-not-nine-separate-features]
 ---
 
 Memory-improvement mechanisms fall into four distinct flavors:

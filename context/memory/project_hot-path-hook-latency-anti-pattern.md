@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3f4e754177a8178c0e7818b311116faacd29a0516f155b36ee775018cea78e35
+related: [claude-md-checkpoint-4-pre-commit-screening-rule]
 ---
 
 The repo has been burned by hook latency composition in hot paths six prior times. Hooks invoked on the critical path (like the FTS5 hint lookup before every prompt) become a measurable bottleneck.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e47eb4ae1ea81b3e5e70e23754c44880a191c406d9c85ad6254a134f5f408d14
+related: [task-167-shipped-live-test-overturned-the-grilled-q4-sync-dr, sessionend-hook-no-retry-constraint, sessionstart-hook-ceiling-constrains-synchronous-operations]
 ---
 
 Research across claude-mem, mem0, Letta, Graphiti: all use event-driven synchronous consolidation on **Stop hook (session END)**, not SessionStart.

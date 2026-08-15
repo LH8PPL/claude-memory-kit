@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 81816f5b23744e795cf895a2966f448a8b1bedb6
+related: [bom-d-fact-files-are-invisible-to-scanning, conditional-tech-adoption-discipline, git-as-sole-evidence-in-gap-cases]
 ---
 
 - Research for the memory kit's knowledge base must meet a high bar for inclusion

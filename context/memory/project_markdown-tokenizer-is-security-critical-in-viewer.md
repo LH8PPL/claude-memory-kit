@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4e0f685d50438e913164127e7bd09d68459399741bc68d69a42e7b0ce6254346
+related: [core-threat-model-xss-through-memory-facts, stress-gate-required-before-pr-for-spawn-hook-boundary-chang, skill-review-imported-facts-staleness-bug-fixed]
 ---
 
 The viewer's markdown tokenizer processes untrusted data (fact body content) and sits at the XSS threat boundary. Any changes to tokenizer behavior or output require security review in the reviewer pass. This is a poisoned-memory → XSS risk path and is the riskiest component of viewer work.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ea467817001b32c63c402a9e0366bed06df0228bb85d24e7e2a4c47615027525
+related: [gate-check-g0-cli-version-verification, core-memory-kit-requires-vs-code-folder-trust, kiro-requires-full-restart-to-load-updated-hooks]
 ---
 
 When a cmk-installed workspace folder is renamed, its absolute path changes, which invalidates the per-workspace permissions.yaml hash that was baked during `cmk install`. The old permissions hash will no longer match the new path.

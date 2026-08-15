@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 00923dc6c8068ed4f1ee8eef8d5fb7de40d7223cf8a98975001e15b7441739e5
+related: [design-md-16-deliberate-parking-lot-with-ship-triggers, gate-verification-system-architecture, task-entry-boundary-definition-specs-tasks-md]
 ---
 
 Non-blocking tasks are deferred with explicit trigger conditions listed in `specs/tasks.md`:

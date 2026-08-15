@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ba7018d1d55e3d0db2689e117c249683330cfb19
+related: [uncommitted-change-in-docs-process-cut-gate-md, cut-gate-workflow-order-cut-locally-test-tag, minor-release-triggers-backlog-sweep]
 ---
 
 Release process documented in `docs/process/cut-gate.md`.

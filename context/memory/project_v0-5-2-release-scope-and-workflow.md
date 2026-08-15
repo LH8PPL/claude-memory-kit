@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9fb240bab4fdf8d1febf6c15b764e643a73bde879b0bd1dc275edefb2ff34069
+related: [v0-4-6-release-roadmap, v0-5-2-code-complete-pr-286-pending-ci-merge, resume-2026-07-03-post-v044-memora]
 ---
 
 **Scope (committed to RELEASE-PLAN, D-325, tasks.md header):**

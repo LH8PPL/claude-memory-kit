@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ce016c7eb9bb196b34e700a75e31b428ad8f40e7569d3a622ea9c06910ef7098
+related: [two-phase-viewer-rollout-obsidian-v0-6-3-kit-viewer-v0-6-4, task-255-design-grill-questions-queued, cmk-view-purpose-and-headline-use-cases]
 ---
 
 - **Background**: cmk v0.1.0 shipped a `cmk view` stub. On 2026-06-11 (D-121), user decided to remove the stub but preserve the viewer idea as a v0.4 design-first product question.

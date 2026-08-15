@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7827105f0d9d6db8e0d3e2b842c62e7f62f20d28604b4ce7c2412ab078bbf309
+related: [gate-verification-system-architecture, ci-pipeline-configuration, retro-build-log-housekeeping-convention]
 ---
 
 These tools do not surface issues in local runs, only in remote PR checks. This was discovered when multiple local gate cycles appeared to pass while remote CI caught issues.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: bd8994c308a919aaba0a196e0d9d60020f1aab87e653b6b6180450199a3af192
+related: [pre-gate-rebuild-and-server-shutdown-sequence, cutgate-fresh-install-test-sequence, version-0-3-3-release-cut-gate16-test-session-state]
 ---
 
 Gate work is split into **user pre-work** (rebuild global, kill servers, capture signal) and **assistant automation** (backup, fresh install, on-disk validation). Only the final live-chat part (driving the probes through the IDE) is manual user work. This keeps the gate reproducible and isolates what only the user can do (interact with their Kiro IDE).

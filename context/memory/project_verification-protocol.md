@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ce3b5e8a0c8578ea25fcc029b963d6027dcb75e530eb6f5524ce546901226f1d
+related: [task-257-data-durability-commitments, validation-gate-chain-and-stages, stress-test-phase-in-pre-merge-workflow]
 ---
 
 Tasks undergo dual independent verification: pytest suite + parity flow (Node≡Python byte-identical vectors). Both agents run the full flow independently. Test suite scope: approximately 3,588 tests per run.

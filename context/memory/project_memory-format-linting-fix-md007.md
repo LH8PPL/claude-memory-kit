@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: fa7c853da2db9cd6995cd98dcd12de9bfebce3cea7497a344cfc3ec9e9e509a0
+related: [real-markdownlint-output-on-memory-md007-not-md013, actual-linter-output-is-md007-not-assume-ra5d4f96, md007-is-model-output-indent-not-provenance-format]
 ---
 
 The provenance comment format trips **markdownlint rule MD007** (indented code as list item), not the assumed MD013/MD033/MD041 stated in current docs.

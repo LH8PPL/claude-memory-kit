@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: bde34bfb9c296f4fbbb3da13562e36734e374214b926be1e7bca3ec0cb999c9a
+related: [test-anti-pattern-setup-commands-masking-automation, a-health-check-behind-a-command-does-not-surface-a-silent-fa, task-laning-strategy-and-trigger-discipline]
 ---
 
 Every task must state its done-goals as explicit checkboxes or a `Done when:` list.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 67591851bf29ac1464ed40925df556af67143e94ba8d412dd1b1baa6102f94c7
+related: [claude-memory-kit-installation-levels, sessionstart-hook-requires-reopen-after-install, kiro-requires-full-restart-to-load-updated-hooks]
 ---
 
 Session context is loaded at session initialization and remains frozen for all subsequent turns within that session. Turns do NOT reload context from the filesystem. To load fresh context, a new session must be started.

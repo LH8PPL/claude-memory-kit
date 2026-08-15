@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 567d2ec55503e47de7ad2da91f68bd92ccca7d689d9bce5431ee505d184fbc7d
+related: [sessionstart-hook-ceiling-constrains-synchronous-operations, cron-liveness-gate-by-heartbeat-age-task-167-a, auto-heal-path-for-v0-4-1-task-167-d-169-binding]
 ---
 
 - **Original problem:** Dead cron blocks roll indefinitely (compounding forever)

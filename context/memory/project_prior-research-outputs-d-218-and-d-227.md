@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 11cdbfa8ef4adaa19a3768acb7227d1dddb076297f08e5042ab956b265736d98
+related: [no-prior-art-llm-judged-sensitivity-routing-between-tiers, stop-hook-path-budget-constraint, concurrency-pattern-partition-by-writer-tasks-146-50-148]
 ---
 
 - D-218: 9-repo survey on memory systems (mem0, letta, basic-memory, etc.) with verdict: nobody screens; design is ours to make

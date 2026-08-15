@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 225ac560e2de44383954acaa21732dd4f3da5b4d7ddf80a6d1a38f80e03491d0
+related: [task-done-goal-explicitness-rule, project-dogfooding-principle-use-kit-s-own-mechanisms, silent-auto-drain-optional-warmth-design-pattern]
 ---
 
 Tests that run a manual setup command (e.g., cmk digest, cmk reindex) before asserting a behavior can hide the absence of an automatic hook.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 885d9736f544ada9be13f194ff36ee448da005faf96e0514328c741e36b56604
+related: [task-240-resolution-bench-storage-allowlist-entry, reference-implementation-alignment-strategy, task-243-2026-07-21-superseded-the-bench-storage-allowlist-c]
 ---
 
 - **Problem:** `node-version` literal copy-pasted in 10 blocks across 8 workflows; divergence already present (bench-storage ran Node 24, gates ran Node 20)

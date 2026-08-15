@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1ca24f9173a0cbef269a9e1e576d9856b8c222efadff6e638371d88346bb2422
+related: [cmk-version-bumping-convention, stress-testing-omitted-for-pure-read-cli-changes, recurring-dependency-advisory-maintenance-gap]
 ---
 
 **Merge if:** CI green AND low-risk (patch/minor bumps, e.g., vitest, better-sqlite3, GitHub Actions)

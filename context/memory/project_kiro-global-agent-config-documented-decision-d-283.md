@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b0a304089a1355d9c7a30e4e4228978019241e91051a2647f91df2415fc8a385
+related: [kiro-cli-agent-resolution-requires-global-default, kiro-agent-must-be-global-empirically-validated, kiro-agent-configuration-local-and-global-support]
 ---
 
 The decision to use global agent config for kiro-cli was previously undocumented and appeared to be a potential bug. Investigation (prompted by user's "did you check the docs?" challenge) confirmed the behavior was correct; merged decision record + primary-source comment to main.

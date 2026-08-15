@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d02444d9387ff209feac68ee6e653a7e4de8ffcf1516992149ac7b0fd7a6a704
+related: [okf-v0-1-googlecloudplatform-knowledge-catalog-is-a-vendor-n]
 ---
 
 Google Cloud's Open Knowledge Format independently converged on nearly identical design to claude-memory-kit:

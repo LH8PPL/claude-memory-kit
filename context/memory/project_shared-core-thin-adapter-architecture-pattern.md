@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 0b2455d4b2ebc66675ce23221a7bf4e29172303afde49c95ce50840673565406
+related: [kiro-vs-claude-code-integration-the-core-is-shared-verified, kiro-ide-vs-cli-hooks-verified-quote-from-an-aws-builders-ar, claude-code-vs-kiro-hook-architecture-difference]
 ---
 
 The claude-memory-kit follows a "shared core + thin per-agent adapter" pattern:

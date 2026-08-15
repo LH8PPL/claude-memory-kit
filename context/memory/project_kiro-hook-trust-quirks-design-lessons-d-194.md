@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 6310661b86677048c223d10c755d47ac4d5ae12617a5dfb1f4d4e086bcdc7148
+related: [kiro-hook-trust-system-configuration-d-194, kiro-trusted-commands-auto-approve, d-194-fix-merged-to-main-pr-219-commit-96f57c9]
 ---
 
 **Key quirks discovered during D-194 integration:**

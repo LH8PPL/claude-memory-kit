@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c45d811cb0af4faa18349d24bb9edd2833bbbd6b1910a786fe5a154eb6e6828e
+related: [sonarcloud-sonarjs-13-3-0-does-not-fix-crash, kiro-cli-wraps-mcp-servers-in-cmd-exe-undocumented-platform, kiro-cli-env-passing-limitation]
 ---
 
 - Taint analysis is configured via Quality Profiles (sidebar → Quality Profiles → copy "Sonar way" → deactivate S51xx security rules)

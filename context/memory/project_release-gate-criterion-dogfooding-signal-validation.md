@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 8cacc5b3c5efea99e970f5f20320da96b3bbad645efceae9f4a9624dba2354fd
+related: [staged-release-observe-only-then-steering-wiring, v0-3-0-released-with-green-quality-gate, post-215-merge-workflow-gate-continuation]
 ---
 
 Task 194 (and v0.5.1) is approved only after live-session signal validation. Criteria: run v0.5.0 on this repo, accumulate real correction events in `trust-signals.log`, verify deltas are sensible (no false-positives, no storms), then proceed.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b42e146a3899e48ceb9d951f5c2b26f351db4a63f6d020069f5a771761bade31
+related: [doctor-health-nudge-corrected-design-2026-07-22-supersedes-t, claude-code-2-1-x-needs-skill-name-wildcard-to-suppress-skil, d-343-disposition-cmk-install-scaffold-refresh-bug-task-230]
 ---
 
 **Implementation Details:**

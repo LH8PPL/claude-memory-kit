@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 143742e77924a6041d9b46ab80b8b4ad5cfda1644396947636c16b4bcf0d0c3a
+related: [kiro-cli-hooks-gap-d-181-follow-up-found-by-reading-kiro-dev, kiro-ide-kiro-hook-on-disk-format-verified-from-a-real-hook, kiro-ide-hooks-are-a-better-fit-for-the-kit-than-i-first-con]
 ---
 
 Task 50 cross-agent seam: target Kiro CLI agent-hooks (agentSpawn=SessionStart-inject, stop=turn-end-capture) defined in .kiro/agents/<name>.json, NOT the IDE Agent-Hooks surface (file-event-centric, no session-start trigger). The Taskmaster .kiro/hooks/*.kiro.hook claim was the wrong hook system. Verified against kiro.dev primary docs.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c08de1cd1b5224da305bb9955770cd509a9498ec5c2d54939561b58a684982a4
+related: [ci-pipeline-configuration, verification-protocol, skill-review-imported-facts-staleness-bug-fixed]
 ---
 
 - Silent-clobber path closed (collision paths pinned)

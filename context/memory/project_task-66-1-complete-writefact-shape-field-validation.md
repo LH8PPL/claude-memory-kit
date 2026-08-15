@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: bc67e020836e1766bf2f915444a1310444842b37f7b82f393f0bcfd792ac4185
+related: [task-66-3-scoped-population-enforcement-both-required]
 ---
 
 Shape field validated against 7-value enum. Invalid values rejected with schema errors (no file written). Error contract uses camelCase `errorCategory`. All 74 tests passing.

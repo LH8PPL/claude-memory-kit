@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c0ad92e1fedec52db87202663457641443a51eeade94fbc6c0874b1b4a3c43f5
+related: [high-impact-signals-to-prioritize-for-implementation]
 ---
 
 - **Peer-disagreement / group-consensus** (A-MemGuard) — a recalled fact that disagrees with co-retrieved neighbors is suspect; set-level anomaly detection, oracle-free.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 016b224465a8bde50b076f09f7fe511be65f4772e007590da9bb8020d71c902e
+related: [silent-failures-require-automatic-user-facing-surfaces, a-health-check-behind-a-command-does-not-surface-a-silent-fa, memory-tiers-carry-mission-context-only-the-user-s-project-d]
 ---
 
 Memory capture failures (timeouts, missing previous session logs) are reported via automatic status line emitted in `inject-context.mjs:1097` via the `buildStatusLine()` function, which outputs to `systemMessage` (user-facing channel, not model-facing).

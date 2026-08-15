@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: fcae63f233752a759f570ff9cf37115a08262f1b
+related: [v0-4-1-cut-gate-fully-passed-all-cli-sessions-1-3-green-e1-w, resume-v0-3-2-cut-gate-in-progress, resume-v0-3-1-cut-gate-2-bugs-found-fixed-pr-179-in-flight]
 ---
 
 **Scope:** Rerun full v0.3.0 cut-gate (~70 checks, docs/process/cut-gate.md) as-is, PLUS these v0.3.1 blocks.

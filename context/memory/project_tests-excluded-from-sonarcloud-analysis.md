@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 1dd8b6ab0579b3738e308245d7f896f2b712c6576344b824007c9ff8ae1250a6
+related: [sonarcloud-as-security-gate-for-redos-detection, sonarcloud-then-in-object-false-positive-schema-fields, ci-authority-convention]
 ---
 
 - Test files are excluded from SonarCloud scanning (configuration changed in PR #247)

@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ac6e4c3f03624ac876ffec1500fcdec69d44f6887fce5278b8e037b9841f2210
+related: [reference-design-cm-viewer-template-html-rqmx733n]
 ---
 
 Design system reference:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: aae87962252dfd3a1241070a467cd40155b37e94
+related: [version-snapshot-in-recent-md-guards-against-cross-session-a, paper-trail-convention-tasks-md-as-single-source-of-truth, cmk-install-skips-existing-files-cannot-repair-stale-skills]
 ---
 
 The CLAUDE.md commit-trailer rule currently contains a hardcoded model identifier (`Co-Authored-By: Claude Fable 5`). When you switch between Claude models mid-session via `/model` commands, this trailer does not update and becomes inaccurate on commits created after the model change. This occurred on commits earlier in this session after switching to Opus.

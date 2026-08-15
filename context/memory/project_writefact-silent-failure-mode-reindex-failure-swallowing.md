@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 5df7243a42bca5e66c00579b8ea36dd963eeb624
+related: [hook-boundary-implementation-gap-privacy-strip-example, index-md-is-a-committed-human-readable-artifact]
 ---
 
 - writeFact rebuilds INDEX.md on writes but the catch block silently swallows failures

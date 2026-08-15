@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d86585203396aa497c3892b95c1667c33d4169f6c7e02fb4ae346db1e8ee823e
+related: [v0-4-0-final-gate-kh-kc-live-hook-firing-tests, live-cut-gate-requirement-unit-green-works-on-real-input, multi-gate-release-verification]
 ---
 
 **Task 74 (Live Auto-Compaction):** Trigger a real auto-compact in a long session, confirm the snapshot reappears. Unit/integration tests + code verified; live compaction behavior cannot be auto-tested in CI.

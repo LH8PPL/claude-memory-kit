@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: e4bfedf0b870b6a57d7edb2eee54b256c2226d3eb35135ed3fa9d8a3c46eac00
+related: [npm-registry-instability-and-v0-6-4-workflow-hardening, onnxruntime-node-postinstall-cdn-timeout, npm-test-fragility-under-load]
 ---
 
 npm ci fails due to deprecated `prebuild-install` native path. Task 141b covers migration off it. First symptom observed in v0.6.1 release; expect recurrence in future releases until migration is complete. Do not dismiss these as transient flakes.

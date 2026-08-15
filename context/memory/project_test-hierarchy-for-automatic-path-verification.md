@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1118190bd1eb66421ec703f24f8527902a718d3ebb6e92b70c7ae8364828a9bf
+related: [cut-gate-test-pattern-for-automatic-cron-drain-healing, task-167-testing-agent-run-unit-live-agent-loop-user-does-no]
 ---
 
 - **Cut-gate primary test** (integration): Fire SessionStart against trap state; assert it healed. Proves the mechanism *actually fires automatically.* Catches D-169-class bugs.

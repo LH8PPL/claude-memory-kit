@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 10862fc4496cec8da2c98a0e111fad0dff51ee3f94e6c75a2017f1d6938a73d0
+related: [decision-trail-recording-convention-for-divergences, review-based-decision-correction, release-gate-documentation-format-in-cut-gate-md]
 ---
 
 Research files in `docs/research/` follow a consistent structure:

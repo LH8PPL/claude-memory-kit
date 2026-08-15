@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 314d81b03a49819cf2abc07a901dafd7ff8a7023eb183f3b1259c5425845f561
+related: [kiro-cli-vs-kit-knowledge-extraction-architecture, kiro-agent-must-be-global-empirically-validated, kiro-cli-agent-resolution-requires-global-default]
 ---
 
 - **kiro-cli's approach:** explicit `--agent kiro-self-learn` per session, no global default

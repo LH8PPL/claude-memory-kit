@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4b7df13fb427752a084955ab4c24ac9b06b164a7573afc87c929ef9a1c8f64b7
+related: [release-version-queue-d-309, committed-roadmap-v0-4-4-v0-5-0, v0-6-2-published-release-state-and-contents]
 ---
 
 After v0.5.2 release, two immediate next steps in D-309 queue:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8600c559df5ac0c11ea3a212ed89c0873d74b18ddbe7b6711f4548f30baf4710
+related: [claude-code-2-1-x-mcp-wildcard-auto-approve-change, fresh-folder-verification-workflow-for-claude-memory-kit-rel, mcp-prompt-root-cause-agent-config-kiro-cli-mismatch]
 ---
 
 The user's `.claude\settings.json` contains a permissions allow-list:

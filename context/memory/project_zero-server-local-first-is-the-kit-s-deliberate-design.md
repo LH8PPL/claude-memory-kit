@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ace0430e2e0014fdf684d3d5287f2609e8518af45d6d7f5f502cb9a338c30074
+related: [everos-comparison-same-thesis-opposite-architecture-not-bett, project-origin-and-core-problem, kiro-cli-vs-kit-knowledge-extraction-architecture]
 ---
 
 The kit avoids server infrastructure and external API keys, instead installing directly into Claude Code via hooks. EverOS validates this thesis — same markdown-based design, but EverOS requires server + cloud APIs (OpenRouter + DeepInfra), making it a different product class.

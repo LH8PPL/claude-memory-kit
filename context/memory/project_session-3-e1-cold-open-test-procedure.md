@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 727bd3926376d010eaf67b4d6db7e1ed642e87ba9d4975fd1a4514bd62d29b7f
+related: [cold-start-test-for-persona-architecture-transfer, three-session-release-validation-methodology, e1-cold-open-test-persona-carries-unprompted]
 ---
 
 **Test setup:**

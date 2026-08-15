@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 9bde5854f79dd51372c77dd10cc235fd49dc980b686dd205c9cfb955a445a8d2
+related: [now-md-bloat-creates-silent-failure-trap-in-lazy-roll, task-167-testing-agent-run-unit-live-agent-loop-user-does-no, task-167-drop-hc-10-doctor-check-keep-only-the-free-auto-log]
 ---
 
 The now.md bloat (410 KB) that froze the injected snapshot was caused by the lazy roll being GATED OUT, not failing: detectStaleness short-circuits to cron-active on the mere existence of the cron-registered sentinel (above the bloat check), but the host cron never actually ran (registered "Ready", LastRunTime blank). The fallback deferred to a dead primary. Confirmed from lazy-compress.log — skipped every SessionStart, never a timeout.

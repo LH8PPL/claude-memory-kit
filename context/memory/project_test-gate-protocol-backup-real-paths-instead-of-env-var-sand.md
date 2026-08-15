@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: af1fa0718e57883c90221ec45504ee6f1c0614498269d7f84ca3d7303e83283c
+related: [cut-gate-backup-convention, kiro-cli-agent-config-goes-to-aws-amazonq-cli-agents-amazon, never-overwrite-backups]
 ---
 
 **Goal**: Test kiro CLI against real user directories (not env-var sandboxed), so the gate catches real-world path bugs and proves the default behavior works.

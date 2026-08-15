@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: cfd48744ffcef2f58b8b284734a1adbe6b0cb8741d9a63a9856de9811fd1834e
+related: [root-cause-of-visual-plainness]
 ---
 
 - Background: off-white with white panels (not pure white)

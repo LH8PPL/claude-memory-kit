@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7a832b5dad336cf4f946c51b9f45bc41de483a6ccd184db9e6b926e1c667e033
+related: [kiro-cli-agent-resolution-requires-global-default, project-local-agent-auto-activation-design-bottleneck-for-ki, kiro-cli-vs-kit-activation-pattern-design]
 ---
 
 The design question "Can Kiro support project-local agents?" was resolved: **No**.

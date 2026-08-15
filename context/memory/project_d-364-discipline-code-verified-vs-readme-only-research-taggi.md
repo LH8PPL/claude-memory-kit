@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d8ea83e9e08de0f0b561e1a41613aa55cef9cf416e179900f944d01ea15ec6e9
+related: [d-364-discipline-for-external-source-claims, work-items-require-task-entry-before-implementation, research-verification-workflow-parallel-agents-batch-integra]
 ---
 
 Tag external research findings as either **code-verified** (file paths, observed implementation) or **README-only** (documentation, not code-validated). Surfaces unvalidated claims before they influence design.

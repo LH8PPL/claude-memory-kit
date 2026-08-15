@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: aebccd11438a5702c6d0e5500723d3cd2f4767023bd7c642508ce28f4ffac80d
+related: [v0-3-5-patch-vs-v0-4-0-versioning-logic, kit-versioning-uses-lane-themed-releases-not-strict-semver, versioning-rule-d-24-minor-carries-one-differentiator]
 ---
 
 Each minor release (v0.X) ships one headline differentiator. Mixing two differentiators (e.g., Kiro + persona-redesign) violates this rule and creates the "squat on the minor" anti-pattern that D-146 was designed to prevent.

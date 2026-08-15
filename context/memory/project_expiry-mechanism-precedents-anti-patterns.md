@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 797abf4ef0eccd4f32be298f1e3a6bf94077e058737fd3b6e9750184bfdfbad3
+related: [task-66-3-scoped-population-enforcement-both-required, expires-at-enforcement-dual-mode-read-time-sweep, auto-extract-expiry-bounded-design-never-guesses]
 ---
 
 Comparative research across mem0, LangGraph, graphiti/Zep, letta identified:

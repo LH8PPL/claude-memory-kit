@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5563fde62d6ed0a8e21bed2d13018f9e3bd1afcdee5fb4b2dece542e735a6952
+related: [version-snapshot-in-recent-md-guards-against-cross-session-a, test-suite-isolation-guard-required-known-risk, v0-4-5-kiro-cli-dispatch-guard-implementation]
 ---
 
 **Task 234** introduces a stale-replay guard labeling `Active Threads` as *"may already be done; verify before acting"*. This prevents the injected snapshot from becoming silently outdated. **Gap:** The guard covers the injected snapshot but not the working todo list itself—in-session working lists can still diverge from memory independently.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c66fb53a8636fbd9e4c8db2ea967a214aec1e272d3115d67a50ef3450f2bbcff
+related: [b3-b4-wedge-test-workflow-cross-project-doctrine-capture-val, config-directory-migration-is-critical-blocker-for-rename, d-303-fixed-kiro-auto-extract-user-prompt-empty-recovered-fr]
 ---
 
 - **Bug**: promote path required `~/.claude-memory-kit/` to pre-exist before first use → new users' first cross-project rule silently dropped (silent data loss, no error)

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d57c06ab624882ec8d3765ccee033b344b40618c7c454ffe5b0e4ff06eb1c680
+related: [cmk-fix-verification-workflow-fresh-folder-v0-4-1, rebuilding-the-global-cmk-binary-after-code-changes, rebuild-artifact-after-bug-fix-without-re-cutting-release]
 ---
 
 When a fix is merged to main, before continuing the cut-gate with the fixed version:

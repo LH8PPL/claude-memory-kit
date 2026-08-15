@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: eba8930bedcb3c39442f8ecc1183bf049b50b54c0b65391121ffab10fea8e43f
+related: [blocker-claude-exe-windows-incompatible-after-cc-update-live, solved-permissionrequest-hook-mcp-cmk-skill-prompt-free-capt, confirmed-enabledmcpjsonservers-cmk-narrow-form-prompt-free]
 ---
 
 Task 172 FULLY VERIFIED + shipping (2026-06-28): the PermissionRequest auto-approve hook is live-proven from the PACKED artifact. Chain: packed lh8ppl-claude-memory-kit-0.4.1.tgz (with cmk-approve-permission bin + approve-permission.mjs, 128 files) → npm i -g → fresh folder cut-gate-v041m → default `cmk install` AUTO-WIRED everything with NO hand-edits (PermissionRequest [mcp__cmk__.* + Skill] → cmk-approve-permission, enabledMcpjsonServers:[cmk], all kept layers) → stated "always run black before committing, save it" → mk_remember ran and saved (id P-PZA6Q2KD, feedback_run-black-before-commit.md) with NO POPUP (user confirmed "no pop up"). Full suite 2378/2378 GREEN with live Haiku + stress 5/5 PASS. Two-pass reviewed (code-review-excellence found+fixed the isKitSkill defense-in-depth hole). ENV FIX along the way: the 4 live-smoke failures were a broken npm-global claude.exe (Windows-incompatible after the CC update) — fixed by `npm uninstall -g @anthropic-ai/claude-code` + a claude.cmd shim in .local/bin forwarding to the working native claude.exe (the native install lacks claude.cmd which the tests default to). NOT a kit bug. Shipping: PR → merge → resume v0.4.1 cut-gate → tag.

@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 604bdf5a67255eba7e0dfbfda477bd7f3c5d2a0d55b859d69469bace658e6591
+related: [d-249-doc-drift-walk-structural-update-guard, documentation-structure-and-prerequisite-locations, link-out-convention-for-design-md-evidence]
 ---
 
 Close documentation rot with three structural stages:

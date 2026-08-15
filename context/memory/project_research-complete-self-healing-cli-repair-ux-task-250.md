@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 11e1614f70bd5cc184b2eb0fe9710d6e07ab251914570180a46769f953f819b5
+related: [q1-refined-auto-fix-vs-whisper-boundary-cmk-doctor]
 ---
 
 Outward research on auto-fix / confirm / advise patterns across shipped CLI tools completed. Findings: git (skip-on-contention, cheap idempotent ops), Claude Code (/doctor: confirm-once), npm/brew/flutter (report-only), Nx CI (auto-apply earned per-fix-class only when verified by re-run), Tailscale Warnables (self-cleaning map with TimeToVisible, DependsOn suppression, attached repair commands). Octopoda deliberately excluded per prior note.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 0d1edb97d40cf484fa0c98e9d81e008a15f2759e965ac0d1996c76e2da0cd99d
+related: [npm-tarball-doc-availability-strategy, npm-package-contents-and-documentation-strategy, user-questioned-the-decision-to-mirror-n-bfvneyaq]
 ---
 
 - **root README** — GitHub front door; lean, concise structure

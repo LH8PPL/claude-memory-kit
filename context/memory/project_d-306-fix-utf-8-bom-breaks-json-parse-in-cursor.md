@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c3852ddeb6793e591ed2696e61532d1463a50d138728898f5158f8c180887b5e
+related: [cursor-gate-test-path-procedure-v0-5-0-release, v0-6-3-released, cursor-gate-v0-5-0-test-procedure]
 ---
 
 UTF-8 byte-order marks (BOM) were breaking JSON.parse during Cursor bi-turn capture. Fixed in v0.5.0 with TDD and end-to-end verification (full suite 2833/2833 passing). Documented in CHANGELOG, D-306 doc, and Task 207.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 62c1c955410fa56fde077f63447afc0c1969f9823297358338e4e3773e2a1edf
+related: [kiro-requires-full-restart-to-load-updated-hooks, close-claude-code-before-global-cmk-install-to-avoid-ebusy, mcp-serve-is-long-lived-restart-after-rebuild-or-you-test-st]
 ---
 
 Claude Code's MCP server process may not load fresh package code until restart. CLI tools (`cmk search`, `cmk digest`) always use fresh code. Test the running server with `mk_search <query>` — success indicates fresh code; failure indicates staleness.

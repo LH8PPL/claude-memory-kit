@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 25cedf2ba86944289e4b6449f65ab04e042e5fa4ea75ffa5a0578fcfc64a0243
+related: [minor-release-triggers-backlog-sweep, release-trigger-tag-push-publishes, task-queue-organization-naming-convention]
 ---
 
 - **When**: Runs as part of every minor version release (e.g., v0.5.X cut)

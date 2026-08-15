@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ca11b7f231c418d15233cd43930f4e16a1cf70bd13a3081b48359521bfa42150
+related: [expiry-mechanism-precedents-anti-patterns, task-66-3-scoped-population-enforcement-both-required]
 ---
 
 - **Location**: Defined in design.md §4, never implemented

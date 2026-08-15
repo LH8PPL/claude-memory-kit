@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 54b81b8e1e1fdfa6e6090d69e111de0c189c0bbe0d4be67d4b7b401efd159b20
+related: [f-7-spec-vs-code-mismatch-tombstone-reading-in-cmk-get, decisions-scope-semantic-fallback-warning-task-156-bug, modular-skill-architecture-read-write-separation]
 ---
 
 The `decisions` scope in search reads `context/DECISIONS.md` directly as a markdown file, NOT from the indexed vector DB (`vec_observations`, `vec_transcripts`). The journal is a derived markdown view, not a DB table, and is NOT indexed by `cmk reindex`. Therefore, semantic search is impossible for this scope — there is nothing to embed in the vector store.

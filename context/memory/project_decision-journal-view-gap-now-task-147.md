@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3478749919e4b31ba74a2096b24b3251e9e27953
+related: [kit-feature-gap-chronological-decision-rendering, kit-produces-facts-not-views-the-decisions-md-gap, task-147-design-upgraded-the-kit-gets-a-standing-committed-c]
 ---
 
 The kit currently provides:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 54c72a9dba3dc579608481da5801d2690bf6ff48f2c193b194fcf1d210d9b64d
+related: [config-directory-migration-is-critical-blocker-for-rename, user-tier-backup-completed-for-cut-gate-1-prep, persona-directory-moved-to-core-memory-kit]
 ---
 
 The cut-gate guide's §0 step assumes backing up `~/.claude-memory-kit` (old path). After rename to `.core-memory-kit`:

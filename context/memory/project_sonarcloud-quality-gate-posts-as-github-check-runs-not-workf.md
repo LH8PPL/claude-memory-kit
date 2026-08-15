@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: befd17170c1a9a13a69022a7a648326920e1e6b5c725e467c5d6a68671017754
+related: [workflow-green-commit-green, claude-memory-kit-v0-4-3-release-workflow, workflow-green-release-commit-checks-green]
 ---
 
 - SonarCloud Quality Gate pass/fail results post as GitHub check runs, not Actions workflow status

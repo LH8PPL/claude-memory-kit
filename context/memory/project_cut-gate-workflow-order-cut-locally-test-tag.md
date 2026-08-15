@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 585ba8dcd61b73d045b77cbed9703240997823e9daccacaa996ae8973d9ad267
+related: [v0-3-1-release-final-workflow, release-workflow-commit-cut-gate-tag-push, release-gate-structure-v0-3-0]
 ---
 
 1. Cut the release locally first (so the artifact reports the correct version).

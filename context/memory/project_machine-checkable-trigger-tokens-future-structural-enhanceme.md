@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2b7acb1972811a6309b4ff198bf010bf7402c478132ec65d8f39824646e415d6
+related: [minor-release-triggers-backlog-sweep, d-24-constraint-patch-releases-skip-d-248-backlog-sweep, architecture-decisions-recorded-in-adrs]
 ---
 
 D-267 notes a possible future upgrade: embed machine-checkable `fires-when:` tokens in trigger definitions to automate detection of fired triggers, replacing manual review if process scales beyond ~39 triggers or misses a fire.

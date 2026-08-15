@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 87a51704d5bf2885dfe79ad3b8d8dad6351db9302a654f008dc88f33040f0c98
+related: [bash-tool-cwd-persists-cd-into-a-workspace-silently-reroutes, windows-npm-eperm-warning-on-better-sqlite3-node-is-benign]
 ---
 
 PowerShell's `rm` is an alias for `Remove-Item` and does NOT accept bash-style flags.

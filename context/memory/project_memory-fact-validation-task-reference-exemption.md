@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 265f2fa2b82242e1e7c026ca174399a522c3d7c0c63e0740ac10c720353aec2b
+related: [validate-references-requires-properly-filed-task-references, kit-s-strict-forward-reference-validation, reference-implementation-alignment-strategy]
 ---
 
 `validate-docs` should not flag forward references to non-existent tasks/items within captured memory facts.

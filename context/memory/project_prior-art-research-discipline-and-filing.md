@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 2f0a6e340733a015e4e23acb0e1c19197b8895cec328fea3a52fbe62f4a2f466
+related: [research-project-selection-criteria-declare-the-bucket, proposed-task-research-triage-system, version-snapshot-in-recent-md-guards-against-cross-session-a]
 ---
 
 - **Record-driven targets**: Consult project records (Task 255, SOURCES.md) to name core products; dive re-verifies at primary source today (fresh reads at current HEAD, not reliance on dated notes)

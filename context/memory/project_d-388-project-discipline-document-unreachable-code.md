@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a07f4fc6ffd5800576f3731a56557d844063ce3b2aac71186fdd16defc120278
+related: [sonarcloud-coverage-gate-threshold, name-guard-flags-templated-patterns-in-frontmatter-metadata, decision-log-system-for-known-limitations]
 ---
 
 When code contains branches unreachable by construction (e.g., defensive guard arms), document them in place rather than fabricate test coverage for them.

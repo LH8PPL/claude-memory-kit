@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 35dd8dc5f86f5feb727e14bbcfb7ae198119056b038ac709e480b8e5d07f3392
+related: [decisions-md-cut-gate-structure-dj1-dj4, guides-are-runbooks-not-journals]
 ---
 
 `cmk persona generate` runs the real end-to-end promotion decision (classifier, recurrence gate, decide) from the CLI.

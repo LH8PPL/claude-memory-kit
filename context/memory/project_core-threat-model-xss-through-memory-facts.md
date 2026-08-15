@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7a6315b2dfcb85fc9ac510d7d6daf5e9722b468fc3ff8d9b01629b46e9f3439a
+related: [markdown-tokenizer-is-security-critical-in-viewer, read-only-guard-switched-to-content-hash-comparison, use-c-temp-or-c-tmp-for-test-scratch-never-the-repo-or-home]
 ---
 
 Viewer renders LLM-generated fact bodies; poisoned memory (malicious script in a fact body) that executes in the viewer is this kit's exact threat model. Tested vectors: XSS execution, write bypasses, path traversal, rebinding attacks.

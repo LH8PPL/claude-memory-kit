@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: b1c28837487146f58c545761281f431de1d6ab21b1694c66a0aa5896614d7982
+related: [layered-backend-architecture-in-live-persona]
 ---
 
 Medium-confidence persona candidates automatically promoted on weekly curate pass via `resolvePersonaReviewQueue` wired into `autoDrainQueues`.

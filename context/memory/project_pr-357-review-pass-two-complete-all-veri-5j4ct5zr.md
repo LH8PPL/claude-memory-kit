@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract-session
 source_line: 1
 source_sha1: f5d09faf1b26ff63da077f0f2a5880426a89cf442f3410a1d186d306f21fae44
+related: [pr-247-merged-with-full-workflow-branch-kluc5f6u, pr-310-shipped-3196-3196-tests-green-188-kba273up]
 ---
 
 PR #357 review pass-two complete; all verification tracks green (tests, validations, live probes on branch code)

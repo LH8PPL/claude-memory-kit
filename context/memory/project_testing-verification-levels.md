@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 4cdaf685d36bb34dd807f7e5abf62d5fe2b65dbdc233baf2915f728f8a00ee1a
+related: [cut-gate-review-process, cut-gate-sandbox-isolation, use-mcp-mk-remember-not-bash-cli]
 ---
 
 Three explicit levels:

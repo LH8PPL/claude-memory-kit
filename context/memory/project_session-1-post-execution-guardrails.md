@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8a9965da41975fc2ec1bef0fbc324bbe82f361fa18739af736de8254b554c301
+related: [release-cut-gate-validation-pattern, doctor-is-reactive-only-memory-write-search-are-automatic, avoid-test-folder-contamination-during-agent-sessions]
 ---
 
 After Session 1 completes, validate three health checks:

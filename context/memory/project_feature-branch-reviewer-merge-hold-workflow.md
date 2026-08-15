@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 44625b529fb2fd893acfe08ab22e336896a2b2f42a843cc46c9345af1938cf38
+related: [release-handoff-pr-creation-vs-merge, post-fix-integration-workflow, v0-5-1-release-pr-282-must-merge-before-tag]
 ---
 
 Feature branches (e.g., `task-262-write-time-linking`) flow: commit → reviewer holistic pass → fix findings → push → PR open → hold for user merge approval. Merges do not auto-happen after reviewer passes.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f15295b9a28cdebeafdcb96da2ebd0d019a5097b42aef24878a4fccd8df8a015
+related: [sessionstart-hook-requires-reopen-after-install, node-sqlite-fts5-module-availability-gate-for-task-141b-migr, v0-4-roadmap-kiro-first-editor-integration]
 ---
 
 npm v12 (expected ~July 2026) disables install scripts by default. The kit's semantic backend setup relies on install scripts during installation. Task 141 (npm v12 readiness) must resolve this before the deadline—without it, fresh kit installs will fail silently. This is a hard blocking constraint on production deployment timing.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 94d112d99114d73956f85966fd0a8289d4f04e1b49c64287ceef91b1f4837bcd
+related: [powershell-utf-8-corruption-in-changelog-handling, copy-paste-utf-8-corruption-from-claude-design-sidebar, kiro-cli-env-passing-limitation]
 ---
 
 PowerShell mangles non-ASCII characters when editing text files — em-dashes `—` become `ג€"`, `§` becomes `ֲ§` — and adds UTF-8 BOM. In the v0.6.4 CHANGELOG edit, 435 characters were affected, producing a 472-line diff instead of the expected 6. Caught only via manual diff review before commit. Workaround: use Node.js or a text editor.

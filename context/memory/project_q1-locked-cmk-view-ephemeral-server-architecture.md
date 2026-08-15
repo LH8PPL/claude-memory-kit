@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3e278252012af97c8f970c47e92fcb2fab0a658a5b723bf5b4fc6784f78d6205
+related: [q1-viewer-runtime-model-ephemeral-localhost-pending-ratifica, memory-viewer-design-ephemeral-localhost-server]
 ---
 
 `cmk view` launches an ephemeral localhost server with:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: b74283ac99a260c9243c5757c3c10cfcfcdd6212516a3df553a3f4add6d5768b
+related: [kiro-trusted-commands-auto-approve, v0-4-0-cut-gate-structure-and-coverage, plan-the-user-2026-06-21-do-the-manual-kiro-live-capture-tes]
 ---
 
 Three surfaces implement v0.4.0 with distinct trust mechanisms:

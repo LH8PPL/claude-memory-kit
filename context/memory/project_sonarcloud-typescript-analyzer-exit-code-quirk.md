@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 71414f84c78e73b7a4b81b202ec086cb6a06f58c9ae99baa0b8596e7b963dbb4
+related: [project-discipline-verify-claims-by-reading-logs, mcp-serve-is-long-lived-restart-after-rebuild-or-you-test-st, gate-verification-system-architecture]
 ---
 
 SonarCloud's TypeScript analyzer can crash internally (e.g., "Debug Failure: No error for last overload signature" in `server.cjs:getResolvedSignature`) while linting specific files.

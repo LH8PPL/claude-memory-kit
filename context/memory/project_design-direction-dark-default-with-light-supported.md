@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c5c0b7388aeab20e3054fba16c2d1f3c84fdce62dbc0602a9693c86f3c5bc32d
+related: [dark-theme-port-workflow-initiated]
 ---
 
 User chose dark-default-with-light-supported approach (vs dark-only alternative).

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5f0d6c6ed597b84a4fe0cce0a42253920b76d8a8463325789fb403031503bb19
+related: [v0-5-2-release-complete, kiro-v0-4-0-release-code-complete-pre-release-checkpoints, version-0-3-3-release-features-and-test-coverage]
 ---
 
 **PR #286 state:** Open and CI running

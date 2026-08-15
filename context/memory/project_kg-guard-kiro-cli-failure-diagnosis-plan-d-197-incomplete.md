@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: adf303f16754180af466b2f8f656b139dbf93fdd96b1f63ccca92ec41c87a4e8
+related: [kg-guard-still-fails-with-star-matcher-hook-not-firing-or-en, d198-proven-agentspawn-fires-but-pretooluse-not-on-2-9-0-exe, d-198-fix-agentspawn-hook-now-fires]
 ---
 
 Matcher fix (D-197) did not resolve the bug. Guard bin works in isolation but kiro-cli still deletes. Two hypotheses:

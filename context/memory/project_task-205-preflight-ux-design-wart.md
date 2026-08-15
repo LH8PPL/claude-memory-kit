@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4075c95e28636af57f8eaa3f374dbd5f52d6afe4630f733a64aadbeb6224e570
+related: [task-205-preflight-fires-on-wrong-trigger-design-flaw, claude-memory-kit-dogfooding-setup-and-conflict-surface, cmk-install-auto-updates-managed-block-version-stamps]
 ---
 
 The `cmk install` preflight prompt warns about a hazard (global upgrade breaking DLLs) that `cmk install` itself cannot cause. Fires on every interactive install (common, safe) to warn about upgrade hazards (rare). Matches the shipped spec and is not a correctness bug, but the design attaches the warning to the wrong trigger. Real scenario is narrow: users preparing to run `npm install -g` upgrade who also run `cmk install` around the same time. Normal answer is always `N` in typical install contexts. Design could be improved by narrowing trigger to upgrade detection, moving to `cmk doctor`, or requiring re-install signal.

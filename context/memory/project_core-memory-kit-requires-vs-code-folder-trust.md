@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0cfcf34db2d8b2d921e61582112a06bb5ce16b9fbe0fd01a5b36be14851a8288
+related: [workspace-trust-requirement-for-claude-skills, cmk-workspace-rename-invalidates-per-workspace-permissions-h, kiro-cli-env-passing-limitation]
 ---
 
 The core-memory-kit requires explicit folder trust in VS Code to function. Without it, VS Code ignores installed permissions and blocks the kit's background write operations.

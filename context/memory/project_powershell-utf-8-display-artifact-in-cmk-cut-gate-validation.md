@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 679e99ce9efc6fe6b59a8fb2b86bff5cb1e776992f2e727e66e35ac938a9bade
+related: [powershell-utf-8-encoding-fix-for-cut-gate-g4-reads, copy-paste-utf-8-corruption-from-claude-design-sidebar, test-artifacts-can-contaminate-fresh-install-testing]
 ---
 
 - PowerShell's `Get-Content` displays UTF-8 special characters (middots U+00B7, em-dashes) as mojibake (`ֲ·`, `ג€"`) on standard console

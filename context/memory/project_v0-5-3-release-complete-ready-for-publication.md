@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 342173b358628a2f51f081b0ab91cb65931260397b390c3a6795eee551075665
+related: [v0-5-3-roadmap-learn-loop-phase-2-confidence-gated-search-bl, v0-5-3-learn-loop-phase-2-the-user-chose-queue-order-over-v0, post-v0-5-2-roadmap-decision-v0-5-3-or-v0-6-0]
 ---
 
 **Phase-2 learn-loop batch shipped** (Tasks 194–212, each two-pass reviewed, stress 5/5):

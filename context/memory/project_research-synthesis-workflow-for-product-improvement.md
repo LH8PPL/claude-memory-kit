@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9a054d7567b745ff8369eeb6a619e145e67f0a4beb4d1cc6a6e86b6d7aa98e8d
+related: [research-findings-task-filing, research-adr-build-workflow-for-feature-adoption]
 ---
 
 Multi-phase workflow for research-informed kit improvements:

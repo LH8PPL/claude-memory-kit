@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 77a1e7f4af96e0a9b6f5be6efd9abc33449289f66304b6c71dd4ed66da6dd761
+related: [prior-research-outputs-d-218-and-d-227]
 ---
 
 nestwork solves multi-agent concurrency via **partition-by-writer**: each agent owns its own directory tree, eliminating write collisions without locks or CRDTs.

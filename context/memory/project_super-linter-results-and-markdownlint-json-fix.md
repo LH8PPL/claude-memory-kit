@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ea843ead5ec083e548d995a1280528b661a1a0b14a38fa294ae1fffeb87cef4c
+related: [super-linter-real-run-1058-md-findings-context-included, lint-clean-memory-output-plan-and-progress, memory-format-linting-fix-md007]
 ---
 
 - **The Problem:** 1,058 total findings; 824 in `context/`. Dominant: MD022 (blank lines around headings) with 842 hits. Code linting passes.

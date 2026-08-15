@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 961f433fd3cef3b93701862a007d926f662d47af5f67d564ba9f905fd748d828
+related: [claude-code-2-1-198-permission-hook-regression, before-after-config-diff-to-reveal-tool-behavior, kiro-1-0-hook-format-discovery-via-ide-generated-files]
 ---
 
 When Claude Code prompts instead of auto-approving (even with unchanged config), clicking "Yes" makes CC write `settings.local.json`. This file is the authoritative specification for what the new CC version expects — it documents the required matcher syntax, output fields, and exact format.

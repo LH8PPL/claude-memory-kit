@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3779144cb48111517d68ab5f151352538eba38e9b52058f89129362fb6588e86
+related: [use-deterministic-comparators-for-sorting-committed-files, map-module-sort-determinism-localecompare-banned-explicit-or]
 ---
 
 - ISO-dated filenames (`today-*.md`) must sort chronologically-identically on every machine

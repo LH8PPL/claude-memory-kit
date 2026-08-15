@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 30ecaf4aab3589e28b9876546daf0098ff062e4d2aa2b92593957b0d4f1b3d1b
+related: [stress-test-phase-in-pre-merge-workflow, 5-concurrency-stress-gate-as-pre-pr-verification, stress-gate-required-before-pr-for-spawn-hook-boundary-chang]
 ---
 
 Changes must pass a stress-testing gate before landing in this project:

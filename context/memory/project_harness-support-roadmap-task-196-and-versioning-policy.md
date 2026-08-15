@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: bd29a13f08332b33fabd6d0b37bb617d7b12d4249411fa7f0ea840255fa2685f
+related: [v0-4-x-versioning-roadmap, patch-release-strategy, v0-4-roadmap-kiro-first-editor-integration]
 ---
 
 The kit is expanding to support multiple harnesses beyond Claude.

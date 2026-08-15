@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2422eb3e6a461999d982b6ef0f7f01b039cabfe5a31a77e17eb3afe553884cff
+related: [design-md-as-canonical-spine-d-228, kiro-cli-known-limitation-bug-5873-blocks-manual-mk-remember, kiro-agent-must-be-global-empirically-validated]
 ---
 
 claude-memory-kit applies a "link-out, don't inline" policy:

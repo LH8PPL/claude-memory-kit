@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 35ad3572ec24376b0b0accbe4c919235803a8b26369ab1cf6de8d107975ff6a9
+related: [hc-10-compaction-liveness-diagnostic-dev-nice-to-have, task-167-drop-hc-10-doctor-check-keep-only-the-free-auto-log, auto-heal-path-for-v0-4-1-task-167-d-169-binding]
 ---
 
 HC-10 (`cmk doctor` health check) should detect dead crons proactively:

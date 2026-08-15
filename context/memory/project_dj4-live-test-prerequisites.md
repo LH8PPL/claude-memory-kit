@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 77f33c0c5bf072816f71298cb6337b29e558e334005dcbe9f0e15785564c492c
+related: [june-17-11-12-build-decisions-scope-implemented, mcp-server-staleness-gotcha-d-80, dj4-live-gate-test-passed-v0-3-3-headline-feature]
 ---
 
 Before testing DJ4-live (journal-scoped search), ensure:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 1268e5f3b4731ba81568ce5ce726f1078fc09a473962eab4cb9c3b309d9985a4
+related: [task-174-deliverable-structure, skill-adoption-verification-standard, kit-s-strict-forward-reference-validation]
 ---
 
 Git history is the only evidence available for reconstructing missing gap days (days with no harness session). Generalizing to other sources would require building for an impossible case — a day with evidence other than git is not a gap, so it already has a real record.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1332d943cfaeb9d1fa10b4d2474f0e4d7a6babd7e636ff2f3fe26f3dc4879f35
+related: [test-anti-pattern-setup-commands-masking-automation, dj4-live-test-prerequisites, mcp-serve-is-long-lived-restart-after-rebuild-or-you-test-st]
 ---
 
 **The bug:** The `journaledIds` regex was `[A-Z2-9]` (uppercase-only), but the kit's base32 id alphabet includes lowercase letters.

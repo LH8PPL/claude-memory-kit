@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 436d1aab02f76be967699f4fa5fb41b15ab186e3cd707f9ff43890f9122d7b71
+related: [two-tier-backend-architecture-for-headless-llm-invocation, kit-compatibility-requirement-clarified, live-test-harness-cannot-detect-missing-cli-dependency]
 ---
 
 The kit's only Haiku backend is `HaikuViaAnthropicApi`, which shells out to the locally-installed `claude` CLI (authed by Claude subscription, not API key). No fallback exists.

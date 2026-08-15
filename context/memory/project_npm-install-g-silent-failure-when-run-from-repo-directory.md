@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7112de52a7d739a8807dcf6ba01e0bafd6ce97434c75e0f1103108329d3a106c
+related: [npm-install-g-silent-failure-from-repo-cwd, cut-gate-must-test-published-artifact-not-repo-code, global-cmk-artifact-version-and-template-sync]
 ---
 
 Running `npm install -g …@latest` from inside the repo directory exits with success (exit 0) but leaves the old version installed. Running from a neutral working directory succeeds properly. The failure is only detectable by explicitly verifying the resulting version.

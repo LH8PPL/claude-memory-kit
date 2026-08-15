@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a8ae8f5bb9a719dc5b6361fb5c486c21f0cd746c
+related: [npm-v12-mitigation-plan-tasks-141a-141b, npm-v12-breaking-change-and-better-sqlite3-migration-plan, node-sqlite-fts5-module-availability-gate-for-task-141b-migr]
 ---
 
 **The problem:** npm 12 (July 2026) turns install scripts off by default. better-sqlite3 uses binding.gyp → install script → silent failure → cmk crashes on first use.

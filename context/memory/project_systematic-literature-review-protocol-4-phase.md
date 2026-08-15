@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 178aa9d429159d65c438bb6d413c717742166481f63670aec546e2db76e63b62
+related: [survey-scope-and-classification-taxonomy]
 ---
 
 **Phase 1 (Enumerate)**: Pull actual population from primary sources—two survey references, procedural-memory cohort, fresh arXiv/web sweep, unvisited cites. Avoids convenience sampling.

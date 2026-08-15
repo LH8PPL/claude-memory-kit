@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f4e6ab87658165fcfec2d27470679ff86c392131538be6730769f76976a6eaac
+related: [plan-the-user-2026-06-21-do-the-manual-kiro-live-capture-tes, v0-5-2-code-complete-pr-286-pending-ci-merge, resume-v0-3-1-cut-gate-2-bugs-found-fixed-pr-179-in-flight]
 ---
 
 All code merged to main (PR-1 #212, PR-2 #213).

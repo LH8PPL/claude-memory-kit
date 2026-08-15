@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f665b6fac7fff4ab358afd6c332a74b02e366c8bdc1cc8055dc324fd14d64f6e
+related: [task-96-cmk-redact-purge-hard-merged-pr-295, task-159-multi-stage-verification-gate, task-completion-workflow-code-test-doc-review-live-test-merg]
 ---
 
 Fixed `cmk install` breaking when targeting its own running MCP server. Work completed:

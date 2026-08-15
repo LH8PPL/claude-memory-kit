@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c5cfefc97b60c781dfe634e73eb8b75732ae5df04cf00a0267bbb941d8a6fd40
+related: [binding-rule-readme-line-for-user-facing-features, clean-pre-existing-table-lint-warnings-by-default, hooktimeout-identified-as-root-cause-of-d-406]
 ---
 
 Doc review happens in the PR body during code review. Direct merges bypass this gate entirely. Task 174 merged directly, causing three doc gaps to slip (README, checkbox, changelog section). The PR workflow is the enforcement mechanism for doc updates.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6bf58ca2e91a6627bd0efe3a2168390632d809d94beedeee98125346759fe3a8
+related: [architecture-decisions-via-adr-references]
 ---
 
 - Safe failure classes heal automatically at the failure site, piggybacked on the operation that triggered them.

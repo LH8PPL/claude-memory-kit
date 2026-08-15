@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 806dbe8a42585498da07289a91697cbedd64fb61a94b59ec097b154521f40cb0
+related: [v0-5-1-release-ready-to-tag-and-publish, two-phase-release-commit-gate-then-tag-publish, publish-trigger-is-git-tag-push-not-branch-commit]
 ---
 
 The git tag and push (`git tag v0.4.1 && git push origin HEAD --tags`) happens as the **final** step, only **after** all gates pass. This tag triggers `publish.yml` (npm + GitHub Release), so gates serve as the guard before publishing.

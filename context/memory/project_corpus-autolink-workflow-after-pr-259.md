@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0dea47f3d7b7466e2d295b34f45724a221d9ea19811091ddd338818d2d8c8248
+related: [autolink-workflow-to-complete-corpus-linking]
 ---
 
 Once PR 259 lands, `cmk autolink --apply` completes the entire remaining corpus (~1,895 facts) in one idempotent call with automatic index sync. Steps:

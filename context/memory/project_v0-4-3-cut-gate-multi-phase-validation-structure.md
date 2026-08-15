@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3f6ef81771b1a09278df94ea1f5ace4523c7c35d2c8a992fcd4692c6ef619b91
+related: [claude-memory-kit-gate-test-phase-structure, release-workflow-full-sequence-for-v0-4-3-and-future-cuts, v0-3-1-cut-gate-checklist-additive-testing-plan]
 ---
 
 Release validation has these sequential phases:

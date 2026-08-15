@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 1cf065df1e297236988b2761ec1ae122abdebd0af93e66b6454ad8239dad1f9e
+related: [powershell-silently-corrupts-utf-8-in-file-edits, use-mcp-mk-remember-not-bash-cli, reference-implementation-alignment-strategy]
 ---
 
 PowerShell corrupts UTF-8 when editing CHANGELOG. This session's near-miss (assistant almost committed corrupted CHANGELOG without notice) revealed this as a durable hazard for future sessions.

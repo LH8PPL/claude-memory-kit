@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 66b98963d8c7d7d45e68d3fb66b0b6827a6f43729bb1e64f1f05650911c74961
+related: [retry-configuration-strategy-by-path, peer-systems-synchronize-consolidation-on-stop-hook-session]
 ---
 
 - **Rule:** SessionEnd-hook compress must NOT retry

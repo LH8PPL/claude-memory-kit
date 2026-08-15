@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: fb1ad1b8bb0c687f7ef78fa648bcb9b08870dec932c284ff9b113cc2c3650e6b
+related: [kit-update-workflow-npm-global-per-project-cmk-install, rebuilding-the-global-cmk-binary-after-code-changes, core-memory-kit-installed-with-claude-code-hooks]
 ---
 
 Global package version is **separate** from project scaffolds.

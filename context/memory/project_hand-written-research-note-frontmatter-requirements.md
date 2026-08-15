@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7b6a38ddeab7638941b8fa3ffdab25496fbfd73f1b29d2fcf2db030435837d3f
+related: [tarball-artifact-must-carry-both-d-263-and-d-264, validate-docs-enforces-catalog-consistency, fact-file-write-constraint-forward-only-no-mass-rewrites]
 ---
 
 Research notes (type: reference) must include `id` and `title` frontmatter fields. Missing fields prevent indexing into the archive.

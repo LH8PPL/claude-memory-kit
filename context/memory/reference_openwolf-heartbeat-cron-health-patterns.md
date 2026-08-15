@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: ea2027d6073a63fa237c1b688445e49d7490adb2d87acdc49f46376a42c737e2
+related: [cron-liveness-gate-by-heartbeat-age-task-167-a]
 ---
 
 - Single-writer model: the scheduler writes the heartbeat; no other component modifies it

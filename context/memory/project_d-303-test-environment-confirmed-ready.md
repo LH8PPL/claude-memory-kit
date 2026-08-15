@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7b82758da436f29d9c3b12913b7937cb3a9201f2be1c41191668525847905881
+related: [memory-persistence-validation-workflow-end-to-end, d-303-fixed-kiro-auto-extract-user-prompt-empty-recovered-fr, cmk-install-kiro-setup-commands]
 ---
 
 `C:\Temp\kiro-ide-gate10` is the designated folder for the D-303 auto-extract re-test.

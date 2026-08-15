@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 291104a3792d47bcc24e0df22a5c9038e86aec946e483d36a9ed6310ab389e3f
+related: [post-merge-ship-workflow-sequence]
 ---
 
 Completed 2026-07-23. PR #323 merged (`6b4981b`), housekeeping pushed (`7a89238`). Deliverables: checkbox flipped, D-398 written, build-log entry added, dogfood repo's first `MAP.md` committed with 2,022 wikilinked facts. CI settling in background.

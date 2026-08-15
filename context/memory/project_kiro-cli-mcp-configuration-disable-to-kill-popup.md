@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 4a7a2751f249c6cc19def0cf3a8b449667b4a928d2df1dd3007efa54efccd53f
+related: [kiro-install-contains-two-independent-clients-with-separate, kiro-cli-agent-resolution-requires-global-default, disable-mcp-in-ide-wrappers-with-includemcpjson-false]
 ---
 
 Set `includeMcpJson: false` in `~/.kiro/agents/cmk.json` to disable MCP server spawning in kiro-cli. This eliminates the cmd.exe popup window. The change is **scoped to kiro-cli only** — Claude Code and Kiro IDE continue using MCP (they read `.kiro/settings/mcp.json` directly, bypassing agent config).

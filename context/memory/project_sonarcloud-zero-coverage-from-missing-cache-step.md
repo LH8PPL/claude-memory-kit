@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 759dd424b45b80b722afc8822f752963578623dc6e97a25b9382a14a510fbf30
+related: [sonarcloud-coverage-job-rate-limited-by-hf-hub-cache-miss, sonarcloud-project-key-rename-coordination]
 ---
 
 - **Root cause**: The SonarCloud job in `ci.yml` was missing the `actions/cache@v5` step for HF-model downloads.

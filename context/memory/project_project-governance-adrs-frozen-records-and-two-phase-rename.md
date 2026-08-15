@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c11195fd6c63f844efd04d8f208d6ba8527714263ecf6c02d684c652e2ba994b
+related: [text-substitution-carve-outs-for-rename, frozen-decision-log-philosophy, review-based-decision-correction]
 ---
 
 Rename decisions follow a two-phase pattern:

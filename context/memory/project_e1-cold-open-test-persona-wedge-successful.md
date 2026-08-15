@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ed9f32bb1b1ec1e48c5959cc2c8f36c98ff5e6e2812b27c2ccdc42e05cb3ccb9
+related: [e1-cold-open-test-persona-carries-unprompted, three-session-release-validation-methodology, e1-test-scoring-criteria-backend-code-generation]
 ---
 
 A brand-new git folder (created seconds before the session) was given a single prompt: "Start a new Python backend for me — set up the structure."

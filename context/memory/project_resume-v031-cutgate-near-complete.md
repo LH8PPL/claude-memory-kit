@@ -1,14 +1,15 @@
 ---
 id: P-QT3B3ZB7
-legacy_id: "P-RES031CG"
+legacy_id: P-RES031CG
 type: project
-title: RESUME — v0.3.1 cut-gate near-complete; PR #184 in CI, then tag
+title: RESUME — v0.3.1 cut-gate near-complete; PR
 created_at: 2026-06-14T23:35:00Z
 write_source: manual-edit
 trust: high
 source_file: resume-breadcrumb
 source_line: 1
-source_sha1: 0000000000000000000000000000000000000000
+source_sha1: 0
+related: [resume-v0-5-0-tag-blocked-only-on-the-cursor-gate-everything, v0-3-2-cut-gate-complete-e1-wedge-passed-ready-to-tag, resume-point-v0-4-3-pre-merge-code-complete]
 ---
 
 v0.3.1 CUT-GATE STATE (resume here):

@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7b5b51622dacd652a98d662341e69c79d945de0d3cb531448c11f8cf1f8d42a9
+related: [feature-section-brevity-enforcement]
 ---
 
 - ~12 feature bullets, max 20 words each (field maximum is 22 words across datasette, uv, claude-mem, turso)

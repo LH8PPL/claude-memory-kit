@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f77f9c5424182ac9c61a7f8fce5355919c5f9703fa1de39266341eef7aa047e5
+related: [register-crons-for-staleness-starvation-prevention, cmk-daily-distill-scheduled-task-window-popup-at-23-00]
 ---
 
 Registered via cmk register-crons, which uses schtasks on Windows.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 715c1f21be53937fc424800529451990b323cbf3a5d7174ed030a5588ccf7bfe
+related: [pre-commit-hook-sanitizes-fact-files-for-security, archive-registration-in-documentation-map-md, research-note-parking-workflow-during-ci]
 ---
 
 The `validate-docs` validator checks that every Markdown file in `docs/` has a corresponding entry in `docs/INDEX.md`. Files without INDEX entries fail validation. This is intentional and prevents orphaned or loose documentation.

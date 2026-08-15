@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: user-explicit
 source_line: 1
 source_sha1: 780383ad75d3e5c572267943c009940efce262b1e365f7bd1062665ed17383f8
+related: [cmk-install-skip-existing-behavior-and-update-implications, task-248-reframed-the-user-s-design-call-2026-07-22-the-pre, kiro-has-four-install-surfaces-not-three-the-user-s-correcti]
 ---
 
 D-343 disposition SETTLED: the cmk-install-skips-existing bug (kit-owned scaffold like .claude/skills/ never refreshes on update) is filed as Task 230, laned to v0.5.5 alongside the D-337 security fix. It's a correctness bug (an updated install must reflect the current version), not deferred. Fix: installTier refreshes kit-owned dirs, keeps skip-if-exists only for user-memory tiers; + cmk doctor skill-drift detection. Proven live 2026-07-15 via test-install-refresh.mjs (staleified skill survived a re-install untouched).

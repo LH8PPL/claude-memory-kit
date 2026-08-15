@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: a69f3ce3a45218779e1c45ae32b3cf8052a9d914ac8573361e489f17c915b1ef
+related: [v0-6-3-lane-execution-sequence-next-session-start, v0-6-2-published-release-state-and-contents, ci-pipeline-configuration]
 ---
 
 - **233**: recall hint + fire telemetry

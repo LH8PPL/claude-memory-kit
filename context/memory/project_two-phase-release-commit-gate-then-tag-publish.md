@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: b410d9fcc48bca0f10f1c81e4b532f03472c07df390d2aef3764e168c6d0cf49
+related: [publish-trigger-is-git-tag-push-not-branch-commit, release-workflow-tag-timing-after-gates, release-workflow-npm-script-git]
 ---
 
 - **Phase 1 (commit/gate):** `git add`, `git commit -m "release: vX.Y.Z"`, `git push origin main` → lands version bump on main, does NOT trigger publish

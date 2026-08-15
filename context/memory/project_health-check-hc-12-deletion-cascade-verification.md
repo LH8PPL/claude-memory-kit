@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5fb73a79436dd4a5e3a0071a69f212f80577d030459786000498f159b48d44f9
+related: [task-210-deletion-propagation-guarantee-in-flight-code-done, cmk-forget-as-safe-fact-removal-method, index-md-is-a-committed-human-readable-artifact]
 ---
 
 Currently in cmk doctor; verifies that facts marked for deletion are actually purged from SQLite index and all memory files (recent.md, archive.md, today-*.md). Known limitation: fails to name surviving file + fact id when cascade is incomplete; marks as "vacuously clean" when no facts have ever been forgotten.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 73e15e814377da8f9bd3519eebb8d95f1a6b3d795525762cb9d9ca3a21452185
+related: [claude-code-hook-activation-requires-restart, sessionstart-hook-requires-reopen-after-install, diagnostic-test-statement-for-skill-capture]
 ---
 
 The memory kit's hooks (Stop-hook, SessionStart-hook, etc.) fire against the currently open project directory in Claude Code. If the wrong project is open, hooks will write memory to the wrong project's `context/`.

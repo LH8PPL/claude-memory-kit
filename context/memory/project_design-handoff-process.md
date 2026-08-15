@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: dbbe91aa01e54bf2fe08aff73423c2bb539d378003237cfe3ed5e1342b1e4d7c
+related: [markdown-tokenizer-is-security-critical-in-viewer, task-151-implementation-cadence, user-verdict-is-final-done-criterion-for-visual-work]
 ---
 
 - **Scope**: Provide one focused file + direction memo, NOT the whole repo (minimizes noise)

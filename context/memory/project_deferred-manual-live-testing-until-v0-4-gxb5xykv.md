@@ -8,6 +8,7 @@ trust: high
 source_file: auto-extract-session
 source_line: 1
 source_sha1: b890bee7f524f5c47d304cc8805d506568f963f525a1e766921533098dd890d7
+related: [task-259-live-refresh-via-sse-should-shi-faljvhya]
 ---
 
 Deferred manual live-testing until v0.4.0 code completion, rather than incremental testing

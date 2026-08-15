@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f6364c84175be19fa8c3e6bb889e28e4316c3647421540727d2a36c20fb4f3c3
+related: [session-2-validation-gates-cut-gate15, three-session-release-validation-methodology, dj4-live-test-prerequisites]
 ---
 
 The user validates memory-kit recall through an ordered ladder of behavioral gates:

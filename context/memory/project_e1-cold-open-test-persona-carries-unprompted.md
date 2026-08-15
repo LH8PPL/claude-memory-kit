@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 88823cb63a9b9e8fdc32cd64ec54553d6d9eb0095e6519b308a55504fe0a5f36
+related: [e1-cold-open-test-persona-wedge-successful, cold-start-test-for-persona-architecture-transfer, e1-test-scoring-criteria-backend-code-generation]
 ---
 
 E1 validates that established persona (from `~/.claude-memory-kit/` in HABITS.md, USER.md, LESSONS.md) automatically carries to brand-new projects without explicit instruction.

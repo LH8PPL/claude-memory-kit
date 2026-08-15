@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 6941d58bf8abfa6f4701c682c3c4d571786f9f353816720a0a5b1762ef382d9e
+related: [hand-written-research-note-frontmatter-requirements, reference-implementation-alignment-strategy]
 ---
 
 Archive id-indexed reads protected by: strict ID_PATTERN regex (`/^[PUL]-[…8 base32 chars…]$/`; no `.`, `/`, `\`, `%`), validation at line 39 *before* the `join()` operation. Prevents attacks like `P-../../../etc`, `../../secret`. Ordering (validate-before-join) is critical; if future refactor reorders it, the pattern is bypassed.

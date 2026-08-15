@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 3b64b742f5b416462dce95bc321a5f9536560671
+related: [seam-injection-test-coverage-blindspot, sonarcloud-coverage-gate-at-80-on-new-code, claude-memory-kit-v0-4-3-release-workflow]
 ---
 
 CI enforces zero-tolerance code coverage on new code via Sonar. Any new function or branch not exercised in tests fails the gate and blocks merge.

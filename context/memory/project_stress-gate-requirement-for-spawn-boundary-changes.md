@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 345f82ce3be4d5a3683c2742bab548d1f056fd8cdc8a5b0e9373ac0fc0b0e5c8
+related: [stress-gate-required-before-pr-for-spawn-hook-boundary-chang, stress-test-phase-in-pre-merge-workflow, full-gate-re-run-on-final-code-after-code-review]
 ---
 
 Any code touching spawn boundaries must pass `npm run stress` (5 consecutive runs) before merge.

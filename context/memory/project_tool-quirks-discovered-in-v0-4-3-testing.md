@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 92e8d0db92b3b6c5cbddb2fb2d96a29ddfec0751507e2cbb6a5b592f43f39971
+related: [cut-gate-v0-4-3-verification-checks, security-data-integrity-validation-checklist, mcp-activation-restart-behavior]
 ---
 
 - **Rich flag vs bare remember** (PR1): Using bare `remember` does not trigger the recurrence-promotion path; requires the rich flag to be set.

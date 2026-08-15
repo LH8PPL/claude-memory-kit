@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 90b2818cf0aa2e92255f589adac6eb911f1f69e5fdfb2cfbbb7ad7858c0aa409
+related: [kit-identity-a-harness-over-the-harness-the-user-s-framing, task-233-adr-0024-memory-search-fix-via-evidence-bearing-hin]
 ---
 
 **What's missing:** Kit logs recalls (recall-log) and extraction outcomes (D-122 trend), but does NOT log skill invocations. Cannot measure whether 233's hint upgrade actually improves fire rate — the ADR's own success criterion.

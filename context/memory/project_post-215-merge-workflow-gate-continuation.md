@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 310dbe368a022bbf8a0ebd445a5d6b6e6997bd67c90f62a5b43ff720360aa1b8
+related: [memory-persistence-validation-workflow-end-to-end, verification-gate-two-phase-approach, release-workflow-commit-cut-gate-tag-push]
 ---
 
 Once #215 merges, the next steps are:

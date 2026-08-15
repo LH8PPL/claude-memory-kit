@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c6f798e1e877385f32898cda43c55c00f0c8fde6b544c5a3a11124dcd898faa1
+related: [vbs-launcher-quirk-for-hidden-scheduled-task-windows, youtube-to-slide-uses-core-memory-kit-scheduling, close-claude-code-before-global-cmk-install-to-avoid-ebusy]
 ---
 
 Three .vbs launcher shim files created and installed in `C:\Projects\youtube-to-slide\context\.locks\` (gitignored, machine-local):

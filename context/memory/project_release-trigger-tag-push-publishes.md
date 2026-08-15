@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: cf774b13411d738028218e48bfdc5a807fb70f2deea20828cd0b3d1472e0574e
+related: [release-workflow-tag-driven-automation-via-publish-yml, release-handoff-pr-creation-vs-merge, user-owns-release-tag-push]
 ---
 
 Tag push to the repo automatically triggers the publish step. The user (operator) is responsible for pushing the release tag when code is merged and ready; publish automation follows deterministically.

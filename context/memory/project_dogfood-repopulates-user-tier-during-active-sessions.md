@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0dce2c815bbbe975d84a7ed8d6aec65ea29a685d91dfb74f3ee1b74d5c817dcf
+related: [gate-preparation-tier-backups-and-dogfood-isolation, clean-start-procedure-for-session-1-test, claude-memory-kit-installation-levels]
 ---
 
 The auto-extract/persona pipeline writes to the user tier continuously while working on this repo. Even after backing up the tier, continued session activity will repopulate it via dogfood.

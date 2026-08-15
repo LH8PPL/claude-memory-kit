@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 018216048459426f3b3431979dbcf08e51de0849a020d6cbfda9fe3a1b917804
+related: [research-note-discipline-write-a-docs-research-note-only-whe, memory-auto-injection-on-session-start, reference-implementation-alignment-strategy]
 ---
 
 **Core rule**: Do not save research notes when a topic brought has nothing to do with the kit.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f1f182ac8ca7732fe5930fca8cf2407b967baf8cc9e7b5104246534e93f53ced
+related: [post-retrieval-filtering-query-expansion-hyde, reference-implementation-alignment-strategy, fact-currency-and-auto-supersession-not-yet-implemented]
 ---
 
 - **Pattern:** Give the agent retrieval as a tool it *chooses* to invoke (judgment-pulled), not auto-injected every turn.

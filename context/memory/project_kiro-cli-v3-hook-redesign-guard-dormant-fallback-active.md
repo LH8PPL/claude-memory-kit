@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 66d8d9669ec743588353a50b70a004965725c7e298c30466b1dcfc9049a4814a
+related: [kiro-v3-hooks-redesigned-first-class-delete-guard-fallback-t, delete-guardrail-memory-protection-via-pretooluse-hook, kiro-cli-v3-delete-guardrail-pretooluse-known-limitation]
 ---
 
 **V3 hook system change:** kiro-cli V3 (2.9.0+) moved tool-blocking logic from `preToolUse`-style hooks into a `permissions.yaml`-based model. As a result:

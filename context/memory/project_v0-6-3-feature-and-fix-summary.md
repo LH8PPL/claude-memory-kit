@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: cfd43bff476ac0d7cd08984110cd0aacce8fc8bdd5b98b6324cafd539104b622
+related: [v0-6-3-release-plan-task-queue, v0-6-2-published-release-state-and-contents, fixed-bugs-in-task-50-kiro-console-flash-branch]
 ---
 
 Recall pair with evidence-bearing hints and graph edges; Memory as browsable Obsidian vault with 1,200+ edges; Install fix for old stranded bug; Data-durability fix (embedded in BOM bug); Archive split for readability; Hardened PII screens; Fixed oldest "known flake"; Session-start enhancement (conditional memory re-send — knows when not to send).

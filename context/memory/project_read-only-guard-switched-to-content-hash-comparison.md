@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 8881cb3aaf0694ca4cf481d3eee61f38ad40562dbfee45c0c168b59bd5788407
+related: [core-threat-model-xss-through-memory-facts, kiro-cli-env-passing-limitation]
 ---
 
 Read-only enforcement changed from file-path-based checks to content-hash-based comparison; new structural test bans HTML-parsing sinks from viewer page.

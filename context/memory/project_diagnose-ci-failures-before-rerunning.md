@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: fabb0cc6e35205f23258c89ba6a63c2a132dcf03c6e65f299cb9224aa330bd78
+related: [ci-authority-convention, onnxruntime-node-postinstall-cdn-timeout, no-disclaimed-flakes-rule]
 ---
 
 Team discipline: always read logs to confirm a red check is transient (network blip, registry issue) before rerunning, so real failures never get waved off as noise.

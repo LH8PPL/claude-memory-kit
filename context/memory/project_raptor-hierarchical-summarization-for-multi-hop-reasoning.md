@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: f887b9e502ea263b3c4752f3ca6b519fe924eca3702319b7f6c247203d7893bd
+related: [task-176-reference-typed-graph-with-auto-edge-maintenance-on]
 ---
 
 - **Pattern:** Recursive clustering → summarize clusters → cluster the summaries → repeat, building a hierarchical tree of summaries from leaves (raw docs) to root (global summary).

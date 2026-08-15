@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ceceec61af0e71e890849ff3a2adf78dc11c8d8209d91a339ed4ab6b7ba2db3c
+related: [d-343-disposition-cmk-install-scaffold-refresh-bug-task-230, v0-5-0-release-feature-complete-l3-promotion-gate-pending]
 ---
 
 - Task 203: HC-10 must verify `recent.md` freshness; lazy fallback must stop shadowing daily distill; `register-crons` should set `WakeToRun=True`

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8603ff3a1c71e113099196caaddd7d5f6eb3e5b374fd7fc865e0a6e9687ccdac
+related: [version-0-3-3-release-cut-gate16-test-session-state, live-test-gate-structure-and-blocker-findings, release-workflow-cold-open-testing-discipline]
 ---
 
 Releases require end-to-end gate tests before tag/publish:

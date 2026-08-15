@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 738adb72b622f06ec144302ace123553e64b7dbbc2385f1f99d53cb15fe862b9
+related: [viewer-page-visual-design-constraints]
 ---
 
 The page appears plain not because a framework was skipped, but because visual separation relies on background color alone (white-on-white with no type hierarchy). Solution: borders and one color step, not CSS frameworks.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 4fd5dcdbed2df5a8f4ed4c22b5433c6c85b53aa6
+related: [live-test-harness-cannot-detect-missing-cli-dependency, kit-skills-are-modular-thin-orchestrators-over-a-deep-cmk-su, use-c-temp-or-c-tmp-for-test-scratch-never-the-repo-or-home]
 ---
 
 Task 146 (Claude Code Workflows) is designed to test the kit's support for concurrent subagent swarms with shared memory. The critical untested component is concurrent `mk_remember` calls under swarm load — this is the validation needed before claiming the kit can support stateful swarms.

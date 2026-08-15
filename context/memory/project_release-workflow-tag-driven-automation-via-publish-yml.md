@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: dabc279ba0369030718eba80b4ca9cad17d39d13afb4475d6f78dbabea9f3476
+related: [release-workflow-for-lh8ppl-claude-memory-kit, release-publish-workflow-git-tag-to-npm, v0-6-6-release-ready-for-tag]
 ---
 
 Releases are triggered by pushing a git tag (e.g., `git tag v0.6.4 && git push origin v0.6.4`).

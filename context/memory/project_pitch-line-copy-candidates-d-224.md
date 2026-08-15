@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c9229ff305a7a94d72cafb71be6265e8b2076b991a4c7d822384e65f3750ba06
+related: [distinguish-code-gems-from-pitch-copy]
 ---
 
 Two metaphor-based pitch lines saved as candidates for README/About refinement:

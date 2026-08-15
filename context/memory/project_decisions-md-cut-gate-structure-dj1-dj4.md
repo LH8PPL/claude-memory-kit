@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 40d4a11c4e171f1acf025ef4870e57b415a0b891b9e9cc47798259cabeb9486f
+related: [dj4-verification-prompts-decisions-md-recall-gate, use-the-memory-write-skill-not-the-cli, fix-for-scope-decisions-warning-bug-in-memory-search]
 ---
 
 DECISIONS.md testing is organized as four sequential cut-gate stages:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d91b4624026524947bce319cec0c2a1aee16ddc0cc006f825243d4caef1258ba
+related: [kiro-cli-agent-configuration-and-verification, hook-payload-delivery-stdin-not-environment, kiro-cli-agent-config-reads-from-kiro-agents-not-aws-amazonq]
 ---
 
 - **Pre-D-198:** Config in dead `~/.aws` location → no hooks fired

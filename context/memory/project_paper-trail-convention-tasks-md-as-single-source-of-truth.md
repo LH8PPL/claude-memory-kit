@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6b3138695fdbc068637c5071f2d75b0f998bd31de024b6f5ec208f5dfcbfca3a
+related: [documentation-map-spine-drifts-while-decision-log-stays-curr, canonical-agent-support-list, design-contract-enforcement-via-tests-code]
 ---
 
 The project maintains a "paper trail" consisting of three synchronized components:

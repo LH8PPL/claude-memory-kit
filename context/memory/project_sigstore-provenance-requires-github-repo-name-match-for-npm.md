@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ad1515a24346d265f2917255a7e0310b29a1c48692ccd3b372e98fb2aad9da32
+related: [sigstore-provenance-validation-requires-repo-package-name-al, sonarcloud-project-key-rename-coordination, release-workflow-tag-driven-automation-via-publish-yml]
 ---
 
 GitHub Actions sigstore provenance validation blocks npm publish if the GitHub repository name doesn't match the `repository.url` in package.json. The repo name must be synchronized on GitHub before re-running the publish workflow; mismatched names prevent sigstore validation and block upload to npm.

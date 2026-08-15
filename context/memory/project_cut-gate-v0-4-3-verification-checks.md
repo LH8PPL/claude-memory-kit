@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 26acbfd86d4c20d5af1d95497f06fbc2ee80be067a8acac46af6bf3a5fa68480
+related: [tool-quirks-discovered-in-v0-4-3-testing, fresh-folder-verification-workflow-for-claude-memory-kit-rel, post-215-merge-workflow-gate-continuation]
 ---
 
 Five live-tested probes verified in sandbox before v0.4.3 release:

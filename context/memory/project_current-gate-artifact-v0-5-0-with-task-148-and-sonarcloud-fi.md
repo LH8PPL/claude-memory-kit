@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 39fd5a8cc0762114c71f79dcf9b81c3b5599a0c5df0779fec91001320510e057
+related: [cut-gate-verification-probes, project-tracking-structure, tarball-artifact-must-carry-both-d-263-and-d-264]
 ---
 
 Global cmk build is now at v0.5.0 (upgraded from 0.4.4). Verified content:

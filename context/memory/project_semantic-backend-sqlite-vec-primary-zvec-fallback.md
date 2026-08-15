@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 98c05b7b6361af89b0ea93a1e06037b5bb0c102f
+related: [node-sqlite-fts5-module-availability-gate-for-task-141b-migr]
 ---
 
 sqlite-vec is the primary Layer-5b backend candidate; alibaba/zvec is the NAMED fallback

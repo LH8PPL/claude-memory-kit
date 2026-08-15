@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 74ead4af0443eab5b1ab2103c7a16e10d1187ad70d1e2bff5f24c30a73e4d9dd
+related: [core-memory-kit-requires-vs-code-folder-trust, youtube-to-slide-migration-to-core-memory-kit-complete, youtube-to-slide-foreign-format-fact-file-pre-existing-not-r]
 ---
 
 Writing to memory curation tasks requires the Claude Code trust flag to be set for `C:\Projects\youtube-to-slide`.

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0e4bbbaf489eeca12fa5cec715cea1ec99af01534575dc7058ae3cd55216859b
+related: [file-pointer-format-and-interpretation, one-line-pointer-design-for-numbering-validator-consistency, task-entry-boundary-definition-specs-tasks-md]
 ---
 
 When a task entry is archived, replace it in the live file with:

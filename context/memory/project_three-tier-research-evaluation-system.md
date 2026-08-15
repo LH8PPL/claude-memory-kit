@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7230a268b188f9c967e7ed7964dd641270a2b1aa3e66e1fa51ee505e80671569
+related: [research-project-selection-criteria-declare-the-bucket, research-evaluation-tiers-tier-1-kit-pee-7qh7cqpu]
 ---
 
 - **Tier 1** (gold standard): Vetted adjacent peers (claude-mem, mem0, Letta, Graphiti) for direct architecture comparison.

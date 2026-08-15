@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9d070d49b7f30456d65aa16dc83261a6665604b3e47b944925abb382fda46155
+related: [youtube-to-slide-scheduled-task-shims-vbs-launchers, close-claude-code-before-global-cmk-install-to-avoid-ebusy, windows-rmsync-cleanup-flake-workaround]
 ---
 
 Windows scheduled task popups can be hidden by wrapping the executable in a .vbs launcher script rather than running cmd directly.

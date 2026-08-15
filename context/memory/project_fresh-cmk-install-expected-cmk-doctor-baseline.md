@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: baf8b8a70ea47557c686c843acb16a4f97082a90a4da7b296bc59cc00d36fbb4
+related: [claude-memory-kit-health-check-suite-hc-1-through-hc-9, fresh-cmk-install-health-baseline-cmk-0-4-5-with-semantic, 1-gate-run-verification-expected-health-checks-and-session]
 ---
 
 A brand-new project (`cmk install --with-semantic` in a fresh git repo) produces `cmk doctor` results: **6 pass · 0 fail · 4 skip**. The 4 SKIPs are not failures — they indicate features not yet active:

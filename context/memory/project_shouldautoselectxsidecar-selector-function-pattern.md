@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: de084c309981b562425e4f449a614b1cba1c73bd8fa4b43b67a64b4cfb47c4be
+related: [auto-detect-priority-chain-proven-from-codemem, kiro-cli-env-passing-limitation]
 ---
 
 Isolate environment probing (PATH checks, env var reads, file existence) into a pure selector function, separate from routing/invocation logic. This makes routing unit-testable without filesystem side effects and clarifies the separation between "what's available" and "what we choose to use."

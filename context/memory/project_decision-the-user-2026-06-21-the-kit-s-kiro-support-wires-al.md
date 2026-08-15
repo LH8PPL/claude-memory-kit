@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: 789a07050a7a0491f7ddfcb8447beefdab7adbed82978463ab9e09128b3c60f5
+related: [decision-the-user-2026-06-21-the-kiro-rework-wires-both-ide, kiro-has-four-install-surfaces-not-three-the-user-s-correcti, kiro-install-path-settled-d-182-2026-06-21-from-a-14-real-pr]
 ---
 
 Decision (the user, 2026-06-21): the kit's Kiro support wires ALL FOUR surfaces — hooks + steering + skills + MCP — NOT a subset. Hooks included specifically for DETERMINISTIC auto-capture (agentStop→runCommand: cmk capture), matching the kit's Claude-Code Stop-hook model (capture is deterministic, not dependent on the model choosing to call a tool). This is the thorough/complete choice; it accepts the install complexity of settling the IDE-.kiro.hook format + the CLI default-agent question (both being settled by the 15-project survey). Surface→job mapping: RECALL via steering(always-loaded)+skills(memory-search)+MCP(cmk tools); CAPTURE via hooks(deterministic agentStop→cmk capture)+skills(memory-write)+MCP.

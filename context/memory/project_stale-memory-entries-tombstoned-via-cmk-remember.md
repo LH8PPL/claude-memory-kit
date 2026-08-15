@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7e12dee09586c95cdf8eeb0c60fe7079dbc41a0ca593486e69148993ce6a8f58
+related: [task-243-2026-07-21-superseded-the-bench-storage-allowlist-c, kiro-agent-must-be-global-empirically-validated, memory-auto-injection-on-session-start]
 ---
 
 - Kit memory entry "bench-storage allowlist must NOT be emptied" became stale after Node 22 floor bump

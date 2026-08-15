@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 4ec690e510d2c78764188ffbd6560e3893d8f60a67f9cd14c869380690dbc21a
+related: [cmk-view-integrates-with-core-memory-subsystems, doctor-is-reactive-only-memory-write-search-are-automatic, q3-wave-1-viewer-five-views-locked]
 ---
 
 `cmk view` answers four questions that generic tools (e.g., Obsidian) cannot:

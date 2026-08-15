@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: dc533d9ad74ffca31f169ace99548962c642746a406b52a1f45d829d3c89a281
+related: [viewer-page-design-constraints, vitest-pool-corruption-transient-load-failures, release-version-queue-d-309]
 ---
 
 Muted-text token: `#676158`. Contrast target: AA 4.5:1 minimum. Non-exemption rule: 11px/600 weight does NOT qualify for large-text exemption (so 4.5:1 is the floor, not 3:1). Implemented with automated test that computes contrast ratios from served CSS.

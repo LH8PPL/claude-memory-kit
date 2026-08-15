@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: c83890ba20adee2a90f3360b81bb39a70da50aaf0c26406a25268ca0101e7d82
+related: [architectural-thesis-the-kit-as-cross-session-runtime, sre-workflow-as-reference-implementation, reference-implementation-alignment-strategy]
 ---
 
 All systems work in bounded episodes (sessions, alerts, tasks), not continuous streams. Every distinction (IDE vs agent, session vs run, autonomous vs human-steered) reduces to episode *length*. Kit abstracts over gaps and episode types, making it harness-agnostic.

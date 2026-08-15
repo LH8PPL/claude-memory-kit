@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3ba0d516abeba72d95cd0d9e76f16f000b7e9950ea975e5c688e8643f9550ab0
+related: [post-merge-workflow-sequence, 5-concurrency-stress-gate-as-pre-pr-verification, task-210-deletion-propagation-guarantee-in-flight-code-done]
 ---
 
 **Task 210 status:** code, docs, HC-12, forward filter complete; 3119 tests + 14 validators all green; all 8 review findings fixed.

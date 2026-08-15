@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b2330e1c473dc10a21b44a00ada37261234632db9ae45ef7474dccf7c279eccf
+related: [viewer-page-html-redesign-file-attachments-priorities, design-research-memo-and-mvp-split]
 ---
 
 - **What**: Redesigning the visual layer of `packages/cli/src/viewer-page.html`

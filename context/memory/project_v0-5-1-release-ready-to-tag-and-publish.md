@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 035d808dff29715dad3d908c7090c10c80ee50e9da8d616d65780f4454114abc
+related: [tag-and-publish-v0-3-5-release, release-workflow-tag-timing-after-gates, v0-5-1-release-pr-282-must-merge-before-tag]
 ---
 
 - All gate sections pass; release verified and ready for publication

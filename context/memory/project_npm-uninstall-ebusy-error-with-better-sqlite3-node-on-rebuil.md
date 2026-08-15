@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c72b74d59c6f0049908ba38eec7f8df9a3526ef1459b7762347b53c8c501bc92
+related: [windows-dll-lock-blocks-npm-reinstall-better-sqlite3-node, close-claude-code-before-global-cmk-install-to-avoid-ebusy, npm-uninstall-eperm-error-with-sqlite-vec-dll-on-windows]
 ---
 
 When running `npm uninstall -g @lh8ppl/claude-memory-kit`, the command can fail with EBUSY (resource busy) on the file `better_sqlite3.node` in node_modules. Root cause: `cmk mcp serve` (or other running Claude Code sessions) hold the binary module lock.

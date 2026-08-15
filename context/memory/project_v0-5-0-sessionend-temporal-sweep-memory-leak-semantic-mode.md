@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 8b3a4874580564db2d9e60d106c530d96827d4cefae26f192826dcbf81f3a2dd
+related: [v050-blocker-temporal-sweep-semantic-memory-leak]
 ---
 
 **Symptom:** `cmk-compress-session.mjs` → `temporalSweep` freezes; RSS climbs to 5.5–8.8 GB.

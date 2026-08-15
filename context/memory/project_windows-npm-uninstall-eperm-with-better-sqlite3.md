@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7026380ffc7d052d599709c4f2a95a0b93a39245c719716fc607cd17a0980d3a
+related: [windows-npm-uninstall-better-sqlite3-node-lock, windows-npm-ebusy-on-better-sqlite3-lock-expected-and-harmle, better-sqlite3-eperm-cleanup-warning]
 ---
 
 On Windows, `npm uninstall` after building `better_sqlite3.node` fails with EPERM (permission denied) because the compiled DLL remains locked by the Node process. The packages are removed despite the error; the leftover temp dir is cosmetic cruft.

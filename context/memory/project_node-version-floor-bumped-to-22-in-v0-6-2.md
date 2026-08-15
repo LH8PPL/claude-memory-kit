@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 6d2f3f07507d9795f8dd9cecb0ef850e4c9eb8b5ab12b5b57b5a814065c5418f
+related: [v0-6-2-breaking-node-20-support-dropped, onnxruntime-node-postinstall-cdn-timeout, node-sqlite-migration-decision]
 ---
 
 - `engines.node`: >=22 (documented as BREAKING change in CHANGELOG)

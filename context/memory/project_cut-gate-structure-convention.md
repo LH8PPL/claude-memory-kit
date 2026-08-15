@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 0c990209438aa210d7bfd784fe391c8eba84eade7640be029d183ba29600dd07
+related: [cut-gate-backend-pattern-template-4f, when-creating-a-cut-gate-for-domain-spec-rjrpeamc, platform-specific-cut-gate-structure-and-scope]
 ---
 
 Cut-gates have a consistent §0–§9 structure. Sections categorized as:

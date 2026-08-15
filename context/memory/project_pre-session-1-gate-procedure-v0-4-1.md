@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 72849a2a31257c0d229df88d88f40f87fa550d8ece9e7a03bf0392781343d703
+related: [cut-gate-pre-release-validation-checklist-g0-g7, verification-sequence-for-task-169-170-fresh-folder-gate, cmk-fix-verification-workflow-fresh-folder-v0-4-1]
 ---
 
 Nine numbered gates verify the kit before Session 1:

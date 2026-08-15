@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: dd42f4bff07bebb747e521fea3a1890738c216dcb02ae77fe4500e5db7dc172f
+related: [agent-neutral-names-persist-across-any-rename, config-directory-migration-is-critical-blocker-for-rename, project-governance-adrs-frozen-records-and-two-phase-rename]
 ---
 
 Three families must be manually reviewed before any bulk find-replace in tier 3:

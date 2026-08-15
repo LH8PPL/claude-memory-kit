@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: d8e92208e6af63aec60980ab55e44ba896152c8593030f1f11ae1ff7024d9120
+related: [kiro-cli-explicit-save-limitation-known, kiro-cli-does-not-pass-mcp-environment-variables, disable-mcp-in-ide-wrappers-with-includemcpjson-false]
 ---
 
 Three distinct memory paths exist:

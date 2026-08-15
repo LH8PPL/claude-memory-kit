@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 491835a943fa60a3a98e558b5fcf38ea49127b73e377c6648e6073d1a54f2354
+related: [documentation-drifts-at-event-boundaries-not-pr-moments, readme-changelog-update-timing, task-queue-organization-naming-convention]
 ---
 
 Documentation updates follow two rules:

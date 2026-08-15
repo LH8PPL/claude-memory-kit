@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 48153672fcae665d7f8f398618c6d293312520c0e15384366d5094bc343c22c4
+related: [harness-support-roadmap-task-196-and-versioning-policy, kit-versioning-uses-lane-themed-releases-not-strict-semver, v0-4-6-release-roadmap]
 ---
 
 - **v0.4.0** = Kiro + per-agent adapter seam infrastructure (seam is the real v0.4.0 work; Kiro is first consumer)

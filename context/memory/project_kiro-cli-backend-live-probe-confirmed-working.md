@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: db030fd3dfb67eac364eb192e8af4dc3aaab3780d0935b95625c989f8d9ccd19
+related: [hook-recursion-guard-cmk-backend-spawn-environment-variable, cursor-agent-backend-doc-confirmed-feasible-not-yet-live-tes, kit-compatibility-requirement-clarified]
 ---
 
 Kiro is installed on this system. Key findings from live probe:

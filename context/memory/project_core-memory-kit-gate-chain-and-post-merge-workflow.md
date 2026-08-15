@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3d142b6619a15e7c83eab67b95e686e5560a0eca7ca81b1ba7c14b2b2c6e711d
+related: [merge-gate-sequence-stress-test-must-pas-s2enbvcj, stress-gate-release-workflow, post-merge-workflow-sequence]
 ---
 
 - Gate stages (all must pass): suite → stress ×5 → live-verify

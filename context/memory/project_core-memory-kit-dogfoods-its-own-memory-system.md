@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f03f1e627735eec5fc7fa8cf894a6c456af061c0c018fe3f96d35301be6db112
+related: [memory-system-dogfooding-internal-use-as-test-case, claude-memory-kit-captures-dogfood-facts-about-its-own-debug, v0-6-3-released]
 ---
 
 The kit's development and release cycle for v0.6.3 were tracked and managed using the kit's own memory system. Real-world dogfooding through an 8-day sprint.

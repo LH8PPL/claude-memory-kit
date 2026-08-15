@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 5f46787e4c0dc2641051e57caff74721bc32495953bf7ed905e9d02780234bff
+related: [new-v0-6-2-guard-candidate-undefended-cwd-as-root-assumption, use-c-temp-or-c-tmp-for-test-scratch-never-the-repo-or-home, design-reference-awrshift-claude-memory-kit]
 ---
 
 When Task 195 validates the core-memory-kit rename (post-Cursor+Codex), must check:

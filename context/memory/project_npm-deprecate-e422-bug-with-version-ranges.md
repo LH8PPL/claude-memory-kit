@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 11f57c4c87cff9bf70dffe386794a467264eeb269288a9b496f29f65881ac630
+related: [npm-11-x-deprecate-command-with-version-ranges-fails-with-sp, npm-deprecate-wildcard-syntax-fails-with-e404-use-version-ra, npm-glob-expansion-fails-in-powershell-use-explicit-filename]
 ---
 
 `npm deprecate` with range selectors (e.g., `@lh8ppl/claude-memory-kit@>=0.1.0`) fails with HTTP 422 Unprocessable Entity on npm CLI 11.x. Command iterates through matching versions and prints deprecation notices, then fails on the packument PUT request.

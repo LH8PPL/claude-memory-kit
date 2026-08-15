@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 541e2b02abfb683eb4202a7891a6c8b945887cf2ffa48e81f552c10054c64414
+related: [markdown-yaml-spell-linting-disabled-in-ci-by-design, sensitive-content-policy-for-memory-capture-system]
 ---
 
 The 597 memory files in `context/` use intentional non-standard markdown formatting (HTML comments, example bullets, no heading hierarchy) that is appropriate for memory storage but would be flagged as violations by markdownlint/codespell/yamllint.

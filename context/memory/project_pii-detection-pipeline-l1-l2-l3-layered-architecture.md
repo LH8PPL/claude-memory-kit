@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 67e53fb7db9e473f02b606c1c1b24c202babb510bfd4ebb055f9c5d3994d53d1
+related: [pii-detection-landscape-regex-vs-llm-trade-offs]
 ---
 
 - **L1 (hot path)**: Presidio-style pattern catalog (JavaScript, extends Poison_Guard), ~2ms

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 471bf1d51dd81416e208e08317186b95baadac34a351936d02afaf1c84da579a
+related: [multi-agent-llm-invocation-research-initiative, resume-task-200-agent-relative-backend, wave-based-agent-research-for-cursor-windows-invocation]
 ---
 
 **Goal**: Systematic sweep across ~70 cross-agent projects to understand how they invoke LLMs in automated/headless contexts.

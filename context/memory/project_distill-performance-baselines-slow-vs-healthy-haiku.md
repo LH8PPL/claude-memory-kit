@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1953c4ca68e60acf5f3f9546c2e31509fadb5fe32c5a6da814cbd8c43f57b6ef
+related: [now-md-bloat-creates-silent-failure-trap-in-lazy-roll]
 ---
 
 - **Healthy Haiku window**: ~20 seconds

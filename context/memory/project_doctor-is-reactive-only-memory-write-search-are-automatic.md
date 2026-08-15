@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 02b377da153619f68d39e67cf80a3238cf37088261cff317d87066056f15cc02
+related: [principle-u-u5ppsg7y-recorded-but-unimplemented, cmk-view-purpose-and-headline-use-cases, autopilot-memory-consultation-architecture]
 ---
 
 - memory-write: skill + stop-hook trigger → automatic on "remember this"

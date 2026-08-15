@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 56804097cd52d68a096df94ead9b58ffbecd46681b16241d02bb4752e02a592d
+related: [full-gate-re-run-on-final-code-after-code-review, comprehensive-pr-review-methodology, task-141b-node-sqlite-migration-rejected-in-d-162]
 ---
 
 - Full test suite: all passing (3341/3341 on v13)

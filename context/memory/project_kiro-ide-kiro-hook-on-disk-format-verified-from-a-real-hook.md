@@ -8,6 +8,7 @@ trust: high
 source_file: user-explicit
 source_line: 1
 source_sha1: fc86754117e4a1b9b9085586eda7bc43064a5950ef53e51c824ff770ebbed9a7
+related: [kiro-ide-hooks-are-a-better-fit-for-the-kit-than-i-first-con, correction-to-d-182-2026-06-21-the-survey-s-claim-ide-kiro-h, decision-the-user-2026-06-21-rework-kiro-support-properly-be]
 ---
 
 Kiro IDE .kiro.hook on-disk format VERIFIED from a real hook created in the Kiro IDE GUI (the user made one; docs deliberately omit this). File: <project>/.kiro/hooks/<name>.kiro.hook, JSON: {version:'1.0.0', enabled:true, name, description, when:{type:'agentStop'|'fileEdited'|...}, then:{type:'runCommand', command, timeout:60}}. So IDE hooks ARE file-installable (contradicts the docs' UI-only implication). The agentStop trigger + runCommand shell action = capture-at-turn-end running an arbitrary CLI. This is DIFFERENT from the CLI agent-config hook format ({hooks:{agentStop:[{command,timeout_ms}]}} inside .kiro/agents/<name>.json) — IDE uses when/then + 'timeout', CLI uses an event-keyed array + 'timeout_ms'. Two distinct real formats, both now verified.

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 9763a28fe3b59eba9347204031b00b9479fc074103ba9972fe4463d81fc3a2fd
+related: [v0-5-1-release-pr-282-must-merge-before-tag, version-0-3-3-release-features-and-test-coverage, v0-4-1-release-gate-workflow]
 ---
 
 - Release commit: 38455dc (version bump)

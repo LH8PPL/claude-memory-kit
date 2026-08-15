@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1508b54ebf38d05bf03cb47c973f815a444ab1290766db8d239b1d8b1d1189c6
+related: [yaml-validator-lenient-parser-blind-spot, js-yaml-can-silently-rewrite-yaml-formatting, description-field-length-root-cause-and-fix]
 ---
 
 SKILL.md descriptions must be formatted as YAML block scalars (not plain strings). This is enforced by `validate-skill-sources.mjs` using strict `js-yaml` parsing. Both existing SKILL.md files were updated to comply (PR #220). The linter runs on every `npm test` and `npm run lint:skill-sources`.

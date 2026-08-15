@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 7fd630c5bfd0819f0c33723f2ad4f7da47fc06905b873b853489718662e14d43
+related: [30s-hook-ceiling-constraint-real-haiku-roll-timing, cron-liveness-fix-167-a-solves-root-problem-sync-drain-is-se, peer-systems-synchronize-consolidation-on-stop-hook-session]
 ---
 
 - **Hard constraint:** SessionStart hook ceiling is 30 seconds

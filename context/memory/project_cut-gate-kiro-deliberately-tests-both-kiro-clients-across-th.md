@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b308e6462fcae026816bc03cb99bf3b6ea31df26cfc36e89c1d25ea43374b514
+related: [kiro-install-contains-two-independent-clients-with-separate, v0-4-0-final-gate-kh-kc-live-hook-firing-tests, plan-the-user-2026-06-21-do-the-manual-kiro-live-capture-tes]
 ---
 
 - **§2 Session 1 (Kiro IDE)** — builds initial state; proves IDE capture hooks fire correctly

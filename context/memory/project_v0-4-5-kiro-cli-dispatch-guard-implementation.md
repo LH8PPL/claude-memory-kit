@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f2b1608ca6d611a0dda24d8658f690f3d03993f8d30f16e0e0378e61247c4cff
+related: [v0-4-5-agent-relative-llm-backend-feature, d-197-end-to-end-live-re-test-workflow, claude-code-2-1-x-needs-skill-name-wildcard-to-suppress-skil]
 ---
 
 Two changes in v0.4.5:

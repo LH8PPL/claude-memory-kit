@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 88cd0e3b1a5a234c7dd498280da7f5082ceacc80f622bc1fb4c1da7751f52ef4
+related: [release-gate-criterion-dogfooding-signal-validation, release-gate-cut-gate-guide-must-pass-before-tagging, release-cut-gate-validation-pattern]
 ---
 
 The memory kit follows a phased approach where Phase 1 (judgment, corrections, trust scoring) ships observe-only as v0.5.0, and Phase 2 (wiring trust scores into ranking via task 194) ships as v0.5.1 after real-world validation. In Phase 1, signals are logged to `trust-signals.log` but do NOT affect search ranking. Task 194 will blend these signals into BM25 ranking.

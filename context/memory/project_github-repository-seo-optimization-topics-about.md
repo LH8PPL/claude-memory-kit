@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8413441a63f16d9eaf162cb054dc2cc449700552ea8db4b3178083653f17a3ed
+related: [claude-memory-kit-github-about-configuration-user-tier-initi]
 ---
 
 **Current Topics:** mcp, semantic-search, ai-agents, claude, anthropic, ai-memory, mcp-server, agent-memory, claude-code, claude-code-plugin, developer-tools

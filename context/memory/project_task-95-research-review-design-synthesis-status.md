@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: bb8086697360d59a8424241111f36ae79ae708fc5528080068ad68d63da43505
+related: [task-95-design-forks-settled-2026-07-18-d-352-f1-op-class-sp]
 ---
 
 **Phase:** Paper ingestion + design-input synthesis (active)

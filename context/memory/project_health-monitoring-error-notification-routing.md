@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: cb0a4c1093c49f75e6d50470bc0eb58b538b7d7d8790e2fb05cafb39bbcb6143
+related: [memory-capture-status-emitted-at-session-start]
 ---
 
 - All error signals sent to model via `additionalContext` ("whisper")

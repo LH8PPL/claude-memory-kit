@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 12de3b171ec9f85f6c43157b4dd52cd6e71030d5f2a816149f58627c724c77e4
+related: [memclaw-s-6-passive-outcome-signals-3-already-produced]
 ---
 
 **Phase-3 gating (57, 58, 59):** Feature marked "PROPOSED — awaiting explicit go" in specs. Blocked until user green-lights the feature.

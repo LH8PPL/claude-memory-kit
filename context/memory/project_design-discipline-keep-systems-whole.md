@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 89b89f6bb150acbef9dc7819b672fde6ccaa970b0b09d432f699532a76a32286
+related: [kit-design-methodology-current-state, project-philosophy-niche-excellence-over-breadth, decision-logging-in-task-entries]
 ---
 
 Do not decompose whole-system designs into backlog fragments (scattered tasks, deferred ADR sections, deferred decisions). The synthesis act itself must stay whole and complete.

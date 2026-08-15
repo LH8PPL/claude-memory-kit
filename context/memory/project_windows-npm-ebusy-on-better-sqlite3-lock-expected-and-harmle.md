@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: bb499ac4cc29efc3749940a5e0d2bad66210d168591ff3d536d9c8bae283e7ac
+related: [windows-npm-eperm-warning-on-better-sqlite3-node-is-benign, better-sqlite3-eperm-cleanup-warning, npm-uninstall-ebusy-error-with-better-sqlite3-node-on-rebuil]
 ---
 
 On Windows, npm uninstall/install can trigger EBUSY (errno -4082) errors on better_sqlite3.node when a process holds the binary lock (e.g., running cmk MCP server or prior global installation).

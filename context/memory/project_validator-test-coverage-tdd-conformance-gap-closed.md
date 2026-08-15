@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3ed79ccfefed9c03348948f04d14a89aeea5bd363d0de249aac5085e07839426
+related: [stress-test-gating-rule-for-pr-approval, claude-md-ci-validator-binding-rule, the-fact-store-walk-is-duplicated-across-10-modules-with-no]
 ---
 
 `scripts/validate-node-pin.mjs` was first new validator with no `tests/scripts-validate-*.test.js` counterpart. Module exports `findLiteralPins`/`checkNodePins` explicitly for testability; manual verification during review (planted bad value, confirmed failure, reverted) was not repeatable or CI-gated.

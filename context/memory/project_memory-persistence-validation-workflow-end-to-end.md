@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 098725a4f88e132a0eaa1b06d14e3c91b41a4326b2f7765409f1620431f006e4
+related: [kiro-cli-integration-test-gate-and-reinstall, live-test-workflow-for-kiro-cli-project-fix, d-197-end-to-end-live-re-test-workflow]
 ---
 
 Complete test sequence for validating memory fixes:

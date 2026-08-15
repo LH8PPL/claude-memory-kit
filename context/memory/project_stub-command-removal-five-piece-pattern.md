@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: c459b1cdb4a0dae34f21504c90c519d52c1db66a
+related: [work-items-require-task-entry-before-implementation, windows-rmsync-cleanup-flake-workaround, multi-surface-documentation-architecture]
 ---
 
 Task 131 deletes the `cmk view` stub command. Complete removal requires five file edits:

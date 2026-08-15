@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 44d3248b6c239aecefc25bf5aeb3ba4c2f44be01408f59ff1631d51ae3ffaade
+related: [kiro-ide-kiro-hook-on-disk-format-verified-from-a-real-hook, kiro-cli-dual-emit-architecture, kiro-ide-1-0-52-agent-hooks-v2-format-verification-gate]
 ---
 
 - **Version field:** `version: "v1"`

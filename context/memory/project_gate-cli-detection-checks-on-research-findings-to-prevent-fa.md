@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: f04783ead3c73617ef2f202ffad7ed5c466db249d6dcf2385a4d255ce3325a09
+related: [windows-npm-eperm-warning-on-better-sqlite3-node-is-benign, codemem-validates-multi-cli-auto-detect-approach-in-producti, mcp-prompt-root-cause-agent-config-kiro-cli-mismatch]
 ---
 
 Do not implement CLI-detection logic (in `cmk install` or `cmk doctor`) before researching how each agent is actually deployed on each platform.

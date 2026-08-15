@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: cceabbbf6bc44ec3314f2505a235c6a5ca6bd55288977c76ea2ff85096c5cdab
+related: [nightly-cron-fails-due-to-waketorun-false, stress-test-suite-timing, test-repo-1455-facts-activated-semantic-mode-today]
 ---
 
 Current repo baseline: semantic distill completes in ~3.4 minutes on 1494 facts (when successful)

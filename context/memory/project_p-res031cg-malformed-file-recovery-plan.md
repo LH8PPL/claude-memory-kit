@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: dabe99f953e3c512f711e5c54fda2d456f1d3c776f566438b659bfbf7949fb0f
+related: [preserve-legacy-id-when-creating-derived-ids, run-cmk-register-crons-after-pr-351-ships, cmk-workspace-rename-invalidates-per-workspace-permissions-h]
 ---
 
 **File**: P-RES031CG (malformed, discovered Task 232)  

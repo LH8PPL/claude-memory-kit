@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 095762a70c6f023bb47119bb0a6e3906c8e6977c95a303a6c2272a723b2d0097
+related: [one-line-pointer-design-for-numbering-validator-consistency, commit-guardrail-blocks-ambiguous-include-exclude-instructio]
 ---
 
 The project's active memory system writes during work and can block git operations like rebase.

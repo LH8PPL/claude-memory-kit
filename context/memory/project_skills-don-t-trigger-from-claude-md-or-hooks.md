@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: be22a89f16dc9b081efe3245bf64ca7ec63c786165bf19b7094ad59928a9d644
+related: [adopt-third-party-skills-via-installer-personal-tier, kiro-has-four-install-surfaces-not-three-the-user-s-correcti, cmk-tool-invocation-cmk-compress-session-vs-cmk-compress-laz]
 ---
 
 Skills are NOT invoked by CLAUDE.md references or hook `additionalContext` injections. The actual mechanism:

@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 574c5db93063ea9bfcd6d0a31b8b2078a5dd769a95b33b3a1fc49389b36a8c32
+related: [global-cli-rebuild-and-reinstall-workflow, cli-installation-verification-workflow, user-tier-memory-backup-before-testing]
 ---
 
 Installing @lh8ppl/claude-memory-kit globally via `npm install -g` automatically recreates ~/.claude-memory-kit even if deleted. This can affect test isolation when running multiple scenarios or comparing branch states.

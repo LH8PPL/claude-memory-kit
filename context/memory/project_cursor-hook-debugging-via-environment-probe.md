@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 899be1214839ef33a07da0d62e54b1611a072bebc559fee73e707e60842c0be5
+related: [mcp-server-state-isolation-in-testing, kiro-cli-integration-test-gate-and-reinstall, reliable-tarball-file-validation-with-npm-pack-json]
 ---
 
 When debugging Cursor integration issues (e.g., hook invocation, environment inheritance), write a probe that logs:

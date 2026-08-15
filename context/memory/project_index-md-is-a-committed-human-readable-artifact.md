@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 5aacf258bb70b25297a7c7e5da3a17d9c253e617
+related: [task-147-design-upgraded-the-kit-gets-a-standing-committed-c, avoid-duplicating-authoritative-docs-in-temp-locations, version-snapshot-in-recent-md-guards-against-cross-session-a]
 ---
 
 - INDEX.md is the authoritative index of fact files in the project

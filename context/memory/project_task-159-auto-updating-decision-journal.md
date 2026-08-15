@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 503e9c57c734cac598c71813a9bb8b4a53e3271ae04584af754cf95f8267c34e
+related: [memory-kit-index-file-index-md-architecture, journal-staleness-check-uses-index-md-mtime-proxy, project-dogfooding-principle-use-kit-s-own-mechanisms]
 ---
 
 **The task:** DECISIONS.md (the decision journal) should update itself automatically — every decision captured without manual intervention.

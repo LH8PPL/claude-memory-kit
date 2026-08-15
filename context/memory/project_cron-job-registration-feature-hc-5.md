@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: e3a4c98399a5ef8ce8534dd9894bea01519a3db2a1bcd6b2fae014ddb4d2c2cc
+related: [cmk-health-check-status-2026-06-20, cascade-starvation-lazy-distill-limitation-on-busy-repos, register-crons-for-staleness-starvation-prevention]
 ---
 
 Cron registration enables scheduled background distill/curate cycles instead of relying only on lazy SessionStart fallback. Status on this repo: not registered (optional feature). Can be enabled with `cmk register-crons` — touches host scheduler, requires user approval.

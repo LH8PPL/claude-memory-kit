@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 04f7b1c22f375f85ab9296b709f530a0c22142344c71aec7198ef192aa83c0fc
+related: [research-verification-process-uses-paral-zsfnnkgq, local-wiki-research-verification-workflow, laundering-detection-official-spec-vs-community-reimplementa]
 ---
 
 - Run parallel background verification agents to check claims against primary sources

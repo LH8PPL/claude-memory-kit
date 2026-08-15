@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 2cb15908c5aabdb12c1360c16c36d8747230594544f2e597a46b1889cf2b3dc0
+related: [kiro-cli-dual-emit-architecture, kiro-v0-4-0-multi-surface-trust-mechanism-architecture, kiro-v3-hooks-redesigned-first-class-delete-guard-fallback-t]
 ---
 
 Three surfaces being gated against their respective probes:

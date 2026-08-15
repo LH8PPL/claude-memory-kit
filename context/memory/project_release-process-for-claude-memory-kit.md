@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8ee7e527bc760de477161163ce2c859b349640ac248bf3f3eb405951767d52f1
+related: [v0-6-6-release-ready-for-tag, release-workflow-for-lh8ppl-claude-memory-kit, release-workflow-tag-driven-automation-via-publish-yml]
 ---
 
 The release workflow:

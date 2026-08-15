@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: a58a17a5d37e22e07a6fd0bbdb271b4749632f82255c7460721c69c25b49ae0b
+related: [canonical-registry-for-persona-search, research-faithful-design-in-sweep-order-implementation, npm-deprecate-wildcard-syntax-fails-with-e404-use-version-ra]
 ---
 
 EverOS uses a structured reflection flow: Select → Merge → Re-extract → Deprecate, with frontmatter `deprecated_by` marking superseded entries. This is more principled than the kit's rolling-window approach for the persona/consolidation layer.

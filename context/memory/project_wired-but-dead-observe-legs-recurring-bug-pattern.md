@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3d496cf787abf9794671682dfa53bd82d6634fb4e53db871bfeabe5e8cf445c7
+related: [hook-inject-capture-tests-faked-dependencies-masking-bugs, test-seam-blindness-injected-fakes-mask-real-world-defaults]
 ---
 
 - **Problem**: observe-leg handlers that accept event data but drop/ignore it, causing silent no-ops on consumer operations.

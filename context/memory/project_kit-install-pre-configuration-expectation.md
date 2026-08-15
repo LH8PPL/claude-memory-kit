@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 1fdcf9b00125a62bd9c55250d97b0117c1814dc551a0cf38e9e24de0bc353018
+related: [windows-npm-eperm-warning-on-better-sqlite3-node-is-benign, skill-composition-pattern-scaffold-allow-list-must-be-update, gate-check-g0-cli-version-verification]
 ---
 
 After `cmk install` completes, the memory-write skill should be added to Claude Code's allow-list automatically. Users should never see a permission prompt for pre-authorized kit skills. A prompt appearing indicates either: (a) the allow-list wasn't properly written during install, or (b) an external factor (Claude Code version/bug) broke the configuration.

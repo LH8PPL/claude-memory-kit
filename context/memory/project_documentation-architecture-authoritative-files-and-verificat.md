@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 5cb7b5d768f5ca55a38f106f2311493951fe89aad9590c6d69276886fb833741
+related: [pre-release-documentation-audit-checklist, documentation-map-spine-drifts-while-decision-log-stays-curr, paper-trail-convention-tasks-md-as-single-source-of-truth]
 ---
 
 The project maintains 8 authoritative documentation files that must be verified & updated during feature shipping:

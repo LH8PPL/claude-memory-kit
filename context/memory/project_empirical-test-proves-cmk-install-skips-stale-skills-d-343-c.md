@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: ae33890c628c5f2f8989298b5ac2c2c0a9a9ee76f4b9fb54fb8d8bdc553726fc
+related: [cmk-install-skips-existing-files-cannot-repair-stale-skills, cmk-install-skip-existing-behavior-and-update-implications, npm-pack-global-install-for-artifact-testing-0b]
 ---
 
 Test executed via test-install-refresh.mjs:

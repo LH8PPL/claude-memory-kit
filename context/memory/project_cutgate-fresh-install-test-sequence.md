@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: dd7dea072a71813e3f0f1ec84a9f27eac99b93f067e0db01031c750638d2b5cd
+related: [kiro-cli-cut-gate-procedure, test-artifacts-can-contaminate-fresh-install-testing, testing-workflow-for-claude-memory-kit-fixes]
 ---
 
 1. Rebuild the global kit

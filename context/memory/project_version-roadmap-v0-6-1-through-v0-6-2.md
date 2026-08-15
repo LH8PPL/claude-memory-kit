@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 9473d6b32dd412364900a485a4e03c4139b79a8fa8f378526b7c66fa6203cf0d
+related: [v0-6-2-minor-release-gate-process-d-248-d-267-rule, release-roadmap-v0-6-1-v0-7-0-and-task-95-timing-logic, v0-4-6-release-roadmap]
 ---
 
 After Task 236 completes, v0.6.1 is done and ready for potential release. v0.6.2 candidates follow:

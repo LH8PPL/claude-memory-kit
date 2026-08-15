@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 6976ada782cb82172bdd61d335cd19ea858a0fa232221553e115f0df8dbb48cc
+related: [automated-capture-via-agentstop-hook, cross-project-rules-auto-promote-at-session-end-stop-hook, memory-auto-injection-on-session-start]
 ---
 
 - **Capture (automatic):** the gate4 hook captures sessions without user action; evidence: now.md written with 3641 bytes in the tested kiro session

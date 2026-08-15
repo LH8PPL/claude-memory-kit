@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 79c22af966dfd18367037fc0e7565cadc2c5a74bf62554df09a24036e913038d
+related: [june-17-11-12-build-decisions-scope-implemented, mcp-server-staleness-gotcha-d-80, dj4-live-test-prerequisites]
 ---
 
 DJ4 tests whether Claude autonomously reaches for `--scope decisions` when answering decision-history questions. **Test outcome: the feature works.** Claude correctly invoked `cmk search --scope decisions` when asked "what made us switch [from broadcast to SDK]?". The empty result was due to stale MCP process (D-80), not a feature defect. Current build (Jun 17 11:12) has correct zod enum validation + search scope support.

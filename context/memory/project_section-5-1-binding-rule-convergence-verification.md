@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 3f3f112a8ebf563a9fa49cc03df33459e9d54f38e9cd7b72e87c4acbc4ba1792
+related: [task-50-research-revisit-gate-and-multi-agent-pattern, context-snapshot-frozen-at-session-start, stale-replay-guard-partial-coverage-identified]
 ---
 
 Research findings that converge across multiple projects do not constitute verification of current state. Before implementing code based on prior research, verify critical claims against primary sources.

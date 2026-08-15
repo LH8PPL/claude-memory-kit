@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 8c23829ac2f6e71d091499b12eafab349a86a9e91e3efd76ba6592bf843b203f
+related: [notification-doctrine-non-actionable-repeating-failures, task-gating-criteria-decision-blockers-and-gates]
 ---
 
 Passive outcome signals identified from memclaw:

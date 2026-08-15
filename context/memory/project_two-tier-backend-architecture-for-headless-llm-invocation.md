@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 24de0eeed00521fb45f9a99ccf089fac887db3e0de284737143c4ecea7262101
+related: [kit-s-haiku-backend-has-undeclared-claude-cli-dependency, multi-agent-llm-invocation-research-initiative, field-survey-zero-multi-cli-routing-32-projects]
 ---
 
 Field-wide pattern (15 projects studied): prefer per-agent CLI when installed (e.g., Kiro, Cursor), fall back to cloud-API-key direct call (e.g., Gemini free-tier, OpenRouter) when CLI absent. claude-mem is the load-bearing precedent: `CLAUDE_MEM_PROVIDER` switch (default "claude" → installed `claude` CLI, else "gemini"/"openrouter" → direct cloud-API calls). **No project in the field reverse-engineers a headless mode for a third-party agent.**

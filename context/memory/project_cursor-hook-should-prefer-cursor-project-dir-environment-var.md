@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7bf87b486a6efe089c65110782bd92fbfa4d725f9e0de539c1bcd9641ed93b5d
+related: [windows-ebusy-when-updating-cmk-during-claude-code-runtime, kiro-cli-env-passing-limitation, kiro-cli-spawns-mcp-in-cmd-exe-wrapper-claude-code-spawns-he]
 ---
 
 The cursor-hook currently resolves the project root via `workspace_roots`. Research and Cursor staff guidance indicate that `CURSOR_PROJECT_DIR` (environment variable) is documented, always-present, and reliable across platforms. This sidesteps Windows path-format edge cases that can cause the `workspace_roots` normalization to fail.

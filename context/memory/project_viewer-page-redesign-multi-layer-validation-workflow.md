@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: fc689d3a5dbc9f24aa713837824f976ca67006d909114945c5e39e849dde9aff
+related: [task-159-multi-stage-verification-gate, task-completion-workflow-code-test-doc-review-live-test-merg, release-cut-workflow-local-isolation-user-tag-push]
 ---
 
 Gate sequence for complex UI redesigns:

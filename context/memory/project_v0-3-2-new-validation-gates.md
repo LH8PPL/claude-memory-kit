@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 843bcf0c52b0a1189170ea8101d36f2831191399384c74636a86665e1eae61b9
+related: [cut-gate-verification-probes, cut-gate-pre-release-validation-checklist-g0-g7, task-planning-laning-workflow]
 ---
 
 v0.3.2 introduces two new validation gate categories:

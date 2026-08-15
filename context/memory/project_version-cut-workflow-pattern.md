@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 7f7275001598a56a9b39e153a15fe92f7b994351757d0e054ba2d02339cc0fe0
+related: [release-workflow-sequence, release-workflow-pattern, v0-5-0-release-workflow-stress-commit-push-pr-merge-repack-g]
 ---
 
 Version cut execution follows this sequence:

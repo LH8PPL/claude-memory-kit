@@ -11,6 +11,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 56544c0c1e52056a0226425b1737a55c75e8015ffadc24bcc38b5a11ea6aa2be
+related: [hc-6-native-auto-memory-runs-alongside-kit, fresh-cmk-install-health-baseline-cmk-0-4-5-with-semantic, fresh-cmk-install-expected-cmk-doctor-baseline]
 ---
 
 - **Global install**: v0.6.1 → v0.6.4 (upgrade confirmed and verified)

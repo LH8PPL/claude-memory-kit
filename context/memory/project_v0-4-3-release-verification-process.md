@@ -9,6 +9,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: d873bff56fa587943f6405a8b77b14cf13e4a239d4f85b09f04eaf3f90d35c52
+related: [tag-and-publish-v0-3-5-release, release-publish-workflow-git-tag-to-npm, release-cut-tag-version-must-match-package-json]
 ---
 
 Commands (from project root):

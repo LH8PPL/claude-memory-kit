@@ -8,6 +8,7 @@ trust: medium
 source_file: auto-extract
 source_line: 1
 source_sha1: 6023fe0fd73b7f19c7987915034360c606e3b1d3b9a1618f257911abcb3046ad
+related: [kiro-cli-env-only-flows-for-registry-type-not-stdio-mcp-feed, kiro-cli-env-passing-limitation, kiro-cli-project-workaround-for-project-path-passing]
 ---
 
 kiro-cli's env override behavior differs by MCP server type:

@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: b4e9660138e122d90b93c9af8eb8df1dd16917bc4bcc4d247b6ea8efb276615d
+related: [research-verification-workflow-parallel-agents-batch-integra, 148-privacy-screen-corpus-triage-workflow]
 ---
 
 - **Intake First**: Build full list of sources before reading anything. Triage against whole set prevents ad-hoc omissions (D-374 lesson).

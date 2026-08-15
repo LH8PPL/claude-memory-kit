@@ -10,6 +10,7 @@ recurrence_count: 1
 source_file: auto-extract
 source_line: 1
 source_sha1: 20577c7fd0b05cb3d6a432e87a0a6f7d3f9dff8dc4f8bc39e51beeb29c2bc72a
+related: [diagnostic-technique-determine-sonarcloud-issue-origin-repo, sonarcloud-automatic-analysis-must-be-off, sonarcloud-project-key-rename-coordination]
 ---
 
 SonarCloud's server-side Analysis Scope settings (stored in the web UI) take precedence over and cannot be overridden by any repo-side changes—file exclusions, sonar.projectBaseDir, or properties in package.json. Stale Windows paths or file inclusions stored in Analysis Scope cause analyzer crashes and persist even after repo-side config changes.
